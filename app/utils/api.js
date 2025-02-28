@@ -1,6 +1,6 @@
 export async function fetchArticle() {
     try {
-        const response = await fetch('http://localhost:8000/api/data');
+        const response = await fetch('/api/data');
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
