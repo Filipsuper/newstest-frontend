@@ -1,6 +1,14 @@
+import axios from "axios";
+import { configDotenv } from "dotenv";
+configDotenv();
+
+const API_URL = process.env.API_URL;
+
+axios.defaults.baseURL = API_URL;
+
 export async function fetchArticle() {
     try {
-        const response = await fetch('/api/data');
+        const response = await fetch("/data");
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
