@@ -8,7 +8,7 @@ axios.defaults.baseURL = API_URL;
 
 export async function fetchArticle() {
     try {
-        const response = await fetch("/data");
+        const response = await axios.get("/data");
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
