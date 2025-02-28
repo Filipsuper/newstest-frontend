@@ -13,9 +13,15 @@ export default function Home() {
   const [article, setArticle] = useState();
 
   useEffect(() => {
-    fetchArticle().then((data) => {
-      setArticle(data);
-    });
+    const fetchData = async () => {
+      try {
+        const data = await fetchArticle();
+        setArticle(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
   }, []);
 
   if (!article) {
