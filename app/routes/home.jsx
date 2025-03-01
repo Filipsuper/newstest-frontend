@@ -30,6 +30,11 @@ export default function Home() {
 
   const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage } = article;
 
+  const parsedSummary = summary.split("\n").map((line, index) => {
+    return <p className="mb-2" key={index}>{line}</p>
+  });
+
+
   return (
     // <h1>Home</h1>
     <main className=" min-h-screen">
@@ -46,7 +51,7 @@ export default function Home() {
           <div className="flex-grow"></div>
           {createdAt && <span className="text-sm text-gray-400"> • <span className="italic">Updated At</span>  {new Date(createdAt).toLocaleDateString()}</span>}
         </div>
-        <div className="text-xl text-gray-800 mb-4 prose prose">{summary}</div>
+        <div className="text-xl text-gray-800 mb-4 prose prose">{parsedSummary}</div>
         <div className="text-sm text-gray-400">
           <span>By <span className="italic">Morningsum</span></span>
         </div>
