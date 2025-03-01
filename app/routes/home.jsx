@@ -28,7 +28,7 @@ export default function Home() {
     return <div>...</div>;
   }
 
-  const { title, createdAt, summary, omxPreMarketData } = article;
+  const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage } = article;
 
   return (
     // <h1>Home</h1>
@@ -39,9 +39,9 @@ export default function Home() {
         <div className="flex items-end mb-4 mt-4">
           <div>
             <div className=" font-bold text-gray-600">OMX Pre Market <span className="text-gray-400">(15min delay)</span></div>
-            <span className={"font-sans text-xl "}>{parseInt(omxPreMarketData.currentPrice)} kr</span>
-            <span className={"font-sans text-lg text-gray-400 " + pnlColor(omxPreMarketData.priceChange.split("p")[0])} > {omxPreMarketData.priceChange}</span>
-            <span className={"font-sans text-lg text-gray-400 " + pnlColor(omxPreMarketData.priceChangePercentage.split("%")[0])}> {omxPreMarketData.priceChangePercentage}</span>
+            <span className={"font-sans text-xl "}>{parseInt(omxPrice)} kr</span>
+            <span className={"font-sans text-lg text-gray-400 " + pnlColor(omxChange.split("p")[0])} > {omxChange}</span>
+            <span className={"font-sans text-lg text-gray-400 " + pnlColor(omxChangePercentage.split("%")[0])}> {omxChangePercentage}</span>
           </div>
           <div className="flex-grow"></div>
           {createdAt && <span className="text-sm text-gray-400"> • <span className="italic">Updated At</span>  {new Date(createdAt).toLocaleDateString()}</span>}
