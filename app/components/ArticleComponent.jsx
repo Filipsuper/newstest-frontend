@@ -12,7 +12,7 @@ export default function ArticleComponent({ article, index }) {
     });
 
     return (
-        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8 border-b bg-foreground rounded-xl shadow-2xl shadow-black border-border border-opacity-10">
+        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10">
             <div className="flex flex-row justify-between items-start">
                 <div className="flex flex-col">
                     <p className="text-text font-bold text-xl">
@@ -48,7 +48,7 @@ export default function ArticleComponent({ article, index }) {
                 {title}
             </h1>
 
-            <div className="text-xl text-text-article mb-4 prose prose">
+            <div className="text-sm font-sans text-text-article mb-4 prose prose">
                 {parsedSummary}
             </div>
             <div className="text-sm text-text-muted">

@@ -33,7 +33,7 @@ export function Layout({ children }) {
         <Links />
         <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
       </head>
-      <body>
+      <body className="bg-background text-text">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -63,7 +63,7 @@ export function ErrorBoundary({ error }) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
+    <main className="pt-16 p-4 container mx-auto text-text">
       <h1>{message}</h1>
       <p>{details}</p>
       {stack && (
