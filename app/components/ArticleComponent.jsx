@@ -55,7 +55,7 @@ export default function ArticleComponent({ article, index }) {
 
                 </div>
                 {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article mb-4 prose prose">
-                    <h2 className="text-2xl font-serif font-black text-text italic mb-4 pb-2">Interesting releases</h2>
+                    <h2 className="text-2xl font-serif font-black text-text italic mb-4 pb-2">Top Press Releases</h2>
                     {pressReleases.map((release, idx) => {
                         return (
                             <div key={idx} className="mb-4  bg-foreground p-4 border border-border border-opacity-10">
