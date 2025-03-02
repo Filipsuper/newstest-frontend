@@ -16,8 +16,10 @@ export default function PreviousArticle({ article, index }) {
         <Link to={`/article/${article._id}`} className="group">
             <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10">
                 <div className="flex flex-row justify-between items-start">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col  ">
                         <p className="text-text font-bold text-sm">
+                            •
+                            {" "}
                             {
                                 dayjs(createdAt).isSame(dayjs(), 'day') ? "Today's summary" : dayjs(createdAt).format("MMM D, YYYY")
                             }
