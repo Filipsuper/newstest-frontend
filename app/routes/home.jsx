@@ -12,21 +12,13 @@ export function meta() {
   ];
 }
 
-export default function Home() {
-  const [articles, setArticles] = useState();
+export const loader = async () => {
+  const article = await fetchArticle();
+  return article;
+};
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await fetchArticle();
-        console.log(data);
-        setArticles(data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
-  }, []);
+export default function Home({ loaderData }) {
+  const articles = loaderData
 
   if (!articles) {
     return <div className="text-text">Loading...</div>;
