@@ -55,7 +55,7 @@ export default function ArticleComponent({ article, index }) {
                     </div>
 
                 </div>
-                {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-4 mb-4 prose prose">
+                {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 mb-1 prose prose">
                     <h2 className="text-2xl font-serif font-black text-text italic pb-2">Top Press Releases</h2>
                     {pressReleases.map((release, idx) => {
                         return (
