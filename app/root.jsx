@@ -23,13 +23,6 @@ export const links = () => [
   { rel: "stylesheet", href: stylesheet }
 ];
 
-export const scripts = () => [
-  {
-    src: "https://scripts.simpleanalyticscdn.com/latest.js",
-    async: true,
-  },
-];
-
 export function Layout({ children }) {
   return (
     <html lang="en">
@@ -38,7 +31,7 @@ export function Layout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        <Scripts />
+        <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
       </head>
       <body>
         {children}
