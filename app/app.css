@@ -1,16 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-sans: 'Tinos', sans-serif;
-  --font-serif: 'Tinos', serif;
-  --font-mono: 'Tinos', monospace;
-  --font-display: 'Tinos', sans-serif;
-}
-
 @layer base {
+  :root {
+    --font-sans: 'Tinos', sans-serif;
+    --font-serif: 'Tinos', serif;
+    --font-mono: 'Tinos', monospace;
+    --font-display: 'Tinos', sans-serif;
+  }
+
   body {
     font-family: var(--font-serif);
-    background-color: black;
+
   }
+}
+
+@theme {
+  --color-background: var(--color-gray-950);
+  --color-foreground: #01030a;
+  --color-border: var(--color-gray-800);
+  --color-text: var(--color-gray-100);
+  --color-text-article: var(--color-gray-200);
+  --color-text-muted: var(--color-gray-400);
+  --color-primary: var(--color-emerald-400);
+  --color-secondary: var(--color-amber-400);
+  --color-accent: var(--color-emerald-200);
+  --color-muted: #808080;
 }

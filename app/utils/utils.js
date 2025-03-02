@@ -1,9 +1,9 @@
 export const pnlColor = (value) => {
     if (value > 0) {
-        return "text-emerald-500";
+        return "text-primary";
     } else if (value < 0) {
-        return "text-amber-500";
+        return "text-secondary";
     } else {
-        return "text-gray-500";
+        return "text-text-muted";
     }
 };
