@@ -1,6 +1,7 @@
 import React from 'react'
 import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
+import PressRelease from "./PressRelease";
 
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases } = article;
@@ -54,18 +55,11 @@ export default function ArticleComponent({ article, index }) {
                     </div>
 
                 </div>
-                {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article mb-4 prose prose">
-                    <h2 className="text-2xl font-serif font-black text-text italic mb-4 pb-2">Top Press Releases</h2>
+                {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-4 mb-4 prose prose">
+                    <h2 className="text-2xl font-serif font-black text-text italic pb-2">Top Press Releases</h2>
                     {pressReleases.map((release, idx) => {
                         return (
-                            <div key={idx} className="mb-4  bg-foreground p-4 border border-border border-opacity-10">
-                                <div className="w-full flex justify-between items-center">
-                                    <span>{release.ticker}</span>
-                                    <span className={"p-1 px-2 rounded-sm bg-background  " + importanceColor(release.importance)}>{release.importance}</span>
-                                </div>
-                                <h3 className="text-lg font-serif font-bold text-text italic mb-2">{release.title}</h3>
-                                <p className="text-sm font-sans  text-text-muted">{release.summary}</p>
-                            </div>
+                            <PressRelease idx={idx} release={release} />
                         )
                     })}
                 </div> : null}
