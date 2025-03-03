@@ -17,23 +17,23 @@ export default function ArticleComponent({ article, index }) {
                 <div className="flex flex-col">
                     <p className="text-text font-bold text-xl">
                         {
-                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Today's summary" : dayjs(createdAt).format("MMM D, YYYY")
+                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Today's summary" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                         }
                     </p>
 
                     {createdAt && (
                         <span className="text-sm text-text-muted">
-                            • <span className="italic">Updated At</span> {dayjs(createdAt).format("HH:mm")}
+                            • <span className="italic">Summerad </span> {dayjs(createdAt).format("HH:mm")}
                         </span>
                     )}
                 </div>
 
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
-                        <div className="font-bold text-text">
-                            OMX Pre Market <span className="text-text-muted">(15min delay)</span>
+                        <div className="font-bold text-text ">
+                            OMX indikativ öppning <span className="text-text-muted">( 15min delay )</span>
                         </div>
-                        <span className="font-sans text-xl text-text">{parseInt(omxPrice)} kr</span>
+                        <span className="font-sans text-lg text-text">{parseInt(omxPrice)} kr</span>
                         <span className={"font-sans text-lg " + pnlColor(omxChange.split("p")[0])}>
                             {omxChange}
                         </span>
@@ -55,19 +55,15 @@ export default function ArticleComponent({ article, index }) {
                     </div>
 
                 </div>
-                {pressReleases ? <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 mb-1 prose prose">
-                    <h2 className="text-2xl font-serif font-black text-text italic pb-2">Top Press Releases</h2>
-                    {pressReleases.map((release, idx) => {
-                        return (
-                            <PressRelease idx={idx} release={release} />
-                        )
-                    })}
-                </div> : null}
-            </div>
-
-
-            <div className="text-sm text-text-muted">
-                <span>By <span className="italic">Morningsum</span></span>
+                {pressReleases ?
+                    <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
+                        <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga press meddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
+                        {pressReleases.map((release, idx) => {
+                            return (
+                                <PressRelease idx={idx} release={release} />
+                            )
+                        })}
+                    </div> : null}
             </div>
         </article>
     )

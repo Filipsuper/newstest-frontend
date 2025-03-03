@@ -32,19 +32,18 @@ export default function Home({ loaderData }) {
       </header>
 
       <ArticleComponent article={articles[0]} />
-      <div className="w-full py-4 border-t border-border mx-auto px-4 mt-14 relative z-10">
-        <div className="max-w-6xl mx-auto px-4 mt-8 relative z-10">
-          <h2 className=" text-2xl font-serif font-black text-text-muted italic mb-4 mt-8">Previous Summaries</h2>
+
+      <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
+        <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
+          <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
         </div>
-        <div className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 grid-rows-4  md:grid-cols-2 md:grid-rows-2 relative z-10">
+        <div className="w-full mx-auto mt-8 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 gap-4 relative z-10 ">
           {articles.slice(1).map((article, idx) => (
             <PreviousArticle key={idx} article={article} />
           ))}
         </div>
       </div>
-
-
-      <footer className="max-w-4xl mx-auto px-4 py-4 mt-8 relative z-10">
+      <footer className="w-full mx-auto px-8 py-4 mt-8 relative z-10 bg-[#010204] border-t border-border">
         <p className="text-text-muted text-sm">© 2025 Omxsum</p>
       </footer>
     </main>

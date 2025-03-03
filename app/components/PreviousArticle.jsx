@@ -14,14 +14,14 @@ export default function PreviousArticle({ article, index }) {
 
     return (
         <Link to={`/article/${article._id}`} className="group">
-            <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10">
+            <article className=" mx-auto relative z-10 mb-8 ">
                 <div className="flex flex-row justify-between items-start">
                     <div className="flex flex-col  ">
                         <p className="text-text font-bold text-sm">
                             •
                             {" "}
                             {
-                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Today's summary" : dayjs(createdAt).format("MMM D, YYYY")
+                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Dagens sammanfattning " + dayjs(createdAt).format("MMM D, YYYY") : dayjs(createdAt).format("MMM D, YYYY")
                             }
                         </p>
 
@@ -32,7 +32,7 @@ export default function PreviousArticle({ article, index }) {
                     )} */}
                     </div>
 
-                    <div className="flex items-end mb-4">
+                    <div className="flex items-end ">
                         <div className="space-x-2">
                             <span className="font-sans text-sm text-text">{parseInt(omxPrice)} kr</span>
                             <span className={"font-sans text-sm " + pnlColor(omxChange.split("p")[0])}>
