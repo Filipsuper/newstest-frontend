@@ -31,7 +31,7 @@ export default function ArticleComponent({ article, index }) {
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
                         <div className="font-bold text-text ">
-                            OMX indikativ öppning <span className="text-text-muted">( 15min delay )</span>
+                            OMX pm <span className="text-text-muted">( 15min delay )</span>
                         </div>
                         <span className="font-sans text-lg text-text">{parseInt(omxPrice)} kr</span>
                         <span className={"font-sans text-lg " + pnlColor(omxChange.split("p")[0])}>
