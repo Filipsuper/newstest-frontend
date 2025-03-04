@@ -19,7 +19,7 @@ export default function ArticleComponent({ article, index }) {
                 <div className="flex flex-col">
                     <p className="text-text font-bold text-xl">
                         {
-                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Today's summary" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Dagens summering" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                         }
                     </p>
 
@@ -59,7 +59,7 @@ export default function ArticleComponent({ article, index }) {
                 </div>
                 {pressReleases ?
                     <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
-                        <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga press meddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
+                        <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga pressmeddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
                         {pressReleases.map((release, idx) => {
                             return (
                                 <PressRelease idx={idx} release={release} />
