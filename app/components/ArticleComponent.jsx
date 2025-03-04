@@ -3,17 +3,19 @@ import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import PressRelease from "./PressRelease";
 
+
+
+
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases } = article;
-
 
     const parsedSummary = summary.split("\n").map((line, index) => {
         return <p className="mb-2" key={index}>{line}</p>
     });
 
     return (
-        <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10">
-            <div className="flex flex-row justify-between items-start mb-4">
+        <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10" >
+            < div className="flex flex-row justify-between items-start mb-4" >
                 <div className="flex flex-col">
                     <p className="text-text font-bold text-xl">
                         {
@@ -27,7 +29,7 @@ export default function ArticleComponent({ article, index }) {
                         </span>
                     )}
                 </div>
-
+                {/* dayjs(createdAt).format("HH:mm") */}
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
                         <div className="font-bold text-text ">
@@ -42,7 +44,7 @@ export default function ArticleComponent({ article, index }) {
                         </span>
                     </div>
                 </div>
-            </div>
+            </div >
             <div className="flex flex-col md:flex-row gap-8">
 
                 <div >
