@@ -44,9 +44,9 @@ export default function PreviousArticle({ article, index }) {
                     </div>
                 </div>
 
-                <h1 className="text-2xl font-serif font-black text-text italic mb-4 pb-2 group-hover:underline">
+                <h2 className="text-2xl font-serif font-black text-text italic mb-4 pb-2 group-hover:underline">
                     {title}
-                </h1>
+                </h2>
             </article>
         </Link>
     )

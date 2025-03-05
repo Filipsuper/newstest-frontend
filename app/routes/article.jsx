@@ -11,6 +11,13 @@ export const loader = async ({ params }) => {
     return article;
 };
 
+export function meta() {
+    return [
+        { title: "Omxsum - Marknadssummeringar dagligen" },
+        { name: "description", content: "Marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter skriven av AI varje morgon klockan 8:00." },
+    ];
+}
+
 export default function article({ params, loaderData }) {
     const article = loaderData;
 

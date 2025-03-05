@@ -33,7 +33,7 @@ export default function ArticleComponent({ article, index }) {
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
                         <div className="font-bold text-text ">
-                            OMX pm <span className="text-text-muted">( 15min delay )</span>
+                            OMX pm <span className="text-text-muted text-sm">( 15min delay )</span>
                         </div>
                         <span className="font-sans text-lg text-text">{parseInt(omxPrice)} kr</span>
                         <span className={"font-sans text-lg " + pnlColor(omxChange.split("p")[0])}>
@@ -52,9 +52,9 @@ export default function ArticleComponent({ article, index }) {
                         {title}
                     </h1>
 
-                    <div className="text-sm font-sans text-text-article mb-4 prose prose">
+                    <p className="text-sm font-sans text-text-article mb-4 prose prose">
                         {parsedSummary}
-                    </div>
+                    </p>
 
                 </div>
                 {pressReleases ?
