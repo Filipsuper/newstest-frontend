@@ -23,7 +23,7 @@ export const loader = async () => {
 export default function Home({ loaderData }) {
   const articles = loaderData
   dayjs.extend(utc);
-  const [currentTime, setCurrentTime] = useState(dayjs.utc().add("1", "hour").format("HH:mm"))
+  const [currentTime, setCurrentTime] = useState(dayjs.utc().add("1", "hour").format("HH:mm:ss"))
 
   if (!articles) {
     return <div className="text-text">Loading...</div>;
@@ -64,9 +64,14 @@ export default function Home({ loaderData }) {
           <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
         </div>
         <div className="w-full mx-auto mt-8 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 gap-4 relative z-10 " id="prev">
-          {articles.slice(1).map((article, idx) => (
-            <PreviousArticle key={idx} article={article} />
-          ))}
+          {
+            isTodaysArticle ? articles.slice(1).map((article, idx) => (
+              <PreviousArticle key={idx} article={article} />
+            )) :
+              articles.map((article, idx) => (
+                <PreviousArticle key={idx} article={article} />
+              ))
+          }
         </div>
       </div>
       <footer className="w-full mx-auto px-8 py-4 mt-8 relative z-10 bg-[#010204] border-t border-border">

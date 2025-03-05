@@ -13,7 +13,7 @@ export default function PreviousArticle({ article, index }) {
     });
 
     const parseTitleForUrl = (title) => {
-        return title.replaceAll(" ", "-")
+        return title.replaceAll("-", "_").replaceAll(" ", "-")
     }
 
     const urlTitle = parseTitleForUrl(article.title)
