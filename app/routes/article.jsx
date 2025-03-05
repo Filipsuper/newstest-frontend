@@ -13,8 +13,8 @@ export const loader = async ({ params }) => {
 
 export function meta() {
     return [
-        { title: "Omxsum - Marknadssummeringar dagligen" },
-        { name: "description", content: "Marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter skriven av AI varje morgon klockan 8:00." },
+        { title: "OMXsum - Dagliga marknadssummeringar" },
+        { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsen på OMXsum.com." },
     ];
 }
 
