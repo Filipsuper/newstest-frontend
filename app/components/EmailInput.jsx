@@ -37,7 +37,7 @@ export default function EmailInput() {
                 <form onSubmit={handleSubmit} className="flex flex-row items-center border border-border px-2">
                     <label className="text-xs text-text-muted pr-2 border-r border-border hidden md:flex">Missa inte nästa utskick:</label>
                     <input id="mail" name="mail" className=" text-text-article outline-none px-2 py-1 md:text-sm border-r border-border placeholder:text-gray-800" placeholder="exempel@email.com" />
-                    <button type="submit" className="text-secondary bg-foreground text-sm md:text-xs pl-2 hover:cursor-pointer active:text-text" >submit</button>
+                    <button type="submit" className="text-secondary bg-foreground text-sm md:text-xs pl-2 hover:cursor-pointer active:text-text" >Submit</button>
                 </form>
             </div>
             <p className="text-xs text-text-muted mt-2 h-6">{message}</p>
