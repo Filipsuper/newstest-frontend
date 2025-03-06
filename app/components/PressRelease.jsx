@@ -14,12 +14,12 @@ export default function PressRelease({ release }) {
                 <span>{release.ticker}</span>
                 <span>•</span>
                 <span>{release.time}</span>
-                <Link to={"https://mfn.se/" + release.link} className="  ">
+                <Link to={"https://mfn.se" + release.link} className="  ">
                     <button className="px-2 py-2 text-xs font-sans text-blue-600 hover:underline cursor-pointer" onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
 
-                        window.location.href = "https://mfn.se/" + release.link
+                        window.location.href = "https://mfn.se" + release.link
 
                     }}>
                         Källa
