@@ -19,3 +19,20 @@ export async function getArticle(id) {
         throw error;
     }
 }
+
+export async function addEmail(mail) {
+    console.log(mail)
+    try {
+        const res = await fetch(`${API_URL}/mail`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ mail })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}

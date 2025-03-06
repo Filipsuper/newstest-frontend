@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { importanceColor } from "../utils/utils"
+import { Link } from "react-router"
 
 export default function PressRelease({ release }) {
     const [show, setShow] = useState()
@@ -10,12 +11,14 @@ export default function PressRelease({ release }) {
                 <span>{release.ticker}</span>
                 <span>•</span>
                 <span>{release.time}</span>
+                <Link to={"https://mfn.se/" + release.link} onClick={(e) => e.preventDefault()} className="text-xs font-sans text-blue-600 hover:underline">Källa</Link>
                 <div className="flex flex-grow"></div>
                 <span className={"p-1 px-2 rounded-sm bg-background  " + importanceColor(release.importance)}>{release.importance}</span>
             </div>
             <h3 className=" font-serif font-bold text-text italic">{release.title}</h3>
             {!show ? <span className="text-xs">Show more...</span> : null}
             {show ? <p className="text-xs font-sans  text-text-muted">{release.summary}</p> : null}
+
         </div>
     )
 }

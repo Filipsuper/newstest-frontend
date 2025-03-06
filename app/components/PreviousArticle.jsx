@@ -6,8 +6,6 @@ import { Link } from "react-router";
 export default function PreviousArticle({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage } = article;
 
-    console.log(article)
-
     const parsedSummary = summary.split("\n").map((line, index) => {
         return <p className="mb-2" key={index}>{line}</p>
     });

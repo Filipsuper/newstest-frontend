@@ -7,7 +7,7 @@ import { FaArrowLeft } from "react-icons/fa";
 export const loader = async ({ params }) => {
     const { id } = params;
     const article = await getArticle(id);
-    console.log("Loader", article);
+
     return article;
 };
 
