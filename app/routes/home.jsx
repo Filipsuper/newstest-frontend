@@ -53,7 +53,7 @@ export default function Home({ loaderData }) {
       {isTodaysArticle ? <ArticleComponent article={articles[0]} /> :
         <div className="min-h-[80vh] max-w-6xl flex flex-col justify-center items-center mx-auto px-4 py-4 mb-8  shadow-black border-border border-opacity-10">
           <h2 className="text-4xl font-bold text-text">{currentTime}</h2>
-          <h3 className=" font-bold text-text-article text-base">Morgonbrevet släpps kl. 08.00</h3>
+          <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps kl. 08.00</h1>
           <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
           <Link to="#prev" className="hover:text-secondary transition-colors"><FaArrowDown /></Link>
         </div>
