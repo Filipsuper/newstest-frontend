@@ -52,7 +52,7 @@ export default function Home({ loaderData }) {
           <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps kl. 08.00</h1>
           <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
           <Link to="#prev" className="hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link>
-          {/* <EmailInput /> */}
+          <EmailInput />
         </div>
       }
 
