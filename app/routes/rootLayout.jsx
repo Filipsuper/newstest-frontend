@@ -23,7 +23,7 @@ export default function rootLayout() {
                     <Link to="https://trademaxxer.com/about" className="text-sm text-text-muted hover:underline">Trademaxxer</Link>
                     <p></p>
                 </div>
-                <EmailInput />
+                {/* <EmailInput /> */}
             </footer>
         </main>
     )
