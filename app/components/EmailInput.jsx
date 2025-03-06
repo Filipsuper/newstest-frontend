@@ -25,9 +25,11 @@ export default function EmailInput() {
         const res = await addEmail(mail)
         if (res.error) {
             setMessage(res.msg)
-        } else {
-            setMessage("Tillagd!")
+            return false
         }
+
+        setMessage("Tillagd!")
+        return false
     }
 
     return (
