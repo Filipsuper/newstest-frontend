@@ -8,6 +8,7 @@ import { Link } from "react-router";
 import { FaArrowDown, FaTwitter } from "react-icons/fa";
 import utc from "dayjs/plugin/utc"
 import { FaBluesky, FaX } from "react-icons/fa6";
+import EmailInput from "../components/EmailInput";
 
 export function meta() {
   return [
@@ -55,7 +56,8 @@ export default function Home({ loaderData }) {
           <h2 className="text-4xl font-bold text-text">{currentTime}</h2>
           <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps kl. 08.00</h1>
           <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
-          <Link to="#prev" className="hover:text-secondary transition-colors"><FaArrowDown /></Link>
+          <Link to="#prev" className="hover:text-secondary transition-colors mb-4"><FaArrowDown /></Link>
+          <EmailInput />
         </div>
       }
 
@@ -81,6 +83,7 @@ export default function Home({ loaderData }) {
         <Link to="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted"><FaBluesky /></Link>
         <p className="text-text-muted text-sm">Other projects: </p>
         <Link to="https://trademaxxer.com/about" className="text-sm text-text-muted hover:underline">Trademaxxer</Link>
+        <EmailInput />
       </footer>
     </main>
   );
