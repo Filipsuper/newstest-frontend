@@ -13,7 +13,7 @@ import EmailInput from "../components/EmailInput";
 export function meta() {
   return [
     { title: "OMXsum - Dagliga marknadssummeringar" },
-    { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsen på OMXsum.com." },
+    { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsens nyheter på OMXsum.com." },
   ];
 }
 
