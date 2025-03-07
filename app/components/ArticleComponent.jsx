@@ -7,7 +7,7 @@ import PressRelease from "./PressRelease";
 
 
 export default function ArticleComponent({ article, index }) {
-    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases } = article;
+    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount } = article;
 
     const parsedSummary = summary.split("\n").map((line, index) => {
         return <p className="mb-2" key={index}>{line}</p>
@@ -29,6 +29,7 @@ export default function ArticleComponent({ article, index }) {
                         </span>
                     )}
                 </div>
+
                 {/* dayjs(createdAt).format("HH:mm") */}
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
@@ -45,6 +46,11 @@ export default function ArticleComponent({ article, index }) {
                     </div>
                 </div>
             </div >
+            {articleCount ? <div>
+                <div className="text-text-muted text-xs">Artiklar skannade: <span>{articleCount}</span>st</div>
+            </div> : <div>
+                <div className="text-text-muted text-xs">Artiklar skannade: <span>{20}</span>st</div>
+            </div>}
             <div className="flex flex-col md:flex-row gap-8">
 
                 <div >
