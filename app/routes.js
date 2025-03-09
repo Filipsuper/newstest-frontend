@@ -4,6 +4,7 @@ export default [
     layout("routes/rootLayout.jsx", [
         index("routes/home.jsx"),
         route("/article/:id", "routes/article.jsx"),
+        route("/about", "routes/about.jsx")
     ])
 
 ];
