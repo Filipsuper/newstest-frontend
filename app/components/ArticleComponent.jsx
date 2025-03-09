@@ -58,9 +58,9 @@ export default function ArticleComponent({ article, index }) {
                         {title}
                     </h1>
 
-                    <p className="text-sm font-sans text-text-article mb-4 prose prose">
+                    <div className="text-sm font-sans text-text-article mb-4 prose prose">
                         {parsedSummary}
-                    </p>
+                    </div>
 
                 </div>
                 {pressReleases ?
