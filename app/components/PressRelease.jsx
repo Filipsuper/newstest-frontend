@@ -5,8 +5,6 @@ import { Link, useNavigate } from "react-router"
 export default function PressRelease({ release }) {
     const [show, setShow] = useState()
 
-    const navigate = useNavigate();
-
 
     return (
         <div className="relative mb-2 w-full md:min-w-96 bg-foreground p-2 px-4 border border-border border-opacity-10 cursor-pointer  hover:brightness-150" onClick={(e) => { setShow(!show) }}>
