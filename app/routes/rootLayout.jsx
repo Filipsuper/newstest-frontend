@@ -4,6 +4,14 @@ import EmailInput from "../components/EmailInput"
 import { FaTwitter } from "react-icons/fa"
 import { FaBluesky } from "react-icons/fa6"
 
+export function meta() {
+    return [
+        { title: "OMXsum - Dagliga marknadssummeringar" },
+        { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsens nyheter på OMXsum.com." },
+    ];
+}
+
+
 export default function rootLayout() {
     return (
         <main className="min-h-screen bg-gradient-to-tr relative ">
