@@ -29,3 +29,17 @@
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
 }
+
+.spin {
+  animation: spin 1s reverse linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
