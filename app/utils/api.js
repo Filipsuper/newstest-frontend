@@ -43,14 +43,13 @@ export async function generateSummary(key, onProgress) {
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            console.log("Received:", event.data);
+
             if (data.type === 'progress') {
                 onProgress(data.message);
             } else if (data.type === 'complete') {
                 eventSource.close();
                 resolve(data.summary);
-            } else {
-                onProgress(data.message);
-                console.log(data)
             }
         };
 
