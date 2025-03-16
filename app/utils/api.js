@@ -36,3 +36,25 @@ export async function addEmail(mail) {
         throw error;
     }
 }
+
+export async function generateSummary(key, onProgress) {
+    return new Promise((resolve, reject) => {
+        const eventSource = new EventSource(`${API_URL}/tool/generate-summary?api-key=${key}`);
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'progress') {
+                onProgress(data.message);
+            } else if (data.type === 'complete') {
+                eventSource.close();
+                resolve(data.summary);
+            }
+        };
+
+        eventSource.onerror = (error) => {
+            eventSource.close();
+            reject(new Error('SSE Error: ' + JSON.stringify(error)));
+        };
+    });
+
+}
