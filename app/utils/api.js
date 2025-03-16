@@ -48,6 +48,9 @@ export async function generateSummary(key, onProgress) {
             } else if (data.type === 'complete') {
                 eventSource.close();
                 resolve(data.summary);
+            } else {
+                onProgress(data.message);
+                console.log(data)
             }
         };
 
