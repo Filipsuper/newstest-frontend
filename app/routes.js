@@ -5,6 +5,6 @@ export default [
         index("routes/home.jsx"),
         route("/article/:id", "routes/article.jsx"),
         route("/about", "routes/about.jsx"),
-        route("/scanna", "routes/scan.jsx")
+        route("/skanna", "routes/scan.jsx")
     ])
 ];
