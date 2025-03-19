@@ -12,7 +12,20 @@ const GeneratedArticleComponent = ({ scanSummary }) => {
   const { summary, title, time } = scanSummary
 
   const parsedSummary = summary.split("\n").map((line, index) => {
-    return <p className="mb-2" key={index}>{line}</p>
+
+    if (line === "") {
+      return
+    }
+
+    // parse stock symbols in text
+    return <p className="mb-2" key={index}>
+      {line.split(/(\&\&[^\&]+\&\&)/).map((part, i) => {
+        if (part.startsWith('&&') && part.endsWith('&&')) {
+          return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
+        }
+        return part;
+      })}
+    </p>
   });
 
   return (
