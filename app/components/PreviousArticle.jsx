@@ -3,7 +3,7 @@ import { pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import { Link } from "react-router";
 
-export default function PreviousArticle({ article, index }) {
+export default function PreviousArticle({ article, idx }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage } = article;
 
     const parsedSummary = summary.split("\n").map((line, index) => {
@@ -17,7 +17,7 @@ export default function PreviousArticle({ article, index }) {
     const urlTitle = parseTitleForUrl(article.title)
 
     return (
-        <Link to={`/article/${urlTitle}`} className="group">
+        <Link to={`/article/${urlTitle}`} rel={(idx === 0 ? "canonical" : "")} className="group">
             <article className=" mx-auto relative z-10 mb-8 ">
                 <div className="flex flex-row justify-between items-start">
                     <div className="flex flex-col  ">

@@ -64,10 +64,10 @@ export default function Home({ loaderData }) {
         <div className="w-full mx-auto mt-8 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 gap-4 relative z-10 " id="prev">
           {
             isTodaysArticle ? articles.slice(1).map((article, idx) => (
-              <PreviousArticle key={idx} article={article} />
+              <PreviousArticle key={idx} article={article} idx={idx} />
             )) :
               articles.map((article, idx) => (
-                <PreviousArticle key={idx} article={article} />
+                <PreviousArticle key={idx} article={article} idx={idx} />
               ))
           }
         </div>
