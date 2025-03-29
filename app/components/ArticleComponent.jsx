@@ -2,6 +2,7 @@ import React from 'react'
 import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import PressRelease from "./PressRelease";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 
 
@@ -10,23 +11,44 @@ export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount } = article;
 
     const parsedSummary = summary.split("\n").map((line, index) => {
-
-
-        if (line.includes("**")) {
-            return <h2 className=" font-bold text-white italic font-serif text-lg" key={index} >{line.replaceAll("**", "")}</h2>
+        if (line.includes("##")) {
+            return <h2 className=" font-bold text-white italic font-serif text-lg" key={index} >{line.replaceAll("#", "")}</h2>
         } else if (line === "") {
             return
         }
 
-        // parse stock symbols in text
-        return <p className="mb-2" key={index}>
-            {line.split(/(\&\&[^\&]+\&\&)/).map((part, i) => {
-                if (part.startsWith('&&') && part.endsWith('&&')) {
-                    return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
-                }
-                return part;
-            })}
-        </p>
+        if (line === "") {
+            return null;
+        }
+
+        const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[^\&]+\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
+
+        return (
+            <div className="mb-2" key={index}>
+                {parts.map((part, i) => {
+                    // const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+                    // if (linkMatch) {
+                    //     const [, text, url] = linkMatch;
+                    //     return <a key={i} href={"https://www.di.se" + url.replace(/\s/g, "")} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs">
+                    //         {"->"}
+                    //     </a>;
+                    // }
+                    if (part.startsWith('&&') && part.endsWith('&&')) {
+                        return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
+                    } else if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={i}>{part.slice(2, -2)}</strong>;
+                    } else if (part.startsWith('##') && part.endsWith('##')) {
+                        return <h2 key={i} className="text-xl font-semibold">{part.slice(2, -2)}</h2>;
+                    } else if (part.startsWith('/red/') && part.endsWith('/red/')) {
+                        return <span key={i} className="text-red-300">{part.slice(5, -5)}</span>;
+                    } else if (part.startsWith('/green/') && part.endsWith('/green/')) {
+                        return <span key={i} className="text-green-300">{part.slice(7, -7)}</span>;
+                    }
+                    return part;
+                })}
+            </div >
+        );
+
     });
 
     return (
