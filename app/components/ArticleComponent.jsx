@@ -8,11 +8,11 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 
 export default function ArticleComponent({ article, index }) {
-    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount } = article;
+    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount, bulletPoints } = article;
 
     const parsedSummary = summary.split("\n").map((line, index) => {
         if (line.includes("##")) {
-            return <h2 className=" font-bold text-white italic font-serif text-lg" key={index} >{line.replaceAll("#", "")}</h2>
+            return <h2 className=" font-bold text-text font-serif italic mt-2 text-lg" key={index} >{line.replaceAll("#", "")}</h2>
         } else if (line === "") {
             return
         }
@@ -24,7 +24,7 @@ export default function ArticleComponent({ article, index }) {
         const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[^\&]+\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
 
         return (
-            <div className="mb-2" key={index}>
+            <p className="mb-2 text-text-article" key={index}>
                 {parts.map((part, i) => {
                     // const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
                     // if (linkMatch) {
@@ -36,7 +36,7 @@ export default function ArticleComponent({ article, index }) {
                     if (part.startsWith('&&') && part.endsWith('&&')) {
                         return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
                     } else if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={i}>{part.slice(2, -2)}</strong>;
+                        return <strong className="" key={i}>{part.slice(2, -2)}</strong>;
                     } else if (part.startsWith('##') && part.endsWith('##')) {
                         return <h2 key={i} className="text-xl font-semibold">{part.slice(2, -2)}</h2>;
                     } else if (part.startsWith('/red/') && part.endsWith('/red/')) {
@@ -46,18 +46,18 @@ export default function ArticleComponent({ article, index }) {
                     }
                     return part;
                 })}
-            </div >
+            </p >
         );
 
     });
 
     return (
         <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10" >
-            < div className="flex flex-row justify-between items-start mb-4" >
-                <div className="flex flex-col">
+            < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
+                <div className="flex flex-col ">
                     <p className="text-text font-bold text-xl">
                         {
-                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Dagens summering" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                         }
                     </p>
 
@@ -84,18 +84,27 @@ export default function ArticleComponent({ article, index }) {
                     </div>
                 </div>
             </div >
-            {articleCount ? <div>
-                <div className="text-text-muted text-xs">Artiklar skannade: <span>{articleCount}</span>st</div>
-            </div> : <div>
-                <div className="text-text-muted text-xs">Artiklar skannade: <span>{20}</span>st</div>
-            </div>}
             <div className="flex flex-col md:flex-row gap-8">
 
                 <div >
-                    <h1 className="text-4xl font-serif font-black text-text italic mb-4 pb-2">
+                    <h1 className="text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
+                    <div className="mb-4">
+                        {
+                            bulletPoints && bulletPoints.split("\n").map((bullet, idx) => {
 
+                                return (
+                                    <div className="flex flex-row items-center gap-4" key={idx}>
+                                        <span className="shadow-md w-2 h-2 bg-background border border-border rounded-full text-xs"></span>
+                                        <p className="text-text-muted font-sans" >
+                                            {bullet.replaceAll("-", "")}
+                                        </p>
+                                    </div>
+                                )
+                            })
+                        }
+                    </div>
                     <div className="text-sm font-sans text-text-article mb-4 prose prose">
                         {parsedSummary}
                     </div>

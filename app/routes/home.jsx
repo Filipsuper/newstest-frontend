@@ -55,7 +55,13 @@ export default function Home({ loaderData }) {
           <EmailInput />
         </div>
       }
-
+      {isTodaysArticle ?
+        <div className="max-w-6xl  mx-auto px-4 relative mt-8 ">
+          <p className="mb-2 text-text hidden md:flex">Anmäl dig till nyhetsbrevet för dagliga uppdateringar</p>
+          <EmailInput />
+        </div>
+        : null
+      }
 
       <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
         <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
