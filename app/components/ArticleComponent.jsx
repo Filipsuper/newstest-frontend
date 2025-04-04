@@ -97,7 +97,7 @@ export default function ArticleComponent({ article, index }) {
                                 return (
                                     <div className="flex flex-row items-center gap-4" key={idx}>
                                         <span className="shadow-md w-2 h-2 bg-background border border-border rounded-full text-xs"></span>
-                                        <p className="text-text-muted font-sans" >
+                                        <p className="text-text-muted italic font-sans" >
                                             {bullet.replaceAll("-", "")}
                                         </p>
                                     </div>
