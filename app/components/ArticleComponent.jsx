@@ -3,6 +3,7 @@ import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import PressRelease from "./PressRelease";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import EmailInput from "./EmailInput";
 
 
 
@@ -40,9 +41,9 @@ export default function ArticleComponent({ article, index }) {
                     } else if (part.startsWith('##') && part.endsWith('##')) {
                         return <h2 key={i} className="text-xl font-semibold">{part.slice(2, -2)}</h2>;
                     } else if (part.startsWith('/red/') && part.endsWith('/red/')) {
-                        return <span key={i} className="text-red-300">{part.slice(5, -5)}</span>;
+                        return <span key={i} className="text-amber-400">{part.slice(5, -5)}</span>;
                     } else if (part.startsWith('/green/') && part.endsWith('/green/')) {
-                        return <span key={i} className="text-green-300">{part.slice(7, -7)}</span>;
+                        return <span key={i} className="text-primary">{part.slice(7, -7)}</span>;
                     }
                     return part;
                 })}
@@ -53,7 +54,7 @@ export default function ArticleComponent({ article, index }) {
 
     return (
         <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8  shadow-black border-border border-opacity-10" >
-            < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
+            < div className="flex flex-row justify-between items-center mb-4 border-b border-border" >
                 <div className="flex flex-col ">
                     <p className="text-text font-bold text-xl">
                         {
@@ -67,7 +68,6 @@ export default function ArticleComponent({ article, index }) {
                         </span>
                     )}
                 </div>
-
                 {/* dayjs(createdAt).format("HH:mm") */}
                 <div className="flex items-end mb-4">
                     <div className="space-x-2">
@@ -93,10 +93,13 @@ export default function ArticleComponent({ article, index }) {
                     <div className="mb-4">
                         {
                             bulletPoints && bulletPoints.split("\n").map((bullet, idx) => {
+                                if (bullet.match(/^\s*$/)) {
+                                    return null
+                                }
 
                                 return (
-                                    <div className="flex flex-row items-center gap-4" key={idx}>
-                                        <span className="shadow-md w-2 h-2 bg-background border border-border rounded-full text-xs"></span>
+                                    <div className="flex flex-row items-center gap-4 ml-4" key={idx}>
+                                        <span className="shadow-md w-2 h-2  bg-border rotate-45  text-xs"></span>
                                         <p className="text-text-muted italic font-sans" >
                                             {bullet.replaceAll("-", "")}
                                         </p>
@@ -118,8 +121,11 @@ export default function ArticleComponent({ article, index }) {
                                 <PressRelease key={idx} idx={idx} release={release} />
                             )
                         })}
+
                     </div> : null}
+
             </div>
+
         </article>
     )
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { addEmail } from "../utils/api"
 
-export default function EmailInput() {
+export default function EmailInput({ centered }) {
     const [message, setMessage] = useState()
 
     const validateEmail = (mail) => {
@@ -34,15 +34,16 @@ export default function EmailInput() {
 
     return (
         <>
-            <div className="flex flex-col md:flex-row items-center group py-2 md:py-0">
-                <span className="text-sm text-text-muted pr-2  flex md:hidden mb-2">Missa inte nästa utskick:</span>
-                <form onSubmit={handleSubmit} className="flex flex-row items-center border border-border px-2">
-                    <label className="text-xs text-text-muted pr-2 border-r border-border hidden md:flex">Missa inte nästa utskick:</label>
-                    <input id="mail" name="mail" className=" text-text-article outline-none px-2 py-1 md:text-sm border-r border-border placeholder:text-gray-800" placeholder="exempel@email.com" />
-                    <button type="submit" className="text-secondary bg-foreground text-sm md:text-xs pl-2 hover:cursor-pointer active:text-text" >Submit</button>
+
+            <div className="flex flex-col  items-center font-sans group py-2 md:py-0">
+                <span className={"text-base text-text font-bold font-serif pr-2 flex mb-2 w-full " + (centered ? "text-center" : "text-start")}>Missa inte nästa utskick:</span>
+                <form onSubmit={handleSubmit} className="flex flex-row items-center  gap-2">
+
+                    <input id="mail" name="mail" className="border hover:border-white text-text outline-none px-4 py-2 md:text-sm border-r border-border placeholder:text-text-muted focus:border-white" placeholder="exempel@email.com" />
+                    <button type="submit" className="text-secondary hover:bg-secondary hover:text-background transition-colors duration-500 border px-4 py-2 border-secondary bg-foreground text-sm md:text-sm hover:cursor-pointer active:text-text" >Skicka</button>
                 </form>
+                <p className="text-xs text-text-muted mt-2 h-6">{message}</p>
             </div>
-            <p className="text-xs text-text-muted mt-2 h-6">{message}</p>
         </>
 
 

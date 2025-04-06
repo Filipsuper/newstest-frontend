@@ -52,12 +52,11 @@ export default function Home({ loaderData }) {
           <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps varje vardag kl. 08.00</h1>
           <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
           <Link to="#prev" className="hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link>
-          <EmailInput />
+          <EmailInput centered={true} />
         </div>
       }
       {isTodaysArticle ?
-        <div className="max-w-6xl  mx-auto px-4 relative mt-8 ">
-          <p className="mb-2 text-text hidden md:flex">Anmäl dig till nyhetsbrevet för dagliga uppdateringar</p>
+        <div className="max-w-6xl flex flex-row  mx-auto px-4 relative mt-8 ">
           <EmailInput />
         </div>
         : null
