@@ -60,3 +60,13 @@ export async function generateSummary(key, onProgress) {
     });
 
 }
+
+export async function getGraphData() {
+    try {
+        const response = await fetch(`${API_URL}/data/graph`);
+        return response.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
