@@ -29,6 +29,7 @@ export default function EmailInput({ centered }) {
         }
 
         setMessage("Tillagd!")
+        sa_event("click_email_signup")
         return false
     }
 

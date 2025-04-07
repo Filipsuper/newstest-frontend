@@ -33,6 +33,11 @@ export function Layout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            window.sa_event=window.sa_event||function(){var a=[].slice.call(arguments);window.sa_event.q?window.sa_event.q.push(a):window.sa_event.q=[a]};
+          `
+        }} />
         <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
       </head>
       <body className="bg-background text-text">
