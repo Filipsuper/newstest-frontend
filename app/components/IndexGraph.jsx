@@ -95,7 +95,9 @@ function IndexGraph() {
     const allPrices = graphData.flatMap(d => [d.o, d.c, d.h, d.l]);
     const yDomain = [Math.min(...allPrices), Math.max(...allPrices)];
 
-    const percentageChange = (((yDomain[0] - yDomain[1]) / yDomain[1]) * 100).toFixed(2)
+    const firstPrice = graphData[0].c;
+    const lastPrice = graphData[graphData.length - 1].c;
+    const percentageChange = (((lastPrice - firstPrice) / firstPrice) * 100).toFixed(2)
 
     return (
         <div className="w-full h-40 relative">
@@ -131,7 +133,7 @@ function IndexGraph() {
                         name="Price"
                         orientation="right"
                         yAxisId="right"
-                        ticks={[yDomain[0].toFixed(2)]}
+                        ticks={[lastPrice.toFixed(2)]}
                         axisLine={false}
                         tickLine={false}
                         stroke="#6b7280"
