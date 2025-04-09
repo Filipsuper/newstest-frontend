@@ -6,47 +6,14 @@ import { BiLoaderAlt } from "react-icons/bi";
 import dayjs from "dayjs";
 function IndexGraph() {
     const [graphData, setGraphData] = useState([]);
-    const [isDataFetched, setIsDataFetched] = useState(false);
 
     useEffect(() => {
-
         const fetchGraph = async () => {
-            // Check if data is in local storage
-            const cachedData = localStorage.getItem('graphData');
-            if (cachedData) {
-                console.log("Using cached data");
-
-                setGraphData(JSON.parse(cachedData));
-
-                if (dayjs(cachedData[cachedData.length - 1].date).day() !== dayjs().day()) {
-                    clearCache()
-                    setIsDataFetched(false)
-                }
-                setIsDataFetched(true);
-            } else {
-                // If not in cache, fetch from API
-                try {
-                    const res = await getGraphData();
-                    console.log("Fetched new data:", res);
-                    setGraphData(res);
-                    // Store in local storage
-                    localStorage.setItem('graphData', JSON.stringify(res));
-                    setIsDataFetched(true);
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                }
-            }
+            const res = await getGraphData();
+            setGraphData(res);
         };
-
-        if (!isDataFetched) {
-            fetchGraph();
-        }
-    }, [isDataFetched]);
-
-    const clearCache = () => {
-        localStorage.removeItem('graphData');
-        setIsDataFetched(false);
-    };
+        fetchGraph();
+    }, []);
 
     const renderCandlestick = (props) => {
         const { cx, cy, payload, yAxis } = props;
