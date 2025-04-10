@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link, Navigate, useLoaderData } from "react-router";
 import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters } from '../utils/api';
 
@@ -7,7 +8,11 @@ function settings() {
     const { user, isGuestUser, refreshUser, isPaidUser } = useAuthContext();
     const [isChanged, setIsChanged] = React.useState(false);
 
-    if (!user) return null;
+
+    if (!user) return
+
+    if (isGuestUser) return <Navigate to="/" />;
+
 
     useEffect(() => {
         setSelectedNewsletters(user.active_newsletters)
@@ -17,15 +22,10 @@ function settings() {
         setIsChanged(!compareArrays(selectedNewsletters, user.active_newsletters));
     }, [selectedNewsletters]);
 
-    useEffect(() => {
-        console.log("Selected newsletters changed:", selectedNewsletters);
-        console.log("User newsletters:", user.active_newsletters);
-    }, [selectedNewsletters]);
-
     const newsletterTypes = [
         { name: "Morgonbrev", description: "Kort analys och nyheter varje morgon kl 08:00", premium: false },
-        { name: "Veckobrev", description: "Sammanfattning och insikter varje fredag", premium: true },
-        { name: "Kvällsbrev", description: "Snabb översikt över dagens rörelser kl 17:00", premium: true },
+        // { name: "Veckobrev", description: "Sammanfattning och insikter varje fredag", premium: true },
+        // { name: "Kvällsbrev", description: "Snabb översikt över dagens rörelser kl 17:00", premium: true },
     ];
 
     const compareArrays = (arr1, arr2) => {
@@ -50,13 +50,13 @@ function settings() {
     }
 
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl">
-            <h1 className="text-3xl font-bold pl-8 text-text">Inställningar</h1>
-            <p className="pl-8 text-text-muted mb-8">
+        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
+            <h1 className="text-3xl font-bold  text-text">Inställningar</h1>
+            <p className=" text-text-muted mb-8">
                 Här kan du justera dina inställningar för att få den bästa upplevelsen av Morgonbrevet.
             </p>
 
-            <section className="max-w-4xl mx-auto rounded-lg shadow-md mb-12">
+            <section className="max-w-4xl mx-auto rounded-lg mb-12">
                 <div className="flex flex-col mb-8">
                     <h2 className="text-xl font-bold mb-4 text-text">Nyhetsbrevstyper</h2>
                     <div className="flex flex-col space-y-4">
@@ -87,12 +87,10 @@ function settings() {
                 }
             </section>
 
-            <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
+            {/* <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
                 <h2 className="text-xl font-bold mb-4 text-text">Generera marknadssummeringar när du vill!</h2>
-                <p className="text-text-muted mb-4">
-                    Med premiumfunktionen kan du generera marknadssummeringar när som helst. Du får också tillgång till våra kommande funktioner.
-                </p>
-            </section>
+                <Link className="text-primary underline" to="/skanna">Generera </Link>
+            </section> */}
         </main>
     )
 }
