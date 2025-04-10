@@ -1,5 +1,5 @@
 // app/providers/AuthProvider.jsx
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, use } from 'react';
 import { getUser } from '../utils/api';
 
 const AuthContext = createContext();
@@ -11,20 +11,25 @@ export function AuthProvider({ children }) {
 
         const fetchedUser = await getUser();
 
-        if (fetchedUser) {
-            setUser(fetchedUser);
-        } else {
+        if (fetchedUser.error || fetchedUser === null) {
             setUser({
                 email: null,
                 verified: true,
                 plan: "free"
             })
+        } else {
+            setUser(fetchedUser);
+
         }
     }
 
     const isGuestUser = useMemo(() => {
         return user && user.email === null;
     }, [user]);
+
+    const isFreeUser = useMemo(() => {
+        return user && user.verified === true;
+    }, [user])
 
     const isPaidUser = useMemo(() => {
         return user && user.plan === "premium";
@@ -35,7 +40,7 @@ export function AuthProvider({ children }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, isGuestUser, isPaidUser, refreshUser }}>
+        <AuthContext.Provider value={{ user, isGuestUser, isPaidUser, refreshUser, isFreeUser }}>
             {children}
         </AuthContext.Provider>
     );
