@@ -9,6 +9,7 @@ import { FaArrowDown, FaTwitter } from "react-icons/fa";
 import utc from "dayjs/plugin/utc"
 import { FaBluesky, FaX } from "react-icons/fa6";
 import EmailInput from "../components/EmailInput";
+import IndexGraph from "../components/IndexGraph";
 
 export function meta() {
   return [
@@ -47,12 +48,20 @@ export default function Home({ loaderData }) {
     <>
 
       {isTodaysArticle ? <ArticleComponent article={articles[0]} /> :
-        <div className="min-h-[80vh] max-w-6xl flex flex-col justify-center items-center mx-auto px-4 py-4 mb-8  shadow-black border-border border-opacity-10">
+        <div className="min-h-[80vh] max-w-6xl flex flex-col justify-center items-center mx-auto px-4 py-4 mb-8   border-border border-opacity-10">
+
           <h2 className="text-4xl font-bold text-text">{currentTime}</h2>
+
           <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps varje vardag kl. 08.00</h1>
+
           <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
+
           <Link to="#prev" className="hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link>
+          <div className="w-full md:w-1/2 mb-4">
+            <IndexGraph />
+          </div>
           <EmailInput centered={true} />
+
         </div>
       }
       {isTodaysArticle ?

@@ -37,9 +37,12 @@ export async function addEmail(mail) {
     }
 }
 
-export async function generateSummary(key, onProgress) {
+export async function generateSummary(onProgress) {
     return new Promise((resolve, reject) => {
-        const eventSource = new EventSource(`${API_URL}/tool/generate-summary?api-key=${key}`);
+        const eventSource = new EventSource(`${API_URL}/tool/generate-summary`, {
+            withCredentials: true,
+        }
+        );
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -70,3 +73,57 @@ export async function getGraphData() {
         throw error;
     }
 }
+
+//auth
+
+export async function signUp(email) {
+    try {
+        const res = await fetch(`${API_URL}/auth/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function getUser(email) {
+    try {
+        const res = await fetch(`${API_URL}/user`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+
+            },
+            "credentials": "include",
+            "mode": "cors",
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function saveActiveNewsletters(newsletters) {
+    try {
+        const res = await fetch(`${API_URL}/user/newsletters`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            "credentials": "include",
+            body: JSON.stringify({ newsletters })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+

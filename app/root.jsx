@@ -9,6 +9,8 @@ import {
 import { AppProvider } from "./providers/AppProvider";
 
 import stylesheet from "./app.css?url";
+import { ModalProvider } from "./providers/ModalProvider";
+import { AuthProvider } from "./providers/AuthProvider";
 
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -47,7 +49,11 @@ export function Layout({ children }) {
 export default function App() {
   return (
     <AppProvider>
-      <Outlet />
+      <AuthProvider>
+        <ModalProvider>
+          <Outlet />
+        </ModalProvider>
+      </AuthProvider>
     </AppProvider>
   );
 }

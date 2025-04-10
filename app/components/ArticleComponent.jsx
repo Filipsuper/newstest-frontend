@@ -28,13 +28,7 @@ export default function ArticleComponent({ article, index }) {
         return (
             <p className="mb-2 text-text-article" key={index}>
                 {parts.map((part, i) => {
-                    // const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
-                    // if (linkMatch) {
-                    //     const [, text, url] = linkMatch;
-                    //     return <a key={i} href={"https://www.di.se" + url.replace(/\s/g, "")} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs">
-                    //         {"->"}
-                    //     </a>;
-                    // }
+
                     if (part.startsWith('&&') && part.endsWith('&&')) {
                         return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
                     } else if (part.startsWith('**') && part.endsWith('**')) {

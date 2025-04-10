@@ -43,3 +43,11 @@
     transform: rotate(360deg);
   }
 }
+
+.primary-btn {
+  @apply bg-secondary text-background font-sans text-sm px-2 py-1 rounded-md hover:bg-background border hover:text-secondary border-secondary active:scale-95
+}
+
+.secondary-btn {
+  @apply border border-border px-2 text-text-muted font-sans text-sm hover:bg-border hover:text-background active:scale-95
+}
