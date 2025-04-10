@@ -1,9 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SlRefresh } from "react-icons/sl";
+import { FiSearch } from 'react-icons/fi';
+
 import { generateSummary } from "../utils/api.js"
 import { useAppContext } from '../providers/AppProvider.jsx';
 import dayjs from "dayjs";
 import { useAuthContext } from "../providers/AuthProvider.jsx";
+import LogInModal from "../modals/logInModal.jsx";
+import { useModal } from "../providers/ModalProvider.jsx";
 
 
 const GeneratedArticleComponent = ({ scanSummary }) => {
@@ -60,7 +64,9 @@ export default function Scan() {
   const [message, setMessage] = useState("");
   const { scanSummary, setScanSummary } = useAppContext();
 
-  const { isPaidUser } = useAuthContext();
+  const { isPaidUser, isFreeUser } = useAuthContext();
+  const { openModal } = useModal();
+
   const inpRef = useRef()
 
   const handleScan = async () => {
@@ -88,60 +94,87 @@ export default function Scan() {
     setScanning(false);
   };
 
+  const PlaceholderItem = () => (
+    <div className="bg-foreground   p-4 mb-4">
+      <div className="h-6 bg-border  w-3/4 mb-2 "></div>
+      <div className="h-4 bg-border  w-1/2 mb-2 "></div>
+      <div className="h-4 bg-border  w-5/6 "></div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto max-w-6xl min-h-[80vh] px-4 py-8 bg-background text-text">
-      <div className="flex flex-row  items-center gap-4 mb-8">
-        <div className="flex flex-col items-center ">
-          <h1 className="text-3xl font-bold text-text">Summera marknadsläget</h1>
-          <p className=" text-text-article">Få en överblick över det nuvarande marknadsläget.</p>
-        </div>
-        {isPaidUser ? <button
-          onClick={handleScan}
-          disabled={scanning}
-          className="bg-foreground rounded-full text-text gap-2 border border-border font-bold py-2 px-2 text-xl transition-colors hover:text-secondary flex items-center justify-center"
-        >
-          {scanning ? <span className="spin"><SlRefresh /></span> : <SlRefresh />}
-        </button> : null}
-      </div>
-      <div className="flex flex-col items-center justify-center min-h-48 bg-foreground">
+      <h1 className="text-4xl font-bold text-text mb-4">Marknadslägesscanner</h1>
+      <p className="text-text-article mb-8">Få en snabb och omfattande överblick över det nuvarande marknadsläget.</p>
 
-        {isPaidUser ?
-          <>
-            {scanning ? (
-              <div className="w-full max-w-md mt-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-4">
-                    <div className="w-4 h-4 bg-background border border-border rounded-full text-xs flex flex-row justify-center items-center text-text-muted"></div>
-                    <p>{progress}...</p>
-                  </div>
-                  {progress == "Summerar datan" && (
-                    <div className="animate-pulse flex space-x-4">
-                      <div className="flex-1 space-y-4 py-1">
-                        <div className="h-4 bg-border rounded w-3/4"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 bg-border rounded"></div>
-                          <div className="h-4 bg-border rounded w-5/6"></div>
-                        </div>
+      {isFreeUser ? (
+        <div className="bg-foreground border border-border p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold mb-2">Generera marknadsöversikt</h2>
+              <p className="text-text-muted">Klicka på knappen för att skanna marknaden och få en detaljerad sammanfattning.</p>
+            </div>
+            <button
+              onClick={handleScan}
+              disabled={scanning}
+              className="bg-foreground border border-border text-text hover:cursor-pointer rounded-full py-3 px-6 text-lg transition-colors hover:bg-primary-dark flex items-center justify-center"
+            >
+              {scanning ? (
+                <span className="flex items-center">
+                  <SlRefresh className="spin mr-2" /> <span className=" text-base">Skannar...</span>
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <SlRefresh className="mr-2" /> <span className=" text-base">Generera</span>
+                </span>
+              )}
+            </button>
+          </div>
+
+          {scanning ? (
+            <div className="w-full mt-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <div className="w-4 h-4 bg-primary rounded-full animate-pulse"></div>
+                  <p className="text-text-muted">{progress}...</p>
+                </div>
+                {progress === "Summerar datan" && (
+                  <div className="animate-pulse flex space-x-4">
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-4 bg-border rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-border rounded"></div>
+                        <div className="h-4 bg-border rounded w-5/6"></div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <GeneratedArticleComponent scanSummary={scanSummary} />
-            )}
-            {message && <span>{message}</span>}
+            </div>
+          ) : Object.keys(scanSummary).length === 0 ? (
+            <div className="w-full">
+              <PlaceholderItem />
+              <PlaceholderItem />
+            </div>
+          ) : (
+            <GeneratedArticleComponent scanSummary={scanSummary} />
+          )}
 
-          </>
-          :
-          <div className="flex flex-col items-center justify-center min-h-48 bg-foreground">
-            <h1 className="text-3xl font-bold text-text"><span>🔒</span> Premiumfunktion</h1>
-            <p className="text-text-muted">För att använda denna funktion måste du vara en betalande användare.</p>
-            <p className="text-text-muted mb-4">Registrera dig för att få tillgång till premiumfunktioner.</p>
-            <button className="primary-btn py-2" onClick={() => alert("Premiumfunktioner kommer snart!")}>Uppgradera till premium</button>
-          </div>
-        }
-      </div>
+          {message && <span className="text-red-500 mt-4 block">{message}</span>}
+        </div>
+      ) : (
+        <div className="bg-foreground border border-border rounded-lg p-8 text-center">
+          <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst funktion</h2>
+          <p className="text-text-muted mb-2">För att använda marknadslägesscannern måste du vara inloggad som premiumanvändare.</p>
+          <p className="text-text-muted mb-6">Skapa ett konto / Logga in för att ta del av denna funktion</p>
+          <button
+            className="primary-btn"
+            onClick={() => openModal(<LogInModal />)}
+          >
+            Skapa konto / logga in
+          </button>
+        </div>
+      )}
     </div>
   );
 }
