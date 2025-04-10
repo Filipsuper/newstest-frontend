@@ -165,7 +165,7 @@ export default function Scan() {
       ) : (
         <div className="bg-foreground border border-border rounded-lg p-8 text-center">
           <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst funktion</h2>
-          <p className="text-text-muted mb-2">För att använda marknadslägesscannern måste du vara inloggad som premiumanvändare.</p>
+          <p className="text-text-muted mb-2">Få en snabb marknadsöversikt på ett knapptryck</p>
           <p className="text-text-muted mb-6">Skapa ett konto / Logga in för att ta del av denna funktion</p>
           <button
             className="primary-btn"
