@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
         if (fetchedUser.error || fetchedUser === null) {
             setUser({
                 email: null,
-                verified: true,
+                verified: false,
                 plan: "free"
             })
         } else {
