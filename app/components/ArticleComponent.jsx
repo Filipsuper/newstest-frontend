@@ -109,7 +109,7 @@ export default function ArticleComponent({ article, index }) {
                     </div>
 
                 </div>
-                {pressReleases ?
+                {/* {pressReleases ?
                     <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
                         {dayjs(createdAt).isSame(dayjs(), 'day') ? <IndexGraph /> : null}
                         <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga pressmeddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
@@ -119,7 +119,7 @@ export default function ArticleComponent({ article, index }) {
                             )
                         })}
 
-                    </div> : null}
+                    </div> : null} */}
 
             </div>
 

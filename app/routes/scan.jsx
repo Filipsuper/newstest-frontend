@@ -103,8 +103,8 @@ export default function Scan() {
   );
 
   return (
-    <div className="container mx-auto max-w-6xl min-h-[80vh] px-4 py-8 bg-background text-text">
-      <h1 className="text-4xl font-bold text-text mb-4">Marknadslägesscanner</h1>
+    <div className="container mx-auto max-w-4xl min-h-[80vh] px-4 py-8 bg-background text-text">
+      <h1 className="text-4xl font-bold text-text">Marknadslägesscanner</h1>
       <p className="text-text-article mb-8">Få en snabb och omfattande överblick över det nuvarande marknadsläget.</p>
 
       {isFreeUser ? (

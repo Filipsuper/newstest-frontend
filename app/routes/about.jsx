@@ -1,9 +1,9 @@
 import React from 'react'
 export default function About() {
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl relative ">
+        <main className="min-h-[80vh] mx-auto max-w-4xl py-8 relative ">
             <div className="absolute top-20 left-4 md:left-2 w-px bg-radial from-border to-90% h-full"></div>
-            <h1 className="text-3xl font-bold pl-8 text-text">Morgonbrevet</h1>
+            <h1 className="text-4xl font-bold pl-8 text-text">Morgonbrevet</h1>
             <p className="pl-8 mb-12 text-text-article">
                 Få en daglig sammanfattning av Stockholmsbörsens senaste nyheter, företagsmeddelanden och marknadshändelser – allt för att ge dig en snabb och insiktsfull start på dagen.
             </p>

@@ -30,6 +30,12 @@
   --color-muted: #808080;
 }
 
+html,
+body {
+  @apply bg-background text-white;
+}
+
+
 .spin {
   animation: spin 1s reverse linear infinite;
 }

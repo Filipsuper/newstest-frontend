@@ -51,18 +51,19 @@ export default function Home({ loaderData }) {
         <div className="min-h-[25vh] max-w-6xl flex flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 mb-8 border-border border-opacity-10">
           <div className="" >
             <h2 className="text-base font-bold text-text">{currentTime}</h2>
-            <h1 className="text-4xl font-bold text-text-article mb-4">
-              Håll koll på börsen – på 5 minuter
+            <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
+              Håll koll på börsen,
+              <br />
+              på bara <span className="underline">3 minuter</span>
             </h1>
-            <p className="text-text-article mb-4">
-              Få morgonens viktigaste marknadshändelser direkt till din inkorg, varje vardag kl. 08.00.
-              Helt gratis.
+            <p className="text-text-article mb-8">
+              Få morgonens viktigaste marknadshändelser direkt till din inkorg, varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
             </p>
             <EmailInput centered={true} />
             {/* <p className="text-text-muted">Läs gårdagens artiklar</p>
             <Link to="#prev" className="text-text-muted hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link> */}
           </div>
-          <div className="w-full md:w-1/2 mb-4">
+          <div className="hidden md:flex w-full md:w-1/2 mb-4">
 
           </div>
         </div>

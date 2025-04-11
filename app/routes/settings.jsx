@@ -50,7 +50,7 @@ function settings() {
     }
 
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
+        <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
             <h1 className="text-3xl font-bold  text-text">Inställningar</h1>
             <p className=" text-text-muted mb-8">
                 Här kan du justera dina inställningar för att få den bästa upplevelsen av Morgonbrevet.
