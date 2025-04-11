@@ -48,20 +48,23 @@ export default function Home({ loaderData }) {
     <>
 
       {isTodaysArticle ? <ArticleComponent article={articles[0]} /> :
-        <div className="min-h-[80vh] max-w-6xl flex flex-col justify-center items-center mx-auto px-4 py-4 mb-8   border-border border-opacity-10">
-
-          <h2 className="text-4xl font-bold text-text">{currentTime}</h2>
-
-          <h1 className=" font-bold text-text-article text-base">Morgonbrevet släpps varje vardag kl. 08.00</h1>
-
-          <p className="text-text-muted mb-2">Läs gårdagens artiklar</p>
-
-          <Link to="#prev" className="hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link>
-          <div className="w-full md:w-1/2 mb-4">
-            <IndexGraph />
+        <div className="min-h-[25vh] max-w-6xl flex flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 mb-8 border-border border-opacity-10">
+          <div className="" >
+            <h2 className="text-base font-bold text-text">{currentTime}</h2>
+            <h1 className="text-4xl font-bold text-text-article mb-4">
+              Håll koll på börsen – på 5 minuter
+            </h1>
+            <p className="text-text-article mb-4">
+              Få morgonens viktigaste marknadshändelser direkt till din inkorg, varje vardag kl. 08.00.
+              Helt gratis.
+            </p>
+            <EmailInput centered={true} />
+            {/* <p className="text-text-muted">Läs gårdagens artiklar</p>
+            <Link to="#prev" className="text-text-muted hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link> */}
           </div>
-          <EmailInput centered={true} />
+          <div className="w-full md:w-1/2 mb-4">
 
+          </div>
         </div>
       }
       {isTodaysArticle ?
