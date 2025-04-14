@@ -13,7 +13,7 @@ export default function PressRelease({ release }) {
                 <span>•</span>
                 <span>{release.time}</span>
                 <div className="flex flex-grow"></div>
-                <Link to={"https://mfn.se" + release.link} className="  ">
+                <a to={"https://mfn.se" + release.link} className="  ">
                     <button className="px-2 py-2 text-xs font-sans text-primary hover:underline cursor-pointer" onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
@@ -23,7 +23,7 @@ export default function PressRelease({ release }) {
                     }}>
                         Källa
                     </button>
-                </Link>
+                </a>
             </div>
             <h3 className=" font-serif font-bold text-text italic">{release.title}</h3>
             {!show ? <span className="text-xs">Show more...</span> : null}
