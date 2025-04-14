@@ -51,9 +51,22 @@ body {
 }
 
 .primary-btn {
-  @apply bg-secondary text-background font-sans text-sm px-2 py-1 rounded-md hover:bg-background border hover:text-secondary border-secondary active:scale-95
+  @apply bg-secondary text-background font-sans text-sm px-2 py-1 hover:bg-background border hover:text-secondary border-secondary active:scale-95
 }
 
 .secondary-btn {
   @apply border border-border px-2 text-text-muted font-sans text-sm hover:bg-border hover:text-background active:scale-95
+}
+
+.fade-edges {
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.45) 40%,
+      rgba(0, 0, 0, 0.45) 50%,
+      transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.45) 40%,
+      rgba(0, 0, 0, 0.45) 50%,
+      transparent 100%);
 }
