@@ -32,9 +32,9 @@ export default function article({ params, loaderData }) {
 
     return (
         <main>
-            <div className="p-2 px-8 w-full">
+            {/* <div className="p-2 px-8 w-full">
                 <Link to="/" className="flex flex-row space-x-2 items-center"><FaArrowLeft /> <span>Back</span></Link>
-            </div>
+            </div> */}
             <ArticleComponent article={article} />
         </main>
     )

@@ -41,15 +41,18 @@ export default function rootLayout() {
             <header className="flex justify-center w-full px-4 md:px-10 py-4 bg-foreground border-b border-border mb-8">
                 <div className="flex w-full md:w-5/6 flex-col md:flex-row  font-sans items-center space-x-2 relative z-10">
                     <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center  md:mb-0">
-                        <span className="text-2xl text-text font-serif font-black italic pr-4 ">Omxsum</span>
+                        <Link to="/" className=" text-text-article">
+
+                            <span className="text-2xl text-text font-serif font-black italic pr-4 ">Omxsum</span>
+                        </Link>
                         <button className="md:hidden text-text-article" onClick={toggleMenu}>
                             <FaBars />
                         </button>
                     </div>
                     <nav className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row  text-text-article space-y-4 md:space-y-0 md:space-x-4 w-full `}>
-                        <Link to="/" className="hover:underline">Morgonbrevet</Link>
-                        <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
-                        <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link>
+                        <Link to="/morgonbrevet" className="hover:underline">Morgonbrevet</Link>
+                        {/* <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
+                        <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link> */}
                         <span className="hidden md:inline text-text-muted">|</span>
                         <Link to="/about" className="hover:underline">Om oss</Link>
                         <Link to="/skanna" className="relative hover:underline">
@@ -68,7 +71,6 @@ export default function rootLayout() {
                     </nav>
                 </div>
             </header>
-            {/* ... rest of the component ... */}
             <Outlet />
             <footer className="w-full mx-auto px-8 py-12 md:py-4 mt-8 flex flex-col md:flex-row items-center space-x-4 relative z-10 bg-[#010204] border-t border-border">
                 <div className="flex flex-row items-center space-x-2 mb-2 md:mb-0">
