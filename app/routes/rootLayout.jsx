@@ -38,6 +38,9 @@ export default function rootLayout() {
     return (
 
         <main className="min-h-screen relative ">
+            <div className="flex justify-end w-full py-1  md:px-36 border-b bg-foreground border-border bg-background">
+                <p className="text-secondary">Inget morgonbrev idag 21/4 pga. röd dag.</p>
+            </div>
             <header className="flex justify-center w-full px-4 md:px-10 py-4 bg-foreground border-b border-border mb-8">
                 <div className="flex w-full md:w-5/6 flex-col md:flex-row  font-sans items-center space-x-2 relative z-10">
                     <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center  md:mb-0">

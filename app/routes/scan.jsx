@@ -104,7 +104,7 @@ export default function Scan() {
 
   return (
     <div className="container mx-auto max-w-4xl min-h-[80vh] px-4 py-8 bg-background text-text">
-      <h1 className="text-4xl font-bold text-text">Marknadslägesscanner</h1>
+      <h1 className="text-4xl font-bold text-text">Marknadslägesskanner</h1>
       <p className="text-text-article mb-8">Få en snabb och omfattande överblick över det nuvarande marknadsläget.</p>
 
       {isFreeUser ? (
@@ -163,10 +163,10 @@ export default function Scan() {
           {message && <span className="text-red-500 mt-4 block">{message}</span>}
         </div>
       ) : (
-        <div className="bg-foreground border border-border rounded-lg p-8 text-center">
-          <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst funktion</h2>
+        <div className="bg-foreground border border-border p-8 text-center">
+          <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst</h2>
           <p className="text-text-muted mb-2">Få en snabb marknadsöversikt på ett knapptryck</p>
-          <p className="text-text-muted mb-6">Skapa ett konto / Logga in för att ta del av denna funktion</p>
+          <p className="text-text-muted mb-4">Logga in för att få tillgång till denna funktion.</p>
           <button
             className="primary-btn"
             onClick={() => openModal(<LogInModal />)}
