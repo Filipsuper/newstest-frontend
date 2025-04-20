@@ -6,7 +6,7 @@ export default [
         route("/article/:id", "routes/article.jsx"),
         route("/about", "routes/about.jsx"),
         route("/morgonbrevet", "routes/morning.jsx"),
-        route("/kvallsbrevet", "routes/aftermarket.jsx"),
+        route("/kvallsbrevet", "routes/eveningLetter.jsx"),
         route("/alla-nyhetsbrev", "routes/allArticles.jsx"),
         route("/settings", "routes/settings.jsx"),
         route("/skanna", "routes/scan.jsx")

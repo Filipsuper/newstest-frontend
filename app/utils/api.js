@@ -10,6 +10,16 @@ export async function fetchArticle() {
     }
 }
 
+export async function fetchEveningArticles() {
+    try {
+        const response = await fetch(`${API_URL}/data/evening-letter`);
+        return response.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function getArticle(id) {
     try {
         const response = await fetch(`${API_URL}/data/${id}`);

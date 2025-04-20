@@ -55,11 +55,17 @@ export default function ArticleComponent({ article, index }) {
             </div>
             < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
                 <div className="flex flex-col ">
-                    <p className="text-text font-bold text-xl">
-                        {
-                            dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
-                        }
-                    </p>
+                    {article.isEveningLetter ?
+                        <p className="text-text font-bold text-xl">
+                            {
+                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Kvällsbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                            }
+                        </p> :
+                        <p className="text-text font-bold text-xl">
+                            {
+                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                            }
+                        </p>}
 
                     {createdAt && (
                         <span className="text-sm text-text-muted">
@@ -114,7 +120,7 @@ export default function ArticleComponent({ article, index }) {
 
                 </div>
                 {pressReleases ?
-                    <div className="text-sm font-sans md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
+                    <div className="text-sm font-sans md:min-w-96 md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
                         {dayjs(createdAt).isSame(dayjs(), 'day') ? <IndexGraph /> : null}
                         <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga pressmeddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
                         {pressReleases.map((release, idx) => {
