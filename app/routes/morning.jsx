@@ -34,7 +34,7 @@ export default function morning({ loaderData }) {
                 <p className="text-text-article">Morgonens viktigaste händelser 8:00</p>
                 {(!isTodaysArticle && (
                     <div className="w-full max-w-xl mt-8 text-center">
-                        <div className="border border-border p-4">
+                        <div className=" p-4">
                             <p className="text-text-article ">
                                 {isWeekend ? (
                                     <>
