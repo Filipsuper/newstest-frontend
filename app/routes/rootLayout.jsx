@@ -37,7 +37,7 @@ export default function rootLayout() {
 
     return (
 
-        <main className="min-h-screen relative ">
+        <main className="min-h-screen relative overflow-x-hidden ">
             <div className="flex justify-end w-full py-1  md:px-36 border-b bg-foreground border-border bg-background">
                 <p className="text-secondary">Inget morgonbrev idag 21/4 pga. röd dag.</p>
             </div>
