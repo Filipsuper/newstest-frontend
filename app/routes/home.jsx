@@ -63,7 +63,7 @@ export default function Home({ loaderData }) {
             varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
           </p>
           <EmailInput centered={true} />
-          <div className="flex flex-row gap-2 items-center justify-start">
+          {/* <div className="flex flex-row gap-2 items-center justify-start">
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="relative inline-flex items-center h-6 border border-border w-11 "
@@ -75,7 +75,7 @@ export default function Home({ loaderData }) {
             </button>
             <span className="text-text-muted text-xs">Ändra tema</span>
 
-          </div>
+          </div> */}
           {/* <p className="text-text-muted">Läs gårdagens artiklar</p>
             <Link to="#prev" className="text-text-muted hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link> */}
         </div>
