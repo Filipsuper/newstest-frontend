@@ -58,12 +58,12 @@ export default function ArticleComponent({ article, index }) {
                     {article.isEveningLetter ?
                         <p className="text-text font-bold text-xl">
                             {
-                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Kvällsbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Eftermiddagens brev" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                             }
                         </p> :
                         <p className="text-text font-bold text-xl">
                             {
-                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonbrevet" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
+                                dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonens brev" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                             }
                         </p>}
 

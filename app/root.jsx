@@ -35,6 +35,7 @@ export function Layout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script src="https://sponsorapp.io/platform.js?p=73a2a324be7b4690"></script>
       </head>
       <body className="bg-background text-text">
         {children}

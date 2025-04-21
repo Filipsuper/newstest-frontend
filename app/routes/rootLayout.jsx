@@ -54,8 +54,8 @@ export default function rootLayout() {
                     </div>
                     <nav className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row  text-text-article space-y-4 md:space-y-0 md:space-x-4 w-full `}>
                         <Link to="/morgonbrevet" className="hover:underline">Morgonbrevet</Link>
-                        {/* <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
-                        <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link> */}
+                        <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
+                        {/* <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link> */}
                         <span className="hidden md:inline text-text-muted">|</span>
                         <Link to="/about" className="hover:underline">Om oss</Link>
                         <Link to="/skanna" className="relative hover:underline">

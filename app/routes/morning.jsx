@@ -13,8 +13,6 @@ export const loader = async () => {
 export default function morning({ loaderData }) {
     const articles = loaderData
 
-    const [currentTime, setCurrentTime] = useState("00:00:00")
-
     if (!articles) {
         return <div className="text-text">Loading...</div>;
     }
@@ -22,17 +20,45 @@ export default function morning({ loaderData }) {
     dayjs.extend(utc);
 
     const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
+    const formattedDate = dayjs(articles[0].createdAt).format('D MMM')
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(dayjs.utc().add(1, "hour").format("HH:mm:ss"))
-        }, 500)
-
-        return () => clearInterval(timer)
-    }, [])
+    // Get day name to show specific weekend message
+    const today = dayjs.utc().format('dddd')
+    const isWeekend = today === 'Saturday' || today === 'Sunday'
 
     return (
-        <>
+        <div className="flex flex-col items-center justify-center ">
+            <div className="w-full flex flex-col items-center justify-center h-fit relative ">
+                <div className="absolute -top-10 -right-10 h-16 w-96 bg-secondary blur-[150px]"></div>
+                <h1 className="text-4xl font-bold ">Morgonbrevet</h1>
+                <p className="text-text-article">Morgonens viktigaste händelser 8:00</p>
+                {(!isTodaysArticle && (
+                    <div className="w-full max-w-xl mt-8 text-center">
+                        <div className="border border-border p-4">
+                            <p className="text-text-article ">
+                                {isWeekend ? (
+                                    <>
+                                        <span className="font-bold  text-2xl">God dag!</span> <br />
+                                        Inget morgonbrev under helgen.
+                                        <br />
+                                        <span className="text-text-muted ">
+                                            Nedan är senaste artikeln från {formattedDate}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Dagens artikel har inte publicerats än
+                                        <br />
+                                        <span className="text-text-muted ">
+                                            Nedan är senaste artikeln från {formattedDate}
+                                        </span>
+                                    </>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
             <ArticleComponent article={articles[0]} />
 
 
@@ -51,7 +77,7 @@ export default function morning({ loaderData }) {
                     }
                 </div>
             </div>
-        </>
+        </div>
 
     )
 }
