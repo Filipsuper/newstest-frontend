@@ -68,23 +68,23 @@ export default function Home({ loaderData }) {
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
             to="/morgonbrevet"
-            className="flex flex-col items-center justify-center w-full min-h-40 h-full hover:bg-primary-dark transition-colors duration-300  shadow-xl relative overflow-hidden"
+            className="flex flex-col items-center justify-center w-full min-h-40 h-full hover:bg-primary-dark transition-colors duration-300  relative overflow-hidden"
           >
             <div className="absolute inset-0 h-full  p-2 fade-edges">
               <ArticleComponent article={articles[0]} />
             </div>
             {isTodaysArticle ?
 
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold text-white font-serif mb-2">Dagens Morgonbrev</h3>
+              <div className="relative z-10 shadow-xl">
+                <h3 className="text-2xl font-bold text-text-muted hidden dark:flex font-serif mb-2">Dagens Morgonbrev</h3>
                 <div className="primary-btn text-center">
                   Läs morgonens brev
                 </div>
               </div>
 
               :
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold text-white font-serif mb-2">Gårdagens Morgonbrev</h3>
+              <div className="relative z-10 shadow-xl">
+                <h3 className="text-2xl font-bold text-text-muted hidden dark:flex p-2 font-serif mb-2">Gårdagens Morgonbrev</h3>
                 <div className="primary-btn text-center">
                   Läs gårdagens brev
                 </div>

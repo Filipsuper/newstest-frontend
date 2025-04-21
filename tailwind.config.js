@@ -8,7 +8,24 @@ export default {
     "public/*/*.jsx",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: {
+          DEFAULT: 'var(--background)',
+        },
+        text: {
+          DEFAULT: 'var(--text)',
+          article: 'var(--text-article)',
+          muted: 'var(--text-muted)',
+        },
+        border: {
+          DEFAULT: 'var(--border)',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+        },
+      },
+    },
   },
   plugins: [],
 }

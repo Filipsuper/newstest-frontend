@@ -17,6 +17,33 @@
   }
 }
 
+:root.dark {
+  --color-background: var(--color-gray-950);
+  --color-foreground: #01030a;
+  --color-border: var(--color-gray-700);
+  --color-text: var(--color-gray-200);
+  --color-text-article: var(--color-gray-300);
+  --color-text-muted: var(--color-gray-500);
+  --color-primary: #668CF4;
+  --color-secondary: var(--color-amber-400);
+  --color-accent: var(--color-emerald-200);
+  --color-muted: #808080;
+}
+
+/* Light theme (inverted colors while maintaining contrast and readability) */
+:root {
+  --color-background: var(--color-gray-50);
+  --color-foreground: #ffffff;
+  --color-border: var(--color-gray-300);
+  --color-text: var(--color-gray-900);
+  --color-text-article: var(--color-gray-800);
+  --color-text-muted: var(--color-gray-700);
+  --color-primary: #4070F4;
+  --color-secondary: var(--color-amber-500);
+  --color-accent: var(--color-emerald-600);
+  --color-muted: #6B7280;
+}
+
 @theme {
   --color-background: var(--color-gray-950);
   --color-foreground: #01030a;
@@ -32,7 +59,7 @@
 
 html,
 body {
-  @apply bg-background text-white;
+  @apply bg-background text-text;
 }
 
 

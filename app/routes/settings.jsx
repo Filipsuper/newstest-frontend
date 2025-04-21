@@ -2,10 +2,12 @@ import React, { useEffect } from 'react';
 import { Link, Navigate, useLoaderData } from "react-router";
 import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters } from '../utils/api';
+import { useTheme } from "../providers/ThemeProvider";
 
 function settings() {
     const [selectedNewsletters, setSelectedNewsletters] = React.useState([]);
     const { user, isGuestUser, refreshUser, isPaidUser } = useAuthContext();
+    const { theme, setTheme } = useTheme();
     const [isChanged, setIsChanged] = React.useState(false);
 
 
@@ -55,7 +57,22 @@ function settings() {
             <p className=" text-text-muted mb-8">
                 Här kan du justera dina inställningar för att få den bästa upplevelsen av Morgonbrevet.
             </p>
+            <section className="max-w-4xl mx-auto rounded-lg mb-12">
+                <h2 className="text-xl font-bold mb-4 text-text">Utseende</h2>
 
+                <div className="flex flex-col items-start justify-between">
+                    <span className="text-text-article">Ljust läge</span>
+                    <button
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className="relative inline-flex items-center h-6 border border-border w-11 "
+                    >
+                        <span
+                            className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
+                                } inline-block w-4 h-4 transform bg-secondary transition-transform`}
+                        />
+                    </button>
+                </div>
+            </section>
             <section className="max-w-4xl mx-auto rounded-lg mb-12">
                 <div className="flex flex-col mb-8">
                     <h2 className="text-xl font-bold mb-4 text-text">Nyhetsbrevstyper</h2>

@@ -7,7 +7,7 @@ export default function PressRelease({ release }) {
 
 
     return (
-        <div className="relative mb-2 w-full md:min-w-96 bg-foreground p-2 px-4 border border-border border-opacity-10 cursor-pointer  hover:brightness-150" onClick={(e) => { setShow(!show) }}>
+        <div className="relative mb-2 w-full md:min-w-96 bg-foreground p-2 px-4 border border-border border-opacity-10 cursor-pointer " onClick={(e) => { setShow(!show) }}>
             <div className="w-full flex gap-2 items-center " >
                 <span>{release.ticker}</span>
                 <span>•</span>

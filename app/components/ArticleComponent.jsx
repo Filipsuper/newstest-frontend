@@ -50,11 +50,10 @@ export default function ArticleComponent({ article, index }) {
 
     return (
         <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
-            <div className="mb-4 w-full">
-                <Link to="/" className="flex flex-row space-x-2 items-center"><FaArrowLeft /> <span>Back</span></Link>
-            </div>
+
             < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
-                <div className="flex flex-col ">
+
+                {/* <div className="flex flex-col ">
                     {article.isEveningLetter ?
                         <p className="text-text font-bold text-xl">
                             {
@@ -67,14 +66,10 @@ export default function ArticleComponent({ article, index }) {
                             }
                         </p>}
 
-                    {createdAt && (
-                        <span className="text-sm text-text-muted">
-                            • <span className="italic">Summerad </span> {dayjs(createdAt).format("HH:mm")}
-                        </span>
-                    )}
-                </div>
+
+                </div> */}
                 {/* dayjs(createdAt).format("HH:mm") */}
-                <div className="flex items-end mb-4">
+                {/* <div className="flex items-end mb-4">
                     <div className="space-x-2">
                         <div className="font-bold text-text ">
                             OMX pm <span className="text-text-muted text-sm">( 15min delay )</span>
@@ -87,7 +82,7 @@ export default function ArticleComponent({ article, index }) {
                             {omxChangePercentage}
                         </span>
                     </div>
-                </div>
+                </div> */}
             </div >
 
             <div className="flex flex-col md:flex-row gap-8">
