@@ -67,7 +67,7 @@ export default function rootLayout() {
                             <button className="hover:underline cursor-pointer" onClick={handleOpenModal}>Logga in</button>
                         ) : (
                             <div className="flex flex-row">
-                                <Link to="/settings" className="text-xl text-text-muted cursor-pointer" ><IoIosSettings /></Link>
+                                <Link to="/settings" className="text-xl text-text-muted cursor-pointer md:mr-4" ><IoIosSettings /></Link>
                                 <span className="sm:flex md:hidden xl:flex text-sm text-text-muted">{user.email}</span>
                             </div>
                         )}

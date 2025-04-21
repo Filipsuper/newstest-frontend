@@ -51,7 +51,7 @@ export default function eveningLetter({ loaderData }) {
                 <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px] -z-10"></div>
 
                 <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
-                {/* <p className="text-text-article">Summering av marknadsläget</p> */}
+                <p className="text-text-article">Summering av marknadsläget 17:30</p>
                 {(!isTodaysArticle && (
                     <div className="w-full max-w-xl text-center">
                         <div className=" ">
