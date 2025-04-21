@@ -22,7 +22,7 @@ export default function LogInModal() {
             return false
         }
 
-        setMessage("Inloggnings länk har skickats till din mail!")
+        setMessage("Inloggningslänk har skickats till din mail!")
         window.sa_event("user_signup")
     }
 

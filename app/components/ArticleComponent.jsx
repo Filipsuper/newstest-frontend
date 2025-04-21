@@ -119,7 +119,7 @@ export default function ArticleComponent({ article, index }) {
                         dayjs(createdAt).isSame(dayjs(), 'day') ?
                             <div className="flex flex-col justify-center items-start w-full gap-4 mb-8">
                                 <div className="w-full h-60">
-                                    <h2 className="text-xl font-bold">OMX utv. 30 dagar:</h2>
+                                    {/* <h2 className="text-xl font-bold">OMX utv. 30 dagar:</h2> */}
                                     <IndexGraph />
 
                                 </div>
