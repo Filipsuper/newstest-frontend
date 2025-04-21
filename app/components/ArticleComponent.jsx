@@ -49,25 +49,27 @@ export default function ArticleComponent({ article, index }) {
     });
 
     return (
-        <article className="max-w-6xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
-
+        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
+            <Link to="/" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8">
+                <FaArrowLeft className="text-lg" />
+                <span className="text-sm font-sans">Tillbaka</span>
+            </Link>
             < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
-
-                {/* <div className="flex flex-col ">
+                <div className="flex flex-col ">
                     {article.isEveningLetter ?
-                        <p className="text-text font-bold text-xl">
+                        <p className="text-text font-bold text-base">
                             {
                                 dayjs(createdAt).isSame(dayjs(), 'day') ? "Eftermiddagens brev" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                             }
                         </p> :
-                        <p className="text-text font-bold text-xl">
+                        <p className="text-text font-bold text-base">
                             {
                                 dayjs(createdAt).isSame(dayjs(), 'day') ? "Morgonens brev" : dayjs(createdAt).locale('sv').format("MMM D, YYYY")
                             }
                         </p>}
 
 
-                </div> */}
+                </div>
                 {/* dayjs(createdAt).format("HH:mm") */}
                 {/* <div className="flex items-end mb-4">
                     <div className="space-x-2">
@@ -109,12 +111,38 @@ export default function ArticleComponent({ article, index }) {
                             })
                         }
                     </div>
-                    <div className="text-sm font-sans text-text-article mb-4 prose prose">
+                    <div className="text-sm font-sans text-text-article mb-8 prose prose">
                         {parsedSummary}
                     </div>
 
+                    {
+                        dayjs(createdAt).isSame(dayjs(), 'day') ?
+                            <div className="flex flex-col justify-center items-start w-full gap-4 mb-8">
+                                <div className="w-full h-60">
+                                    <h2 className="text-xl font-bold">OMX utv. 30 dagar:</h2>
+                                    <IndexGraph />
+
+                                </div>
+                            </div> : null
+                    }
+                    {pressReleases ?
+                        <div className="text-sm font-sans text-text-article flex flex-col gap-1">
+                            <h2 className="text-xl font-serif font-black text-text italic pb-2">
+                                Viktiga pressmeddelanden
+                                <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span>
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"> {/* Changed to grid layout */}
+                                {pressReleases.map((release, idx) => {
+                                    return (
+                                        <PressRelease key={idx} idx={idx} release={release} />
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        : null}
                 </div>
-                {pressReleases ?
+
+                {/* {pressReleases ?
                     <div className="text-sm font-sans md:min-w-96 md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
                         {dayjs(createdAt).isSame(dayjs(), 'day') ? <IndexGraph /> : null}
                         <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga pressmeddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
@@ -124,7 +152,7 @@ export default function ArticleComponent({ article, index }) {
                             )
                         })}
 
-                    </div> : null}
+                    </div> : null} */}
 
             </div>
 

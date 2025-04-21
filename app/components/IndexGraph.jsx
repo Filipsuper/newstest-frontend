@@ -67,7 +67,7 @@ function IndexGraph() {
     const percentageChange = (((lastPrice - firstPrice) / firstPrice) * 100).toFixed(2)
 
     return (
-        <div className="w-full h-40 relative">
+        <div className="w-full h-full relative font-sans">
             <div className="absolute w-full h-full flex flex-row justify-between text-base text-text-muted">
                 <span className=" font-bold">OMX</span>
                 <div className="space-x-2">

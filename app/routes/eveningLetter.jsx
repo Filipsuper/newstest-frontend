@@ -17,24 +17,6 @@ export default function eveningLetter({ loaderData }) {
         return <div className="text-text">Loading...</div>;
     }
 
-    if (articles.length === 0) {
-        return (
-            <main className="flex flex-col items-center justify-center overflow-x-clip" >
-                <div className="max-w-6xl mx-auto flex flex-col items-start justify-center h-fit relative">
-                    <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px] "></div>
-
-                    <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
-                    <p className="text-text-article">Summering av marknadsläget 17:30</p>
-                    <p className="text-text-muted">Inga artiklar tillgängliga</p>
-
-                </div>
-
-                <div className="min-h-[80vh] ">
-
-                </div>
-            </main>)
-    }
-
 
     dayjs.extend(utc);
 
@@ -47,11 +29,11 @@ export default function eveningLetter({ loaderData }) {
 
     return (
         <main className="flex flex-col items-center justify-center overflow-x-clip" >
-            <div className="max-w-6xl mx-auto flex flex-col items-start justify-center h-fit relative">
-                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px] -z-10"></div>
+            <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
+                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px]"></div>
 
                 <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
-                <p className="text-text-article">Summering av marknadsläget 17:30</p>
+                <p className="text-text-article">Summering av marknadshändelserna under dagen 17:30</p>
                 {(!isTodaysArticle && (
                     <div className="w-full max-w-xl text-center">
                         <div className=" ">
@@ -83,7 +65,7 @@ export default function eveningLetter({ loaderData }) {
             <ArticleComponent article={articles[0]} />
 
 
-            <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
+            <div className="max-w-6xl  mx-auto px-4 relative z-10 mt-20 ">
                 <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
                     <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
                 </div>
