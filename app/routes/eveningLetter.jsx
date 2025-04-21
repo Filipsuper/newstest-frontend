@@ -20,17 +20,17 @@ export default function eveningLetter({ loaderData }) {
     if (articles.length === 0) {
         return (
             <main className="flex flex-col items-center justify-center overflow-x-clip" >
-                <div className="w-full flex flex-col items-center justify-center h-fit relative ">
-                    <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px]"></div>
+                <div className="max-w-6xl mx-auto flex flex-col items-start justify-center h-fit relative">
+                    <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px] "></div>
 
                     <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
                     <p className="text-text-article">Summering av marknadsläget 17:30</p>
+                    <p className="text-text-muted">Inga artiklar tillgängliga</p>
+
                 </div>
 
                 <div className="min-h-[80vh] ">
-                    <div className="w-full mx-auto mt-8 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 gap-4 relative z-10 " id="prev">
-                        <p className="text-text-muted">Inga artiklar tillgängliga</p>
-                    </div>
+
                 </div>
             </main>)
     }
@@ -47,8 +47,8 @@ export default function eveningLetter({ loaderData }) {
 
     return (
         <main className="flex flex-col items-center justify-center overflow-x-clip" >
-            <div className="w-full flex flex-col items-center justify-center h-fit relative ">
-                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px]"></div>
+            <div className="max-w-6xl mx-auto flex flex-col items-start justify-center h-fit relative">
+                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px] -z-10"></div>
 
                 <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
                 {/* <p className="text-text-article">Summering av marknadsläget</p> */}
