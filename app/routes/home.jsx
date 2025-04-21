@@ -9,7 +9,7 @@ import { FaArrowDown, FaTwitter } from "react-icons/fa";
 import utc from "dayjs/plugin/utc"
 import { FaBluesky, FaX } from "react-icons/fa6";
 import EmailInput from "../components/EmailInput";
-import IndexGraph from "../components/IndexGraph";
+import { useTheme } from "../providers/ThemeProvider";
 
 export function meta() {
   return [
@@ -25,6 +25,7 @@ export const loader = async () => {
 
 export default function Home({ loaderData }) {
   const articles = loaderData
+  const { theme, setTheme } = useTheme();
 
   const [currentTime, setCurrentTime] = useState("00:00:00")
 
@@ -62,13 +63,26 @@ export default function Home({ loaderData }) {
             varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
           </p>
           <EmailInput centered={true} />
+          <div className="flex flex-row gap-2 items-center justify-start">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="relative inline-flex items-center h-6 border border-border w-11 "
+            >
+              <span
+                className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
+                  } inline-block w-4 h-4 transform bg-secondary transition-transform`}
+              />
+            </button>
+            <span className="text-text-muted text-xs">Ändra tema</span>
+
+          </div>
           {/* <p className="text-text-muted">Läs gårdagens artiklar</p>
             <Link to="#prev" className="text-text-muted hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link> */}
         </div>
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
             to="/morgonbrevet"
-            className="flex flex-col items-center justify-center w-full min-h-40 h-full hover:bg-primary-dark transition-colors duration-300  relative overflow-hidden"
+            className="flex flex-col items-center justify-center w-full min-h-56 h-full hover:bg-primary-dark transition-colors duration-300  relative overflow-hidden"
           >
             <div className="absolute inset-0 h-full  p-2 fade-edges">
               <ArticleComponent article={articles[0]} />

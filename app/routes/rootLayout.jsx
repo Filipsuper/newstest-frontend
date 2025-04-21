@@ -44,9 +44,8 @@ export default function rootLayout() {
             <header className="flex justify-center w-full px-4 md:px-10 py-4 bg-foreground border-b border-border mb-8 relative z-10">
                 <div className="flex w-full md:w-5/6 flex-col md:flex-row  font-sans items-center space-x-2 relative z-10">
                     <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center  md:mb-0">
-                        <Link to="/" className=" text-text-article">
-
-                            <span className="text-2xl text-text font-serif font-black italic pr-4 ">Omxsum</span>
+                        <Link to="/" className="flex flex-row items-center text-text-article gap-2 pr-4 ">
+                            <span className="text-2xl text-text font-serif font-black italic inline">Omxsum </span><span className="bg-secondary text-white font-sans font-bold text-xs px-1 py-1">BETA</span>
                         </Link>
                         <button className="md:hidden text-text-article" onClick={toggleMenu}>
                             <FaBars />
