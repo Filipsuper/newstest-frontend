@@ -28,6 +28,7 @@
   --color-secondary: var(--color-amber-400);
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
+  --color-shadow: #000000df;
 }
 
 /* Light theme (inverted colors while maintaining contrast and readability) */
@@ -41,7 +42,8 @@
   --color-primary: #4070F4;
   --color-secondary: var(--color-amber-500);
   --color-accent: var(--color-emerald-600);
-  --color-muted: #6B7280;
+  --color-muted: #0c0c0d;
+  --color-shadow: #dfdfdfb3;
 }
 
 @theme {
@@ -55,6 +57,7 @@
   --color-secondary: var(--color-amber-400);
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
+  --color-shadow: #dfdfdfb3;
 }
 
 html,
