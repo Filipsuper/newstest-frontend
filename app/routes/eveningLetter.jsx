@@ -30,7 +30,7 @@ export default function eveningLetter({ loaderData }) {
     return (
         <main className="flex flex-col items-center justify-center overflow-x-clip" >
             <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
-                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[150px]"></div>
+                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[200px]"></div>
 
                 <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
                 <p className="text-text-article">Summering av marknadshändelserna under dagen 17:30</p>

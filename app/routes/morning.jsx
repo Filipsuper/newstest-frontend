@@ -29,8 +29,8 @@ export default function morning({ loaderData }) {
     return (
         <div className="flex flex-col items-center justify-center ">
             <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
-                <div className="absolute -right-10 h-16 w-96 bg-secondary blur-[150px]"></div>
-                <h1 className="text-4xl font-bold">Morgonbrevet</h1>
+                <div className="absolute -right-10 h-16 w-96 bg-secondary blur-[200px]"></div>
+                <h1 className="text-4xl font-bold ">Morgonbrevet</h1>
                 {/* <p className="text-text-article">Morgonens viktigaste händelser 8:00</p> */}
                 {(!isTodaysArticle && (
                     <div className="w-full ">
