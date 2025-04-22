@@ -4,6 +4,9 @@ import { fetchEveningArticles } from "../utils/api";
 import dayjs from "dayjs";
 import PreviousArticle from "../components/PreviousArticle";
 import utc from "dayjs/plugin/utc"
+import { FaArrowDown } from "react-icons/fa6";
+import { Link } from "react-router";
+import NewletterPlaceholder from "../components/NewletterPlaceholder";
 
 export const loader = async () => {
     const article = await fetchEveningArticles() || [];
@@ -29,43 +32,12 @@ export default function eveningLetter({ loaderData }) {
 
     return (
         <main className="flex flex-col items-center justify-center overflow-x-clip" >
-            <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
-                <div className="absolute -top-10 -right-10 h-16 w-96 bg-primary blur-[200px]"></div>
+            <NewletterPlaceholder title="Kvällsbrevet" body={"Summering av marknadshändelserna under dagen 17:30"} isTodaysArticle={isTodaysArticle} isWeekend={isWeekend} />
 
-                <h1 className="text-4xl font-bold ">Kvällsbrevet</h1>
-                <p className="text-text-article">Summering av marknadshändelserna under dagen 17:30</p>
-                {(!isTodaysArticle && (
-                    <div className="w-full max-w-xl text-center">
-                        <div className=" ">
-                            <p className="text-text-article ">
-                                {isWeekend ? (
-                                    <>
-                                        <span className="font-bold  text-2xl">God dag!</span> <br />
-                                        Inget morgonbrev under helgen.
-                                        <br />
-                                        <span className="text-text-muted ">
-                                            Nedan är senaste artikeln från {formattedDate}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        Dagens artikel har inte publicerats än
-                                        <br />
-                                        <span className="text-text-muted ">
-                                            Nedan är senaste artikeln från {formattedDate}
-                                        </span>
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <ArticleComponent article={articles[0]} />
+            {isTodaysArticle && <ArticleComponent article={articles[0]} />}
 
 
-            <div className="max-w-6xl  mx-auto px-4 relative z-10 mt-20 ">
+            <div className="max-w-6xl  mx-auto px-4 relative z-10  ">
                 <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
                     <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
                 </div>

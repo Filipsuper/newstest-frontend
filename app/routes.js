@@ -4,7 +4,7 @@ export default [
     layout("routes/rootLayout.jsx", [
         index("routes/home.jsx"),
         route("/article/:id", "routes/article.jsx"),
-        route("/about", "routes/about.jsx"),
+        route("/om-oss", "routes/about.jsx"),
         route("/morgonbrevet", "routes/morning.jsx"),
         route("/kvallsbrevet", "routes/eveningLetter.jsx"),
         route("/alla-nyhetsbrev", "routes/allArticles.jsx"),

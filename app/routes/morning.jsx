@@ -4,6 +4,7 @@ import { fetchArticle } from "../utils/api";
 import dayjs from "dayjs";
 import PreviousArticle from "../components/PreviousArticle";
 import utc from "dayjs/plugin/utc"
+import NewletterPlaceholder from "../components/NewletterPlaceholder";
 
 export const loader = async () => {
     const article = await fetchArticle();
@@ -20,49 +21,19 @@ export default function morning({ loaderData }) {
     dayjs.extend(utc);
 
     const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
-    const formattedDate = dayjs(articles[0].createdAt).format('D MMM')
 
     // Get day name to show specific weekend message
     const today = dayjs.utc().format('dddd')
     const isWeekend = today === 'Saturday' || today === 'Sunday'
 
     return (
-        <div className="flex flex-col items-center justify-center ">
-            <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
-                <div className="absolute -right-10 h-16 w-96 bg-secondary blur-[200px]"></div>
-                <h1 className="text-4xl font-bold ">Morgonbrevet</h1>
-                {/* <p className="text-text-article">Morgonens viktigaste händelser 8:00</p> */}
-                {(!isTodaysArticle && (
-                    <div className="w-full ">
-                        <div className=" ">
-                            <p className="text-text-article ">
-                                {isWeekend ? (
-                                    <>
-                                        <span className="font-bold  text-2xl">God dag!</span> <br />
-                                        Inget morgonbrev under helgen.
-                                        <br />
-                                        <span className="text-text-muted ">
-                                            Nedan är senaste artikeln från {formattedDate}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        Dagens artikel har inte publicerats än
-                                        <br />
-                                        <span className="text-text-muted ">
-                                            Nedan är senaste artikeln från {formattedDate}
-                                        </span>
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <ArticleComponent article={articles[0]} />
+        <main className="flex flex-col items-center justify-center overflow-x-clip">
+            <NewletterPlaceholder title="Morgonbrevet" body="Morgonens viktigaste händelser 8:00" isTodaysArticle={isTodaysArticle} isWeekend={isWeekend} />
+
+            {isTodaysArticle && <ArticleComponent article={articles[0]} />}
 
 
-            <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
+            <div className="max-w-6xl py- mx-auto px-4 relative z-10  ">
                 <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
                     <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
                 </div>
@@ -77,7 +48,7 @@ export default function morning({ loaderData }) {
                     }
                 </div>
             </div>
-        </div>
+        </main>
 
     )
 }

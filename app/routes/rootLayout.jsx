@@ -56,7 +56,7 @@ export default function rootLayout() {
                         <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
                         {/* <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link> */}
                         <span className="hidden md:inline text-text-muted">|</span>
-                        <Link to="/about" className="hover:underline">Om oss</Link>
+                        <Link to="/om-oss" className="hover:underline">Om oss</Link>
                         <Link to="/skanna" className="relative hover:underline">
                             <span>Skanna</span>
                             <span className="absolute font-bold -top-1 -right-4 ml-1 px-1 bg-secondary text-white text-xs rounded-full">+</span>
@@ -80,8 +80,8 @@ export default function rootLayout() {
                     <p className="text-text-muted text-sm">Socialt: </p>
                     <Link to="https://x.com/omxtamer" className="text-text-muted"><FaTwitter /></Link>
                     <Link to="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted border-r border-border pr-2"><FaBluesky /></Link>
-                    <p className="text-text-muted text-sm">Other projects: </p>
-                    <Link to="https://trademaxxer.com/about" className="text-sm text-text-muted hover:underline">Trademaxxer</Link>
+                    {/* <p className="text-text-muted text-sm">Other projects: </p> */}
+                    <Link to="https://x.com/omxsum.com" className="text-text-muted underline">Följ oss gärna på twitter!</Link>
                     <p></p>
                 </div>
                 <EmailInput />
