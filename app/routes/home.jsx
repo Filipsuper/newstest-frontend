@@ -45,11 +45,27 @@ export default function Home({ loaderData }) {
     return () => clearInterval(timer)
   }, [])
 
+  // New feature cards data
+  const features = [
+    {
+      title: "Snabb Sammanfattning",
+      description: "Få marknadsläget på bara 3 minuter varje morgon."
+    },
+    {
+      title: "AI-Genererade Nyheter",
+      description: "Alltid uppdaterat med viktiga pressmeddelanden och nyheter."
+    },
+    {
+      title: "Gratis och Enkel Prenumeration",
+      description: "Få dagens brev direkt i inkorgen, helt gratis."
+    },
+  ];
+
   return (
     <>
 
 
-      <div className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 mb-8 border-border border-opacity-10">
+      <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 mb-8 border-border border-opacity-10">
         <div className="" >
           <h2 className="text-base font-bold text-text">{currentTime}</h2>
           <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
@@ -106,15 +122,33 @@ export default function Home({ loaderData }) {
             }
           </Link>
         </div>
-      </div>
-      {/* 
-      {isTodaysArticle ?
-        <div className="max-w-6xl flex flex-row  mx-auto px-4 relative mt-8 ">
-          <EmailInput />
-        </div>
-        : null
-      } */}
+      </section>
+      <section className="max-w-6xl mx-auto px-4 py-8">
+        <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Våra nyhetsbrev</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link
+            to="/morgonbrevet"
+            className="bg-background border border-border  p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
+          >
+            <h3 className="text-xl font-semibold text-text mb-2">Morgonbrevet</h3>
+            <p className="text-text-muted flex-grow">
+              Få morgonens viktigaste marknadshändelser och pressmeddelanden, direkt i din inkorg kl. 08:00 varje vardag.
+            </p>
+            <div className="mt-4 primary-btn w-max self-start">Läs Morgonbrevet</div>
+          </Link>
 
+          <Link
+            to="/kvallsbrevet"
+            className="bg-background border border-border  p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
+          >
+            <h3 className="text-xl font-semibold text-text mb-2">Kvällsbrevet</h3>
+            <p className="text-text-muted flex-grow">
+              En översikt och analys av dagens börshändelser, sammanfattade på ett lättförståeligt sätt att ta med sig inför nästa dag. Släpps kl. 17:30 varje vardag.
+            </p>
+            <div className="mt-4 primary-btn w-max self-start">Läs Kvällsbrevet</div>
+          </Link>
+        </div>
+      </section>
       <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
         <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
           <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
