@@ -39,7 +39,7 @@ export default function Home({ loaderData }) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(dayjs.utc().add(1, "hour").format("HH:mm:ss"))
+      setCurrentTime(dayjs.utc().add(2, "hour").format("HH:mm:ss"))
     }, 500)
 
     return () => clearInterval(timer)
