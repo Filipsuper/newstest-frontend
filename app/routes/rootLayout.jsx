@@ -41,9 +41,9 @@ export default function rootLayout() {
             <div className="flex justify-end w-full py-1 px-4  md:px-36 border-b bg-foreground border-border relative z-10">
                 <p className="text-secondary">Nytt: Kvällsbrev varje vardag kl 17:30 <a href="https://omxsum.com/kvallsbrevet" className="underline">Kika in!</a></p>
             </div>
-            <header className="flex justify-center w-full px-4 md:px-10 py-4 bg-foreground border-b border-border mb-8 relative z-10">
+            <header className="flex justify-center w-full px-4 md:px-10 py-4 bg-foreground border-b border-border mb-8 relative z-10 ">
                 <div className="flex w-full md:w-5/6 flex-col md:flex-row  font-sans items-center space-x-2 relative z-10">
-                    <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center  md:mb-0">
+                    <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center md:mb-0">
                         <Link to="/" className="flex flex-row items-center text-text-article gap-2 pr-4 ">
                             <span className="text-2xl text-text font-serif font-black italic inline">Omxsum </span><span className="bg-secondary text-white font-sans font-bold text-xs px-1 py-1">BETA</span>
                         </Link>
@@ -51,7 +51,7 @@ export default function rootLayout() {
                             <FaBars />
                         </button>
                     </div>
-                    <nav className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row  text-text-article space-y-4 md:space-y-0 md:space-x-4 w-full `}>
+                    <nav className={`${isMenuOpen ? 'flex mt-4' : 'hidden mt-0'} md:flex flex-col md:flex-row  text-text-article space-y-4 md:space-y-0 md:space-x-4 w-full `}>
                         <Link to="/morgonbrevet" className="hover:underline">Morgonbrevet</Link>
                         <Link to="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
                         {/* <Link to="/alla-nyhetsbrev" className="hover:underline">Alla nyhetsbrev</Link> */}
