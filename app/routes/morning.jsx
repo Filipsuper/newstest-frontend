@@ -20,7 +20,7 @@ export default function morning({ loaderData }) {
 
     dayjs.extend(utc);
 
-    const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
+    const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().add(2, "hour").day()
 
     // Get day name to show specific weekend message
     const today = dayjs.utc().format('dddd')

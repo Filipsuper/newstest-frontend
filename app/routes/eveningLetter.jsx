@@ -23,7 +23,7 @@ export default function eveningLetter({ loaderData }) {
 
     dayjs.extend(utc);
 
-    const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
+    const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().add(2, "hour").day()
     const formattedDate = dayjs(articles[0].createdAt).format('D MMM')
 
     // Get day name to show specific weekend message
