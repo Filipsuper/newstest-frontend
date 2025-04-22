@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { pnlColor } from "../utils/utils";
-import { fetchArticle } from "../utils/api";
+import { fetchAllArticles, fetchArticle } from "../utils/api";
 import dayjs from "dayjs";
 import ArticleComponent from "../components/ArticleComponent";
 import PreviousArticle from "../components/PreviousArticle";
@@ -19,7 +19,7 @@ export function meta() {
 }
 
 export const loader = async () => {
-  const article = await fetchArticle();
+  const article = await fetchAllArticles();
   return article;
 };
 
@@ -45,21 +45,7 @@ export default function Home({ loaderData }) {
     return () => clearInterval(timer)
   }, [])
 
-  // New feature cards data
-  const features = [
-    {
-      title: "Snabb Sammanfattning",
-      description: "Få marknadsläget på bara 3 minuter varje morgon."
-    },
-    {
-      title: "AI-Genererade Nyheter",
-      description: "Alltid uppdaterat med viktiga pressmeddelanden och nyheter."
-    },
-    {
-      title: "Gratis och Enkel Prenumeration",
-      description: "Få dagens brev direkt i inkorgen, helt gratis."
-    },
-  ];
+  const latestArticle = articles[0];
 
   return (
     <>
@@ -92,34 +78,20 @@ export default function Home({ loaderData }) {
             <span className="text-text-muted text-xs">Ändra tema</span>
 
           </div> */}
-          {/* <p className="text-text-muted">Läs gårdagens artiklar</p>
-            <Link to="#prev" className="text-text-muted hover:text-secondary transition-colors mb-8"><FaArrowDown /></Link> */}
         </div>
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
-            to="/morgonbrevet"
+            to={latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet"}
             className="flex flex-col items-center justify-center w-full min-h-56 h-full hover:bg-primary-dark transition-colors duration-300  relative overflow-hidden"
           >
             <div className="absolute inset-0 h-full  p-2 fade-edges">
               <ArticleComponent article={articles[0]} />
             </div>
-            {isTodaysArticle ?
-
-              <div className="relative z-10 shadow-xl">
-                <h3 className="text-2xl font-bold text-text-muted hidden dark:flex font-serif mb-2">Dagens Morgonbrev</h3>
-                <div className="primary-btn text-center">
-                  Läs morgonens brev
-                </div>
-              </div>
-
-              :
-              <div className="relative z-10 shadow-xl">
-                <h3 className="text-2xl font-bold text-text-muted hidden dark:flex p-2 font-serif mb-2">Gårdagens Morgonbrev</h3>
-                <div className="primary-btn text-center">
-                  Läs gårdagens brev
-                </div>
-              </div>
-            }
+            <div className="relative z-10 shadow-xl">
+              <span className="primary-btn text-center">
+                Läs senaste {latestArticle.isEveningLetter ? "kvällsbrevet" : "morgonbrevet"}
+              </span>
+            </div>
           </Link>
         </div>
       </section>
