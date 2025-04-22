@@ -36,6 +36,15 @@ export function Layout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <meta property="og:title" content="Omxsum" />
+        <meta property="og:description" content="Marknadssummeringar varje morgon 8.00 och kväll 17.30" />
+        <meta property="og:image" content="https://omxsum.com/omxsum_og.jpg" />
+        <meta property="og:url" content="https://omxsum.com" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Omxsum" />
+        <meta name="twitter:description" content="Marknadssummeringar varje morgon 8.00 och kväll 17.30" />
+        <meta name="twitter:image" content="https://omxsum.com/omxsum_og.jpg" />
         <script src="https://sponsorapp.io/platform.js?p=73a2a324be7b4690"></script>
       </head>
       <body className="bg-background text-text">
