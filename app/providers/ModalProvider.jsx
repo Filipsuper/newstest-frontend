@@ -38,7 +38,7 @@ export const ModalProvider = ({ children }) => {
                             }`}
                         onClick={handleBackdropClick}
                     >
-                        <div className="absolute inset-0 bg-[#dfdfdfb3] dark:bg-[#000000df]" />
+                        <div className="absolute inset-0 bg-shadow" />
                     </div>
 
                     <div
