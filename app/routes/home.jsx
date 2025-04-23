@@ -7,7 +7,7 @@ import PreviousArticle from "../components/PreviousArticle";
 import { Link } from "react-router";
 import { FaArrowDown, FaTwitter } from "react-icons/fa";
 import utc from "dayjs/plugin/utc"
-import { FaBluesky, FaX } from "react-icons/fa6";
+import { FaBluesky, FaReddit, FaX } from "react-icons/fa6";
 import EmailInput from "../components/EmailInput";
 import { useTheme } from "../providers/ThemeProvider";
 
@@ -46,6 +46,45 @@ export default function Home({ loaderData }) {
   }, [])
 
   const latestArticle = articles[0];
+
+  const newletterCards = [
+    {
+      title: "Morgonbrevet",
+      description: "Få morgonens viktigaste marknadshändelser och pressmeddelanden, direkt i din inkorg kl. 08:00 varje vardag.",
+      link: "/morgonbrevet",
+      time: "08:00"
+    },
+    {
+      title: "Kvällsbrevet",
+      description: "En översikt och analys av dagens börshändelser, sammanfattade på ett lättförståeligt sätt att ta med sig inför nästa dag. Släpps kl. 17:30 varje vardag.",
+      link: "/kvallsbrevet",
+      time: "17:30"
+    },
+  ]
+
+  const testimonials = [
+    {
+      name: "Nidalus1",
+      text: "Riktigt nice, tack så mycket :)",
+      source: "Reddit",
+      date: "2023-10-01",
+      url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mg45t9i/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
+    },
+    {
+      name: "Hampsx",
+      text: "Snyggt jobbat! Kommer användas",
+      date: "2023-10-02",
+      source: "Reddit",
+      url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mgb36w4/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
+    },
+    {
+      name: "3xc1t3r",
+      text: "Snyggt och rent! Ska få med den i rotationen!",
+      date: "2023-10-03",
+      source: "Reddit",
+      url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mghn1ft/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
+    },
+  ]
 
   return (
     <>
@@ -95,30 +134,49 @@ export default function Home({ loaderData }) {
           </Link>
         </div>
       </section>
+      <section className="max-w-6xl mx-auto px-4 py-12">
+        {/* <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Vad våra läsare säger</h2> */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {testimonials.map((testimonial, index) => (
+            <div
+              key={index}
+              className="  p-6  flex flex-col justify-center items-center font-sans"
+            >
+              <p className="text-text-muted ">
+                <span className="text-xl font-bold text-center">"</span> {" "}{testimonial.text}
+              </p>
+              <a className="flex flex-row items-center gap-2 hover:underline" noopener noreferrer target="_blank" href={testimonial.url}>
+                {testimonial.source === "Reddit" && <FaReddit className="text-text-muted" />}
+                <span className="text-xl font-semibold text-text font-serif">{testimonial.name}</span>
+                {/* <span>•</span>
+                <span>{dayjs(testimonial.date).format("MMM D, YYYY")}</span> */}
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="max-w-6xl mx-auto px-4 py-8">
         <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Våra nyhetsbrev</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link
-            to="/morgonbrevet"
-            className="bg-background border border-border  p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
-          >
-            <h3 className="text-xl font-semibold text-text mb-2">Morgonbrevet</h3>
-            <p className="text-text-muted flex-grow">
-              Få morgonens viktigaste marknadshändelser och pressmeddelanden, direkt i din inkorg kl. 08:00 varje vardag.
-            </p>
-            <div className="mt-4 primary-btn w-max self-start">Läs Morgonbrevet</div>
-          </Link>
+          {newletterCards.map((card, index) => (
+            <Link
+              to={card.link}
+              key={index}
+              className="bg-background border border-border p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
+            >
 
-          <Link
-            to="/kvallsbrevet"
-            className="bg-background border border-border  p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
-          >
-            <h3 className="text-xl font-semibold text-text mb-2">Kvällsbrevet</h3>
-            <p className="text-text-muted flex-grow">
-              En översikt och analys av dagens börshändelser, sammanfattade på ett lättförståeligt sätt att ta med sig inför nästa dag. Släpps kl. 17:30 varje vardag.
-            </p>
-            <div className="mt-4 primary-btn w-max self-start">Läs Kvällsbrevet</div>
-          </Link>
+              <div className="flex flex-row items-center mb-2 gap-2">
+                <h3 className="text-xl font-semibold text-text ">{card.title}</h3>
+                <span>•</span>
+                <span>{card.time}</span>
+              </div>
+              <p className="text-text-muted flex-grow">
+                {card.description}
+              </p>
+              <div className="mt-4 primary-btn w-max self-start">Läs {card.title}</div>
+            </Link>
+          ))}
         </div>
       </section>
       <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
