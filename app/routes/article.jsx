@@ -11,10 +11,18 @@ export const loader = async ({ params }) => {
     return article;
 };
 
-export function meta() {
+export function meta({ data: article }) {
+    if (!article) {
+        return [{ title: "Article not found" }];
+    }
     return [
-        { title: "OMXsum - Dagliga marknadssummeringar" },
-        { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsens nyheter på OMXsum.com." },
+        { title: article.title },
+        { name: "description", content: article.summar || "" },
+        { property: "og:title", content: article.title },
+        { property: "og:description", content: article.summary || article.description || "" },
+        { property: "og:url", content: `https://omxsum.com/article/${article.id}` },
+        { property: "og:type", content: "article" },
+        // optionally, add og:image if you have one
     ];
 }
 

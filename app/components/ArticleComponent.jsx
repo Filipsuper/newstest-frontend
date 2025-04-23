@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import PressRelease from "./PressRelease";
@@ -6,9 +6,7 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import EmailInput from "./EmailInput";
 import IndexGraph from "./IndexGraph";
 import { Link } from "react-router";
-
-
-
+import ShareArticleComponent from "./ShareArticleComponent";
 
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount, bulletPoints } = article;
@@ -88,7 +86,6 @@ export default function ArticleComponent({ article, index }) {
             </div >
 
             <div className="flex flex-col md:flex-row gap-8">
-
                 <div >
                     <h1 className="text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
@@ -140,20 +137,8 @@ export default function ArticleComponent({ article, index }) {
                             </div>
                         </div>
                         : null}
+                    <ShareArticleComponent title={title} />
                 </div>
-
-                {/* {pressReleases ?
-                    <div className="text-sm font-sans md:min-w-96 md:max-w-96 text-text-article flex flex-col gap-1 md:px-4 ">
-                        {dayjs(createdAt).isSame(dayjs(), 'day') ? <IndexGraph /> : null}
-                        <h2 className="text-lg font-serif font-black text-text italic pb-2">Viktiga pressmeddelanden  <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span></h2>
-                        {pressReleases.map((release, idx) => {
-                            return (
-                                <PressRelease key={idx} idx={idx} release={release} />
-                            )
-                        })}
-
-                    </div> : null} */}
-
             </div>
 
         </article>
