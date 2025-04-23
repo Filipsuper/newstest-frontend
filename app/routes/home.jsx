@@ -71,26 +71,27 @@ export default function Home({ loaderData }) {
       url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mg45t9i/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
     },
     {
-      name: "Hampsx",
-      text: "Snyggt jobbat! Kommer användas",
-      date: "2023-10-02",
-      source: "Reddit",
-      url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mgb36w4/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
-    },
-    {
       name: "3xc1t3r",
       text: "Snyggt och rent! Ska få med den i rotationen!",
       date: "2023-10-03",
       source: "Reddit",
       url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mghn1ft/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
     },
+    {
+      name: "Hampsx",
+      text: "Snyggt jobbat! Kommer användas",
+      date: "2023-10-02",
+      source: "Reddit",
+      url: "https://www.reddit.com/r/Aktiemarknaden/comments/1j3vtqt/comment/mgb36w4/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"
+    },
+
   ]
 
   return (
     <>
 
 
-      <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 mb-8 border-border border-opacity-10">
+      <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 border-border border-opacity-10">
         <div className="" >
           <h2 className="text-base font-bold text-text">{currentTime}</h2>
           <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
@@ -134,7 +135,7 @@ export default function Home({ loaderData }) {
           </Link>
         </div>
       </section>
-      <section className="max-w-6xl mx-auto px-4 py-12">
+      <section className="max-w-6xl mx-auto px-4 py-16  ">
         {/* <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Vad våra läsare säger</h2> */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {testimonials.map((testimonial, index) => (
