@@ -130,3 +130,7 @@ body {
     opacity: 1;
   }
 }
+
+.body-text {
+  @apply text-text-article text-sm font-sans;
+}

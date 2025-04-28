@@ -81,7 +81,7 @@ export default function rootLayout() {
                     <Link to="https://x.com/omxtamer" className="text-text-muted"><FaTwitter /></Link>
                     <Link to="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted border-r border-border pr-2"><FaBluesky /></Link>
                     {/* <p className="text-text-muted text-sm">Other projects: </p> */}
-                    <Link to="https://x.com/omxsum.com" className="text-text-muted underline">Följ oss gärna på twitter!</Link>
+                    <Link to="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</Link>
                     <p></p>
                 </div>
                 <EmailInput />

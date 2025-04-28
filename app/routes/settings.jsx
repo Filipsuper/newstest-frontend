@@ -53,46 +53,65 @@ function settings() {
 
     return (
         <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
-            <h1 className="text-3xl font-bold  text-text">Inställningar</h1>
-            <p className=" text-text-muted mb-8">
-                Här kan du justera dina inställningar för att få den bästa upplevelsen av Morgonbrevet.
-            </p>
-            <section className="max-w-4xl mx-auto rounded-lg mb-12">
-                <h2 className="text-xl font-bold mb-4 text-text">Utseende</h2>
+            <h1 className="text-3xl font-bold  text-text mb-12">Inställningar</h1>
 
-                <div className="flex flex-col items-start justify-between">
-                    <span className="text-text-article">Ljust läge</span>
-                    <button
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="relative inline-flex items-center h-6 border border-border w-11 "
-                    >
-                        <span
-                            className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
-                                } inline-block w-4 h-4 transform bg-secondary transition-transform`}
-                        />
-                    </button>
+            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md ">
+                <h2 className="text-xl font-bold text-text mb-4">Konto</h2>
+                <div className="inline-flex gap-2 body-text mb-4">
+                    <span>För att ändra eller ta bort ditt konto, </span><a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline">kontakta oss</a>
+                </div>
+                <div className="flex flex-col body-text mb-4">
+                    <span className="text-base font-bold font-serif mb-4">Email</span>
+                    <span className="text-text-muted">{user.email}</span>
+                </div>
+                <div className="flex flex-col body-text ">
+                    <span className="text-base font-bold font-serif mb-4">Ljust läge</span>
+                    <div className="flex flex-col items-start justify-between">
+                        <button
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className="relative inline-flex items-center h-6 border border-border w-11 "
+                        >
+                            <span
+                                className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
+                                    } inline-block w-4 h-4 transform bg-secondary transition-transform`}
+                            />
+                        </button>
+                    </div>
                 </div>
             </section>
+
             <section className="max-w-4xl mx-auto rounded-lg mb-12">
                 <div className="flex flex-col mb-8">
-                    <h2 className="text-xl font-bold mb-4 text-text">Nyhetsbrevstyper</h2>
+                    <h2 className="text-xl font-bold text-text">Nyhetsbrevstyper</h2>
+                    <p className="body-text mb-4">
+                        Välj vilka nyhetsbrev du vill prenumerera på
+                    </p>
                     <div className="flex flex-col space-y-4">
                         {newsletterTypes.map((newsletter, index) => (
-                            <label key={index} className="inline-flex items-start cursor-pointer border border-border p-4">
-                                <input
-                                    type="checkbox"
-                                    className="hidden peer"
-                                    checked={selectedNewsletters.includes(newsletter.name)}
-                                    onChange={() => handleNewsletterChange(newsletter.name)}
-                                />
-                                <span className="w-4 h-4 border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center peer-checked:bg-secondary">
-                                    <svg className="w-4 h-4 text-background hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            <label key={index} className="inline-flex items-center cursor-pointer border border-border p-4 gap-2">
+                                <span className="w-5 h-5  border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center">
+                                    <input
+                                        type="checkbox"
+                                        className="hidden peer"
+                                        checked={selectedNewsletters.includes(newsletter.name)}
+                                        onChange={() => handleNewsletterChange(newsletter.name)}
+                                    />
+                                    <svg
+                                        className="w-6 h-6 text-secondary font-bold hidden peer-checked:block"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clipRule="evenodd"
+                                        />
                                     </svg>
                                 </span>
                                 <div className="flex flex-col">
                                     <span className="text-text font-semibold ">{newsletter.name}<span>{(!isPaidUser && newsletter.premium) && <span className="ml-2 text-background text-xs bg-secondary px-1 py-1">Premium</span>}</span></span>
-                                    <span className="text-text-muted text-sm">{newsletter.description}</span>
+                                    <span className="text-text-muted text-sm body-text">{newsletter.description}</span>
                                 </div>
                             </label>
                         ))}
@@ -102,7 +121,9 @@ function settings() {
                     isChanged &&
                     <button className="secondary-btn" onClick={handleSave}>Spara</button>
                 }
+
             </section>
+
 
             {/* <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
                 <h2 className="text-xl font-bold mb-4 text-text">Generera marknadssummeringar när du vill!</h2>

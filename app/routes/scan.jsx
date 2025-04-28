@@ -86,6 +86,8 @@ export default function Scan() {
         setMessage(generatedSummary.error);
       } else {
         setScanSummary(generatedSummary);
+        window.sa_event("scan");
+
       }
     } catch (error) {
       setMessage("An error occurred while generating the summary.");
