@@ -1,6 +1,14 @@
 import { FaCheck, FaXmark } from "react-icons/fa6";
+import { useModal } from "../providers/ModalProvider";
+import LogInModal from "../modals/logInModal";
 
 export default function AccountCallToAction() {
+    const { openModal } = useModal();
+
+    const handleOpenModal = () => {
+        openModal(<LogInModal />);
+    };
+
     const freeAccountList = [
         // "Veckovisa marknadssummeringar",
         <span>Tillgång till <span className="font-bold">marknadslägesskannern</span> </span>,
@@ -49,12 +57,13 @@ export default function AccountCallToAction() {
 
                         </ul>
                         <div className="text-center my-4">
-                            <a
+                            <button
                                 href="/signup"
                                 className="primary-btn px-4 py-1 w-full"
+                                onClick={handleOpenModal}
                             >
                                 Skapa ett konto gratis
-                            </a>
+                            </button>
                         </div>
                     </div>
 
