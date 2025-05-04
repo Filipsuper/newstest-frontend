@@ -59,7 +59,7 @@ export default function AccountCallToAction() {
                     </div>
 
                 </div>
-                <div className="inline-flex justify-center items-center italic text-text-muted">Eller</div>
+                <div className="inline-flex justify-center items-center italic text-text-muted py-8 md:py-0">Eller</div>
                 {/* Guest Card */}
                 <div className="flex-1 pt-0  flex flex-col items-center justify-center text-center ">
                     <div className="w-fit">
