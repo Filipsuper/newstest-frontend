@@ -17,14 +17,18 @@ const GeneratedArticleComponent = ({ scanSummary }) => {
   const { summary, title, time } = scanSummary
 
   const parsedSummary = summary.split("\n").map((line, index) => {
-
-    if (line === "") {
+    if (line.includes("##")) {
+      return <h2 className=" font-bold text-text font-serif italic mt-2 text-lg" key={index} >{line.replaceAll("#", "")}</h2>
+    } else if (line === "") {
       return
     }
 
-    // parse stock symbols in text
+    if (line === "") {
+      return null;
+    }
 
     const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[^\&]+\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
+
     return (
       <p className="mb-2 text-text-article" key={index}>
         {parts.map((part, i) => {
@@ -44,6 +48,7 @@ const GeneratedArticleComponent = ({ scanSummary }) => {
         })}
       </p >
     );
+
   });
 
   return (
