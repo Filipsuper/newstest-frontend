@@ -2,7 +2,7 @@ import { FaCheck, FaXmark } from "react-icons/fa6";
 
 export default function AccountCallToAction() {
     const freeAccountList = [
-        "Veckovisa marknadssummeringar",
+        // "Veckovisa marknadssummeringar",
         <span>Tillgång till <span className="font-bold">marknadslägesskannern</span> </span>,
         "Hantera dina prenumerationer och inställningar",
         "Ändra tema",
