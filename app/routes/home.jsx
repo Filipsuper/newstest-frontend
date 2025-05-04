@@ -10,6 +10,9 @@ import utc from "dayjs/plugin/utc"
 import { FaBluesky, FaReddit, FaX } from "react-icons/fa6";
 import EmailInput from "../components/EmailInput";
 import { useTheme } from "../providers/ThemeProvider";
+import AccountCallToAction from "../components/AccountCallToAction";
+import NewsLettersCTA from "../components/NewsLettersCTA";
+import Testimonials from "../components/Testimonials";
 
 export function meta() {
   return [
@@ -105,19 +108,6 @@ export default function Home({ loaderData }) {
             varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
           </p>
           <EmailInput centered={true} />
-          {/* <div className="flex flex-row gap-2 items-center justify-start">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="relative inline-flex items-center h-6 border border-border w-11 "
-            >
-              <span
-                className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
-                  } inline-block w-4 h-4 transform bg-secondary transition-transform`}
-              />
-            </button>
-            <span className="text-text-muted text-xs">Ändra tema</span>
-
-          </div> */}
         </div>
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
@@ -135,55 +125,20 @@ export default function Home({ loaderData }) {
           </Link>
         </div>
       </section>
-      <section className="max-w-6xl mx-auto px-4 py-16  ">
-        {/* <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Vad våra läsare säger</h2> */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="  p-6  flex flex-col justify-center items-center font-sans"
-            >
-              <p className="text-text-muted ">
-                <span className="text-xl font-bold text-center">"</span> {" "}{testimonial.text}
-              </p>
-              <a className="flex flex-row items-center gap-2 hover:underline" noopener noreferrer target="_blank" href={testimonial.url}>
-                {testimonial.source === "Reddit" && <FaReddit className="text-text-muted" />}
-                <span className="text-xl font-semibold text-text font-serif">{testimonial.name}</span>
-                {/* <span>•</span>
-                <span>{dayjs(testimonial.date).format("MMM D, YYYY")}</span> */}
-              </a>
-            </div>
-          ))}
-        </div>
+      <section className="max-w-6xl mx-auto px-4 py-24  ">
+        <Testimonials testimonials={testimonials} />
       </section>
-
-      <section className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-3xl font-serif font-bold text-text-article mb-6 text-start">Våra nyhetsbrev</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {newletterCards.map((card, index) => (
-            <Link
-              to={card.link}
-              key={index}
-              className="bg-background border border-border p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
-            >
-
-              <div className="flex flex-row items-center mb-2 gap-2">
-                <h3 className="text-xl font-semibold text-text ">{card.title}</h3>
-                <span>•</span>
-                <span>{card.time}</span>
-              </div>
-              <p className="text-text-muted flex-grow">
-                {card.description}
-              </p>
-              <div className="mt-4 primary-btn w-max self-start">Läs {card.title}</div>
-            </Link>
-          ))}
-        </div>
+      <section className="max-w-6xl mx-auto px-4 py-24">
+        <NewsLettersCTA newletterCards={newletterCards} />
+      </section >
+      <section className="max-w-6xl mx-auto px-4 py-24 flex flex-col gap-0">
+        <AccountCallToAction />
       </section>
-      <div className="max-w-6xl py- mx-auto px-4 relative z-10 mt-20 ">
-        <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
-          <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
-        </div>
+      <section className="max-w-6xl  mx-auto px-4 relative z-10 py-24 ">
+        <h2 className="text-4xl font-serif font-bold text-text-article text-center">Tidigare utskick</h2>
+        <p className="text-text-muted text-base mt-2  text-center mb-10">
+          Här kan du läsa tidigare utskick av morgon- och kvällsbrevet.
+        </p>
         <div className="w-full mx-auto mt-8 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 gap-4 relative z-10 " id="prev">
           {
             isTodaysArticle ? articles.slice(1).map((article, idx) => (
@@ -194,7 +149,7 @@ export default function Home({ loaderData }) {
               ))
           }
         </div>
-      </div>
+      </section>
     </>
   );
 }
