@@ -46,7 +46,7 @@ export function Layout({ children }) {
         <meta name="twitter:description" content="Marknadssummeringar varje morgon 8.00 och kväll 17.30" />
         <meta name="twitter:image" content="https://omxsum.com/omxsum_og.jpg" />
         <script src="https://sponsorapp.io/platform.js?p=73a2a324be7b4690"></script>
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3761964510789277"
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447242940993455"
           crossOrigin="anonymous"></script>
       </head>
       <body className="bg-background text-text">
