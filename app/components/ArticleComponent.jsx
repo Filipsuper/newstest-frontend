@@ -87,10 +87,11 @@ export default function ArticleComponent({ article, index }) {
 
             <div className="flex flex-col md:flex-row gap-8">
                 <div >
-                    <h1 className="text-4xl font-serif font-black text-text italic  pb-2">
+                    <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
-                    <div className="mb-4">
+                    <div className="mb-4 flex flex-wrap gap-2">
+
                         {
                             bulletPoints && bulletPoints.split("\n").map((bullet, idx) => {
                                 if (bullet.match(/^\s*$/)) {
@@ -98,9 +99,9 @@ export default function ArticleComponent({ article, index }) {
                                 }
 
                                 return (
-                                    <div className="flex flex-row items-center gap-4 ml-4" key={idx}>
-                                        <span className="shadow-md w-2 h-2  bg-border rotate-45  text-xs"></span>
-                                        <p className="text-text-muted italic font-sans" >
+                                    <div className="flex flex-row items-center w-fit gap-2 px-2 " key={idx}>
+                                        <span className="shadow-md w-2 h-2  bg-secondary rotate-45  text-xs"></span>
+                                        <p className="text-secondary italic font-bold font-sans" >
                                             {bullet.replaceAll("-", "")}
                                         </p>
                                     </div>
@@ -108,7 +109,7 @@ export default function ArticleComponent({ article, index }) {
                             })
                         }
                     </div>
-                    <div className="text-sm font-sans text-text-article mb-8 prose prose">
+                    <div className="text-base font-sans text-text-article mb-8 prose prose">
                         {parsedSummary}
                     </div>
 
