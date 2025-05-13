@@ -90,7 +90,7 @@ export default function ArticleComponent({ article, index }) {
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
-                    <div className="mb-4 flex flex-wrap gap-2">
+                    <div className="mb-4 flex flex-wrap gap-1 md:gap-2">
 
                         {
                             bulletPoints && bulletPoints.split("\n").map((bullet, idx) => {
