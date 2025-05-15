@@ -88,27 +88,30 @@ export default function ArticleComponent({ article, index }) {
                         })}
                     </ul>
                 )}
-                <div className="flex flex-grow items-stretch font-sans">
-                    <div className="flex flex-col justify-center w-fit border-r border-border px-4">
-                        <p className="text-sm text-text-muted font-semibold">Dagens <br /> sentiment</p>
-                        <p className="text-base font-bold text-text">{sentiment}</p>
+                <div className="flex flex-grow justify-center">
+                    <div className="flex md:flex-grow items-stretch font-sans">
+                        <div className="flex flex-col justify-center w-fit border-r border-border px-4">
+                            <p className="text-sm text-text-muted font-semibold">Dagens <br /> sentiment</p>
+                            <p className="text-base font-bold text-text">{sentiment}</p>
+                        </div>
+                        <div className="flex flex-col justify-center px-4 border-r border-border">
+                            <p className="text-sm font-semibold text-text-muted">OMXS30</p>
+                            <p className="text-lg font-bold text-text">{omxPrice}</p>
+                            <p className={`text-sm font-medium ${getChangeColor(omxChangePercentage)}`}>
+                                {omxChangePercentage}
+                            </p>
+                        </div>
+
+                        <div className="text-3xl flex px-4 items-center pr-4 ">
+                            {getSentimentIcon(sentimentLabel)}
+                        </div>
+
+
+
+
                     </div>
-                    <div className="flex flex-col justify-center px-4 border-r border-border">
-                        <p className="text-sm font-semibold text-text-muted">OMXS30</p>
-                        <p className="text-lg font-bold text-text">{omxPrice}</p>
-                        <p className={`text-sm font-medium ${getChangeColor(omxChangePercentage)}`}>
-                            {omxChangePercentage}
-                        </p>
-                    </div>
-
-                    <div className="text-3xl flex px-4 items-center pr-4 ">
-                        {getSentimentIcon(sentimentLabel)}
-                    </div>
-
-
-
-
                 </div>
+
             </div>
         );
     };
