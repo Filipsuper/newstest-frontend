@@ -9,7 +9,7 @@ import { Link } from "react-router";
 import ShareArticleComponent from "./ShareArticleComponent";
 
 export default function ArticleComponent({ article, index }) {
-    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, articleCount, bulletPoints } = article;
+    const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, sentimentLabel, bulletPoints, introText } = article;
 
     const parsedSummary = summary.split("\n").map((line, index) => {
         if (line.includes("##")) {
@@ -45,6 +45,73 @@ export default function ArticleComponent({ article, index }) {
         );
 
     });
+
+    const SentimentDashboard = ({ sentimentLabel, omxPrice, omxChangePercentage }) => {
+        const percentageChange = parseFloat(omxChangePercentage.replace('%', '').replace(',', '.'));
+
+        const getSentimentIcon = (label) => {
+            if (!label) return "⚖️"; // default to neutral if no label
+            if (label.toLowerCase().includes("positive") && percentageChange > 1) return "🚀"; // strong positive
+            if (label.toLowerCase().includes("positive") && percentageChange <= 1) return "🐂"; // positive
+            if (label.toLowerCase().includes("negative") && percentageChange < -1) return "💥"; // strong negative
+            if (label.toLowerCase().includes("negative") && percentageChange >= -1) return "🐻"; // negative
+
+            return "⚖️"; // neutral
+        };
+
+        const sentiment = sentimentLabel === "Positive" ? "Bullish" : sentimentLabel === "Negative" ? "Bearish" : "Neutral";
+
+        const getChangeColor = (change) => {
+            const num = parseFloat(change.replace('%', '').replace(',', '.'));
+            if (isNaN(num)) return "text-gray-500";
+            return num > 0 ? "text-primary" : "text-secondary"
+        };
+
+        return (
+            <div className="flex flex-col md:flex-row justify-between gap-6 py-3 mb-6 w-full">
+
+
+                {bulletPoints && (
+                    <ul className="flex flex-col w-full items-start gap-2 md:max-w-[60%]">
+                        {bulletPoints.split("\n").map((bullet, idx) => {
+                            if (bullet.match(/^\s*$/)) return null;
+                            if (idx > 2) return null; // Limit to 4 bullet points
+                            return (
+                                <li
+                                    key={idx}
+                                    className="flex items-center w-full gap-2 border bg-amber-50 text-amber-500 shadow px-3 text-sm font-bold"
+                                >
+                                    <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
+                                    {bullet.replaceAll("-", "").trim()}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+                <div className="flex flex-grow items-stretch font-sans">
+                    <div className="flex flex-col justify-center w-fit border-r border-border px-4">
+                        <p className="text-sm text-text-muted font-semibold">Dagens <br /> sentiment</p>
+                        <p className="text-base font-bold text-text">{sentiment}</p>
+                    </div>
+                    <div className="flex flex-col justify-center px-4 border-r border-border">
+                        <p className="text-sm font-semibold text-text-muted">OMXS30</p>
+                        <p className="text-lg font-bold text-text">{omxPrice}</p>
+                        <p className={`text-sm font-medium ${getChangeColor(omxChangePercentage)}`}>
+                            {omxChangePercentage}
+                        </p>
+                    </div>
+
+                    <div className="text-3xl flex px-4 items-center pr-4 ">
+                        {getSentimentIcon(sentimentLabel)}
+                    </div>
+
+
+
+
+                </div>
+            </div>
+        );
+    };
 
     return (
         <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
@@ -90,32 +157,17 @@ export default function ArticleComponent({ article, index }) {
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
-                    <div className="mb-4 flex flex-wrap gap-1 md:gap-2">
+                    <p className="text-xl font-bold font-sans mb-4">
+                        {introText}
+                    </p>
 
-                        {
-                            bulletPoints && bulletPoints.split("\n").map((bullet, idx) => {
-                                if (bullet.match(/^\s*$/)) {
-                                    return null
-                                }
+                    <SentimentDashboard
+                        sentimentLabel={sentimentLabel}
+                        omxPrice={omxPrice}
+                        omxChangePercentage={omxChangePercentage}
+                    />
 
-                                return (
-                                    // <div className="flex flex-row items-center w-fit gap-2 px-2 " key={idx}>
-                                    //     <span className="shadow-md w-2 h-2  bg-secondary rotate-45  text-xs"></span>
-                                    //     <p className="text-secondary italic font-bold font-sans" >
-                                    //         {bullet.replaceAll("-", "")}
-                                    //     </p>
-                                    // </div>
-                                    <li
-                                        key={idx}
-                                        className="flex items-center gap-2 border bg-amber-50 text-amber-500  shadow px-3 py-1 text-base font-bold"
-                                    >
-                                        <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
-                                        {bullet.replaceAll("-", "")}
-                                    </li>
-                                )
-                            })
-                        }
-                    </div>
+
                     <div className="text-base font-sans text-text-article mb-8 prose prose">
                         {parsedSummary}
                     </div>
