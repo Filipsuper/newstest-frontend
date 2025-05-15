@@ -99,12 +99,19 @@ export default function ArticleComponent({ article, index }) {
                                 }
 
                                 return (
-                                    <div className="flex flex-row items-center w-fit gap-2 px-2 " key={idx}>
-                                        <span className="shadow-md w-2 h-2  bg-secondary rotate-45  text-xs"></span>
-                                        <p className="text-secondary italic font-bold font-sans" >
-                                            {bullet.replaceAll("-", "")}
-                                        </p>
-                                    </div>
+                                    // <div className="flex flex-row items-center w-fit gap-2 px-2 " key={idx}>
+                                    //     <span className="shadow-md w-2 h-2  bg-secondary rotate-45  text-xs"></span>
+                                    //     <p className="text-secondary italic font-bold font-sans" >
+                                    //         {bullet.replaceAll("-", "")}
+                                    //     </p>
+                                    // </div>
+                                    <li
+                                        key={idx}
+                                        className="flex items-center gap-2 border bg-amber-50 text-amber-500  shadow px-3 py-1 text-base font-bold"
+                                    >
+                                        <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
+                                        {bullet.replaceAll("-", "")}
+                                    </li>
                                 )
                             })
                         }
