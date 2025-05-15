@@ -171,9 +171,7 @@ export default function ArticleComponent({ article, index }) {
                                 </div>
                             </div> : null
                     }
-                    <div className="flex flex-col py-4 font-bold" >
-                        <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
-                    </div>
+
                     {pressReleases ?
                         <div className="text-sm font-sans text-text-article flex flex-col gap-1">
                             <h2 className="text-xl font-serif font-black text-text italic pb-2">
@@ -189,7 +187,9 @@ export default function ArticleComponent({ article, index }) {
                             </div>
                         </div>
                         : null}
-
+                    <div className="flex flex-col py-4 font-bold" >
+                        <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
+                    </div>
                 </div>
             </div>
 
