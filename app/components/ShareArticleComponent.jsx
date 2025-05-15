@@ -7,7 +7,8 @@ export default function ShareArticleComponent({ title }) {
         return title.replaceAll("-", "_").replaceAll(" ", "-")
     }
 
-    const articleUrl = "https://omxsum.com/article/" + parseTitleForUrl(title)
+    const articleUrl = "https://omxsum.com/article/" + parseTitleForUrl(title) + "?utm_source=share&utm_medium=web&utm_campaign=article_share";
+
 
     const shareOnTwitter = () => {
         const text = encodeURIComponent(title);
@@ -42,8 +43,8 @@ export default function ShareArticleComponent({ title }) {
     };
 
     return (
-        <div className="flex flex-row gap-4">
-            <h2 className="text-xl font-serif font-black text-text italic ">
+        <div className="flex flex-row gap-4 items-center mb-2">
+            <h2 className="hidden md:flex text-xs font-sans text-text italic ">
                 Dela artiklen
             </h2>
             <div className="flex flex-row gap-4">
@@ -51,7 +52,7 @@ export default function ShareArticleComponent({ title }) {
                     onClick={nativeShare}
                     aria-label="Dela artikel"
                     title="Dela artikel"
-                    className="primary-btn "
+                    className="secondary-btn py-1 rounded"
                     type="button"
                 >
                     <FaShareAlt />
@@ -60,7 +61,7 @@ export default function ShareArticleComponent({ title }) {
                     onClick={shareOnTwitter}
                     aria-label="Dela på Twitter"
                     title="Dela på Twitter"
-                    className="primary-btn  "
+                    className="secondary-btn py-1 rounded"
                     type="button"
                 >
                     <FaTwitter />
@@ -69,12 +70,12 @@ export default function ShareArticleComponent({ title }) {
                     onClick={copyToClipboard}
                     aria-label="Kopiera länk"
                     title="Kopiera länk"
-                    className=" primary-btn "
+                    className=" secondary-btn py-1 rounded"
                     type="button"
                 >
                     <FaLink />
                 </button>
-                {copySuccess && <span className="self-center text-green-500 ml-2">{copySuccess}</span>}
+                {copySuccess && <span className="self-center font-sans text-xs ml-2 ">{copySuccess}</span>}
             </div>
         </div>
     )

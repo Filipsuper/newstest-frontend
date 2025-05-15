@@ -138,21 +138,7 @@ export default function ArticleComponent({ article, index }) {
 
 
                 </div>
-                {/* dayjs(createdAt).format("HH:mm") */}
-                {/* <div className="flex items-end mb-4">
-                    <div className="space-x-2">
-                        <div className="font-bold text-text ">
-                            OMX pm <span className="text-text-muted text-sm">( 15min delay )</span>
-                        </div>
-                        <span className="font-sans text-lg text-text">{parseInt(omxPrice)} kr</span>
-                        <span className={"font-sans text-lg " + pnlColor(omxChange.split("p")[0])}>
-                            {omxChange}
-                        </span>
-                        <span className={"font-sans text-lg " + pnlColor(omxChangePercentage.split("%")[0])}>
-                            {omxChangePercentage}
-                        </span>
-                    </div>
-                </div> */}
+                <ShareArticleComponent title={title} />
             </div >
 
             <div className="flex flex-col md:flex-row gap-8">
@@ -160,9 +146,9 @@ export default function ArticleComponent({ article, index }) {
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
-                    <p className="text-xl font-bold font-sans mb-4">
+                    {introText && <p className="text-xl font-bold font-sans mb-4">
                         {introText}
-                    </p>
+                    </p>}
 
                     <SentimentDashboard
                         sentimentLabel={sentimentLabel}
@@ -185,6 +171,9 @@ export default function ArticleComponent({ article, index }) {
                                 </div>
                             </div> : null
                     }
+                    <div className="flex flex-col py-4 font-bold" >
+                        <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
+                    </div>
                     {pressReleases ?
                         <div className="text-sm font-sans text-text-article flex flex-col gap-1">
                             <h2 className="text-xl font-serif font-black text-text italic pb-2">
@@ -200,7 +189,7 @@ export default function ArticleComponent({ article, index }) {
                             </div>
                         </div>
                         : null}
-                    <ShareArticleComponent title={title} />
+
                 </div>
             </div>
 
