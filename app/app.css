@@ -29,6 +29,7 @@
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
   --color-shadow: #000000df;
+  --color-bullet: var(--color-amber-950);
 }
 
 /* Light theme (inverted colors while maintaining contrast and readability) */
@@ -44,6 +45,7 @@
   --color-accent: var(--color-emerald-600);
   --color-muted: #0c0c0d;
   --color-shadow: #dfdfdfb3;
+  --color-bullet: var(--color-amber-50);
 }
 
 @theme {
@@ -58,6 +60,7 @@
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
   --color-shadow: #dfdfdfb3;
+  --color-bullet: var(--color-amber-950);
 }
 
 html,
@@ -85,7 +88,7 @@ body {
 }
 
 .secondary-btn {
-  @apply border border-border px-2 text-text-muted font-sans text-sm hover:bg-border hover:text-background active:scale-95
+  @apply inline-flex items-center border border-border px-2 text-text-muted font-sans text-sm hover:bg-border hover:text-background active:scale-95
 }
 
 .fade-edges {
@@ -133,4 +136,61 @@ body {
 
 .body-text {
   @apply text-text-article text-sm font-sans;
+}
+
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes floatDown {
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.float-up {
+  animation-name: floatUp;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  position: absolute;
+  white-space: nowrap;
+}
+
+.float-down {
+  animation-name: floatDown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  position: absolute;
+  white-space: nowrap;
 }

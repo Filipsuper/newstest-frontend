@@ -47,7 +47,7 @@ export default function ArticleComponent({ article, index }) {
                             return (
                                 <li
                                     key={idx}
-                                    className="flex items-center w-full gap-2 border bg-amber-50 text-amber-500 shadow px-3 text-sm font-bold"
+                                    className="flex items-center w-full gap-2 border bg-bullet text-amber-500 shadow px-3 text-sm font-bold"
                                 >
                                     <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                                     {bullet.replaceAll("-", "").trim()}
