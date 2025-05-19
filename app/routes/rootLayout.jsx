@@ -74,7 +74,7 @@ export default function rootLayout() {
                 </div>
             </header>
             <Outlet />
-            <footer className="w-full mx-auto px-8 py-12 md:py-4 mt-8 flex flex-col md:flex-row items-center space-x-4 relative z-10 bg-foreground border-t border-border">
+            <footer className="w-full mx-auto px-8 py-12 mt-8 flex flex-col md:flex-row items-center space-x-4 relative z-10 bg-foreground border-t border-border">
                 <div className="flex flex-row items-center space-x-2 mb-2 md:mb-0">
                     <p className="text-text-muted text-sm border-r border-border pr-2">© 2025 Omxsum</p>
                     <p className="text-text-muted text-sm">Socialt: </p>
@@ -84,7 +84,7 @@ export default function rootLayout() {
                     <Link to="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</Link>
                     <p></p>
                 </div>
-                <EmailInput />
+                {/* <EmailInput /> */}
             </footer>
         </main>
     )
