@@ -7,44 +7,12 @@ import EmailInput from "./EmailInput";
 import IndexGraph from "./IndexGraph";
 import { Link } from "react-router";
 import ShareArticleComponent from "./ShareArticleComponent";
+import { parseSummary } from "../utils/parseSummary";
 
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, sentimentLabel, bulletPoints, introText } = article;
 
-    const parsedSummary = summary.split("\n").map((line, index) => {
-        if (line.includes("##")) {
-            return <h2 className=" font-bold text-text font-serif italic mt-2 text-lg" key={index} >{line.replaceAll("#", "")}</h2>
-        } else if (line === "") {
-            return
-        }
-
-        if (line === "") {
-            return null;
-        }
-
-        const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[^\&]+\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
-
-        return (
-            <p className="mb-2 text-text-article" key={index}>
-                {parts.map((part, i) => {
-
-                    if (part.startsWith('&&') && part.endsWith('&&')) {
-                        return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
-                    } else if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong className="" key={i}>{part.slice(2, -2)}</strong>;
-                    } else if (part.startsWith('##') && part.endsWith('##')) {
-                        return <h2 key={i} className="text-xl font-semibold">{part.slice(2, -2)}</h2>;
-                    } else if (part.startsWith('/red/') && part.endsWith('/red/')) {
-                        return <span key={i} className="text-amber-400">{part.slice(5, -5)}</span>;
-                    } else if (part.startsWith('/green/') && part.endsWith('/green/')) {
-                        return <span key={i} className="text-primary">{part.slice(7, -7)}</span>;
-                    }
-                    return part;
-                })}
-            </p >
-        );
-
-    });
+    const parsedSummary = parseSummary(summary)
 
     const SentimentDashboard = ({ sentimentLabel, omxPrice, omxChangePercentage }) => {
         const percentageChange = parseFloat(omxChangePercentage.replace('%', '').replace(',', '.'));
@@ -146,7 +114,7 @@ export default function ArticleComponent({ article, index }) {
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
                         {title}
                     </h1>
-                    {introText && <p className="text-xl font-bold font-sans mb-4">
+                    {introText && <p className="text-xl font-bold hidden md:flex font-sans mb-4">
                         {introText}
                     </p>}
 

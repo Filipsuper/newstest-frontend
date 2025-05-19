@@ -1,16 +1,10 @@
 export const parseSummary = (summary) => {
     return summary.split("\n").map((line, index) => {
-        if (line.includes("##")) {
-            return <h2 className=" font-bold text-text font-serif italic mt-2 text-lg" key={index} >{line.replaceAll("#", "")}</h2>
-        } else if (line === "") {
-            return
-        }
-
         if (line === "") {
             return null;
         }
 
-        const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[^\&]+\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
+        const parts = line.split(/(\[.*?\]\(.*?\)|\&\&[\s\S]*?\&\&|\*\*[^\*]+\*\*|##[^#]+##|\/red\/[^\/]+\/red\/|\/green\/[^\/]+\/green\/)/);
 
         return (
             <p className="mb-2 text-text-article" key={index}>
@@ -31,6 +25,7 @@ export const parseSummary = (summary) => {
                 })}
             </p >
         );
+
 
     })
 }
