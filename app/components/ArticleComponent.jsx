@@ -27,7 +27,7 @@ export default function ArticleComponent({ article, index }) {
             return "⚖️"; // neutral
         };
 
-        const sentiment = sentimentLabel === "Positive" ? "Bullish" : sentimentLabel === "Negative" ? "Bearish" : "Neutral";
+        const sentiment = sentimentLabel ? (sentimentLabel === "positive" ? "Bullish" : sentimentLabel === "negative" ? "Bearish" : "Neutral") : "Neutral";
 
         const getChangeColor = (change) => {
             const num = parseFloat(change.replace('%', '').replace(',', '.'));
