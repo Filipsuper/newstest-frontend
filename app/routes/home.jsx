@@ -118,7 +118,7 @@ export default function Home({ loaderData }) {
               <ArticleComponent article={articles[0]} />
             </div>
             <div className="relative z-10 shadow-xl">
-              <span className="primary-btn text-center">
+              <span className="primary-btn text-center extra-padding">
                 Läs senaste {latestArticle.isEveningLetter ? "kvällsbrevet" : "morgonbrevet"}
               </span>
             </div>

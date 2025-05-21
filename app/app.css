@@ -84,11 +84,11 @@ body {
 }
 
 .primary-btn {
-  @apply bg-secondary text-background font-sans text-sm px-2 py-1 hover:bg-background border hover:text-secondary border-secondary active:scale-95
+  @apply bg-secondary text-background font-sans px-2 py-1 hover:bg-background border hover:text-secondary border-secondary active:scale-95
 }
 
 .secondary-btn {
-  @apply inline-flex items-center border border-border px-2 text-text-muted font-sans text-sm hover:bg-border hover:text-background active:scale-95
+  @apply inline-flex items-center border border-border px-2 text-text-muted font-sans hover:bg-border hover:text-background active:scale-95
 }
 
 .fade-edges {
@@ -193,4 +193,8 @@ body {
   animation-fill-mode: forwards;
   position: absolute;
   white-space: nowrap;
+}
+
+.extra-padding {
+  padding: 10px 15px !important;
 }
