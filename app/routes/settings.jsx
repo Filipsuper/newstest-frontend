@@ -3,6 +3,9 @@ import { Link, Navigate, useLoaderData } from "react-router";
 import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters } from '../utils/api';
 import { useTheme } from "../providers/ThemeProvider";
+import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRightLong } from "react-icons/fa6";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function settings() {
     const [selectedNewsletters, setSelectedNewsletters] = React.useState([]);
@@ -26,7 +29,7 @@ function settings() {
 
     const newsletterTypes = [
         { name: "Morgonbrev", description: "Kort analys och nyheter varje morgon kl 08:00", premium: false },
-        // { name: "Veckobrev", description: "Sammanfattning och insikter varje fredag", premium: true },
+        { name: "Veckobrev", description: "Sammanfattning och insikter varje söndag", premium: true },
         // { name: "Kvällsbrev", description: "Snabb översikt över dagens rörelser kl 17:00", premium: true },
     ];
 
@@ -50,6 +53,8 @@ function settings() {
         const res = await saveActiveNewsletters(selectedNewsletters);
         await refreshUser();
     }
+
+
 
     return (
         <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
@@ -88,8 +93,8 @@ function settings() {
                     </p>
                     <div className="flex flex-col space-y-4">
                         {newsletterTypes.map((newsletter, index) => (
-                            <label key={index} className="inline-flex items-center cursor-pointer border border-border p-4 gap-2">
-                                <span className="w-5 h-5  border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center">
+                            <label key={index} className="inline-flex items-center cursor-pointer border border-border p-4 gap-2 shadow-md">
+                                {(!newsletter.premium || user.plan === "premium") && <span className="w-5 h-5  border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center">
                                     <input
                                         type="checkbox"
                                         className="hidden peer"
@@ -108,7 +113,7 @@ function settings() {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                </span>
+                                </span>}
                                 <div className="flex flex-col">
                                     <span className="text-text font-semibold ">{newsletter.name}<span>{(!isPaidUser && newsletter.premium) && <span className="ml-2 text-background text-xs bg-secondary px-1 py-1">Premium</span>}</span></span>
                                     <span className="text-text-muted text-sm body-text">{newsletter.description}</span>
@@ -123,13 +128,27 @@ function settings() {
                 }
 
             </section>
-
+            <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
+                <h2 className="text-xl font-bold text-text">Prenumeration</h2>
+                <p className="body-text mb-4">
+                    Hanter din prenumeration och fakturering.
+                </p>
+                <div className="flex flex-col mb-4">
+                    <span className="text-base font-bold font-serif ">Plan</span>
+                    <span className="font-bold text-xl text-secondary    ">{user.plan === "premium" ? "Premium" : "Gratis"}</span>
+                </div>
+                <form action={API_URL + "/stripe/create-portal-session"} method="POST">
+                    <button id="checkout-and-portal-button" type="submit" className="font-sans text-primary cursor-pointer ">
+                        Hantera prenumeration <FaArrowRightLong className="inline-flex ml-2 text-xs" />
+                    </button>
+                </form>
+            </section>
 
             {/* <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
                 <h2 className="text-xl font-bold mb-4 text-text">Generera marknadssummeringar när du vill!</h2>
                 <Link className="text-primary underline" to="/skanna">Generera </Link>
             </section> */}
-        </main>
+        </main >
     )
 }
 

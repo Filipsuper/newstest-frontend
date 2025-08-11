@@ -97,14 +97,31 @@ export async function getGraphData() {
 
 //auth
 
-export async function signUp(email) {
+export async function signUp({ email, redirectTo }) {
     try {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, redirectTo })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function postOnboarding({ name, topics, frequency }) {
+    try {
+        const res = await fetch(`${API_URL}/auth/onboarding`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            "credentials": "include",
+            body: JSON.stringify({ name, topics, frequency })
         })
         return res.json();
     } catch (error) {

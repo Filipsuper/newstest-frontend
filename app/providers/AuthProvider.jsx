@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
             })
         } else {
             setUser(fetchedUser);
-
         }
     }
 
