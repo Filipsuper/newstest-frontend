@@ -35,7 +35,7 @@ export default function About() {
                 <p className="text-text-muted mb-4">
                     Jag arbetar ständigt med att förbättra datainsamlingen och analysprocessen samt lägga till nya funktioner. Din feedback är ovärderlig för att göra detta nyhetsbrev ännu bättre.
                 </p>
-                <span className="text-text-muted">Vid funderingar eller feedback, maila mig gärna på: <a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline mt-4">filipkarlberg1@gmail.com</a></span>
+                <span className="text-text-muted">Vid funderingar eller feedback, maila mig gärna på: <a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline mt-4">filipkarlberg1@gmail.com</a> eller annars till hans chef (som är mycket mer begåvad): <a href="mailto:axelbrandel@gmail.com" className="text-primary underline mt-4">axelbrandel@gmail.com</a></span>
             </section>
 
         </main>
