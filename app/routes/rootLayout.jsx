@@ -45,7 +45,7 @@ export default function rootLayout() {
                 <div className="flex w-full md:w-5/6 flex-col md:flex-row  font-sans items-center space-x-2 relative z-10">
                     <div className="flex flex-row space-x-8 justify-between w-full md:w-fit items-center md:mb-0">
                         <Link to="/" className="flex flex-row items-center text-text-article gap-2 pr-4 ">
-                            <span className="text-2xl text-text font-serif font-black italic inline">Omxsum </span><span className="bg-secondary text-white font-sans font-bold text-xs px-1 py-1">BETA</span>
+                            <span className="text-2xl text-text font-serif font-black italic inline">Omxsum </span>
                         </Link>
                         <button className="md:hidden text-text-article" onClick={toggleMenu}>
                             <FaBars />
@@ -80,7 +80,7 @@ export default function rootLayout() {
                     <p className="text-text-muted text-sm">Socialt: </p>
                     <Link to="https://x.com/omxtamer" className="text-text-muted"><FaTwitter /></Link>
                     <Link to="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted border-r border-border pr-2"><FaBluesky /></Link>
-                    <Link to="https://blog.omxsum.com" className="text-text-muted border-r border-border pr-2 underline">Läs vår blog</Link>
+                    <Link to="https://blog.omxsum.com" className="text-text-muted border-r border-border pr-2 underline">Blogg</Link>
                     {/* <p className="text-text-muted text-sm">Other projects: </p> */}
                     <Link to="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</Link>
                     <p></p>
