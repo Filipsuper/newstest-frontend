@@ -45,7 +45,7 @@ export function Layout({ children }) {
         <meta name="twitter:title" content="Omxsum" />
         <meta name="twitter:description" content="Marknadssummeringar varje morgon 8.00 och kväll 17.30" />
         <meta name="twitter:image" content="https://omxsum.com/omxsum_og.jpg" />
-        <script src="https://chatbot.w0bb.com/embed.js" data-pub="68f2c062751062387ffd551f"></script>
+        <script src="https://helpdesk.karlbergsolutions.se/embed.js" data-pub="68fa88515bf6df5103d8dab7"></script>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7447242940993455"
           crossOrigin="anonymous"></script>
       </head>
