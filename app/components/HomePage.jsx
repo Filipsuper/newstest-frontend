@@ -7,7 +7,6 @@ import Link from "next/link";
 import ArticleComponent from "./ArticleComponent";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
-import AccountCallToAction from "./AccountCallToAction";
 import NewsLettersCTA from "./NewsLettersCTA";
 import Testimonials from "./Testimonials";
 
@@ -111,8 +110,19 @@ export default function HomePage({ articles }) {
       <section className="max-w-6xl mx-auto px-4 py-24">
         <NewsLettersCTA newletterCards={newletterCards} />
       </section >
-      <section className="max-w-6xl mx-auto px-4 py-24 flex flex-col gap-0">
-        <AccountCallToAction />
+      <section className="max-w-6xl mx-auto px-4 py-24">
+        <h2 className="text-4xl font-serif font-bold text-text-article text-center">Terminalen – vårt gratis aktieverktyg</h2>
+        <p className="text-text-muted text-base mt-2 text-center mb-10">
+          Följ marknaden i realtid med nyheter, bolagsdata och grafer – helt gratis, direkt i webbläsaren.
+        </p>
+        <div className="flex justify-center">
+          <a
+            href="https://terminal.omxsum.com"
+            className="primary-btn text-center extra-padding"
+          >
+            Öppna terminalen →
+          </a>
+        </div>
       </section>
       <section className="max-w-6xl  mx-auto px-4 relative z-10 py-24 ">
         <h2 className="text-4xl font-serif font-bold text-text-article text-center">Tidigare utskick</h2>
