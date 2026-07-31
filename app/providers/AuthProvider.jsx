@@ -1,3 +1,5 @@
+"use client";
+
 // app/providers/AuthProvider.jsx
 import React, { createContext, useContext, useEffect, useState, useMemo, use } from 'react';
 import { getUser } from '../utils/api';

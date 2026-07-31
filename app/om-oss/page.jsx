@@ -1,4 +1,10 @@
 import React from 'react'
+
+export const metadata = {
+    title: "Om oss",
+    description: "Så fungerar Omxsums AI-genererade nyhetsbrev: datainsamling, analys och dagliga marknadssummeringar.",
+};
+
 export default function About() {
     return (
         <main className="min-h-[80vh] mx-auto max-w-4xl py-8 relative ">

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from "react-router";
+import Link from "next/link";
 
 export default function NewsLettersCTA({ newletterCards }) {
     return (
@@ -11,7 +11,7 @@ export default function NewsLettersCTA({ newletterCards }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {newletterCards.map((card, index) => (
                     <Link
-                        to={card.link}
+                        href={card.link}
                         key={index}
                         className="bg-foreground border border-border p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
                     >

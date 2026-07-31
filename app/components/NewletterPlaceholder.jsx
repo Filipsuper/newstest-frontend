@@ -1,6 +1,6 @@
 import React from 'react'
 import { FaArrowDown } from "react-icons/fa6";
-import { Link } from "react-router";
+import Link from "next/link";
 
 export default function NewletterPlaceholder({ title, body, isTodaysArticle, isWeekend }) {
 
@@ -20,7 +20,7 @@ export default function NewletterPlaceholder({ title, body, isTodaysArticle, isW
                             <span className="text-text-muted ">
                                 Nedan hittar du de tidigare artiklarna
                             </span>
-                            <Link to="#prev" className="text-text-muted mt-2"><FaArrowDown /></Link>
+                            <Link href="#prev" className="text-text-muted mt-2"><FaArrowDown /></Link>
                         </>
                     ) : (
                         <>
@@ -29,7 +29,7 @@ export default function NewletterPlaceholder({ title, body, isTodaysArticle, isW
                             <span className="text-text-muted ">
                                 Kom tillbaka senare eller läs de tidigare artiklarna
                             </span>
-                            <Link to="#prev" className="text-text-muted mt-2"><FaArrowDown /></Link>
+                            <Link href="#prev" className="text-text-muted mt-2"><FaArrowDown /></Link>
 
                         </>
                     )}

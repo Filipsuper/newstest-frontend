@@ -1,44 +1,20 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { pnlColor } from "../utils/utils";
-import { fetchAllArticles, fetchArticle } from "../utils/api";
 import dayjs from "dayjs";
-import ArticleComponent from "../components/ArticleComponent";
-import PreviousArticle from "../components/PreviousArticle";
-import { Link } from "react-router";
-import { FaArrowDown, FaTwitter } from "react-icons/fa";
-import utc from "dayjs/plugin/utc"
-import { FaBluesky, FaReddit, FaX } from "react-icons/fa6";
-import EmailInput from "../components/EmailInput";
-import { useTheme } from "../providers/ThemeProvider";
-import AccountCallToAction from "../components/AccountCallToAction";
-import NewsLettersCTA from "../components/NewsLettersCTA";
-import Testimonials from "../components/Testimonials";
+import utc from "dayjs/plugin/utc";
+import Link from "next/link";
+import ArticleComponent from "./ArticleComponent";
+import PreviousArticle from "./PreviousArticle";
+import EmailInput from "./EmailInput";
+import AccountCallToAction from "./AccountCallToAction";
+import NewsLettersCTA from "./NewsLettersCTA";
+import Testimonials from "./Testimonials";
 
-export function meta() {
-  return [
-    { title: "OMXsum - Dagliga marknadssummeringar" },
-    { name: "description", content: "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsens nyheter på OMXsum.com." },
-  ];
-}
+dayjs.extend(utc);
 
-export const loader = async () => {
-  const article = await fetchAllArticles();
-  return article;
-};
-
-export default function Home({ loaderData }) {
-  const articles = loaderData
-  const { theme, setTheme } = useTheme();
-
+export default function HomePage({ articles }) {
   const [currentTime, setCurrentTime] = useState("00:00:00")
-
-  if (!articles) {
-    return <div className="text-text">Loading...</div>;
-  }
-  dayjs.extend(utc);
-
-
-  const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,6 +23,12 @@ export default function Home({ loaderData }) {
 
     return () => clearInterval(timer)
   }, [])
+
+  if (!articles || articles.length === 0) {
+    return <div className="text-text">Loading...</div>;
+  }
+
+  const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
 
   const latestArticle = articles[0];
 
@@ -92,8 +74,6 @@ export default function Home({ loaderData }) {
 
   return (
     <>
-
-
       <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans  mx-auto px-4 py-8 mt-16 border-border border-opacity-10">
         <div className="" >
           <h2 className="text-base font-bold text-text">{currentTime}</h2>
@@ -111,7 +91,7 @@ export default function Home({ loaderData }) {
         </div>
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
-            to={latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet"}
+            href={latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet"}
             className="flex flex-col items-center justify-center w-full min-h-56 h-full hover:bg-primary-dark transition-colors duration-300  relative overflow-hidden"
           >
             <div className="absolute inset-0 h-full  p-2 fade-edges">

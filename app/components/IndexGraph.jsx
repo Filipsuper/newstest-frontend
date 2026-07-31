@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Label, Tooltip, ReferenceLine } from 'recharts';
 

@@ -1,8 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL;
+// On the server (SSR / metadata) we can talk to the backend directly via API_URL
+// (e.g. http://localhost:8000/api on the VPS). In the browser we use the public URL.
+const API_URL =
+    typeof window === "undefined"
+        ? process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
+        : process.env.NEXT_PUBLIC_API_URL;
 
 export async function fetchAllArticles() {
     try {
-        const response = await fetch(`${API_URL}/data`);
+        const response = await fetch(`${API_URL}/data`, { cache: "no-store" });
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -13,7 +18,7 @@ export async function fetchAllArticles() {
 
 export async function fetchArticle() {
     try {
-        const response = await fetch(`${API_URL}/data/morning-letter`);
+        const response = await fetch(`${API_URL}/data/morning-letter`, { cache: "no-store" });
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -23,7 +28,7 @@ export async function fetchArticle() {
 
 export async function fetchEveningArticles() {
     try {
-        const response = await fetch(`${API_URL}/data/evening-letter`);
+        const response = await fetch(`${API_URL}/data/evening-letter`, { cache: "no-store" });
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -33,7 +38,7 @@ export async function fetchEveningArticles() {
 
 export async function getArticle(id) {
     try {
-        const response = await fetch(`${API_URL}/data/${id}`);
+        const response = await fetch(`${API_URL}/data/${id}`, { cache: "no-store" });
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -41,15 +46,14 @@ export async function getArticle(id) {
     }
 }
 
-export async function addEmail(mail) {
-    console.log(mail)
+export async function addEmail(mail, website) {
     try {
         const res = await fetch(`${API_URL}/mail`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ mail })
+            body: JSON.stringify({ mail, website })
         })
         return res.json();
     } catch (error) {
@@ -147,4 +151,3 @@ export async function saveActiveNewsletters(newsletters) {
         throw error;
     }
 }
-

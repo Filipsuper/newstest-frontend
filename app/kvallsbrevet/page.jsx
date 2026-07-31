@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from 'react'
-import ArticleComponent from "../components/ArticleComponent";
-import { fetchArticle } from "../utils/api";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import ArticleComponent from "../components/ArticleComponent";
 import PreviousArticle from "../components/PreviousArticle";
-import utc from "dayjs/plugin/utc"
 import NewletterPlaceholder from "../components/NewletterPlaceholder";
+import { fetchEveningArticles } from "../utils/api";
 
-export const loader = async () => {
-    const article = await fetchArticle();
-    return article;
+dayjs.extend(utc);
+
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+    title: "Kvällsbrevet",
+    description:
+        "Summering och analys av dagens börshändelser, sammanfattade av AI varje vardag kl. 17:30.",
 };
 
-export default function morning({ loaderData }) {
-    const articles = loaderData
-
-    if (!articles) {
-        return <div className="text-text">Loading...</div>;
+export default async function Page() {
+    let articles = null;
+    try {
+        articles = (await fetchEveningArticles()) || [];
+    } catch (error) {
+        articles = null;
     }
 
-    dayjs.extend(utc);
+    if (!articles || articles.length === 0) {
+        return <div className="text-text">Loading...</div>;
+    }
 
     const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().add(2, "hour").day()
 
@@ -27,13 +34,13 @@ export default function morning({ loaderData }) {
     const isWeekend = today === 'Saturday' || today === 'Sunday'
 
     return (
-        <main className="flex flex-col items-center justify-center overflow-x-clip">
-            <NewletterPlaceholder title="Morgonbrevet" body="Morgonens viktigaste händelser 8:00" isTodaysArticle={isTodaysArticle} isWeekend={isWeekend} />
+        <main className="flex flex-col items-center justify-center overflow-x-clip" >
+            <NewletterPlaceholder title="Kvällsbrevet" body={"Summering av marknadshändelserna under dagen 17:30"} isTodaysArticle={isTodaysArticle} isWeekend={isWeekend} />
 
             {isTodaysArticle && <ArticleComponent article={articles[0]} />}
 
 
-            <div className="max-w-6xl py- mx-auto px-4 relative z-10  ">
+            <div className="max-w-6xl  mx-auto px-4 relative z-10  ">
                 <div className="w-full mx-auto mt-8 relative z-10 border-b border-border">
                     <h2 className="text-lg font-serif font-black text-text-muted italic mb-4 mt-8">Tidigare artiklar</h2>
                 </div>
@@ -48,7 +55,8 @@ export default function morning({ loaderData }) {
                     }
                 </div>
             </div>
-        </main>
 
+
+        </main>
     )
 }

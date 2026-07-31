@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react'
 import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
@@ -5,7 +7,7 @@ import PressRelease from "./PressRelease";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import EmailInput from "./EmailInput";
 import IndexGraph from "./IndexGraph";
-import { Link } from "react-router";
+import Link from "next/link";
 import ShareArticleComponent from "./ShareArticleComponent";
 import { parseSummary } from "../utils/parseSummary";
 
@@ -86,7 +88,7 @@ export default function ArticleComponent({ article, index }) {
 
     return (
         <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
-            <Link to="/" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8">
+            <Link href="/" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8">
                 <FaArrowLeft className="text-lg" />
                 <span className="text-sm font-sans">Tillbaka</span>
             </Link>

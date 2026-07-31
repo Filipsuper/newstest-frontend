@@ -1,3 +1,5 @@
+"use client";
+
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";

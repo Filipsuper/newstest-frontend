@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useState, useContext } from 'react';
 import { FaX } from "react-icons/fa6";
 

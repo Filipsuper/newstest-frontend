@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from 'react';
 import { SlRefresh } from "react-icons/sl";
 import { FiSearch } from 'react-icons/fi';
@@ -91,7 +93,7 @@ export default function Scan() {
         setMessage(generatedSummary.error);
       } else {
         setScanSummary(generatedSummary);
-        window.sa_event("scan");
+        window.sa_event?.("scan");
 
       }
     } catch (error) {
@@ -184,11 +186,4 @@ export default function Scan() {
       )}
     </div>
   );
-}
-
-export function meta() {
-  return [
-    { title: "Scan Page" },
-    { name: "description", content: "Scan your documents" },
-  ];
 }

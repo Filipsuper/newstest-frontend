@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { signUp } from "../utils/api";
 
@@ -23,7 +25,7 @@ export default function LogInModal() {
         }
 
         setMessage("Inloggningslänk har skickats till din mail!")
-        window.sa_event("user_signup")
+        window.sa_event?.("user_signup")
     }
 
     return (

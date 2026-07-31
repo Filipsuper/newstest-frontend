@@ -1,7 +1,7 @@
 import React from 'react'
 import { pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
-import { Link } from "react-router";
+import Link from "next/link";
 import { parseSummary } from "../utils/parseSummary.jsx";
 
 export default function PreviousArticle({ article, idx }) {
@@ -14,7 +14,7 @@ export default function PreviousArticle({ article, idx }) {
     const urlTitle = parseTitleForUrl(article.title)
 
     return (
-        <Link to={`/article/${urlTitle}`} rel={(idx === 0 ? "canonical" : "")} className="group">
+        <Link href={`/article/${urlTitle}`} rel={(idx === 0 ? "canonical" : "")} className="group">
             <article className=" mx-auto relative z-10 mb-8 ">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">

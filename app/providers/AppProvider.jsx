@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const AppContext = createContext();

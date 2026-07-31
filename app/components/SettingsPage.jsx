@@ -1,28 +1,33 @@
+"use client";
+
 import React, { useEffect } from 'react';
-import { Link, Navigate, useLoaderData } from "react-router";
+import { useRouter } from "next/navigation";
 import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters } from '../utils/api';
 import { useTheme } from "../providers/ThemeProvider";
 
-function settings() {
+function SettingsPage() {
     const [selectedNewsletters, setSelectedNewsletters] = React.useState([]);
     const { user, isGuestUser, refreshUser, isPaidUser } = useAuthContext();
     const { theme, setTheme } = useTheme();
     const [isChanged, setIsChanged] = React.useState(false);
-
-
-    if (!user) return
-
-    if (isGuestUser) return <Navigate to="/" />;
-
+    const router = useRouter();
 
     useEffect(() => {
+        if (isGuestUser) router.replace("/");
+    }, [isGuestUser, router]);
+
+    useEffect(() => {
+        if (!user || !user.active_newsletters) return
         setSelectedNewsletters(user.active_newsletters)
     }, [user])
 
     useEffect(() => {
+        if (!user || !user.active_newsletters) return
         setIsChanged(!compareArrays(selectedNewsletters, user.active_newsletters));
     }, [selectedNewsletters]);
+
+    if (!user || isGuestUser) return null
 
     const newsletterTypes = [
         { name: "Morgonbrev", description: "Kort analys och nyheter varje morgon kl 08:00", premium: false },
@@ -123,14 +128,8 @@ function settings() {
                 }
 
             </section>
-
-
-            {/* <section className="max-w-4xl mx-auto border border-border shadow-md p-8 mb-12">
-                <h2 className="text-xl font-bold mb-4 text-text">Generera marknadssummeringar när du vill!</h2>
-                <Link className="text-primary underline" to="/skanna">Generera </Link>
-            </section> */}
         </main>
     )
 }
 
-export default settings;
+export default SettingsPage;
