@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { FaArrowLeft } from "react-icons/fa";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine, Tooltip } from "recharts";
 import { fetchStock } from "../utils/api";
+import { storyToItem } from "../utils/storyToItem";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
 
@@ -118,10 +119,11 @@ function StockContent({ symbol }) {
         );
     }
 
-    const { stock, news } = data;
-    const lastPrice = stock.ticks?.length ? stock.ticks[stock.ticks.length - 1][1] : null;
-    const change = lastPrice && stock.prevClose ? lastPrice - stock.prevClose : null;
-    const changePct = change !== null ? (change / stock.prevClose) * 100 : null;
+    const { stock } = data;
+    const news = (data.news ?? []).map(storyToItem);
+    const lastPrice = stock.price ?? (stock.ticks?.length ? stock.ticks[stock.ticks.length - 1][1] : null);
+    const change = stock.change ?? (lastPrice && stock.prevClose ? lastPrice - stock.prevClose : null);
+    const changePct = stock.changePct ?? (change !== null && stock.prevClose ? (change / stock.prevClose) * 100 : null);
     const up = (change ?? 0) >= 0;
 
     return (

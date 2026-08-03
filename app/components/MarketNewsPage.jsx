@@ -4,45 +4,105 @@ import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { FiSearch } from "react-icons/fi";
 import { fetchLiveFeed } from "../utils/api";
+import { storyToItem } from "../utils/storyToItem";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
 
-const POLL_MS = 30_000;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const MAX_ITEMS = 100;
+
+// Insert or replace by story id, newest first. Retracted stories drop out.
+const upsertItem = (items, item) => {
+    const without = items.filter((existing) => existing.id !== item.id);
+    if (item.status && item.status !== "flash" && item.status !== "update") {
+        return without;
+    }
+    return [...without, item].sort((a, b) => b.ts - a.ts).slice(0, MAX_ITEMS);
+};
 
 function LiveFeed() {
     const [items, setItems] = useState(null);
+    const [searchItems, setSearchItems] = useState(null);
     const [query, setQuery] = useState("");
+    const [activeQuery, setActiveQuery] = useState("");
+    const [live, setLive] = useState(false);
     const [updatedAt, setUpdatedAt] = useState(null);
     const [error, setError] = useState("");
-    const queryRef = useRef("");
+    const sourceRef = useRef(null);
 
-    const load = async () => {
-        try {
-            const res = await fetchLiveFeed({ q: queryRef.current || undefined });
-            if (res.items) {
-                setItems(res.items);
+    // Initial backlog over REST, then live updates over SSE
+    useEffect(() => {
+        let active = true;
+
+        fetchLiveFeed({})
+            .then((res) => {
+                if (!active) return;
+                if (res.items) {
+                    setItems(res.items.map(storyToItem));
+                    setUpdatedAt(dayjs());
+                } else {
+                    setError(res.error || "Kunde inte hämta nyheterna");
+                }
+            })
+            .catch(() => active && setError("Kunde inte hämta nyheterna"));
+
+        const source = new EventSource(`${API_URL}/feed/stream`, { withCredentials: true });
+        sourceRef.current = source;
+
+        source.addEventListener("ready", () => {
+            if (!active) return;
+            setLive(true);
+            setError("");
+        });
+
+        source.addEventListener("story", (event) => {
+            if (!active) return;
+            try {
+                const item = storyToItem(JSON.parse(event.data));
+                setItems((current) => upsertItem(current ?? [], item));
                 setUpdatedAt(dayjs());
-                setError("");
-            } else {
-                setError(res.error || "Kunde inte hämta nyheterna");
+            } catch {
+                // ignore malformed frames
             }
+        });
+
+        source.onerror = () => {
+            if (!active) return;
+            setLive(false); // EventSource reconnects on its own
+        };
+
+        return () => {
+            active = false;
+            source.close();
+        };
+    }, []);
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        const q = query.trim();
+        setActiveQuery(q);
+
+        if (!q) {
+            setSearchItems(null);
+            return;
+        }
+
+        setSearchItems(undefined); // loading
+        try {
+            const res = await fetchLiveFeed({ q });
+            setSearchItems(res.items ? res.items.map(storyToItem) : []);
         } catch {
-            setError("Kunde inte hämta nyheterna");
+            setSearchItems([]);
         }
     };
 
-    useEffect(() => {
-        load();
-        const timer = setInterval(load, POLL_MS);
-        return () => clearInterval(timer);
-    }, []);
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        queryRef.current = query;
-        setItems(null);
-        load();
+    const clearSearch = () => {
+        setQuery("");
+        setActiveQuery("");
+        setSearchItems(null);
     };
+
+    const shown = activeQuery ? searchItems : items;
 
     return (
         <>
@@ -59,15 +119,24 @@ function LiveFeed() {
                     </button>
                 </form>
                 <div className="flex flex-row items-center gap-2 font-sans text-xs text-text-muted">
-                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-                    <span>LIVE</span>
-                    {updatedAt && <span>• uppdaterad {updatedAt.format("HH:mm:ss")}</span>}
+                    <span className={`w-2 h-2 rounded-full ${live ? "bg-primary animate-pulse" : "bg-border"}`}></span>
+                    <span>{live ? "LIVE" : "ANSLUTER…"}</span>
+                    {updatedAt && <span>• senaste händelse {updatedAt.format("HH:mm:ss")}</span>}
                 </div>
             </div>
 
+            {activeQuery && (
+                <div className="flex flex-row items-center gap-3 mb-4 font-sans text-sm">
+                    <span className="text-text-muted">Sökresultat för "{activeQuery}"</span>
+                    <button onClick={clearSearch} className="text-primary underline cursor-pointer">
+                        Tillbaka till liveflödet
+                    </button>
+                </div>
+            )}
+
             {error && <p className="text-red-500 font-sans text-sm mb-4">{error}</p>}
 
-            {items === null ? (
+            {shown == null ? (
                 <div className="flex flex-col gap-6 py-4">
                     {[...Array(5)].map((_, i) => (
                         <div key={i} className="animate-pulse flex flex-col gap-2">
@@ -77,11 +146,11 @@ function LiveFeed() {
                         </div>
                     ))}
                 </div>
-            ) : items.length === 0 ? (
+            ) : shown.length === 0 ? (
                 <p className="text-text-muted font-sans py-8">Inga nyheter hittades.</p>
             ) : (
                 <div className="flex flex-col">
-                    {items.map((item) => (
+                    {shown.map((item) => (
                         <NewsFeedItem key={item.id} item={item} />
                     ))}
                 </div>

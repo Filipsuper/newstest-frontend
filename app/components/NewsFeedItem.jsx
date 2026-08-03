@@ -36,11 +36,15 @@ export default function NewsFeedItem({ item, showSymbol = true }) {
                     </Link>
                 )}
             </div>
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className="group">
-                <h3 className="text-lg font-serif font-bold italic text-text group-hover:underline mb-1">
-                    {item.title}
-                </h3>
-            </a>
+            {item.url ? (
+                <a href={item.url} target="_blank" rel="noopener noreferrer" className="group">
+                    <h3 className="text-lg font-serif font-bold italic text-text group-hover:underline mb-1">
+                        {item.title}
+                    </h3>
+                </a>
+            ) : (
+                <h3 className="text-lg font-serif font-bold italic text-text mb-1">{item.title}</h3>
+            )}
             {item.summary && (
                 <p className="text-sm font-sans text-text-muted leading-relaxed line-clamp-3">
                     {item.summary}
