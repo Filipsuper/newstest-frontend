@@ -24,7 +24,7 @@ const tiers = [
     {
         id: "plus",
         name: "Plus",
-        price: "29 kr",
+        price: "49 kr",
         period: "/mån",
         description: "För dig som vill följa nyhetsflödet live",
         features: [
@@ -38,7 +38,7 @@ const tiers = [
     {
         id: "pro",
         name: "Pro",
-        price: "49 kr",
+        price: "99 kr",
         period: "/mån",
         description: "Hela terminalen – för den aktiva investeraren",
         features: [
