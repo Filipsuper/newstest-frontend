@@ -102,6 +102,30 @@ export async function fetchFinancials(symbol) {
     }
 }
 
+export async function fetchCalendar(symbol) {
+    try {
+        const res = await fetch(`${API_URL}/feed/calendar/${encodeURIComponent(symbol)}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function fetchHistory(symbol) {
+    try {
+        const res = await fetch(`${API_URL}/feed/history/${encodeURIComponent(symbol)}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function confirmSubscription(token) {
     try {
         const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`);

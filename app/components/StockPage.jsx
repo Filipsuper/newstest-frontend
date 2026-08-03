@@ -1,25 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { FaArrowLeft } from "react-icons/fa";
 import {
     ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Line, Legend,
-    XAxis, YAxis, ReferenceLine, Tooltip,
+    XAxis, YAxis, ReferenceLine, ReferenceDot, Tooltip,
 } from "recharts";
-import { fetchStock, fetchFinancials } from "../utils/api";
+import { fetchStock, fetchFinancials, fetchCalendar, fetchHistory } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
 
 const POLL_MS = 30_000;
 
-const VIEW_OPTIONS = [
+const VIEWS = [
+    { id: "chart", label: "Kurs" },
+    { id: "financials", label: "Finanser" },
+    { id: "calendar", label: "Kalender" },
+    { id: "history", label: "Historik" },
+];
+
+const RANGES = [
     { id: "intraday", label: "Idag" },
     { id: "6m", label: "6 mån" },
     { id: "1y", label: "1 år" },
-    { id: "financials", label: "Finanser" },
 ];
 
 const tooltipStyle = {
@@ -37,9 +43,31 @@ const formatMoney = (value, currency = "SEK") => {
     return (value / 1e6).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " M" + currency;
 };
 
-function StockGraph({ stock }) {
+const formatVolume = (value) => {
+    if (value == null) return "–";
+    if (value >= 1e6) return (value / 1e6).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " M";
+    if (value >= 1e3) return (value / 1e3).toLocaleString("sv-SE", { maximumFractionDigits: 0 }) + " k";
+    return String(value);
+};
+
+function StockGraph({ stock, news, onSelectNews }) {
     const data = (stock.ticks ?? []).map(([ts, price]) => ({ ts, price }));
     const isDaily = stock.interval === "1d";
+
+    // Place each news story on the nearest bar so markers sit on the line
+    const markers = useMemo(() => {
+        if (data.length === 0) return [];
+        const seen = new Map();
+        for (const item of news) {
+            if (item.ts < data[0].ts - 36e5 || item.ts > data[data.length - 1].ts + 864e5) continue;
+            let nearest = data[0];
+            for (const point of data) {
+                if (Math.abs(point.ts - item.ts) < Math.abs(nearest.ts - item.ts)) nearest = point;
+            }
+            if (!seen.has(nearest.ts)) seen.set(nearest.ts, { ts: nearest.ts, price: nearest.price, id: item.id, title: item.title });
+        }
+        return [...seen.values()];
+    }, [stock, news]);
 
     if (data.length === 0) {
         return <p className="text-text-muted font-sans text-sm py-8">Ingen kursdata tillgänglig.</p>;
@@ -50,7 +78,6 @@ function StockGraph({ stock }) {
     const max = Math.max(...prices, isDaily ? -Infinity : stock.prevClose ?? -Infinity);
     const pad = (max - min) * 0.08 || 1;
     const lastPrice = prices[prices.length - 1];
-    // Intraday colors by today's move, daily by the shown period
     const up = isDaily ? lastPrice >= prices[0] : stock.prevClose ? lastPrice >= stock.prevClose : true;
     const color = up ? "#668CF4" : "#fbbf24";
     const timeFormat = isDaily ? "D MMM" : "HH:mm";
@@ -67,6 +94,8 @@ function StockGraph({ stock }) {
                     </defs>
                     <XAxis
                         dataKey="ts"
+                        type="number"
+                        domain={["dataMin", "dataMax"]}
                         tickFormatter={(ts) => dayjs(ts).format(timeFormat)}
                         stroke="#6b7280"
                         axisLine={false}
@@ -101,8 +130,26 @@ function StockGraph({ stock }) {
                         dot={false}
                         isAnimationActive={false}
                     />
+                    {markers.map((marker) => (
+                        <ReferenceDot
+                            key={marker.id}
+                            x={marker.ts}
+                            y={marker.price}
+                            r={4}
+                            fill="#fbbf24"
+                            stroke="var(--color-background)"
+                            strokeWidth={1.5}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => onSelectNews?.(marker.id)}
+                        />
+                    ))}
                 </AreaChart>
             </ResponsiveContainer>
+            {markers.length > 0 && (
+                <p className="text-[11px] font-sans text-text-muted mt-1 text-right">
+                    <span className="text-secondary">●</span> nyhet – klicka för att läsa
+                </p>
+            )}
         </div>
     );
 }
@@ -133,13 +180,7 @@ function FinancialsChart({ financials }) {
         <div className="w-full h-72 font-sans">
             <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={rows} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
-                    <XAxis
-                        dataKey="year"
-                        stroke="#6b7280"
-                        axisLine={false}
-                        tickLine={false}
-                        fontSize={11}
-                    />
+                    <XAxis dataKey="year" stroke="#6b7280" axisLine={false} tickLine={false} fontSize={11} />
                     <YAxis
                         yAxisId="money"
                         orientation="left"
@@ -168,22 +209,108 @@ function FinancialsChart({ financials }) {
                                 : [formatMoney(value, financials.currency), labels[key] ?? key]
                         }
                     />
-                    <Legend
-                        formatter={(key) => <span style={{ fontSize: 12 }}>{labels[key] ?? key}</span>}
-                    />
+                    <Legend formatter={(key) => <span style={{ fontSize: 12 }}>{labels[key] ?? key}</span>} />
                     <Bar yAxisId="money" dataKey="revenue" fill="#668CF4" isAnimationActive={false} />
                     <Bar yAxisId="money" dataKey="ebit" fill="#fbbf24" isAnimationActive={false} />
                     <Bar yAxisId="money" dataKey="third" fill="#34d399" isAnimationActive={false} />
-                    <Line
-                        yAxisId="pct"
-                        dataKey="margin"
-                        stroke="#9ca3af"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        isAnimationActive={false}
-                    />
+                    <Line yAxisId="pct" dataKey="margin" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
                 </ComposedChart>
             </ResponsiveContainer>
+        </div>
+    );
+}
+
+function CalendarView({ calendar }) {
+    if (!calendar || calendar.hasData === false) {
+        return <p className="text-text-muted font-sans text-sm py-8">Ingen kalenderdata tillgänglig.</p>;
+    }
+
+    const currency = calendar.estimates?.currency ?? "SEK";
+    const eps = calendar.estimates?.eps ?? {};
+    const revenue = calendar.estimates?.revenue ?? {};
+    const nextEarnings = (calendar.earningsDates ?? [])[0] ?? null;
+
+    const fmtDate = (d) => (d ? dayjs(d).format("D MMMM YYYY") : "–");
+    const fmtEps = (v) => (v != null ? v.toLocaleString("sv-SE", { maximumFractionDigits: 2 }) : "–");
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans py-2">
+            <div className="flex flex-col gap-1">
+                <span className="text-xs uppercase tracking-wide text-text-muted">Nästa rapport</span>
+                <span className="text-2xl font-serif font-bold text-text">{fmtDate(nextEarnings)}</span>
+                {(calendar.earningsDates ?? []).length > 1 && (
+                    <span className="text-xs text-text-muted">
+                        alt. {calendar.earningsDates.slice(1).map(fmtDate).join(", ")}
+                    </span>
+                )}
+            </div>
+            <div className="flex flex-col gap-1">
+                <span className="text-xs uppercase tracking-wide text-text-muted">Estimat inför rapporten</span>
+                <span className="text-sm text-text-article">
+                    Vinst per aktie: <span className="font-semibold text-text">{fmtEps(eps.average)} {currency}</span>
+                    {eps.low != null && eps.high != null && (
+                        <span className="text-text-muted"> ({fmtEps(eps.low)}–{fmtEps(eps.high)})</span>
+                    )}
+                </span>
+                <span className="text-sm text-text-article">
+                    Omsättning: <span className="font-semibold text-text">{formatMoney(revenue.average, currency)}</span>
+                    {revenue.low != null && revenue.high != null && (
+                        <span className="text-text-muted"> ({formatMoney(revenue.low, currency)}–{formatMoney(revenue.high, currency)})</span>
+                    )}
+                </span>
+            </div>
+            <div className="flex flex-col gap-1">
+                <span className="text-xs uppercase tracking-wide text-text-muted">X-datum utdelning</span>
+                <span className="text-lg font-serif font-bold text-text">{fmtDate(calendar.exDividendDate)}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+                <span className="text-xs uppercase tracking-wide text-text-muted">Utdelningsdag</span>
+                <span className="text-lg font-serif font-bold text-text">{fmtDate(calendar.dividendDate)}</span>
+            </div>
+        </div>
+    );
+}
+
+function HistoryTable({ history }) {
+    const bars = [...(history?.bars ?? [])].reverse();
+
+    if (bars.length === 0) {
+        return <p className="text-text-muted font-sans text-sm py-8">Ingen kurshistorik tillgänglig.</p>;
+    }
+
+    return (
+        <div className="font-sans text-sm max-h-96 overflow-y-auto border-b border-border">
+            <table className="w-full">
+                <thead className="sticky top-0 bg-background">
+                    <tr className="text-xs uppercase tracking-wide text-text-muted border-b border-border">
+                        <th className="text-left py-2 font-medium">Datum</th>
+                        <th className="text-right py-2 font-medium">Stängning</th>
+                        <th className="text-right py-2 font-medium">+/−</th>
+                        <th className="text-right py-2 font-medium hidden md:table-cell">Högst</th>
+                        <th className="text-right py-2 font-medium hidden md:table-cell">Lägst</th>
+                        <th className="text-right py-2 font-medium">Volym</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {bars.map((bar, idx) => {
+                        const prev = bars[idx + 1];
+                        const pct = prev?.close ? ((bar.close - prev.close) / prev.close) * 100 : null;
+                        const up = (pct ?? 0) >= 0;
+                        return (
+                            <tr key={bar.date} className="border-b border-border/50 text-text-article">
+                                <td className="py-2">{dayjs(bar.time).format("D MMM YYYY")}</td>
+                                <td className="py-2 text-right font-semibold text-text">{bar.close?.toFixed(2)}</td>
+                                <td className={`py-2 text-right ${pct == null ? "text-text-muted" : up ? "text-primary" : "text-secondary"}`}>
+                                    {pct == null ? "–" : `${up ? "+" : ""}${pct.toFixed(2)}%`}
+                                </td>
+                                <td className="py-2 text-right hidden md:table-cell">{bar.high?.toFixed(2)}</td>
+                                <td className="py-2 text-right hidden md:table-cell">{bar.low?.toFixed(2)}</td>
+                                <td className="py-2 text-right text-text-muted">{formatVolume(bar.volume)}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -191,30 +318,31 @@ function FinancialsChart({ financials }) {
 function StockContent({ symbol }) {
     const [data, setData] = useState(null);
     const [financials, setFinancials] = useState(null);
-    const [view, setView] = useState("intraday");
+    const [calendar, setCalendar] = useState(null);
+    const [history, setHistory] = useState(null);
+    const [view, setView] = useState("chart");
+    const [range, setRange] = useState("intraday");
+    const [highlightId, setHighlightId] = useState(null);
     const [error, setError] = useState("");
+    const highlightTimer = useRef(null);
 
     // Reset everything when navigating between stocks
     useEffect(() => {
         setData(null);
         setFinancials(null);
-        setView("intraday");
+        setCalendar(null);
+        setHistory(null);
+        setView("chart");
+        setRange("intraday");
         setError("");
     }, [symbol]);
 
+    // Price data + news (always loaded — header and news list need it)
     useEffect(() => {
-        if (view === "financials") {
-            if (financials) return;
-            fetchFinancials(symbol)
-                .then((res) => setFinancials(res.error ? { annual: [] } : res))
-                .catch(() => setFinancials({ annual: [] }));
-            return;
-        }
-
         let active = true;
         const load = async () => {
             try {
-                const res = await fetchStock(symbol, view);
+                const res = await fetchStock(symbol, range);
                 if (!active) return;
                 if (res.stock) {
                     setData(res);
@@ -228,13 +356,37 @@ function StockContent({ symbol }) {
         };
 
         load();
-        if (view !== "intraday") return () => { active = false; };
+        if (range !== "intraday") return () => { active = false; };
         const timer = setInterval(load, POLL_MS);
         return () => {
             active = false;
             clearInterval(timer);
         };
-    }, [symbol, view, financials]);
+    }, [symbol, range]);
+
+    // Lazy-load per view, cached per stock
+    useEffect(() => {
+        if (view === "financials" && !financials) {
+            fetchFinancials(symbol)
+                .then((res) => setFinancials(res.error ? { annual: [] } : res))
+                .catch(() => setFinancials({ annual: [] }));
+        } else if (view === "calendar" && !calendar) {
+            fetchCalendar(symbol)
+                .then((res) => setCalendar(res.error ? { hasData: false } : res))
+                .catch(() => setCalendar({ hasData: false }));
+        } else if (view === "history" && !history) {
+            fetchHistory(symbol)
+                .then((res) => setHistory(res.error ? { bars: [] } : res))
+                .catch(() => setHistory({ bars: [] }));
+        }
+    }, [view, symbol, financials, calendar, history]);
+
+    const handleSelectNews = (id) => {
+        document.getElementById(`news-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightId(id);
+        clearTimeout(highlightTimer.current);
+        highlightTimer.current = setTimeout(() => setHighlightId(null), 2000);
+    };
 
     if (error && !data) {
         return (
@@ -276,24 +428,41 @@ function StockContent({ symbol }) {
             </div>
 
             <div className="mb-10">
-                <div className="flex flex-row justify-end gap-1 mb-2 font-sans text-xs">
-                    {VIEW_OPTIONS.map((option) => (
-                        <button
-                            key={option.id}
-                            onClick={() => setView(option.id)}
-                            className={`px-2 py-1 cursor-pointer transition-colors ${view === option.id
-                                ? "text-text border-b-2 border-secondary"
-                                : "text-text-muted hover:text-text"}`}
-                        >
-                            {option.label}
-                        </button>
-                    ))}
+                <div className="flex flex-row items-center justify-between border-b border-border mb-4 font-sans text-sm">
+                    <div className="flex flex-row">
+                        {VIEWS.map((option) => (
+                            <button
+                                key={option.id}
+                                onClick={() => setView(option.id)}
+                                className={`px-3 py-2 cursor-pointer transition-colors -mb-px ${view === option.id
+                                    ? "text-text border-b-2 border-secondary font-semibold"
+                                    : "text-text-muted hover:text-text"}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                    {view === "chart" && (
+                        <div className="flex flex-row gap-1 text-xs">
+                            {RANGES.map((option) => (
+                                <button
+                                    key={option.id}
+                                    onClick={() => setRange(option.id)}
+                                    className={`px-2 py-1 cursor-pointer transition-colors ${range === option.id
+                                        ? "text-text border-b-2 border-secondary"
+                                        : "text-text-muted hover:text-text"}`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                {view === "financials" ? (
-                    financials ? <FinancialsChart financials={financials} /> : <div className="h-72"></div>
-                ) : (
-                    <StockGraph stock={stock} />
-                )}
+
+                {view === "chart" && <StockGraph stock={stock} news={news} onSelectNews={handleSelectNews} />}
+                {view === "financials" && (financials ? <FinancialsChart financials={financials} /> : <div className="h-72"></div>)}
+                {view === "calendar" && (calendar ? <CalendarView calendar={calendar} /> : <div className="h-40"></div>)}
+                {view === "history" && (history ? <HistoryTable history={history} /> : <div className="h-72"></div>)}
             </div>
 
             <h2 className="text-lg font-serif font-black italic text-text-muted mb-2 border-b border-border pb-2">
@@ -304,7 +473,7 @@ function StockContent({ symbol }) {
             ) : (
                 <div className="flex flex-col">
                     {news.map((item) => (
-                        <NewsFeedItem key={item.id} item={item} showSymbol={false} />
+                        <NewsFeedItem key={item.id} item={item} showSymbol={false} highlighted={item.id === highlightId} />
                     ))}
                 </div>
             )}
