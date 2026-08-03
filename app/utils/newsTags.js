@@ -3,6 +3,7 @@ const TAG_LABELS = {
     "M&A": "M&A",
     MA: "M&A",
     ACQUISITION: "Förvärv",
+    DISPOSAL: "Försäljning",
     DIVESTMENT: "Avyttring",
     MERGER: "Fusion",
     EARNINGS: "Rapport",
