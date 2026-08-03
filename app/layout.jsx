@@ -61,6 +61,11 @@ export default function RootLayout({ children }) {
           src="https://scripts.simpleanalyticscdn.com/latest.js"
           strategy="afterInteractive"
         />
+        <Script
+          src="https://unhidden.so/seo.js"
+          data-website-id="6a709a29c77f9ae189bae849"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
