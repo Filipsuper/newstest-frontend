@@ -29,12 +29,12 @@ const tooltipStyle = {
     color: "var(--color-text)",
 };
 
-// 473479000000 -> "473,5 mdSEK"
-const formatSEK = (value) => {
+// 473479000000, "SEK" -> "473,5 mdSEK"
+const formatMoney = (value, currency = "SEK") => {
     if (value == null) return "–";
     const abs = Math.abs(value);
-    if (abs >= 1e9) return (value / 1e9).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " mdSEK";
-    return (value / 1e6).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " MSEK";
+    if (abs >= 1e9) return (value / 1e9).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " md" + currency;
+    return (value / 1e6).toLocaleString("sv-SE", { maximumFractionDigits: 1 }) + " M" + currency;
 };
 
 function StockGraph({ stock }) {
@@ -165,7 +165,7 @@ function FinancialsChart({ financials }) {
                         formatter={(value, key) =>
                             key === "margin"
                                 ? [value != null ? value.toFixed(1) + "%" : "–", labels.margin]
-                                : [formatSEK(value), labels[key] ?? key]
+                                : [formatMoney(value, financials.currency), labels[key] ?? key]
                         }
                     />
                     <Legend
