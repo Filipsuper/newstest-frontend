@@ -14,18 +14,21 @@ const POLL_MS = 30_000;
 
 function StockGraph({ stock }) {
     const data = (stock.ticks ?? []).map(([ts, price]) => ({ ts, price }));
+    const isDaily = stock.interval === "1d";
 
     if (data.length === 0) {
-        return <p className="text-text-muted font-sans text-sm py-8">Ingen kursdata för senaste sessionen.</p>;
+        return <p className="text-text-muted font-sans text-sm py-8">Ingen kursdata tillgänglig.</p>;
     }
 
     const prices = data.map((d) => d.price);
-    const min = Math.min(...prices, stock.prevClose ?? Infinity);
-    const max = Math.max(...prices, stock.prevClose ?? -Infinity);
+    const min = Math.min(...prices, isDaily ? Infinity : stock.prevClose ?? Infinity);
+    const max = Math.max(...prices, isDaily ? -Infinity : stock.prevClose ?? -Infinity);
     const pad = (max - min) * 0.08 || 1;
     const lastPrice = prices[prices.length - 1];
-    const up = stock.prevClose ? lastPrice >= stock.prevClose : true;
+    // Intraday colors by today's move, daily by the shown period
+    const up = isDaily ? lastPrice >= prices[0] : stock.prevClose ? lastPrice >= stock.prevClose : true;
     const color = up ? "#668CF4" : "#fbbf24";
+    const timeFormat = isDaily ? "D MMM" : "HH:mm";
 
     return (
         <div className="w-full h-72 font-sans">
@@ -39,7 +42,7 @@ function StockGraph({ stock }) {
                     </defs>
                     <XAxis
                         dataKey="ts"
-                        tickFormatter={(ts) => dayjs(ts).format("HH:mm")}
+                        tickFormatter={(ts) => dayjs(ts).format(timeFormat)}
                         stroke="#6b7280"
                         axisLine={false}
                         tickLine={false}
@@ -57,7 +60,7 @@ function StockGraph({ stock }) {
                         tickFormatter={(v) => v.toFixed(1)}
                     />
                     <Tooltip
-                        labelFormatter={(ts) => dayjs(ts).format("HH:mm:ss")}
+                        labelFormatter={(ts) => dayjs(ts).format(isDaily ? "D MMM YYYY" : "HH:mm:ss")}
                         formatter={(value) => [value.toFixed(2) + " kr", "Kurs"]}
                         contentStyle={{
                             background: "var(--color-foreground)",
@@ -66,7 +69,7 @@ function StockGraph({ stock }) {
                             color: "var(--color-text)",
                         }}
                     />
-                    {stock.prevClose && (
+                    {!isDaily && stock.prevClose && (
                         <ReferenceLine y={stock.prevClose} stroke="#6b7280" strokeDasharray="4 4" />
                     )}
                     <Area type="monotone" dataKey="price" stroke={color} strokeWidth={1.5} fill="url(#stockFill)" dot={false} />
@@ -142,13 +145,18 @@ function StockContent({ symbol }) {
                             </span>
                         )}
                         <span className="text-xs text-text-muted mt-1">
-                            Uppdaterad {dayjs(stock.dataAsOf).format("HH:mm:ss")}
+                            Uppdaterad {dayjs(stock.dataAsOf).format(stock.interval === "1d" ? "D MMM YYYY" : "HH:mm:ss")}
                         </span>
                     </div>
                 )}
             </div>
 
-            <div className="border border-border bg-foreground p-4 mb-10">
+            <div className="mb-10">
+                <div className="flex flex-row justify-end mb-1">
+                    <span className="font-sans text-xs text-text-muted">
+                        {stock.interval === "1d" ? "6 månader, dagsvärden" : "Idag"}
+                    </span>
+                </div>
                 <StockGraph stock={stock} />
             </div>
 
