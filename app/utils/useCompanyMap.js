@@ -42,6 +42,9 @@ function buildMap(rows) {
         // genitive: "Volvos" -> "Volvo"
         if (key.endsWith("s") && map.has(key.slice(0, -1))) return map.get(key.slice(0, -1));
         if (key.endsWith(":s") && map.has(key.slice(0, -2))) return map.get(key.slice(0, -2));
+        // "H&M" -> "HM"
+        const noAmp = key.replace(/\s*&\s*/g, "");
+        if (noAmp !== key && map.has(noAmp)) return map.get(noAmp);
         return null;
     };
 }
