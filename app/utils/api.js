@@ -62,6 +62,16 @@ export async function addEmail(mail, website) {
     }
 }
 
+export async function confirmSubscription(token) {
+    try {
+        const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`);
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function generateSummary(onProgress) {
     return new Promise((resolve, reject) => {
         const eventSource = new EventSource(`${API_URL}/tool/generate-summary`, {

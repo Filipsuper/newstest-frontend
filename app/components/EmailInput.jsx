@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react'
 import { addEmail } from "../utils/api"
+import { useModal } from "../providers/ModalProvider"
+import OnboardingModal from "./OnboardingModal"
 
 export default function EmailInput({ centered }) {
     const [message, setMessage] = useState()
+    const { openModal } = useModal()
 
     const validateEmail = (mail) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,7 +34,12 @@ export default function EmailInput({ centered }) {
             return false
         }
 
-        setMessage("Tillagd!")
+        if (res.alreadyVerified) {
+            setMessage("Välkommen tillbaka!")
+        } else {
+            e.target.reset()
+            openModal(<OnboardingModal email={mail} />)
+        }
         window.sa_event?.("click_email_signup")
         return false
     }
