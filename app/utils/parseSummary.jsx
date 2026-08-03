@@ -1,4 +1,6 @@
-export const parseSummary = (summary) => {
+import Link from "next/link";
+
+export const parseSummary = (summary, resolveSymbol) => {
     return summary.split("\n").map((line, index) => {
         if (line === "") {
             return null;
@@ -11,7 +13,20 @@ export const parseSummary = (summary) => {
                 {parts.map((part, i) => {
 
                     if (part.startsWith('&&') && part.endsWith('&&')) {
-                        return <span key={i} className="font-bold">{part.slice(2, -2)}</span>;
+                        const label = part.slice(2, -2);
+                        const symbol = resolveSymbol?.(label);
+                        if (symbol) {
+                            return (
+                                <Link
+                                    key={i}
+                                    href={`/aktie/${encodeURIComponent(symbol)}`}
+                                    className="font-bold underline decoration-dotted decoration-text-muted underline-offset-2 hover:text-primary transition-colors"
+                                >
+                                    {label}
+                                </Link>
+                            );
+                        }
+                        return <span key={i} className="font-bold">{label}</span>;
                     } else if (part.startsWith('**') && part.endsWith('**')) {
                         return <strong className="" key={i}>{part.slice(2, -2)}</strong>;
                     } else if (part.startsWith('##') && part.endsWith('##')) {

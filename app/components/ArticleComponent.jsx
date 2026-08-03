@@ -10,11 +10,13 @@ import IndexGraph from "./IndexGraph";
 import Link from "next/link";
 import ShareArticleComponent from "./ShareArticleComponent";
 import { parseSummary } from "../utils/parseSummary";
+import { useCompanyMap } from "../utils/useCompanyMap";
 
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, sentimentLabel, bulletPoints, introText } = article;
 
-    const parsedSummary = parseSummary(summary)
+    const resolveSymbol = useCompanyMap()
+    const parsedSummary = parseSummary(summary, resolveSymbol)
 
     const SentimentDashboard = ({ sentimentLabel, omxPrice, omxChangePercentage }) => {
         const percentageChange = parseFloat(omxChangePercentage.replace('%', '').replace(',', '.'));
