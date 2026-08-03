@@ -79,13 +79,20 @@ function StockGraph({ stock }) {
     );
 }
 
+const RANGE_OPTIONS = [
+    { id: "intraday", label: "Idag" },
+    { id: "6m", label: "6 mån" },
+    { id: "1y", label: "1 år" },
+];
+
 function StockContent({ symbol }) {
     const [data, setData] = useState(null);
+    const [range, setRange] = useState("intraday");
     const [error, setError] = useState("");
 
     const load = async () => {
         try {
-            const res = await fetchStock(symbol);
+            const res = await fetchStock(symbol, range);
             if (res.stock) {
                 setData(res);
                 setError("");
@@ -100,9 +107,11 @@ function StockContent({ symbol }) {
     useEffect(() => {
         setData(null);
         load();
+        // only today's chart needs refreshing
+        if (range !== "intraday") return;
         const timer = setInterval(load, POLL_MS);
         return () => clearInterval(timer);
-    }, [symbol]);
+    }, [symbol, range]);
 
     if (error) {
         return (
@@ -152,10 +161,18 @@ function StockContent({ symbol }) {
             </div>
 
             <div className="mb-10">
-                <div className="flex flex-row justify-end mb-1">
-                    <span className="font-sans text-xs text-text-muted">
-                        {stock.interval === "1d" ? "6 månader, dagsvärden" : "Idag"}
-                    </span>
+                <div className="flex flex-row justify-end gap-1 mb-2 font-sans text-xs">
+                    {RANGE_OPTIONS.map((option) => (
+                        <button
+                            key={option.id}
+                            onClick={() => setRange(option.id)}
+                            className={`px-2 py-1 cursor-pointer transition-colors ${range === option.id
+                                ? "text-text border-b-2 border-secondary"
+                                : "text-text-muted hover:text-text"}`}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
                 </div>
                 <StockGraph stock={stock} />
             </div>

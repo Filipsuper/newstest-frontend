@@ -78,9 +78,9 @@ export async function fetchLiveFeed({ symbol, q, limit = 60 } = {}) {
     }
 }
 
-export async function fetchStock(symbol) {
+export async function fetchStock(symbol, range = "intraday") {
     try {
-        const res = await fetch(`${API_URL}/feed/stock/${encodeURIComponent(symbol)}`, {
+        const res = await fetch(`${API_URL}/feed/stock/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}`, {
             credentials: "include",
         });
         return res.json();
