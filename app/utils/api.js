@@ -90,6 +90,18 @@ export async function fetchStock(symbol, range = "intraday") {
     }
 }
 
+export async function fetchFinancials(symbol) {
+    try {
+        const res = await fetch(`${API_URL}/feed/financials/${encodeURIComponent(symbol)}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function confirmSubscription(token) {
     try {
         const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`);

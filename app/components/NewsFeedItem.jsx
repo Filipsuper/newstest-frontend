@@ -3,14 +3,6 @@
 import Link from "next/link";
 import dayjs from "dayjs";
 
-const sourceLabel = {
-    mfn: "MFN",
-    cision: "Cision",
-    fi: "FI",
-    nasdaq: "Nasdaq",
-    riksbank: "Riksbanken",
-};
-
 export default function NewsFeedItem({ item, showSymbol = true }) {
     const time = dayjs(item.ts);
     const isToday = time.isSame(dayjs(), "day");
@@ -21,12 +13,6 @@ export default function NewsFeedItem({ item, showSymbol = true }) {
                 <span className="text-text-muted font-semibold">
                     {isToday ? time.format("HH:mm") : time.format("D MMM HH:mm")}
                 </span>
-                <span className="text-text-muted uppercase tracking-wide">
-                    {sourceLabel[item.source] ?? item.source}
-                </span>
-                {item.regulatory && (
-                    <span className="text-secondary border border-secondary px-1.5 py-0.5">Regulatorisk</span>
-                )}
                 {showSymbol && item.symbol && (
                     <Link
                         href={`/aktie/${encodeURIComponent(item.symbol)}`}
