@@ -29,8 +29,9 @@ const tiers = [
         description: "För dig som vill följa nyhetsflödet live",
         features: [
             "Allt i Gratis",
-            "Live-nyhetsflöde i realtid",
-            "Klickbara tickers i breven – se nyhetsflödet för varje aktie",
+            "Marknadsnyheter – live-nyhetsflöde i realtid",
+            "Aktieöversikter med kursgraf och nyheter per bolag",
+            "Klickbara tickers i breven",
         ],
         cta: "Uppgradera till Plus",
         badge: "Nyhet",
@@ -149,8 +150,6 @@ export default function ProPage() {
 
             <p className="text-center text-xs text-text-muted">
                 Betalning via Stripe. Avsluta när du vill i inställningarna – prenumerationen gäller månadsvis.
-                <br />
-                Tickernyheter i breven lanseras inom kort – som Plus-medlem får du dem direkt vid lansering.
             </p>
         </main>
     );

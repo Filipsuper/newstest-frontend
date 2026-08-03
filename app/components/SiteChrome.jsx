@@ -37,12 +37,12 @@ export default function SiteChrome({ children }) {
                     <nav className={`${isMenuOpen ? 'flex mt-4' : 'hidden mt-0'} md:flex flex-col md:flex-row  text-text-article space-y-4 md:space-y-0 md:space-x-4 w-full `}>
                         <Link href="/morgonbrevet" className="hover:underline">Morgonbrevet</Link>
                         <Link href="/kvallsbrevet" className="hover:underline">Kvällsbrevet</Link>
-                        <span className="hidden md:inline text-text-muted">|</span>
-                        <Link href="/om-oss" className="hover:underline">Om oss</Link>
-                        <Link href="/skanna" className="relative hover:underline">
-                            <span>Skanna</span>
+                        <Link href="/marknadsnyheter" className="relative hover:underline">
+                            <span>Marknadsnyheter</span>
                             <span className="absolute font-bold -top-1 -right-4 ml-1 px-1 bg-secondary text-white text-xs rounded-full">+</span>
                         </Link>
+                        <span className="hidden md:inline text-text-muted">|</span>
+                        <Link href="/om-oss" className="hover:underline">Om oss</Link>
                         <Link href="/pro" className="text-secondary font-semibold hover:underline">Pro</Link>
                         <div className="hidden md:flex flex-grow"></div>
                         {!user ? null : isGuestUser ? (

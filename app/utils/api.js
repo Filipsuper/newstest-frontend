@@ -62,6 +62,34 @@ export async function addEmail(mail, website) {
     }
 }
 
+export async function fetchLiveFeed({ symbol, q, limit = 60 } = {}) {
+    const params = new URLSearchParams();
+    if (symbol) params.set("symbol", symbol);
+    if (q) params.set("q", q);
+    params.set("limit", limit);
+    try {
+        const res = await fetch(`${API_URL}/feed/news?${params}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function fetchStock(symbol) {
+    try {
+        const res = await fetch(`${API_URL}/feed/stock/${encodeURIComponent(symbol)}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function confirmSubscription(token) {
     try {
         const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`);

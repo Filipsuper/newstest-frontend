@@ -1,3 +1,11 @@
+// Newsletter tickers ("VOLV B") -> newswire/Yahoo symbols ("VOLV-B.ST")
+export const tickerToSymbol = (ticker = "") => {
+    const trimmed = ticker.trim().toUpperCase();
+    if (!trimmed) return "";
+    if (trimmed.includes(".")) return trimmed;
+    return trimmed.replace(/\s+/g, "-") + ".ST";
+};
+
 export const pnlColor = (value) => {
     if (value > 0) {
         return "text-primary";

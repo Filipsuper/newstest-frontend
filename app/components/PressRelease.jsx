@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react'
-import { importanceColor } from "../utils/utils"
+import Link from "next/link"
+import { importanceColor, tickerToSymbol } from "../utils/utils"
 import { useModal } from '../providers/ModalProvider'
 
 export default function PressRelease({ release }) {
@@ -12,7 +13,13 @@ export default function PressRelease({ release }) {
             <div className="w-full max-w-xl font-sans">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <span className="font-bold">{release.ticker}</span>
+                        <Link
+                            href={`/aktie/${encodeURIComponent(tickerToSymbol(release.ticker))}`}
+                            className="font-bold text-primary hover:underline"
+                            onClick={() => closeModal()}
+                        >
+                            {release.ticker}
+                        </Link>
                         <span className="mx-2">•</span>
                         <span className="text-text-muted">{release.time}</span>
                     </div>
@@ -39,7 +46,13 @@ export default function PressRelease({ release }) {
             onClick={handleShowMore}
         >
             <div className="w-full flex gap-2 items-center">
-                <span>{release.ticker}</span>
+                <Link
+                    href={`/aktie/${encodeURIComponent(tickerToSymbol(release.ticker))}`}
+                    className="text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {release.ticker}
+                </Link>
                 <span>•</span>
                 <span>{release.time}</span>
                 <div className="flex flex-grow"></div>
