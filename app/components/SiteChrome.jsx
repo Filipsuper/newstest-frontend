@@ -43,6 +43,7 @@ export default function SiteChrome({ children }) {
                             <span>Skanna</span>
                             <span className="absolute font-bold -top-1 -right-4 ml-1 px-1 bg-secondary text-white text-xs rounded-full">+</span>
                         </Link>
+                        <Link href="/pro" className="text-secondary font-semibold hover:underline">Pro</Link>
                         <div className="hidden md:flex flex-grow"></div>
                         {!user ? null : isGuestUser ? (
                             <button className="hover:underline cursor-pointer" onClick={handleOpenModal}>Logga in</button>

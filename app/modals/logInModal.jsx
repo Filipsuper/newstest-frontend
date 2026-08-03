@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { signUp } from "../utils/api";
 
-export default function LogInModal() {
+export default function LogInModal({ redirectTo = "/" }) {
     const [message, setMessage] = React.useState("")
 
     const handleSubmit = async (e) => {
@@ -17,7 +17,7 @@ export default function LogInModal() {
             return;
         }
 
-        const response = await signUp(email)
+        const response = await signUp(email, redirectTo)
 
         if (response.error) {
             setMessage(response.message)

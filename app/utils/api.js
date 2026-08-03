@@ -111,14 +111,47 @@ export async function getGraphData() {
 
 //auth
 
-export async function signUp(email) {
+export async function signUp(email, redirectTo = "/") {
     try {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, redirectTo })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function createCheckoutSession(tier) {
+    try {
+        const res = await fetch(`${API_URL}/stripe/create-checkout-session`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ tier })
+        })
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function createPortalSession() {
+    try {
+        const res = await fetch(`${API_URL}/stripe/create-portal-session`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
         })
         return res.json();
     } catch (error) {

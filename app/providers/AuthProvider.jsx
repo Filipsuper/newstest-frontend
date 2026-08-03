@@ -37,12 +37,17 @@ export function AuthProvider({ children }) {
         return user && user.plan === "premium";
     }, [user]);
 
+    // Plus features are included in Pro
+    const isPlusUser = useMemo(() => {
+        return user && (user.plan === "plus" || user.plan === "premium");
+    }, [user]);
+
     useEffect(() => {
         refreshUser();
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, isGuestUser, isPaidUser, refreshUser, isFreeUser }}>
+        <AuthContext.Provider value={{ user, isGuestUser, isPaidUser, isPlusUser, refreshUser, isFreeUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -2,8 +2,9 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuthContext } from "../providers/AuthProvider";
-import { saveActiveNewsletters } from '../utils/api';
+import { saveActiveNewsletters, createPortalSession } from '../utils/api';
 import { useTheme } from "../providers/ThemeProvider";
 
 function SettingsPage() {
@@ -56,6 +57,13 @@ function SettingsPage() {
         await refreshUser();
     }
 
+    const handleManageSubscription = async () => {
+        const res = await createPortalSession();
+        if (res.url) window.location.href = res.url;
+    }
+
+    const planLabel = user.plan === "premium" ? "Pro" : user.plan === "plus" ? "Plus" : "Gratis";
+
     return (
         <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
             <h1 className="text-3xl font-bold  text-text mb-12">Inställningar</h1>
@@ -82,6 +90,25 @@ function SettingsPage() {
                             />
                         </button>
                     </div>
+                </div>
+            </section>
+
+            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+                <h2 className="text-xl font-bold text-text mb-4">Prenumeration</h2>
+                <div className="flex flex-col body-text gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-base font-bold font-serif mb-2">Din plan</span>
+                        <span className="text-text-muted">{planLabel}</span>
+                    </div>
+                    {user.plan === "plus" || user.plan === "premium" ? (
+                        <button className="secondary-btn w-fit py-1 cursor-pointer" onClick={handleManageSubscription}>
+                            Hantera prenumeration
+                        </button>
+                    ) : (
+                        <Link href="/pro" className="text-primary underline">
+                            Uppgradera till Plus eller Pro →
+                        </Link>
+                    )}
                 </div>
             </section>
 
