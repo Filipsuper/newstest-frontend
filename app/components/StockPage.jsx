@@ -442,6 +442,27 @@ function HistoryTable({ history }) {
     );
 }
 
+function StockDescription({ text }) {
+    const [expanded, setExpanded] = useState(false);
+    if (!text) return null;
+
+    const isLong = text.length > 220;
+
+    return (
+        <div className="font-sans text-sm text-text-muted max-w-xl mt-2">
+            <p className={expanded ? "" : "line-clamp-2"}>{text}</p>
+            {isLong && (
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-primary text-xs mt-1 cursor-pointer hover:underline"
+                >
+                    {expanded ? "Visa mindre" : "Visa mer"}
+                </button>
+            )}
+        </div>
+    );
+}
+
 function StockContent({ symbol }) {
     const [data, setData] = useState(null);
     const [financials, setFinancials] = useState(null);
@@ -540,7 +561,10 @@ function StockContent({ symbol }) {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-4xl font-serif font-bold italic text-text mb-1">{stock.name ?? stock.label}</h1>
-                    <span className="font-sans text-sm text-text-muted">{stock.label} • {stock.symbol}</span>
+                    <span className="font-sans text-sm text-text-muted">
+                        {stock.label} • {stock.symbol}{stock.sector ? ` • ${stock.sector}` : ""}
+                    </span>
+                    <StockDescription text={stock.description} />
                 </div>
                 {lastPrice && (
                     <div className="flex flex-col md:items-end font-sans">
