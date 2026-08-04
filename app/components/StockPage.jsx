@@ -254,9 +254,8 @@ function CalendarView({ calendar }) {
 
     return (
         <div className="font-sans py-2">
-            <div className="flex flex-row justify-between text-[11px] uppercase tracking-wider text-text-muted mb-8">
-                <span>Bolagskalender</span>
-                <span>Källa: Yahoo{calendar.updatedAt ? ` · ${svDate(calendar.updatedAt, { day: "numeric", month: "short", year: "numeric" })}` : ""}</span>
+            <div className="text-[11px] uppercase tracking-wider text-text-muted mb-8">
+                Bolagskalender
             </div>
 
             {nextEarnings && (
