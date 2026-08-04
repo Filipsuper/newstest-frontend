@@ -32,6 +32,7 @@ function LiveFeed() {
     const [updatedAt, setUpdatedAt] = useState(null);
     const [error, setError] = useState("");
     const [onlyWatchlist, setOnlyWatchlist] = useState(false);
+    const [sortByImpact, setSortByImpact] = useState(false);
     const sourceRef = useRef(null);
 
     const watchlist = user?.watchlist ?? [];
@@ -108,11 +109,18 @@ function LiveFeed() {
         setSearchItems(null);
     };
 
-    const shown = activeQuery
+    const filtered = activeQuery
         ? searchItems
         : onlyWatchlist
             ? (items ?? []).filter((item) => item.symbol && watchlist.includes(item.symbol))
             : items;
+
+    // "Dagens mest marknadspåverkande nyheter": biggest |reaction| first
+    const shown = sortByImpact && Array.isArray(filtered)
+        ? [...filtered].sort(
+            (a, b) => Math.abs(b.reaction?.pct ?? 0) - Math.abs(a.reaction?.pct ?? 0)
+        )
+        : filtered;
 
     return (
         <>
@@ -135,20 +143,41 @@ function LiveFeed() {
                 </div>
             </div>
 
-            {watchlist.length > 0 && !activeQuery && (
-                <div className="flex flex-row gap-1 mb-6 font-sans text-xs">
-                    <button
-                        onClick={() => setOnlyWatchlist(false)}
-                        className={`px-2 py-1 cursor-pointer transition-colors ${!onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                    >
-                        Alla nyheter
-                    </button>
-                    <button
-                        onClick={() => setOnlyWatchlist(true)}
-                        className={`px-2 py-1 cursor-pointer transition-colors ${onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                    >
-                        Mina aktier ({watchlist.length})
-                    </button>
+            {!activeQuery && (
+                <div className="flex flex-row justify-between items-center mb-6 font-sans text-xs">
+                    <div className="flex flex-row gap-1">
+                        {watchlist.length > 0 && (
+                            <>
+                                <button
+                                    onClick={() => setOnlyWatchlist(false)}
+                                    className={`px-2 py-1 cursor-pointer transition-colors ${!onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
+                                >
+                                    Alla nyheter
+                                </button>
+                                <button
+                                    onClick={() => setOnlyWatchlist(true)}
+                                    className={`px-2 py-1 cursor-pointer transition-colors ${onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
+                                >
+                                    Mina aktier ({watchlist.length})
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <div className="flex flex-row gap-1">
+                        <button
+                            onClick={() => setSortByImpact(false)}
+                            className={`px-2 py-1 cursor-pointer transition-colors ${!sortByImpact ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
+                        >
+                            Senaste
+                        </button>
+                        <button
+                            onClick={() => setSortByImpact(true)}
+                            title="Dagens mest marknadspåverkande nyheter"
+                            className={`px-2 py-1 cursor-pointer transition-colors ${sortByImpact ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
+                        >
+                            Störst reaktion
+                        </button>
+                    </div>
                 </div>
             )}
 

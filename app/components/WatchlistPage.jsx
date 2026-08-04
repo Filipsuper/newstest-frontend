@@ -11,7 +11,7 @@ import { getCompanies } from '../utils/companies';
 import StockSearch from './StockSearch';
 import { TOPIC_LABELS } from '../utils/topicLabels';
 
-const WATCHLIST_CAP = 30; // keep in sync with backend routes/user.js
+const WATCHLIST_CAPS = { free: 5, plus: 10, premium: 100 }; // keep in sync with backend routes/user.js
 const TOPICS_CAP = 10;
 
 function WatchlistPage() {
@@ -147,7 +147,11 @@ function WatchlistPage() {
             <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
                 <div className="flex flex-row justify-between items-baseline mb-4">
                     <h2 className="text-xl font-bold text-text">Bevakade bolag</h2>
-                    <span className="font-sans text-xs text-text-muted">{watchlist.length} av {WATCHLIST_CAP}</span>
+                    <span className="font-sans text-xs text-text-muted">
+                        {user.plan === "premium"
+                            ? `${watchlist.length} bolag`
+                            : `${watchlist.length} av ${WATCHLIST_CAPS[user.plan] ?? WATCHLIST_CAPS.free}`}
+                    </span>
                 </div>
                 {error && <p className="text-red-500 font-sans text-sm mb-4">{error}</p>}
                 {watchlist.length === 0 ? (

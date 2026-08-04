@@ -48,8 +48,8 @@ exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
   completion per user; story summaries shared across users.
 
 **Steps:**
-1. ✅ Watchlist model (`user.watchlist`, cap 30) + toggle API (aug 2026).
-   Per-tier caps (Plus ~10 / Pro unlimited) still todo
+1. ✅ Watchlist model + toggle API (aug 2026), per-tier caps
+   (free 5 / Plus 10 / Pro 100)
 2. ✅ Watchlist UI: star on stock pages, "Mina aktier" filter in the live
    feed, `/mina-aktier` page with stock picker + topics ("Ämnen":
    segments + sectors). Remaining: picker in onboarding (needs identity
@@ -59,8 +59,9 @@ exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
    (GET /api/tool/personal-blocks), real stories for Plus/Pro, locked
    teaser with real match count for free users. Fail-safe: letter sends
    unchanged if blocks unavailable.
-4. Indirect impact v1: same-industry stories flagged "påverkar din bransch";
-   AI relevance check only on high-importance stories (cost control)
+4. ✅ Indirect impact v1 (aug 2026): stories from the same industry as a
+   watched stock (importance ≥70, max 2) appended to the personal block;
+   AI bullets render them as "Inom din bransch: …"
 5. Onboarding upsell: after e-mail confirm → pick stocks + topics free →
    preview the personalized section with real stories → "aktivera med Plus"
 
@@ -91,8 +92,12 @@ macro themes).
 - ✅ Screener (aug 2026): `/screener` movers table where each move carries
   its explaining wire story + label ("Rapport", "Order", …). Replaced the
   movers panel on Marknadsnyheter.
-- "Dagens mest marknadspåverkande nyheter": feed sorting by |reaction|;
-  also feeds the evening letter
+- ✅ "Störst reaktion" sort toggle in the live feed (aug 2026); reaction
+  sorting already feeds the evening letter
+- Wire finding (aug 2026 rejection audit): CEO/management changes are
+  rejected as `materiality_gate:no_supported_event` (e.g. Recyctec new VD).
+  The wire needs a MANAGEMENT event type before "Ledning" news reaches
+  letters/feed.
 - Reaction measured at fixed windows (+1h, +1d) besides "since publish"
 - Reaction history on stock pages: "how does this stock react to reports?"
 - Honest labeling: thin trading and index moves aren't causality
