@@ -29,8 +29,9 @@ const tiers = [
         description: "För dig som vill följa nyhetsflödet live",
         features: [
             "Allt i Gratis",
+            "Min sammanfattning – personlig sektion i morgonbrevet med dina aktier & ämnen",
             "Marknadsnyheter – live-nyhetsflöde i realtid",
-            "Aktieöversikter med kursgraf och nyheter per bolag",
+            "Aktieöversikter med kursgraf, analys och nyheter per bolag",
             "Klickbara tickers i breven",
         ],
         cta: "Uppgradera till Plus",

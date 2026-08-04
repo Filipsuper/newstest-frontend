@@ -90,7 +90,7 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="border border-border bg-foreground p-6 mb-8">
-                <h2 className="text-lg font-serif font-bold text-text mb-1">Gör brevet till ditt ⭐</h2>
+                <h2 className="text-lg font-serif font-bold text-text mb-1">Gör brevet till ditt</h2>
                 <p className="text-sm text-text-muted mb-6">
                     Stjärnmärk bolag och välj ämnen du bryr dig om — helt gratis —
                     så bevakar vi dem åt dig i morgonbrevet.
@@ -99,14 +99,15 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="border border-border bg-foreground p-6 mb-8">
-                <h2 className="text-lg font-serif font-bold text-text mb-1">Vi bevakar börsen åt dig 📈</h2>
+                <h2 className="text-lg font-serif font-bold text-text mb-1">Följ dina bolag hela dagen</h2>
                 <p className="text-sm text-text-muted mb-4">
-                    Breven är bara början – OMXsum följer nyhetsflödet hela dagen.
+                    Nyheterna i ditt brev kommer från vårt eget liveflöde – där kan du
+                    följa dem i realtid.
                 </p>
                 <div className="flex flex-col gap-3 mb-4">
                     <div className="flex flex-row gap-3 items-center">
                         <FaNewspaper className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live, på svenska</p>
+                        <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live</p>
                     </div>
                     <div className="flex flex-row gap-3 items-center">
                         <FaChartLine className="text-secondary shrink-0" />

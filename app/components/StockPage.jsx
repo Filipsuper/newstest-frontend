@@ -22,7 +22,7 @@ const POLL_MS = 30_000;
 
 const VIEWS = [
     { id: "chart", label: "Kurs" },
-    { id: "financials", label: "Finanser" },
+    { id: "financials", label: "Analys" },
     { id: "calendar", label: "Kalender" },
     { id: "history", label: "Historik" },
 ];

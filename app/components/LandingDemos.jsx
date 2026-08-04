@@ -75,7 +75,7 @@ export function DemoStock() {
             <div className="flex flex-row justify-between items-center border-b border-border mb-4 font-sans text-xs">
                 <div className="flex flex-row">
                     <span className="px-2.5 py-1.5 text-text border-b-2 border-secondary font-semibold -mb-px">Kurs</span>
-                    <span className="px-2.5 py-1.5 text-text-muted">Finanser</span>
+                    <span className="px-2.5 py-1.5 text-text-muted">Analys</span>
                     <span className="px-2.5 py-1.5 text-text-muted">Kalender</span>
                     <span className="px-2.5 py-1.5 text-text-muted">Historik</span>
                 </div>
@@ -220,7 +220,7 @@ export function DemoFinancials() {
             <div className="flex flex-row justify-between items-start mb-4">
                 <div>
                     <p className="text-xl font-serif font-bold italic text-text">Evolution</p>
-                    <p className="font-sans text-xs text-text-muted mt-0.5">EVO • Finanser</p>
+                    <p className="font-sans text-xs text-text-muted mt-0.5">EVO • Analys</p>
                 </div>
                 <div className="flex flex-row gap-1 font-sans text-xs">
                     <span className="px-1.5 text-text border-b-2 border-secondary">År</span>

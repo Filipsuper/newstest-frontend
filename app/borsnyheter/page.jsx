@@ -101,7 +101,7 @@ export default async function Page() {
                 <p className="font-sans text-text-article leading-relaxed">
                     Vill du följa börsnyheterna live? <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link>{" "}
                     visar pressmeddelanden och insynshandel i realtid med kursreaktioner, och varje
-                    aktie har en egen översikt med kurs, finanser och nyheter.
+                    aktie har en egen översikt med kurs, analys och nyheter.
                 </p>
             </section>
         </main>

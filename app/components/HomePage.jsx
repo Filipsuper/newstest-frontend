@@ -119,7 +119,7 @@ export default function HomePage({ articles }) {
             </p>
             <p className="text-text-muted font-sans leading-relaxed">
               Vill du se flödet live? <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link>{" "}
-              visar allt i realtid, på svenska – med{" "}
+              visar allt i realtid – med{" "}
               <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">aktieöversikter</Link> för
               870+ svenska aktier.
             </p>

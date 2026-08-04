@@ -49,7 +49,7 @@ export default function OnboardingModal({ email }) {
 
             {step === 2 && (
                 <div className="flex flex-col items-center text-center">
-                    <h2 className="text-2xl text-text font-bold font-serif mb-2">Gör brevet till ditt ⭐</h2>
+                    <h2 className="text-2xl text-text font-bold font-serif mb-2">Gör brevet till ditt</h2>
                     <p className="text-sm text-text-muted mb-6">
                         När du bekräftat din mail kan du välja bolag och ämnen att bevaka –
                         helt gratis
