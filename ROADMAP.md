@@ -48,13 +48,21 @@ exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
   completion per user; story summaries shared across users.
 
 **Steps:**
-1. Watchlist model (`user.watchlist: [symbol]`, cap per tier) + API
-2. Watchlist UI: star on stock pages, "Mina aktier" page, picker in onboarding
+1. ✅ Watchlist model (`user.watchlist`, cap 30) + toggle API (aug 2026)
+2. ✅ Watchlist UI: star on stock pages, "Mina aktier" filter in the live
+   feed. Remaining: picker in onboarding (blocked on identity merge below)
 3. Letter composer in the letter job: fetch per-user blocks, render email
 4. Indirect impact v1: same-industry stories flagged "påverkar din bransch";
    AI relevance check only on high-importance stories (cost control)
 5. Onboarding upsell: after e-mail confirm → pick stocks + topics free →
    preview the personalized section with real stories → "aktivera med Plus"
+
+**Identity merge (prerequisite for step 5):** newsletter signups live in the
+`mails` collection and are not accounts — but watchlists live on `users`.
+The onboarding stock-picker requires merging these: newsletter signup should
+create (or link to) a user identity so a fresh subscriber can pick stocks
+before ever "logging in". Then confirm-email doubles as account verification
+(the flows already share the double-opt-in mail).
 
 **Infra prerequisites:**
 - Resend paid tier before rollout (free cap 100 mails/day already tight)
