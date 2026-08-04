@@ -7,6 +7,8 @@ import { fetchLiveFeed } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
+import MoversPanel from "./MoversPanel";
+import StockSearch from "./StockSearch";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_ITEMS = 100;
@@ -169,6 +171,10 @@ export default function MarketNewsPage() {
                 </p>
             </div>
             <PlusPaywall redirectTo="/marknadsnyheter">
+                <div className="mb-8">
+                    <StockSearch />
+                </div>
+                <MoversPanel />
                 <LiveFeed />
             </PlusPaywall>
         </main>

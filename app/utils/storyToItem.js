@@ -19,6 +19,7 @@ export function storyToItem(story) {
         labels: story.tags ?? [],
         importance: story.importance ?? null,
         summary: story.summary ?? null,
+        facts: story.facts ?? null,
         status: story.status,
     };
 }

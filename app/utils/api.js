@@ -102,6 +102,18 @@ export async function fetchFinancials(symbol) {
     }
 }
 
+export async function fetchMovers(order = "gainers", limit = 5) {
+    try {
+        const res = await fetch(`${API_URL}/feed/movers?order=${order}&limit=${limit}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function fetchCalendar(symbol) {
     try {
         const res = await fetch(`${API_URL}/feed/calendar/${encodeURIComponent(symbol)}`, {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { getCompanies } from "./companies";
 
 const SUFFIXES = /\s+(ab|abp|publ|group)$/;
 const SHARE_CLASS = /\s+(a|b|c|sdb|pref)$/;
@@ -52,9 +51,8 @@ function buildMap(rows) {
 let cachePromise = null;
 
 async function loadResolver() {
-    const res = await fetch(`${API_URL}/feed/companies`);
-    const rows = await res.json();
-    if (!Array.isArray(rows)) throw new Error("bad companies payload");
+    const rows = await getCompanies();
+    if (rows.length === 0) throw new Error("no companies");
     return buildMap(rows);
 }
 

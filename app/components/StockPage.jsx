@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
-import { FaArrowLeft } from "react-icons/fa";
+import StockSearch from "./StockSearch";
 import {
     ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Line, Legend,
     XAxis, YAxis, ReferenceLine, ReferenceDot, Tooltip,
@@ -611,9 +611,9 @@ function StockContent({ symbol }) {
 export default function StockPage({ symbol }) {
     return (
         <main className="min-h-[80vh] mx-auto max-w-3xl px-4 py-8">
-            <Link href="/marknadsnyheter" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8 font-sans text-sm">
-                <FaArrowLeft /> Marknadsnyheter
-            </Link>
+            <div className="mb-8">
+                <StockSearch placeholder="Sök annan aktie…" />
+            </div>
             <PlusPaywall redirectTo={`/aktie/${encodeURIComponent(symbol)}`}>
                 <StockContent symbol={symbol} />
             </PlusPaywall>

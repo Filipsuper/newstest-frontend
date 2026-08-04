@@ -3,8 +3,11 @@
 import Link from "next/link";
 import dayjs from "dayjs";
 import { tagLabel, tagColor } from "../utils/newsTags";
+import { useModal } from "../providers/ModalProvider";
+import NewsModal from "./NewsModal";
 
 export default function NewsFeedItem({ item, showSymbol = true, highlighted = false }) {
+    const { openModal } = useModal();
     const time = dayjs(item.ts);
     const isToday = time.isSame(dayjs(), "day");
 
@@ -31,15 +34,14 @@ export default function NewsFeedItem({ item, showSymbol = true, highlighted = fa
                     </Link>
                 )}
             </div>
-            {item.url ? (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" className="group">
-                    <h3 className="text-lg font-serif font-bold italic text-text group-hover:underline mb-1">
-                        {item.title}
-                    </h3>
-                </a>
-            ) : (
-                <h3 className="text-lg font-serif font-bold italic text-text mb-1">{item.title}</h3>
-            )}
+            <button
+                onClick={() => openModal(<NewsModal item={item} />)}
+                className="text-left cursor-pointer group"
+            >
+                <h3 className="text-lg font-serif font-bold italic text-text group-hover:underline mb-1">
+                    {item.title}
+                </h3>
+            </button>
             {item.summary && (
                 <p className="text-sm font-sans text-text-muted leading-relaxed line-clamp-3">
                     {item.summary}
