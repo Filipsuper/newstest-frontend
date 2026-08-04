@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import dayjs from "dayjs";
 import { FiSearch } from "react-icons/fi";
 import { fetchLiveFeed } from "../utils/api";
@@ -177,7 +178,7 @@ function LiveFeed() {
             ) : shown.length === 0 ? (
                 <p className="text-text-muted font-sans py-8">
                     {onlyWatchlist && !activeQuery
-                        ? "Inga nyheter om dina aktier ännu. Stjärnmärk fler bolag från deras aktiesidor."
+                        ? <>Inga nyheter om dina aktier ännu. <Link href="/mina-aktier" className="text-primary underline">Hantera din bevakningslista</Link> eller stjärnmärk fler bolag från deras aktiesidor.</>
                         : "Inga nyheter hittades."}
                 </p>
             ) : (

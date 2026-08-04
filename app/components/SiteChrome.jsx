@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FaTwitter, FaBars } from "react-icons/fa";
-import { FaBluesky } from "react-icons/fa6";
+import { FaBluesky, FaRegStar } from "react-icons/fa6";
 import { IoIosSettings } from "react-icons/io";
 import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
@@ -49,6 +49,7 @@ export default function SiteChrome({ children }) {
                             <button className="hover:underline cursor-pointer" onClick={handleOpenModal}>Logga in</button>
                         ) : (
                             <div className="flex flex-row">
+                                <Link href="/mina-aktier" title="Mina aktier" className="text-lg text-text-muted hover:text-secondary cursor-pointer md:mr-3" ><FaRegStar /></Link>
                                 <Link href="/settings" className="text-xl text-text-muted cursor-pointer md:mr-4" ><IoIosSettings /></Link>
                                 <span className="sm:flex md:hidden xl:flex text-sm text-text-muted">{user.email}</span>
                             </div>

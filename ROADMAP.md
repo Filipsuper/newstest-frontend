@@ -42,16 +42,23 @@ exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
 - "Dina aktier" block: wire stories matched against the user's watchlist,
   summarized once per story (cached), assembled per user
 - Topic blocks: smallcap / large cap / medtech / … mapped from the stocks
-  collection (`segment`, `sector`, `industry`) — user model already has a
-  `topics` field
+  collection (`segment`, `sector`, `industry`) — user model still needs a
+  `topics` field (not there yet, despite earlier note)
 - One email per user per day (base + their blocks). Cost ≈ one small
   completion per user; story summaries shared across users.
 
 **Steps:**
-1. ✅ Watchlist model (`user.watchlist`, cap 30) + toggle API (aug 2026)
+1. ✅ Watchlist model (`user.watchlist`, cap 30) + toggle API (aug 2026).
+   Per-tier caps (Plus ~10 / Pro unlimited) still todo
 2. ✅ Watchlist UI: star on stock pages, "Mina aktier" filter in the live
-   feed. Remaining: picker in onboarding (blocked on identity merge below)
-3. Letter composer in the letter job: fetch per-user blocks, render email
+   feed, `/mina-aktier` page with stock picker + topics ("Ämnen":
+   segments + sectors). Remaining: picker in onboarding (needs identity
+   merge below)
+3. ✅ Letter composer v1 (aug 2026): "Min sammanfattning" block in the
+   morning letter — wire stories matched vs watchlist + topics
+   (GET /api/tool/personal-blocks), real stories for Plus/Pro, locked
+   teaser with real match count for free users. Fail-safe: letter sends
+   unchanged if blocks unavailable.
 4. Indirect impact v1: same-industry stories flagged "påverkar din bransch";
    AI relevance check only on high-importance stories (cost control)
 5. Onboarding upsell: after e-mail confirm → pick stocks + topics free →
@@ -63,6 +70,17 @@ The onboarding stock-picker requires merging these: newsletter signup should
 create (or link to) a user identity so a fresh subscriber can pick stocks
 before ever "logging in". Then confirm-email doubles as account verification
 (the flows already share the double-opt-in mail).
+
+**Stock labels → news linking (idea, underpins topic blocks + interests):**
+Give every stock a label set ("industry", "small cap", "medtech", …) derived
+from the stocks collection (`segment`, `sector`, `industry`) plus curated
+extras. Tag wire stories with the same vocabulary so stocks and news link
+through shared labels, not only ticker mentions — a story tagged
+medtech+smallcap surfaces for every stock (and user) carrying those labels.
+This becomes the backbone for personalized-letter "interests" the user picks,
+and lets news attach to more than the company name (sector moves, regulation,
+macro themes).
+>>>>>>> 391a604 (Mina aktier page with topics picker, watchlist in settings/nav, personalized letter roadmap)
 
 **Infra prerequisites:**
 - Resend paid tier before rollout (free cap 100 mails/day already tight)

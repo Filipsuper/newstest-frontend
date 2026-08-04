@@ -130,6 +130,31 @@ export async function toggleWatchlist(symbol) {
     }
 }
 
+export async function fetchTopics() {
+    try {
+        const res = await fetch(`${API_URL}/feed/topics`);
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function saveTopics(topics) {
+    try {
+        const res = await fetch(`${API_URL}/user/topics`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ topics }),
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function fetchCalendar(symbol) {
     try {
         const res = await fetch(`${API_URL}/feed/calendar/${encodeURIComponent(symbol)}`, {

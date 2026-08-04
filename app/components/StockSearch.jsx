@@ -7,7 +7,7 @@ import { getCompanies } from "../utils/companies";
 
 const normalize = (value = "") => value.toLowerCase().trim();
 
-export default function StockSearch({ placeholder = "Sök aktie…" }) {
+export default function StockSearch({ placeholder = "Sök aktie…", onSelect }) {
     const [query, setQuery] = useState("");
     const [companies, setCompanies] = useState([]);
     const [open, setOpen] = useState(false);
@@ -45,7 +45,8 @@ export default function StockSearch({ placeholder = "Sök aktie…" }) {
     const select = (row) => {
         setQuery("");
         setOpen(false);
-        router.push(`/aktie/${encodeURIComponent(row.symbol)}`);
+        if (onSelect) onSelect(row);
+        else router.push(`/aktie/${encodeURIComponent(row.symbol)}`);
     };
 
     const handleKeyDown = (e) => {
