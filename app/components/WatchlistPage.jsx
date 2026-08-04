@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
+import { useModal } from "../providers/ModalProvider";
+import LogInModal from "../modals/logInModal";
 import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
 import { getCompanies } from '../utils/companies';
 import StockSearch from './StockSearch';
@@ -21,18 +22,48 @@ function WatchlistPage() {
     const [vocabulary, setVocabulary] = useState(null);
     const [topicsBusy, setTopicsBusy] = useState(false);
     const [topicsError, setTopicsError] = useState(null);
-    const router = useRouter();
-
-    useEffect(() => {
-        if (isGuestUser) router.replace("/");
-    }, [isGuestUser, router]);
+    const { openModal } = useModal();
 
     useEffect(() => {
         getCompanies().then(setCompanies);
         fetchTopics().then(setVocabulary).catch(() => setVocabulary(null));
     }, []);
 
-    if (!user || isGuestUser) return null
+    if (!user) return null
+
+    // Logged out (e.g. arriving from the welcome email in another browser):
+    // pitch the feature and offer login that returns here
+    if (isGuestUser) {
+        return (
+            <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
+                <h1 className="text-3xl font-bold text-text mb-4">Mina aktier</h1>
+                <p className="body-text text-text-muted mb-8 max-w-2xl">
+                    Stjärnmärk bolag och välj ämnen du vill följa – så får ditt
+                    morgonbrev en egen sektion, <span className="text-text font-semibold">Min
+                    sammanfattning</span>, med nyheterna som matchar dina val och hur
+                    aktierna reagerade. Dina val styr också fliken "Mina aktier" i{" "}
+                    <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>.
+                </p>
+                <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+                    <h2 className="text-xl font-bold text-text mb-4">Logga in för att välja</h2>
+                    <p className="body-text text-text-muted mb-6">
+                        Logga in med din mailadress – samma som du prenumererar med – så
+                        kan du välja dina aktier och ämnen direkt.
+                    </p>
+                    <button
+                        className="primary-btn extra-padding cursor-pointer"
+                        onClick={() => openModal(<LogInModal redirectTo="/mina-aktier" />)}
+                    >
+                        Logga in
+                    </button>
+                    <p className="body-text text-text-muted mt-6">
+                        Prenumererar du inte på morgonbrevet ännu?{" "}
+                        <Link href="/" className="text-primary underline">Börja här – det är gratis</Link>.
+                    </p>
+                </section>
+            </main>
+        );
+    }
 
     const watchlist = user.watchlist ?? [];
     const companyBySymbol = new Map(companies.map((row) => [row.symbol, row]));
