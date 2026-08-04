@@ -151,18 +151,21 @@ export function DemoNewsFeed() {
             chips: [["text-sky-400 border-sky-400/40", "Order"]],
             company: "PowerCell Sweden",
             title: "PowerCell får order värd SEK 21 million",
+            reaction: "+5,4%",
         },
         {
             time: "09:52",
             chips: [["text-secondary border-secondary/40", "Insynshandel"], ["text-primary border-primary/40", "Förvärv"]],
             company: "Fastpartner A",
             title: "Fastpartner A: Sven-Olof Johansson köper 5 787 aktier för 245 948 SEK",
+            reaction: "+0,8%",
         },
         {
             time: "09:00",
             chips: [["text-emerald-400 border-emerald-400/40", "Rapport"]],
             company: "Volvo Car B",
             title: "Volvo Car publicerar rapport",
+            reaction: "-2,1%",
         },
     ];
 
@@ -185,6 +188,14 @@ export function DemoNewsFeed() {
                                 <Chip key={label} color={color}>{label}</Chip>
                             ))}
                             <span className="text-primary border border-border px-1.5 py-0.5 text-[10px]">{item.company}</span>
+                            {item.reaction && (
+                                <span
+                                    title="Kursreaktion sedan nyheten"
+                                    className={`font-semibold ${item.reaction.startsWith("-") ? "text-secondary" : "text-primary"}`}
+                                >
+                                    {item.reaction}
+                                </span>
+                            )}
                         </div>
                         <p className="font-serif font-bold italic text-text text-sm leading-snug">{item.title}</p>
                     </div>

@@ -138,7 +138,13 @@ export default function HomePage({ articles }) {
             <div className="absolute -inset-8 bg-secondary opacity-[0.06] blur-3xl pointer-events-none"></div>
             <div className="relative bg-foreground p-6" aria-hidden="true">
               <p className="font-sans text-xs text-text-muted mb-1">Ur morgonbrevet</p>
-              <p className="font-serif font-bold text-text mb-3">Min sammanfattning</p>
+              <p className="font-serif font-bold text-text mb-2">Min sammanfattning</p>
+              <div className="flex flex-row flex-wrap gap-1.5 mb-3 font-sans text-[10px]">
+                <span className="border border-secondary/60 text-text px-1.5 py-0.5">★ PowerCell Sweden</span>
+                <span className="border border-secondary/60 text-text px-1.5 py-0.5">★ Epiroc</span>
+                <span className="border border-border text-text-muted px-1.5 py-0.5">Small Cap</span>
+                <span className="border border-border text-text-muted px-1.5 py-0.5">Teknik</span>
+              </div>
               <div className="flex flex-col gap-3 font-sans">
                 <div>
                   <p className="text-xs font-bold text-text">PowerCell Sweden <span className="text-primary">+5,4%</span></p>
@@ -148,10 +154,7 @@ export default function HomePage({ articles }) {
                   <p className="text-xs font-bold text-text">Epiroc A <span className="text-primary">+2,6%</span></p>
                   <p className="text-sm font-serif italic text-text-article">Epiroc slutför förvärv i Sydafrika</p>
                 </div>
-                <div className="flex flex-col gap-1.5 pt-1">
-                  <div className="h-2.5 bg-border w-[92%]" />
-                  <div className="h-2.5 bg-border w-[68%]" />
-                </div>
+                <p className="text-xs text-text-muted pt-1">+ 3 fler nyheter som matchar dina val</p>
               </div>
             </div>
           </div>
