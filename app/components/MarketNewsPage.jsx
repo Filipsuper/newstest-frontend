@@ -9,7 +9,6 @@ import { storyToItem } from "../utils/storyToItem";
 import { useAuthContext } from "../providers/AuthProvider";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
-import StockSearch from "./StockSearch";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_ITEMS = 100;
@@ -201,13 +200,6 @@ export default function MarketNewsPage() {
                 </p>
             </div>
             <PlusPaywall redirectTo="/marknadsnyheter">
-                <div className="mb-8">
-                    <StockSearch />
-                </div>
-                <p className="font-sans text-xs text-text-muted mb-8">
-                    Dagens vinnare och förlorare hittar du numera i{" "}
-                    <Link href="/screener" className="text-primary underline">Screenern</Link>.
-                </p>
                 <LiveFeed />
             </PlusPaywall>
         </main>

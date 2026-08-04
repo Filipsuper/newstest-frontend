@@ -136,7 +136,7 @@ export default function HomePage({ articles }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           <div className="relative order-last md:order-first">
             <div className="absolute -inset-8 bg-secondary opacity-[0.06] blur-3xl pointer-events-none"></div>
-            <div className="relative border border-border bg-foreground p-6" aria-hidden="true">
+            <div className="relative bg-foreground p-6" aria-hidden="true">
               <p className="font-sans text-xs text-text-muted mb-1">Ur morgonbrevet</p>
               <p className="font-serif font-bold text-text mb-3">Min sammanfattning</p>
               <div className="flex flex-col gap-3 font-sans">
