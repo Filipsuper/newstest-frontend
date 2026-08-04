@@ -7,6 +7,7 @@ const parseTitleForUrl = (title = "") => title.replaceAll("-", "_").replaceAll("
 export default async function sitemap() {
     const staticPages = [
         { url: "https://omxsum.com", changeFrequency: "daily", priority: 1 },
+        { url: "https://omxsum.com/borsnyheter", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/morgonbrevet", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/kvallsbrevet", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/om-oss", changeFrequency: "monthly", priority: 0.5 },

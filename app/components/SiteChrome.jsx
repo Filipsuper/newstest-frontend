@@ -64,6 +64,7 @@ export default function SiteChrome({ children }) {
                     <a href="https://x.com/omxtamer" className="text-text-muted"><FaTwitter /></a>
                     <a href="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted border-r border-border pr-2"><FaBluesky /></a>
                     <a href="https://blog.omxsum.com" className="text-text-muted border-r border-border pr-2 underline">Blogg</a>
+                    <Link href="/borsnyheter" className="text-text-muted border-r border-border pr-2 underline">Börsnyheter</Link>
                     <a href="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</a>
                     <p></p>
                 </div>

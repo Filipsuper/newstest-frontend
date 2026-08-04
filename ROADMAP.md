@@ -24,6 +24,16 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 
 ## Now / next
 
+### 0. Wire → letters: use our own newsfeed in the summaries
+
+The morgon-/kvällsbrev generation should consume the OMXsum wire as a
+first-class source alongside the existing scrapes: top stories since the last
+letter (importance-ranked, Swedish, deduplicated, **with price reactions**)
+go into the summarization prompt. The evening letter especially benefits:
+"dagens mest marknadspåverkande nyheter" comes straight from reaction data.
+Additive and fail-safe — if the wire is unreachable the letters generate
+exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
+
 ### 1. Personalized letters (the big paid feature)
 
 **Architecture: composable letter blocks — not one AI letter per user.**
@@ -64,6 +74,16 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 - Telegram bot (the wire was designed with a Telegram consumer in mind):
   instant watchlist alerts, no email cost. Pro feature.
 - Web push later; email digest as fallback.
+
+### 4. SEO: stable intent pages
+
+Search Console shows impressions but almost no clicks — the site lacks
+permanent pages matching non-brand intents. `/borsnyheter` (shipped) targets
+"börsnyheter idag / Stockholmsbörsen nyheter / börssammanfattning": explains
+the service, publish times, links the latest editions, captures signups.
+Daily articles link back to it. Next candidates: per-topic pages
+("småbolagsnyheter", "rapportsäsongen") and per-stock landing content once
+the news archive grows. Do actual keyword research before adding more.
 
 ## Later
 
