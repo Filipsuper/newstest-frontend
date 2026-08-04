@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
+import { FaArrowLeft } from "react-icons/fa";
 import StockSearch from "./StockSearch";
 import {
     ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Line, Legend,
@@ -579,13 +581,13 @@ function StockContent({ symbol }) {
             </div>
 
             <div className="mb-10">
-                <div className="flex flex-row items-center justify-between border-b border-border mb-4 font-sans text-sm">
-                    <div className="flex flex-row">
+                <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border mb-4 font-sans text-sm gap-1">
+                    <div className="flex flex-row flex-wrap">
                         {VIEWS.map((option) => (
                             <button
                                 key={option.id}
                                 onClick={() => setView(option.id)}
-                                className={`px-3 py-2 cursor-pointer transition-colors -mb-px ${view === option.id
+                                className={`px-2.5 md:px-3 py-2 cursor-pointer transition-colors md:-mb-px ${view === option.id
                                     ? "text-text border-b-2 border-secondary font-semibold"
                                     : "text-text-muted hover:text-text"}`}
                             >
@@ -594,7 +596,7 @@ function StockContent({ symbol }) {
                         ))}
                     </div>
                     {view === "chart" && (
-                        <div className="flex flex-row gap-1 text-xs">
+                        <div className="flex flex-row gap-1 text-xs pb-2 md:pb-0 pl-1 md:pl-0">
                             {RANGES.map((option) => (
                                 <button
                                     key={option.id}
@@ -633,9 +635,18 @@ function StockContent({ symbol }) {
 }
 
 export default function StockPage({ symbol }) {
+    const router = useRouter();
+
     return (
         <main className="min-h-[80vh] mx-auto max-w-3xl px-4 py-8">
-            <div className="mb-8">
+            <div className="mb-8 flex flex-row items-center gap-2">
+                <button
+                    onClick={() => router.back()}
+                    aria-label="Tillbaka"
+                    className="text-text-muted hover:text-text cursor-pointer p-2 -ml-2 shrink-0"
+                >
+                    <FaArrowLeft />
+                </button>
                 <StockSearch placeholder="Sök annan aktie…" />
             </div>
             <PlusPaywall redirectTo={`/aktie/${encodeURIComponent(symbol)}`}>
