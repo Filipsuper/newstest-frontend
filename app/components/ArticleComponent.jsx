@@ -162,9 +162,9 @@ export default function ArticleComponent({ article, index }) {
                     <div className="flex flex-col py-4 font-bold" >
                         <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
                     </div>
-                    <div className="flex flex-col pb-4 font-sans text-sm">
-                        <Link href="/borsnyheter" className="text-text-muted hover:text-text underline">
-                            Alla börsnyheter och dagliga sammanfattningar från Stockholmsbörsen →
+                    <div className="flex flex-col items-start pb-4 font-sans text-sm">
+                        <Link href="/marknadsnyheter" className="primary-btn extra-padding">
+                            Se alla nyheter →
                         </Link>
                     </div>
                 </div>
