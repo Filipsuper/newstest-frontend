@@ -8,6 +8,7 @@ import { FaCheck } from "react-icons/fa6";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
 import Testimonials from "./Testimonials";
+import { DemoStock, DemoLetter, DemoNewsFeed, DemoFinancials, DemoTerminal } from "./LandingDemos";
 
 dayjs.extend(utc);
 
@@ -43,7 +44,7 @@ function PlanBadge({ children }) {
   );
 }
 
-function FeatureSection({ badge, title, text, bullets, img, alt, reverse, cta }) {
+function FeatureSection({ badge, title, text, bullets, demo, reverse, cta }) {
   return (
     <section className="max-w-6xl mx-auto px-4 py-20 md:py-28">
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center`}>
@@ -64,12 +65,7 @@ function FeatureSection({ badge, title, text, bullets, img, alt, reverse, cta })
         </div>
         <div className={`relative ${reverse ? "md:order-1" : ""}`}>
           <div className="absolute -inset-8 bg-primary opacity-[0.07] blur-3xl pointer-events-none"></div>
-          <img
-            src={img}
-            alt={alt}
-            loading="lazy"
-            className="relative w-full shadow-2xl shadow-black/40"
-          />
+          <div className="relative">{demo}</div>
         </div>
       </div>
     </section>
@@ -117,13 +113,9 @@ export default function HomePage({ articles }) {
           <EmailInput centered={true} />
         </div>
 
-        <div className="relative max-w-4xl mx-auto">
+        <div className="relative max-w-2xl mx-auto">
           <div className="absolute -inset-10 bg-primary opacity-10 blur-3xl pointer-events-none"></div>
-          <img
-            src="/landing/hero-stock.png"
-            alt="Aktieöversikt för Volvo B på omxsum.com"
-            className="relative w-full shadow-2xl shadow-black/50"
-          />
+          <div className="relative"><DemoStock /></div>
         </div>
       </section>
 
@@ -137,8 +129,7 @@ export default function HomePage({ articles }) {
           "Kvällsbrevet på sidan varje vardag 17:30",
           "Klickbara aktier med kursgraf direkt i brevet",
         ]}
-        img="/landing/feature-letter.png"
-        alt="Morgonbrevet på omxsum.com"
+        demo={<DemoLetter />}
         cta={<Link href="/morgonbrevet" className="text-primary font-sans text-sm hover:underline mt-2">Läs dagens morgonbrev →</Link>}
       />
 
@@ -152,8 +143,7 @@ export default function HomePage({ articles }) {
           "Etiketter: rapport, förvärv, insynshandel, order …",
           "Dagens vinnare och förlorare",
         ]}
-        img="/landing/feature-news.png"
-        alt="Live marknadsnyheter på omxsum.com"
+        demo={<DemoNewsFeed />}
         cta={<Link href="/marknadsnyheter" className="text-primary font-sans text-sm hover:underline mt-2">Till marknadsnyheterna →</Link>}
       />
 
@@ -166,8 +156,7 @@ export default function HomePage({ articles }) {
           "Omsättning, EBIT och marginaler – år och kvartal",
           "Rapportdatum, estimat och utdelningar",
         ]}
-        img="/landing/feature-financials.png"
-        alt="Finansiell översikt för Evolution på omxsum.com"
+        demo={<DemoFinancials />}
       />
 
       <FeatureSection
@@ -180,8 +169,7 @@ export default function HomePage({ articles }) {
           "Flera grafer sida vid sida",
           "Screener och movers över 865 aktier",
         ]}
-        img="/landing/feature-terminal.png"
-        alt="Terminalen på terminal.omxsum.com"
+        demo={<DemoTerminal />}
         cta={<a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="text-primary font-sans text-sm hover:underline mt-2">Öppna terminalen →</a>}
       />
 
