@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import Link from "next/link";
-import { FaCheck } from "react-icons/fa6";
+import ArticleComponent from "./ArticleComponent";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
 import Testimonials from "./Testimonials";
-import { DemoStock, DemoLetter, DemoNewsFeed, DemoFinancials, DemoTerminal } from "./LandingDemos";
+import { DemoStock } from "./LandingDemos";
 
 dayjs.extend(utc);
 
@@ -36,42 +36,6 @@ const testimonials = [
   },
 ];
 
-function PlanBadge({ children }) {
-  return (
-    <span className="w-fit text-[11px] uppercase tracking-wider text-secondary border border-secondary/40 px-2 py-0.5 font-sans">
-      {children}
-    </span>
-  );
-}
-
-function FeatureSection({ badge, title, text, bullets, demo, reverse, cta }) {
-  return (
-    <section className="max-w-6xl mx-auto px-4 py-20 md:py-28">
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center`}>
-        <div className={`flex flex-col gap-4 ${reverse ? "md:order-2" : ""}`}>
-          {badge}
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-text leading-tight">{title}</h2>
-          <p className="text-text-muted font-sans leading-relaxed">{text}</p>
-          {bullets && (
-            <ul className="flex flex-col gap-2 mt-1 font-sans">
-              {bullets.map((bullet, idx) => (
-                <li key={idx} className="flex flex-row gap-2 items-start text-sm text-text-article">
-                  <FaCheck className="text-primary shrink-0 mt-1" /> {bullet}
-                </li>
-              ))}
-            </ul>
-          )}
-          {cta}
-        </div>
-        <div className={`relative ${reverse ? "md:order-1" : ""}`}>
-          <div className="absolute -inset-8 bg-primary opacity-[0.07] blur-3xl pointer-events-none"></div>
-          <div className="relative">{demo}</div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function HomePage({ articles }) {
   const [currentTime, setCurrentTime] = useState("00:00:00")
 
@@ -88,118 +52,88 @@ export default function HomePage({ articles }) {
   }
 
   const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
+  const latestArticle = articles[0];
   const previousArticles = isTodaysArticle ? articles.slice(1) : articles;
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative max-w-5xl mx-auto px-4 pt-16 md:pt-24 pb-10 text-center overflow-visible">
-        <div className="absolute top-0 left-1/4 h-40 w-96 bg-secondary blur-[180px] opacity-25 pointer-events-none"></div>
-        <div className="absolute top-20 right-1/4 h-40 w-96 bg-primary blur-[180px] opacity-20 pointer-events-none"></div>
-
-        <p className="relative font-sans text-xs uppercase tracking-[0.2em] text-text-muted mb-6">
-          {currentTime} · Nyhetsbrev · Livenyheter · Aktiedata
-        </p>
-        <h1 className="relative text-5xl md:text-6xl font-serif font-bold text-text leading-[1.05] mb-6">
-          Håll koll på börsen,
-          <br />
-          på bara <span className="italic underline decoration-secondary decoration-4 underline-offset-8">3 minuter</span>
-        </h1>
-        <p className="relative text-text-muted font-sans max-w-xl mx-auto mb-8">
-          AI-summerade morgon- och kvällsbrev, livenyheter från Stockholmsbörsen
-          och rena aktieöversikter – utan brus.
-        </p>
-        <div className="relative flex justify-center mb-16">
+      {/* Hero — the morning letter is the product */}
+      <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans mx-auto px-4 py-8 mt-16">
+        <div>
+          <h2 className="text-base font-bold text-text">{currentTime}</h2>
+          <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
+            Håll koll på börsen,
+            <br />
+            på bara <span className="underline">3 minuter</span>
+          </h1>
+          <p className="text-text-article mb-8">
+            Få morgonens viktigaste marknadshändelser direkt till din inkorg,
+            <br />
+            varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
+          </p>
           <EmailInput centered={true} />
         </div>
-
-        <div className="relative max-w-2xl mx-auto">
-          <div className="absolute -inset-10 bg-primary opacity-10 blur-3xl pointer-events-none"></div>
-          <div className="relative"><DemoStock /></div>
+        <div className="flex w-full md:w-1/2 mb-4 min-h-40">
+          <Link
+            href={latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet"}
+            className="flex flex-col items-center justify-center w-full min-h-56 h-full hover:bg-primary-dark transition-colors duration-300 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 h-full p-2 fade-edges">
+              <ArticleComponent article={articles[0]} />
+            </div>
+            <div className="relative z-10 shadow-xl">
+              <span className="primary-btn text-center extra-padding">
+                Läs senaste {latestArticle.isEveningLetter ? "kvällsbrevet" : "morgonbrevet"}
+              </span>
+            </div>
+          </Link>
         </div>
       </section>
 
-      {/* Features */}
-      <FeatureSection
-        badge={<PlanBadge>Gratis</PlanBadge>}
-        title={<>Morgonbrevet & Kvällsbrevet</>}
-        text="Marknadsläget summerat av AI varje vardag – i inkorgen kl. 08:00 och på sidan kl. 17:30. Sentiment, viktiga pressmeddelanden och dagens siffror, färdigtuggat på tre minuter."
-        bullets={[
-          "Morgonbrevet i din inkorg varje vardag 08:00",
-          "Kvällsbrevet på sidan varje vardag 17:30",
-          "Klickbara aktier med kursgraf direkt i brevet",
-        ]}
-        demo={<DemoLetter />}
-        cta={<Link href="/morgonbrevet" className="text-primary font-sans text-sm hover:underline mt-2">Läs dagens morgonbrev →</Link>}
-      />
+      {/* Why — calm, no selling */}
+      <section className="max-w-3xl mx-auto px-4 py-24 text-center">
+        <h2 className="text-3xl md:text-4xl font-serif font-bold text-text mb-6">
+          Tre minuter om dagen räcker
+        </h2>
+        <p className="text-text-muted font-sans leading-relaxed max-w-xl mx-auto">
+          Du behöver inte scrolla nyhetsflöden hela dagen. Morgonbrevet summerar
+          det som faktiskt rör marknaden – sentiment, rapporter och viktiga
+          pressmeddelanden – innan börsen öppnar. Kvällsbrevet knyter ihop dagen
+          kl. 17:30, direkt på sidan.
+        </p>
+      </section>
 
-      <FeatureSection
-        reverse
-        badge={<PlanBadge>Plus</PlanBadge>}
-        title={<>Marknadsnyheter – live</>}
-        text="Pressmeddelanden, insynshandel, ordrar och rapporter från Stockholmsbörsen i realtid – kategoriserade och på svenska. Dagens vinnare och förlorare uppdateras löpande."
-        bullets={[
-          "Livenyheter sekunder efter publicering",
-          "Etiketter: rapport, förvärv, insynshandel, order …",
-          "Dagens vinnare och förlorare",
-        ]}
-        demo={<DemoNewsFeed />}
-        cta={<Link href="/marknadsnyheter" className="text-primary font-sans text-sm hover:underline mt-2">Till marknadsnyheterna →</Link>}
-      />
+      {/* Quiet upsell */}
+      <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-3xl font-serif font-bold text-text leading-tight">
+              Följer du marknaden närmare?
+            </h2>
+            <p className="text-text-muted font-sans leading-relaxed">
+              Då finns <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link> –
+              vårt liveflöde med pressmeddelanden och insynshandel på svenska – och rena{" "}
+              <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">aktieöversikter</Link> med
+              kurs, finanser och nyheter för 870+ svenska aktier.
+            </p>
+            <p className="text-text-muted font-sans leading-relaxed">
+              Och för dig som vill se allt, hela dagen:{" "}
+              <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terminalen</a>.
+            </p>
+            <p className="text-text-muted font-sans text-sm mt-2">
+              Plus från 49 kr/mån · <Link href="/pro" className="underline hover:text-text">Se planerna</Link>
+            </p>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-8 bg-primary opacity-[0.06] blur-3xl pointer-events-none"></div>
+            <div className="relative"><DemoStock /></div>
+          </div>
+        </div>
+      </section>
 
-      <FeatureSection
-        badge={<PlanBadge>Plus</PlanBadge>}
-        title={<>Hela bolaget på en sida</>}
-        text="Kurs i realtid, finanser, rapportkalender, kurshistorik och alla nyheter om bolaget – samlat i en ren översikt. Nyhetsprickar direkt i grafen visar när saker hände."
-        bullets={[
-          "Intradagskurs och historik för 870+ svenska aktier",
-          "Omsättning, EBIT och marginaler – år och kvartal",
-          "Rapportdatum, estimat och utdelningar",
-        ]}
-        demo={<DemoFinancials />}
-      />
-
-      <FeatureSection
-        reverse
-        badge={<PlanBadge>Pro</PlanBadge>}
-        title={<>Terminalen – för dig som vill se allt</>}
-        text="Vårt proffsverktyg med realtidsgrafer, live-nyhetsflöde, screener och kortkommandon. För dig som följer marknaden hela dagen."
-        bullets={[
-          "Realtidsdata för hela börsen",
-          "Flera grafer sida vid sida",
-          "Screener och movers över 865 aktier",
-        ]}
-        demo={<DemoTerminal />}
-        cta={<a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="text-primary font-sans text-sm hover:underline mt-2">Öppna terminalen →</a>}
-      />
-
-      {/* Testimonials */}
+      {/* Social proof */}
       <section className="max-w-6xl mx-auto px-4 py-16">
         <Testimonials testimonials={testimonials} />
-      </section>
-
-      {/* Pricing teaser */}
-      <section className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <h2 className="text-4xl font-serif font-bold text-text mb-3">Börja gratis</h2>
-        <p className="text-text-muted font-sans mb-12">Nyhetsbreven är alltid gratis. Uppgradera när du vill ha mer.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 font-sans mb-10">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm uppercase tracking-wider text-text-muted">Gratis</span>
-            <span className="text-3xl font-bold text-text">0 kr</span>
-            <span className="text-sm text-text-muted">Nyhetsbreven & terminalens grunddata</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm uppercase tracking-wider text-secondary">Plus</span>
-            <span className="text-3xl font-bold text-text">49 kr<span className="text-base text-text-muted">/mån</span></span>
-            <span className="text-sm text-text-muted">Livenyheter & aktieöversikter</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm uppercase tracking-wider text-secondary">Pro</span>
-            <span className="text-3xl font-bold text-text">99 kr<span className="text-base text-text-muted">/mån</span></span>
-            <span className="text-sm text-text-muted">Allt + hela terminalen</span>
-          </div>
-        </div>
-        <Link href="/pro" className="primary-btn extra-padding">Jämför planerna →</Link>
       </section>
 
       {/* Previous letters */}
@@ -216,15 +150,14 @@ export default function HomePage({ articles }) {
       </section>
 
       {/* Bottom CTA */}
-      <section className="relative max-w-3xl mx-auto px-4 py-24 text-center overflow-visible">
-        <div className="absolute top-10 left-1/3 h-32 w-80 bg-secondary blur-[160px] opacity-20 pointer-events-none"></div>
-        <h2 className="relative text-4xl font-serif font-bold text-text mb-4">
+      <section className="max-w-3xl mx-auto px-4 py-24 text-center">
+        <h2 className="text-4xl font-serif font-bold text-text mb-4">
           Imorgon kl. 08:00 i din inkorg?
         </h2>
-        <p className="relative text-text-muted font-sans mb-8">
+        <p className="text-text-muted font-sans mb-8">
           Helt gratis, avsluta när du vill.
         </p>
-        <div className="relative flex justify-center">
+        <div className="flex justify-center">
           <EmailInput centered={true} />
         </div>
       </section>
