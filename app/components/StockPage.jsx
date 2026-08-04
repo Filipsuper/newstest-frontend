@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { fetchStock, fetchFinancials, fetchCalendar, fetchHistory } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
+import { tagHex } from "../utils/newsTags";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
 
@@ -53,8 +54,10 @@ const formatVolume = (value) => {
 function StockGraph({ stock, news, onSelectNews }) {
     const data = (stock.ticks ?? []).map(([ts, price]) => ({ ts, price }));
     const isDaily = stock.interval === "1d";
+    const [hovered, setHovered] = useState(null);
 
-    // Place each news story on the nearest bar so markers sit on the line
+    // Place each news story on the nearest bar so markers sit on the line.
+    // Stories on the same bar share one marker.
     const markers = useMemo(() => {
         if (data.length === 0) return [];
         const seen = new Map();
@@ -64,7 +67,17 @@ function StockGraph({ stock, news, onSelectNews }) {
             for (const point of data) {
                 if (Math.abs(point.ts - item.ts) < Math.abs(nearest.ts - item.ts)) nearest = point;
             }
-            if (!seen.has(nearest.ts)) seen.set(nearest.ts, { ts: nearest.ts, price: nearest.price, id: item.id, title: item.title });
+            const existing = seen.get(nearest.ts);
+            if (existing) {
+                existing.items.push(item);
+            } else {
+                seen.set(nearest.ts, {
+                    ts: nearest.ts,
+                    price: nearest.price,
+                    color: tagHex(item.labels),
+                    items: [item],
+                });
+            }
         }
         return [...seen.values()];
     }, [stock, news]);
@@ -83,7 +96,7 @@ function StockGraph({ stock, news, onSelectNews }) {
     const timeFormat = isDaily ? "D MMM" : "HH:mm";
 
     return (
-        <div className="w-full h-72 font-sans">
+        <div className="w-full h-72 font-sans relative">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
                     <defs>
@@ -132,22 +145,43 @@ function StockGraph({ stock, news, onSelectNews }) {
                     />
                     {markers.map((marker) => (
                         <ReferenceDot
-                            key={marker.id}
+                            key={marker.ts}
                             x={marker.ts}
                             y={marker.price}
-                            r={4}
-                            fill="#fbbf24"
-                            stroke="var(--color-background)"
-                            strokeWidth={1.5}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => onSelectNews?.(marker.id)}
+                            shape={({ cx, cy }) => (
+                                <circle
+                                    cx={cx}
+                                    cy={cy}
+                                    r={hovered?.ts === marker.ts ? 5.5 : 4}
+                                    fill={marker.color}
+                                    stroke="var(--color-background)"
+                                    strokeWidth={1.5}
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => onSelectNews?.(marker.items[0].id)}
+                                    onMouseEnter={() => setHovered({ ts: marker.ts, x: cx, y: cy, items: marker.items })}
+                                    onMouseLeave={() => setHovered(null)}
+                                />
+                            )}
                         />
                     ))}
                 </AreaChart>
             </ResponsiveContainer>
+            {hovered && (
+                <div
+                    className="absolute z-10 pointer-events-none px-3 py-2 bg-foreground border border-border max-w-[18rem]"
+                    style={{ left: hovered.x, top: hovered.y - 12, transform: "translate(-50%, -100%)" }}
+                >
+                    {hovered.items.slice(0, 2).map((item) => (
+                        <p key={item.id} className="text-xs text-text leading-snug mb-1 last:mb-0">{item.title}</p>
+                    ))}
+                    {hovered.items.length > 2 && (
+                        <p className="text-[11px] text-text-muted">+{hovered.items.length - 2} till</p>
+                    )}
+                </div>
+            )}
             {markers.length > 0 && (
                 <p className="text-[11px] font-sans text-text-muted mt-1 text-right">
-                    <span className="text-secondary">●</span> nyhet – klicka för att läsa
+                    <span>●</span> nyhet – klicka för att läsa
                 </p>
             )}
         </div>
