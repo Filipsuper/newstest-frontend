@@ -57,6 +57,15 @@ export default function NewsModal({ item }) {
 
             <h2 className="text-2xl font-serif font-bold italic text-text mb-3">{item.title}</h2>
 
+            {Number.isFinite(item.reaction?.pct) && (
+                <p className="text-sm mb-3">
+                    <span className="text-text-muted">Kursreaktion sedan publicering: </span>
+                    <span className={`font-semibold ${item.reaction.pct >= 0 ? "text-primary" : "text-secondary"}`}>
+                        {item.reaction.pct >= 0 ? "+" : ""}{item.reaction.pct.toFixed(2)}%
+                    </span>
+                </p>
+            )}
+
             {item.summary && (
                 <p className="text-sm text-text-article leading-relaxed">{item.summary}</p>
             )}

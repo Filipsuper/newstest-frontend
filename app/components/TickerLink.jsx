@@ -21,7 +21,7 @@ const getSpark = (symbol) => {
     return sparkCache.get(symbol);
 };
 
-function MiniChart({ points }) {
+function MiniChart({ points, news = [] }) {
     const w = 208;
     const h = 56;
     const values = points.map((p) => p[1]);
@@ -29,11 +29,22 @@ function MiniChart({ points }) {
     const max = Math.max(...values);
     const span = max - min || 1;
     const step = w / (points.length - 1 || 1);
-    const coords = points.map(
-        (p, i) => `${(i * step).toFixed(1)},${(h - 4 - ((p[1] - min) / span) * (h - 8)).toFixed(1)}`
-    );
+    const xy = (idx) => [
+        idx * step,
+        h - 4 - ((values[idx] - min) / span) * (h - 8),
+    ];
+    const coords = points.map((_, idx) => xy(idx).map((v) => v.toFixed(1)).join(","));
     const up = values[values.length - 1] >= values[0];
     const color = up ? "#668CF4" : "#fbbf24";
+
+    // News markers snapped to the nearest chart point
+    const markerIdx = [...new Set(news.map((ts) => {
+        let nearest = 0;
+        for (let idx = 0; idx < points.length; idx++) {
+            if (Math.abs(points[idx][0] - ts) < Math.abs(points[nearest][0] - ts)) nearest = idx;
+        }
+        return nearest;
+    }))];
 
     return (
         <svg width={w} height={h} className="block">
@@ -49,6 +60,10 @@ function MiniChart({ points }) {
                 fill={color}
                 opacity="0.08"
             />
+            {markerIdx.map((idx) => {
+                const [cx, cy] = xy(idx);
+                return <circle key={idx} cx={cx} cy={cy} r="2.5" fill="#fbbf24" stroke="var(--color-background)" strokeWidth="1" />;
+            })}
         </svg>
     );
 }
@@ -92,7 +107,7 @@ export default function TickerLink({ symbol, children }) {
                                     {up ? "+" : ""}{spark.changePct.toFixed(1)}%
                                 </span>
                             </span>
-                            <MiniChart points={spark.points} />
+                            <MiniChart points={spark.points} news={spark.news ?? []} />
                             <span className="flex flex-row justify-between items-center mt-1.5">
                                 <span className="text-[10px] uppercase tracking-wide text-text-muted">1 månad</span>
                                 <span className="text-[10px] text-primary">Visa aktie →</span>

@@ -33,6 +33,14 @@ export default function NewsFeedItem({ item, showSymbol = true, highlighted = fa
                         {item.company ?? item.symbol}
                     </Link>
                 )}
+                {Number.isFinite(item.reaction?.pct) && (
+                    <span
+                        title="Kursreaktion sedan nyheten publicerades"
+                        className={`font-semibold ${item.reaction.pct >= 0 ? "text-primary" : "text-secondary"}`}
+                    >
+                        {item.reaction.pct >= 0 ? "+" : ""}{item.reaction.pct.toFixed(2)}%
+                    </span>
+                )}
             </div>
             <button
                 onClick={() => openModal(<NewsModal item={item} />)}

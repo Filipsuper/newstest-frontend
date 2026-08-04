@@ -20,6 +20,7 @@ export function storyToItem(story) {
         importance: story.importance ?? null,
         summary: story.summary ?? null,
         facts: story.facts ?? null,
+        reaction: story.reaction ?? null,
         status: story.status,
     };
 }
