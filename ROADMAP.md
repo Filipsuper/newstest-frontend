@@ -88,6 +88,9 @@ macro themes).
 
 ### 2. Reaction analytics (deepen the moat)
 
+- ✅ Screener (aug 2026): `/screener` movers table where each move carries
+  its explaining wire story + label ("Rapport", "Order", …). Replaced the
+  movers panel on Marknadsnyheter.
 - "Dagens mest marknadspåverkande nyheter": feed sorting by |reaction|;
   also feeds the evening letter
 - Reaction measured at fixed windows (+1h, +1d) besides "since publish"

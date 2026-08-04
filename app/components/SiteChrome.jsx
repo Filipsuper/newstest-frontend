@@ -41,6 +41,10 @@ export default function SiteChrome({ children }) {
                             <span>Marknadsnyheter</span>
                             <span className="absolute font-bold -top-1 -right-4 ml-1 px-1 bg-secondary text-white text-xs rounded-full">+</span>
                         </Link>
+                        <Link href="/screener" className="relative hover:underline">
+                            <span>Screener</span>
+                            <span className="absolute font-bold -top-1 -right-4 ml-1 px-1 bg-secondary text-white text-xs rounded-full">+</span>
+                        </Link>
                         <span className="hidden md:inline text-text-muted">|</span>
                         <Link href="/om-oss" className="hover:underline">Om oss</Link>
                         <Link href="/pro" className="text-secondary font-semibold hover:underline">Pro</Link>

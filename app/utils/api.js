@@ -130,6 +130,18 @@ export async function toggleWatchlist(symbol) {
     }
 }
 
+export async function fetchScreener(order = "absolute", limit = 20) {
+    try {
+        const res = await fetch(`${API_URL}/feed/screener?order=${order}&limit=${limit}`, {
+            credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
 export async function fetchTopics() {
     try {
         const res = await fetch(`${API_URL}/feed/topics`);
