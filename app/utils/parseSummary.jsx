@@ -1,4 +1,4 @@
-import Link from "next/link";
+import TickerLink from "../components/TickerLink";
 
 export const parseSummary = (summary, resolveSymbol) => {
     return summary.split("\n").map((line, index) => {
@@ -17,13 +17,9 @@ export const parseSummary = (summary, resolveSymbol) => {
                         const symbol = resolveSymbol?.(label);
                         if (symbol) {
                             return (
-                                <Link
-                                    key={i}
-                                    href={`/aktie/${encodeURIComponent(symbol)}`}
-                                    className="font-bold underline decoration-dotted decoration-text-muted underline-offset-2 hover:text-primary transition-colors"
-                                >
+                                <TickerLink key={i} symbol={symbol}>
                                     {label}
-                                </Link>
+                                </TickerLink>
                             );
                         }
                         return <span key={i} className="font-bold">{label}</span>;
