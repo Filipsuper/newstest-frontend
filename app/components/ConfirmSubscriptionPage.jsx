@@ -3,14 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { FaChartLine, FaNewspaper, FaMagnifyingGlassChart, FaXTwitter } from "react-icons/fa6";
+import { FaChartLine, FaNewspaper, FaXTwitter } from "react-icons/fa6";
 import { confirmSubscription } from "../utils/api";
+import { useAuthContext } from "../providers/AuthProvider";
+import PersonalizationSetup from "./PersonalizationSetup";
 
 export default function ConfirmSubscriptionPage() {
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
     const [status, setStatus] = useState("loading"); // loading | success | error
     const confirmedRef = useRef(false);
+    const { refreshUser } = useAuthContext();
 
     useEffect(() => {
         if (!token) {
@@ -21,7 +24,16 @@ export default function ConfirmSubscriptionPage() {
         confirmedRef.current = true;
 
         confirmSubscription(token)
-            .then((res) => setStatus(res.success ? "success" : "error"))
+            .then(async (res) => {
+                if (res.success) {
+                    // The confirm response set a session cookie — pick it up
+                    // so the stock/topic picker below can save right away
+                    await refreshUser();
+                    setStatus("success");
+                } else {
+                    setStatus("error");
+                }
+            })
             .catch(() => setStatus("error"));
     }, [token]);
 
@@ -78,6 +90,15 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="border border-border bg-foreground p-6 mb-8">
+                <h2 className="text-lg font-serif font-bold text-text mb-1">Gör brevet till ditt ⭐</h2>
+                <p className="text-sm text-text-muted mb-6">
+                    Stjärnmärk bolag och välj ämnen du bryr dig om — helt gratis —
+                    så bevakar vi dem åt dig i morgonbrevet.
+                </p>
+                <PersonalizationSetup />
+            </div>
+
+            <div className="border border-border bg-foreground p-6 mb-8">
                 <h2 className="text-lg font-serif font-bold text-text mb-1">Vi bevakar börsen åt dig 📈</h2>
                 <p className="text-sm text-text-muted mb-4">
                     Breven är bara början – OMXsum följer nyhetsflödet hela dagen.
@@ -91,13 +112,9 @@ export default function ConfirmSubscriptionPage() {
                         <FaChartLine className="text-secondary shrink-0" />
                         <p className="text-sm text-text-article"><span className="font-semibold">Kursreaktioner</span> – se hur aktien rört sig efter varje nyhet</p>
                     </div>
-                    <div className="flex flex-row gap-3 items-center">
-                        <FaMagnifyingGlassChart className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article"><span className="font-semibold">Aktieöversikter</span> – kurs, finanser och nyheter för 870+ svenska aktier</p>
-                    </div>
                 </div>
                 <p className="text-xs text-text-muted mb-4">
-                    Ingår i Plus från 49 kr/mån. För proffsen finns även{" "}
+                    Liveflödet ingår i Plus från 49 kr/mån. För proffsen finns även{" "}
                     <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="underline">Terminalen</a> i Pro.
                 </p>
                 <Link href="/marknadsnyheter" className="primary-btn extra-padding inline-block">

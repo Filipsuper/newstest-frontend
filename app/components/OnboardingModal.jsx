@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FaEnvelopeOpenText, FaChartLine, FaNewspaper, FaMagnifyingGlassChart } from "react-icons/fa6";
+import { FaEnvelopeOpenText, FaChartLine, FaNewspaper, FaStar } from "react-icons/fa6";
 import { useModal } from "../providers/ModalProvider";
 
 export default function OnboardingModal({ email }) {
@@ -49,39 +49,33 @@ export default function OnboardingModal({ email }) {
 
             {step === 2 && (
                 <div className="flex flex-col items-center text-center">
-                    <h2 className="text-2xl text-text font-bold font-serif mb-2">Medan du väntar… 📈</h2>
+                    <h2 className="text-2xl text-text font-bold font-serif mb-2">Gör brevet till ditt ⭐</h2>
                     <p className="text-sm text-text-muted mb-6">
-                        OMXsum är mer än breven – vi bevakar börsen åt dig, hela dagen
+                        När du bekräftat din mail kan du välja bolag och ämnen att bevaka –
+                        helt gratis
                     </p>
                     <div className="flex flex-col gap-3 w-full text-left border border-border p-4 mb-4">
                         <div className="flex flex-row gap-3 items-center">
+                            <FaStar className="text-secondary shrink-0" />
+                            <p className="text-sm text-text-article"><span className="font-semibold">Mina aktier & ämnen</span> – stjärnmärk bolag och följ t.ex. Small Cap eller Hälsovård</p>
+                        </div>
+                        <div className="flex flex-row gap-3 items-center">
+                            <FaEnvelopeOpenText className="text-secondary shrink-0" />
+                            <p className="text-sm text-text-article"><span className="font-semibold">Min sammanfattning</span> – en egen sektion i morgonbrevet med nyheter som matchar dina val</p>
+                        </div>
+                        <div className="flex flex-row gap-3 items-center">
                             <FaNewspaper className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live, på svenska</p>
-                        </div>
-                        <div className="flex flex-row gap-3 items-center">
-                            <FaChartLine className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article"><span className="font-semibold">Kursreaktioner</span> – se hur mycket aktien rört sig efter varje nyhet</p>
-                        </div>
-                        <div className="flex flex-row gap-3 items-center">
-                            <FaMagnifyingGlassChart className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article"><span className="font-semibold">Aktieöversikter</span> – kurs, finanser och nyheter för 870+ svenska aktier</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – liveflöde med <FaChartLine className="inline text-secondary" /> kursreaktion på varje nyhet</p>
                         </div>
                     </div>
                     <p className="text-xs text-text-muted mb-6">
-                        Ingår i Plus från 49 kr/mån – breven är alltid gratis
+                        Breven är alltid gratis – hela din sammanfattning låses upp med Plus, 49 kr/mån
                     </p>
-                    <Link
-                        href="/marknadsnyheter"
-                        onClick={closeModal}
-                        className="primary-btn w-full py-2 text-center mb-2"
-                    >
-                        Utforska Marknadsnyheter →
-                    </Link>
                     <button
-                        className="text-sm text-text-muted hover:text-text cursor-pointer py-1"
+                        className="primary-btn w-full py-2 cursor-pointer"
                         onClick={closeModal}
                     >
-                        Klar
+                        Klar – jag bekräftar min mail
                     </button>
                 </div>
             )}

@@ -80,7 +80,6 @@ medtech+smallcap surfaces for every stock (and user) carrying those labels.
 This becomes the backbone for personalized-letter "interests" the user picks,
 and lets news attach to more than the company name (sector moves, regulation,
 macro themes).
->>>>>>> 391a604 (Mina aktier page with topics picker, watchlist in settings/nav, personalized letter roadmap)
 
 **Infra prerequisites:**
 - Resend paid tier before rollout (free cap 100 mails/day already tight)

@@ -8,7 +8,7 @@ import ArticleComponent from "./ArticleComponent";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
 import Testimonials from "./Testimonials";
-import { DemoStock } from "./LandingDemos";
+import { DemoNewsFeed } from "./LandingDemos";
 
 dayjs.extend(utc);
 
@@ -62,14 +62,15 @@ export default function HomePage({ articles }) {
         <div>
           <h2 className="text-base font-bold text-text">{currentTime}</h2>
           <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
-            Håll koll på börsen,
+            Allt som rör börsen,
             <br />
-            på bara <span className="underline">3 minuter</span>
+            på <span className="underline">3 minuter</span>
           </h1>
           <p className="text-text-article mb-8">
-            Få morgonens viktigaste marknadshändelser direkt till din inkorg,
+            Morgonbrevet sammanfattar nyheterna som rörde marknaden –
             <br />
-            varje vardag kl. 08.00. <span className="underline">Helt gratis.</span>
+            och hur aktierna <span className="font-semibold">reagerade</span>. Varje vardag kl. 08.00.{" "}
+            <span className="underline">Helt gratis.</span>
           </p>
           <EmailInput centered={true} />
         </div>
@@ -97,36 +98,79 @@ export default function HomePage({ articles }) {
         </h2>
         <p className="text-text-muted font-sans leading-relaxed max-w-xl mx-auto">
           Du behöver inte scrolla nyhetsflöden hela dagen. Morgonbrevet summerar
-          det som faktiskt rör marknaden – sentiment, rapporter och viktiga
-          pressmeddelanden – innan börsen öppnar. Kvällsbrevet knyter ihop dagen
-          kl. 17:30, direkt på sidan.
+          det som faktiskt rörde marknaden – rapporter, pressmeddelanden och
+          insynshandel, med kursreaktionen på varje nyhet – innan börsen öppnar.
+          Kvällsbrevet knyter ihop dagen kl. 17:30, direkt på sidan.
         </p>
       </section>
 
-      {/* Quiet upsell */}
+      {/* The engine — our own newswire */}
       <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           <div className="flex flex-col gap-4">
             <h2 className="text-3xl font-serif font-bold text-text leading-tight">
-              Följer du marknaden närmare?
+              Skrivet av vår egen nyhetsbevakning
             </h2>
             <p className="text-text-muted font-sans leading-relaxed">
-              Då finns <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link> –
-              vårt liveflöde med pressmeddelanden och insynshandel på svenska – och rena{" "}
-              <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">aktieöversikter</Link> med
-              kurs, finanser och nyheter för 870+ svenska aktier.
+              OMXsum läser varje pressmeddelande, rapport och insynsaffär på
+              Stockholmsbörsen – direkt från källorna, hela dagen. Vi rankar
+              det viktigaste och mäter <span className="text-text font-semibold">hur mycket aktien
+              rört sig sedan varje nyhet</span>. Det är den bevakningen som skriver dina brev.
             </p>
             <p className="text-text-muted font-sans leading-relaxed">
-              Och för dig som vill se allt, hela dagen:{" "}
-              <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terminalen</a>.
-            </p>
-            <p className="text-text-muted font-sans text-sm mt-2">
-              Plus från 49 kr/mån · <Link href="/pro" className="underline hover:text-text">Se planerna</Link>
+              Vill du se flödet live? <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link>{" "}
+              visar allt i realtid, på svenska – med{" "}
+              <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">aktieöversikter</Link> för
+              870+ svenska aktier.
             </p>
           </div>
           <div className="relative">
             <div className="absolute -inset-8 bg-primary opacity-[0.06] blur-3xl pointer-events-none"></div>
-            <div className="relative"><DemoStock /></div>
+            <div className="relative"><DemoNewsFeed /></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Personalization — make the letter yours */}
+      <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+          <div className="relative order-last md:order-first">
+            <div className="absolute -inset-8 bg-secondary opacity-[0.06] blur-3xl pointer-events-none"></div>
+            <div className="relative border border-border bg-foreground p-6" aria-hidden="true">
+              <p className="font-sans text-xs text-text-muted mb-1">Ur morgonbrevet</p>
+              <p className="font-serif font-bold text-text mb-3">📌 Min sammanfattning</p>
+              <div className="flex flex-col gap-3 font-sans">
+                <div>
+                  <p className="text-xs font-bold text-text">PowerCell Sweden <span className="text-primary">+5,4%</span></p>
+                  <p className="text-sm font-serif italic text-text-article">PowerCell får order värd SEK 21 million</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-text">Epiroc A <span className="text-primary">+2,6%</span></p>
+                  <p className="text-sm font-serif italic text-text-article">Epiroc slutför förvärv i Sydafrika</p>
+                </div>
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <div className="h-2.5 bg-border w-[92%]" />
+                  <div className="h-2.5 bg-border w-[68%]" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <h2 className="text-3xl font-serif font-bold text-text leading-tight">
+              Gör brevet till ditt
+            </h2>
+            <p className="text-text-muted font-sans leading-relaxed">
+              Stjärnmärk dina bolag och följ ämnen som{" "}
+              <span className="text-text font-semibold">Small Cap</span> eller{" "}
+              <span className="text-text font-semibold">Hälsovård</span> – helt gratis.
+              Ditt morgonbrev får en egen sektion, <span className="text-text font-semibold">Min
+              sammanfattning</span>, med nyheterna som matchar dina val och hur
+              aktierna reagerade.
+            </p>
+            <p className="text-text-muted font-sans text-sm mt-2">
+              Hela din sammanfattning med Plus från 49 kr/mån ·{" "}
+              <Link href="/pro" className="underline hover:text-text">Se planerna</Link>
+            </p>
           </div>
         </div>
       </section>

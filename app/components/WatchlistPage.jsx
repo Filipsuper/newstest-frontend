@@ -8,30 +8,10 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
 import { getCompanies } from '../utils/companies';
 import StockSearch from './StockSearch';
+import { TOPIC_LABELS } from '../utils/topicLabels';
 
 const WATCHLIST_CAP = 30; // keep in sync with backend routes/user.js
 const TOPICS_CAP = 10;
-
-// Rendered labels are Swedish; ids stay English (API contract)
-const TOPIC_LABELS = {
-    LARGE_CAP: "Large Cap",
-    MID_CAP: "Mid Cap",
-    SMALL_CAP: "Small Cap",
-    FIRST_NORTH: "First North",
-    SPOTLIGHT: "Spotlight",
-    "Basic Materials": "Råvaror",
-    "Consumer Discretionary": "Sällanköpsvaror",
-    "Consumer Goods & Services": "Konsumentvaror & tjänster",
-    "Consumer Staples": "Dagligvaror",
-    "Energy": "Energi",
-    "Financials": "Finans",
-    "Health Care": "Hälsovård",
-    "Industrials": "Industri",
-    "Real Estate": "Fastigheter",
-    "Technology": "Teknik",
-    "Telecommunications": "Telekom",
-    "Utilities": "Kraftförsörjning",
-};
 
 function WatchlistPage() {
     const { user, isGuestUser, refreshUser } = useAuthContext();

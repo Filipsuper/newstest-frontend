@@ -1,0 +1,20 @@
+// Swedish display labels for the topic vocabulary (ids stay English — API contract)
+export const TOPIC_LABELS = {
+    LARGE_CAP: "Large Cap",
+    MID_CAP: "Mid Cap",
+    SMALL_CAP: "Small Cap",
+    FIRST_NORTH: "First North",
+    SPOTLIGHT: "Spotlight",
+    "Basic Materials": "Råvaror",
+    "Consumer Discretionary": "Sällanköpsvaror",
+    "Consumer Goods & Services": "Konsumentvaror & tjänster",
+    "Consumer Staples": "Dagligvaror",
+    "Energy": "Energi",
+    "Financials": "Finans",
+    "Health Care": "Hälsovård",
+    "Industrials": "Industri",
+    "Real Estate": "Fastigheter",
+    "Technology": "Teknik",
+    "Telecommunications": "Telekom",
+    "Utilities": "Kraftförsörjning",
+};

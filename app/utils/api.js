@@ -181,7 +181,10 @@ export async function fetchHistory(symbol) {
 
 export async function confirmSubscription(token) {
     try {
-        const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`);
+        // credentials so the confirm response can set the session cookie
+        const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`, {
+            credentials: "include",
+        });
         return res.json();
     } catch (error) {
         console.error('Error fetching data:', error);
