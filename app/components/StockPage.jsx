@@ -10,9 +10,11 @@ import {
     ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Line, Legend,
     XAxis, YAxis, ReferenceLine, ReferenceDot, Tooltip,
 } from "recharts";
-import { fetchStock, fetchFinancials, fetchCalendar, fetchHistory } from "../utils/api";
+import { FaStar, FaRegStar } from "react-icons/fa6";
+import { fetchStock, fetchFinancials, fetchCalendar, fetchHistory, toggleWatchlist } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
 import { tagHex } from "../utils/newsTags";
+import { useAuthContext } from "../providers/AuthProvider";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
 
@@ -465,6 +467,37 @@ function StockDescription({ text }) {
     );
 }
 
+function WatchlistStar({ symbol }) {
+    const { user, isGuestUser, refreshUser } = useAuthContext();
+    const [busy, setBusy] = useState(false);
+
+    if (!user || isGuestUser) return null;
+
+    const starred = (user.watchlist ?? []).includes(symbol);
+
+    const handleToggle = async () => {
+        if (busy) return;
+        setBusy(true);
+        try {
+            await toggleWatchlist(symbol);
+            await refreshUser();
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleToggle}
+            aria-label={starred ? "Ta bort från bevakningslistan" : "Lägg till i bevakningslistan"}
+            title={starred ? "Ta bort från Mina aktier" : "Lägg till i Mina aktier"}
+            className={`text-xl cursor-pointer transition-colors align-middle ${starred ? "text-secondary" : "text-text-muted hover:text-secondary"} ${busy ? "opacity-50" : ""}`}
+        >
+            {starred ? <FaStar /> : <FaRegStar />}
+        </button>
+    );
+}
+
 function StockContent({ symbol }) {
     const [data, setData] = useState(null);
     const [financials, setFinancials] = useState(null);
@@ -562,7 +595,10 @@ function StockContent({ symbol }) {
         <>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-4xl font-serif font-bold italic text-text mb-1">{stock.name ?? stock.label}</h1>
+                    <h1 className="text-4xl font-serif font-bold italic text-text mb-1 flex flex-row items-center gap-3">
+                        {stock.name ?? stock.label}
+                        <WatchlistStar symbol={stock.symbol} />
+                    </h1>
                     <span className="font-sans text-sm text-text-muted">
                         {stock.label} • {stock.symbol}{stock.sector ? ` • ${stock.sector}` : ""}
                     </span>

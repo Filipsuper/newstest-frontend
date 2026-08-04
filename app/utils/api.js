@@ -62,9 +62,10 @@ export async function addEmail(mail, website) {
     }
 }
 
-export async function fetchLiveFeed({ symbol, q, limit = 60 } = {}) {
+export async function fetchLiveFeed({ symbol, symbols, q, limit = 60 } = {}) {
     const params = new URLSearchParams();
     if (symbol) params.set("symbol", symbol);
+    if (symbols?.length) params.set("symbols", symbols.join(","));
     if (q) params.set("q", q);
     params.set("limit", limit);
     try {
@@ -106,6 +107,21 @@ export async function fetchMovers(order = "gainers", limit = 5) {
     try {
         const res = await fetch(`${API_URL}/feed/movers?order=${order}&limit=${limit}`, {
             credentials: "include",
+        });
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function toggleWatchlist(symbol) {
+    try {
+        const res = await fetch(`${API_URL}/user/watchlist/toggle`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ symbol }),
         });
         return res.json();
     } catch (error) {

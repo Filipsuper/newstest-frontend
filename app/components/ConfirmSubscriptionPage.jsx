@@ -78,35 +78,31 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="border border-border bg-foreground p-6 mb-8">
-                <h2 className="text-lg font-serif font-bold text-text mb-1">Terminalen – vårt gratis aktieverktyg 📈</h2>
+                <h2 className="text-lg font-serif font-bold text-text mb-1">Vi bevakar börsen åt dig 📈</h2>
                 <p className="text-sm text-text-muted mb-4">
-                    Följ marknaden i realtid, direkt i webbläsaren.
+                    Breven är bara början – OMXsum följer nyhetsflödet hela dagen.
                 </p>
                 <div className="flex flex-col gap-3 mb-4">
                     <div className="flex flex-row gap-3 items-center">
                         <FaNewspaper className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article">Live-nyheter från marknaden</p>
+                        <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live, på svenska</p>
                     </div>
                     <div className="flex flex-row gap-3 items-center">
                         <FaChartLine className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article">Realtidsdata för alla aktier</p>
+                        <p className="text-sm text-text-article"><span className="font-semibold">Kursreaktioner</span> – se hur aktien rört sig efter varje nyhet</p>
                     </div>
                     <div className="flex flex-row gap-3 items-center">
                         <FaMagnifyingGlassChart className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article">Screener för att hitta nya case</p>
+                        <p className="text-sm text-text-article"><span className="font-semibold">Aktieöversikter</span> – kurs, finanser och nyheter för 870+ svenska aktier</p>
                     </div>
                 </div>
                 <p className="text-xs text-text-muted mb-4">
-                    Helt gratis – och genom att använda den stöttar du Omxsum ❤️
+                    Ingår i Plus från 49 kr/mån. För proffsen finns även{" "}
+                    <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="underline">Terminalen</a> i Pro.
                 </p>
-                <a
-                    href="https://terminal.omxsum.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="primary-btn extra-padding inline-block"
-                >
-                    Öppna terminalen →
-                </a>
+                <Link href="/marknadsnyheter" className="primary-btn extra-padding inline-block">
+                    Utforska Marknadsnyheter →
+                </Link>
             </div>
 
             <div className="text-center text-sm text-text-muted">

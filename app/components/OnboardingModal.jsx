@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { FaEnvelopeOpenText, FaChartLine, FaNewspaper, FaMagnifyingGlassChart } from "react-icons/fa6";
 import { useModal } from "../providers/ModalProvider";
 
@@ -50,33 +51,32 @@ export default function OnboardingModal({ email }) {
                 <div className="flex flex-col items-center text-center">
                     <h2 className="text-2xl text-text font-bold font-serif mb-2">Medan du väntar… 📈</h2>
                     <p className="text-sm text-text-muted mb-6">
-                        Kolla in <span className="text-text font-semibold">Terminalen</span> – vårt kostnadsfria aktieverktyg
+                        OMXsum är mer än breven – vi bevakar börsen åt dig, hela dagen
                     </p>
                     <div className="flex flex-col gap-3 w-full text-left border border-border p-4 mb-4">
                         <div className="flex flex-row gap-3 items-center">
                             <FaNewspaper className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article">Live-nyheter från marknaden</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live, på svenska</p>
                         </div>
                         <div className="flex flex-row gap-3 items-center">
                             <FaChartLine className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article">Realtidsdata för alla aktier</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Kursreaktioner</span> – se hur mycket aktien rört sig efter varje nyhet</p>
                         </div>
                         <div className="flex flex-row gap-3 items-center">
                             <FaMagnifyingGlassChart className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article">Screener för att hitta nya case</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Aktieöversikter</span> – kurs, finanser och nyheter för 870+ svenska aktier</p>
                         </div>
                     </div>
                     <p className="text-xs text-text-muted mb-6">
-                        Helt gratis – och genom att använda den stöttar du Omxsum ❤️
+                        Ingår i Plus från 49 kr/mån – breven är alltid gratis
                     </p>
-                    <a
-                        href="https://terminal.omxsum.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <Link
+                        href="/marknadsnyheter"
+                        onClick={closeModal}
                         className="primary-btn w-full py-2 text-center mb-2"
                     >
-                        Öppna terminalen →
-                    </a>
+                        Utforska Marknadsnyheter →
+                    </Link>
                     <button
                         className="text-sm text-text-muted hover:text-text cursor-pointer py-1"
                         onClick={closeModal}
