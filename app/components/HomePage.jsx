@@ -138,7 +138,7 @@ export default function HomePage({ articles }) {
             <div className="absolute -inset-8 bg-secondary opacity-[0.06] blur-3xl pointer-events-none"></div>
             <div className="relative border border-border bg-foreground p-6" aria-hidden="true">
               <p className="font-sans text-xs text-text-muted mb-1">Ur morgonbrevet</p>
-              <p className="font-serif font-bold text-text mb-3">📌 Min sammanfattning</p>
+              <p className="font-serif font-bold text-text mb-3">Min sammanfattning</p>
               <div className="flex flex-col gap-3 font-sans">
                 <div>
                   <p className="text-xs font-bold text-text">PowerCell Sweden <span className="text-primary">+5,4%</span></p>

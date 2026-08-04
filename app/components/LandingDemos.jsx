@@ -128,7 +128,7 @@ export function DemoLetter() {
             <div className="flex flex-row items-center gap-4 font-sans text-xs mb-4">
                 <div>
                     <p className="text-text-muted">Dagens sentiment</p>
-                    <p className="font-bold text-text">Bullish 🐂</p>
+                    <p className="font-bold text-text">Bullish</p>
                 </div>
                 <div className="border-l border-border pl-4">
                     <p className="text-text-muted">OMXS30</p>
