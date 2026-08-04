@@ -220,53 +220,112 @@ function FinancialsChart({ financials }) {
     );
 }
 
+const svDate = (d, opts = { day: "numeric", month: "long", year: "numeric" }) =>
+    d ? new Date(d).toLocaleDateString("sv-SE", opts) : "–";
+
+const daysUntil = (d) => {
+    if (!d) return null;
+    const diff = Math.ceil((new Date(d).getTime() - Date.now()) / 864e5);
+    return diff >= 0 ? diff : null;
+};
+
+function DaysPill({ date, accent = false }) {
+    const days = daysUntil(date);
+    if (days == null) return null;
+    const text = days === 0 ? "Idag" : `Om ${days} dagar`;
+    return (
+        <span className={`w-fit text-[11px] uppercase tracking-wider border px-2 py-0.5 ${accent ? "text-primary border-primary/40" : "text-text-muted border-border"}`}>
+            {text}
+        </span>
+    );
+}
+
 function CalendarView({ calendar }) {
-    if (!calendar || calendar.hasData === false) {
+    const nextEarnings = (calendar?.earningsDates ?? [])[0] ?? null;
+
+    if (!calendar || (calendar.hasData === false) || (!nextEarnings && !calendar.exDividendDate && !calendar.dividendDate)) {
         return <p className="text-text-muted font-sans text-sm py-8">Ingen kalenderdata tillgänglig.</p>;
     }
 
     const currency = calendar.estimates?.currency ?? "SEK";
     const eps = calendar.estimates?.eps ?? {};
     const revenue = calendar.estimates?.revenue ?? {};
-    const nextEarnings = (calendar.earningsDates ?? [])[0] ?? null;
-
-    const fmtDate = (d) => (d ? dayjs(d).format("D MMMM YYYY") : "–");
-    const fmtEps = (v) => (v != null ? v.toLocaleString("sv-SE", { maximumFractionDigits: 2 }) : "–");
+    const fmtEps = (v) => (v != null ? v.toLocaleString("sv-SE", { maximumFractionDigits: 2 }) : null);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans py-2">
-            <div className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-text-muted">Nästa rapport</span>
-                <span className="text-2xl font-serif font-bold text-text">{fmtDate(nextEarnings)}</span>
-                {(calendar.earningsDates ?? []).length > 1 && (
-                    <span className="text-xs text-text-muted">
-                        alt. {calendar.earningsDates.slice(1).map(fmtDate).join(", ")}
-                    </span>
-                )}
+        <div className="font-sans py-2">
+            <div className="flex flex-row justify-between text-[11px] uppercase tracking-wider text-text-muted mb-8">
+                <span>Bolagskalender</span>
+                <span>Källa: Yahoo{calendar.updatedAt ? ` · ${svDate(calendar.updatedAt, { day: "numeric", month: "short", year: "numeric" })}` : ""}</span>
             </div>
-            <div className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-text-muted">Estimat inför rapporten</span>
-                <span className="text-sm text-text-article">
-                    Vinst per aktie: <span className="font-semibold text-text">{fmtEps(eps.average)} {currency}</span>
-                    {eps.low != null && eps.high != null && (
-                        <span className="text-text-muted"> ({fmtEps(eps.low)}–{fmtEps(eps.high)})</span>
+
+            {nextEarnings && (
+                <div className="flex flex-row items-center gap-6 mb-10">
+                    <div className="flex flex-col items-center border border-border w-20 shrink-0">
+                        <span className="w-full text-center text-[10px] uppercase tracking-widest bg-foreground text-text-muted py-1">
+                            {svDate(nextEarnings, { month: "short" }).replace(".", "")}
+                        </span>
+                        <span className="text-3xl font-bold text-text py-1">
+                            {new Date(nextEarnings).getDate()}
+                        </span>
+                        <span className="text-[10px] text-text-muted pb-1.5">
+                            {new Date(nextEarnings).getFullYear()}
+                        </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] uppercase tracking-wider text-text-muted">Nästa rapport</span>
+                        <span className="text-2xl md:text-3xl font-serif font-bold text-text">{svDate(nextEarnings)}</span>
+                        <DaysPill date={nextEarnings} accent />
+                    </div>
+                </div>
+            )}
+
+            {(eps.average != null || revenue.average != null) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                    {eps.average != null && (
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[11px] uppercase tracking-wider text-text-muted">EPS-estimat</span>
+                            <span className="text-2xl font-bold text-primary">{fmtEps(eps.average)} {currency}</span>
+                            {eps.low != null && eps.high != null && (
+                                <span className="text-sm text-text-muted">{fmtEps(eps.low)}–{fmtEps(eps.high)} {currency}</span>
+                            )}
+                        </div>
                     )}
-                </span>
-                <span className="text-sm text-text-article">
-                    Omsättning: <span className="font-semibold text-text">{formatMoney(revenue.average, currency)}</span>
-                    {revenue.low != null && revenue.high != null && (
-                        <span className="text-text-muted"> ({formatMoney(revenue.low, currency)}–{formatMoney(revenue.high, currency)})</span>
+                    {revenue.average != null && (
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[11px] uppercase tracking-wider text-text-muted">Omsättningsestimat</span>
+                            <span className="text-2xl font-bold text-primary">{formatMoney(revenue.average, currency)}</span>
+                            {revenue.low != null && revenue.high != null && (
+                                <span className="text-sm text-text-muted">{formatMoney(revenue.low, currency)}–{formatMoney(revenue.high, currency)}</span>
+                            )}
+                        </div>
                     )}
-                </span>
-            </div>
-            <div className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-text-muted">X-datum utdelning</span>
-                <span className="text-lg font-serif font-bold text-text">{fmtDate(calendar.exDividendDate)}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-text-muted">Utdelningsdag</span>
-                <span className="text-lg font-serif font-bold text-text">{fmtDate(calendar.dividendDate)}</span>
-            </div>
+                </div>
+            )}
+
+            {calendar.exDividendDate && (
+                <div className="flex flex-row justify-between items-center py-2">
+                    <span className="text-[11px] uppercase tracking-wider text-text-muted">X-datum utdelning</span>
+                    <div className="flex flex-row items-center gap-3">
+                        <span className="text-lg font-serif font-bold text-text">{svDate(calendar.exDividendDate)}</span>
+                        <DaysPill date={calendar.exDividendDate} />
+                    </div>
+                </div>
+            )}
+
+            {calendar.dividendDate && (
+                <div className="flex flex-row justify-between items-center py-2">
+                    <span className="text-[11px] uppercase tracking-wider text-text-muted">Utdelningsdag</span>
+                    <div className="flex flex-row items-center gap-3">
+                        <span className="text-lg font-serif font-bold text-text">{svDate(calendar.dividendDate)}</span>
+                        <DaysPill date={calendar.dividendDate} />
+                    </div>
+                </div>
+            )}
+
+            <p className="text-xs text-text-muted mt-8">
+                Kalenderdatum och analytikerestimat kan ändras. Bekräfta viktiga händelser med bolaget.
+            </p>
         </div>
     );
 }

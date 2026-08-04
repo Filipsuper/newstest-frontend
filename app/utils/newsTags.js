@@ -34,3 +34,20 @@ const TAG_LABELS = {
 export const tagLabel = (tag = "") =>
     TAG_LABELS[tag] ??
     tag.charAt(0) + tag.slice(1).toLowerCase().replaceAll("_", " ");
+
+// Tag category -> chip colors
+const TAG_COLORS = [
+    [["INSIDER"], "text-secondary border-secondary/40"],
+    [["ACQUISITION", "DISPOSAL", "DIVESTMENT", "M&A", "MA", "MERGER"], "text-primary border-primary/40"],
+    [["EARNINGS", "GUIDANCE"], "text-emerald-400 border-emerald-400/40"],
+    [["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "LISTING"], "text-sky-400 border-sky-400/40"],
+    [["CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND"], "text-violet-400 border-violet-400/40"],
+    [["REGULATORY", "HALT", "LEGAL", "DELISTING", "OBSERVATION"], "text-rose-400 border-rose-400/40"],
+];
+
+export const tagColor = (tag = "") => {
+    for (const [tags, className] of TAG_COLORS) {
+        if (tags.includes(tag)) return className;
+    }
+    return "text-text-muted border-border";
+};
