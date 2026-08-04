@@ -188,20 +188,29 @@ function StockGraph({ stock, news, onSelectNews }) {
     );
 }
 
-function FinancialsChart({ financials }) {
-    const annual = financials?.annual ?? [];
+const quarterLabel = (periodEnd) => {
+    const date = new Date(periodEnd);
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    return `Q${quarter} '${String(date.getFullYear()).slice(2)}`;
+};
 
-    if (annual.length === 0) {
+function FinancialsChart({ financials }) {
+    const [period, setPeriod] = useState("annual");
+    const annual = financials?.annual ?? [];
+    const quarterly = financials?.quarterly ?? [];
+    const source = period === "quarterly" ? quarterly : annual;
+
+    if (annual.length === 0 && quarterly.length === 0) {
         return <p className="text-text-muted font-sans text-sm py-8">Ingen finansiell data tillgänglig.</p>;
     }
 
     // Yahoo rarely provides EBITA separately — show EBITDA instead when missing
-    const hasEbita = annual.some((row) => row.ebita != null);
+    const hasEbita = source.some((row) => row.ebita != null);
     const thirdKey = hasEbita ? "ebita" : "ebitda";
     const thirdLabel = hasEbita ? "EBITA" : "EBITDA";
 
-    const rows = annual.map((row) => ({
-        year: row.fiscalYear,
+    const rows = source.map((row) => ({
+        year: period === "quarterly" ? quarterLabel(row.periodEnd) : row.fiscalYear,
         revenue: row.revenue,
         ebit: row.ebit,
         third: row[thirdKey],
@@ -210,6 +219,32 @@ function FinancialsChart({ financials }) {
 
     const labels = { revenue: "Omsättning", ebit: "EBIT", third: thirdLabel, margin: "EBIT-marginal" };
 
+    return (
+        <div className="w-full font-sans">
+            <div className="flex flex-row justify-end gap-1 mb-2 text-xs">
+                {[{ id: "annual", label: "År" }, { id: "quarterly", label: "Kvartal" }].map((option) => (
+                    <button
+                        key={option.id}
+                        onClick={() => setPeriod(option.id)}
+                        disabled={(option.id === "quarterly" ? quarterly : annual).length === 0}
+                        className={`px-2 py-1 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-default ${period === option.id
+                            ? "text-text border-b-2 border-secondary"
+                            : "text-text-muted hover:text-text"}`}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+            {rows.length === 0 ? (
+                <p className="text-text-muted text-sm py-8">Ingen data för vald period.</p>
+            ) : (
+                <FinancialsComposed rows={rows} labels={labels} currency={financials.currency} />
+            )}
+        </div>
+    );
+}
+
+function FinancialsComposed({ rows, labels, currency }) {
     return (
         <div className="w-full h-72 font-sans">
             <ResponsiveContainer width="100%" height="100%">
@@ -240,7 +275,7 @@ function FinancialsChart({ financials }) {
                         formatter={(value, key) =>
                             key === "margin"
                                 ? [value != null ? value.toFixed(1) + "%" : "–", labels.margin]
-                                : [formatMoney(value, financials.currency), labels[key] ?? key]
+                                : [formatMoney(value, currency), labels[key] ?? key]
                         }
                     />
                     <Legend formatter={(key) => <span style={{ fontSize: 12 }}>{labels[key] ?? key}</span>} />
