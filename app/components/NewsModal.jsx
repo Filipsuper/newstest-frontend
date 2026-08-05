@@ -13,7 +13,7 @@ function InsiderFacts({ facts }) {
     if (transactions.length === 0) return null;
 
     return (
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-6">
             <span className="text-[11px] uppercase tracking-wider text-text-muted">Transaktioner</span>
             <div className="flex flex-col gap-3 mt-2">
                 {transactions.map((tx, idx) => (
@@ -72,7 +72,7 @@ export default function NewsModal({ item }) {
 
             <InsiderFacts facts={item.facts} />
 
-            <div className="flex flex-row justify-between items-center mt-6 pt-4 border-t border-border">
+            <div className="flex flex-row justify-between items-center mt-8">
                 {item.symbol ? (
                     <Link
                         href={`/aktie/${encodeURIComponent(item.symbol)}`}

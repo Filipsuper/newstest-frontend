@@ -51,7 +51,7 @@ export default function ArticleComponent({ article, index }) {
                             return (
                                 <li
                                     key={idx}
-                                    className="flex items-center w-full gap-2 border bg-bullet text-amber-500 shadow px-3 text-sm font-bold"
+                                    className="flex items-center w-full gap-2 bg-bullet text-amber-500 rounded-full px-3 text-sm font-bold"
                                 >
                                     <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                                     {bullet.replaceAll("-", "").trim()}
@@ -62,11 +62,11 @@ export default function ArticleComponent({ article, index }) {
                 )}
                 <div className="flex flex-grow justify-center">
                     <div className="flex md:flex-grow items-stretch font-sans">
-                        <div className="flex flex-col justify-center w-fit border-r border-border px-4">
+                        <div className="flex flex-col justify-center w-fit px-4">
                             <p className="text-sm text-text-muted font-semibold">Dagens <br /> sentiment</p>
                             <p className="text-base font-bold text-text">{sentiment}</p>
                         </div>
-                        <div className="flex flex-col justify-center px-4 border-r border-border">
+                        <div className="flex flex-col justify-center px-4">
                             <p className="text-sm font-semibold text-text-muted">OMXS30</p>
                             <p className="text-lg font-bold text-text">{omxPrice}</p>
                             <p className={`text-sm font-medium ${getChangeColor(omxChangePercentage)}`}>
@@ -89,12 +89,12 @@ export default function ArticleComponent({ article, index }) {
     };
 
     return (
-        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8   border-border border-opacity-10" >
+        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8" >
             <Link href="/" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8">
                 <FaArrowLeft className="text-lg" />
                 <span className="text-sm font-sans">Tillbaka</span>
             </Link>
-            < div className="flex flex-row justify-between items-start mb-4 border-b border-border" >
+            < div className="flex flex-row justify-between items-start mb-4" >
                 <div className="flex flex-col ">
                     {article.isEveningLetter ?
                         <p className="text-text font-bold text-base">

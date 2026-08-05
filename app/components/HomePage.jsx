@@ -140,10 +140,10 @@ export default function HomePage({ articles }) {
               <p className="font-sans text-xs text-text-muted mb-1">Ur morgonbrevet</p>
               <p className="font-serif font-bold text-text mb-2">Min sammanfattning</p>
               <div className="flex flex-row flex-wrap gap-1.5 mb-3 font-sans text-[10px]">
-                <span className="border border-secondary/60 text-text px-1.5 py-0.5">★ PowerCell Sweden</span>
-                <span className="border border-secondary/60 text-text px-1.5 py-0.5">★ Epiroc</span>
-                <span className="border border-border text-text-muted px-1.5 py-0.5">Small Cap</span>
-                <span className="border border-border text-text-muted px-1.5 py-0.5">Teknik</span>
+                <span className="rounded-full bg-secondary/15 text-text px-2 py-0.5">★ PowerCell Sweden</span>
+                <span className="rounded-full bg-secondary/15 text-text px-2 py-0.5">★ Epiroc</span>
+                <span className="rounded-full bg-border/40 text-text-muted px-2 py-0.5">Small Cap</span>
+                <span className="rounded-full bg-border/40 text-text-muted px-2 py-0.5">Teknik</span>
               </div>
               <div className="flex flex-col gap-3 font-sans">
                 <div>

@@ -35,7 +35,6 @@ const RANGES = [
 
 const tooltipStyle = {
     background: "var(--color-foreground)",
-    border: "1px solid var(--color-border)",
     fontSize: 12,
     color: "var(--color-text)",
 };
@@ -172,7 +171,7 @@ function StockGraph({ stock, news, onSelectNews }) {
             </ResponsiveContainer>
             {hovered && (
                 <div
-                    className="absolute z-10 pointer-events-none px-3 py-2 bg-foreground border border-border max-w-[18rem]"
+                    className="absolute z-10 pointer-events-none px-3 py-2 bg-foreground rounded-xl shadow-lg max-w-[18rem]"
                     style={{ left: hovered.x, top: hovered.y - 12, transform: "translate(-50%, -100%)" }}
                 >
                     {hovered.items.slice(0, 2).map((item) => (
@@ -333,7 +332,7 @@ function CalendarView({ calendar }) {
 
             {nextEarnings && (
                 <div className="flex flex-row items-center gap-6 mb-10">
-                    <div className="flex flex-col items-center border border-border w-20 shrink-0">
+                    <div className="flex flex-col items-center bg-border/20 rounded-lg w-20 shrink-0">
                         <span className="w-full text-center text-[10px] uppercase tracking-widest bg-foreground text-text-muted py-1">
                             {svDate(nextEarnings, { month: "short" }).replace(".", "")}
                         </span>
@@ -410,10 +409,10 @@ function HistoryTable({ history }) {
     }
 
     return (
-        <div className="font-sans text-sm max-h-96 overflow-y-auto border-b border-border">
+        <div className="font-sans text-sm max-h-96 overflow-y-auto">
             <table className="w-full">
                 <thead className="sticky top-0 bg-background">
-                    <tr className="text-xs uppercase tracking-wide text-text-muted border-b border-border">
+                    <tr className="text-xs uppercase tracking-wide text-text-muted">
                         <th className="text-left py-2 font-medium">Datum</th>
                         <th className="text-right py-2 font-medium">Stängning</th>
                         <th className="text-right py-2 font-medium">+/−</th>
@@ -428,7 +427,7 @@ function HistoryTable({ history }) {
                         const pct = prev?.close ? ((bar.close - prev.close) / prev.close) * 100 : null;
                         const up = (pct ?? 0) >= 0;
                         return (
-                            <tr key={bar.date} className="border-b border-border/50 text-text-article">
+                            <tr key={bar.date} className="text-text-article">
                                 <td className="py-2">{dayjs(bar.time).format("D MMM YYYY")}</td>
                                 <td className="py-2 text-right font-semibold text-text">{bar.close?.toFixed(2)}</td>
                                 <td className={`py-2 text-right ${pct == null ? "text-text-muted" : up ? "text-primary" : "text-secondary"}`}>
@@ -617,7 +616,7 @@ function StockContent({ symbol }) {
             </div>
 
             <div className="mb-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border mb-4 font-sans text-sm gap-1">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 font-sans text-sm gap-1">
                     <div className="flex flex-row flex-wrap">
                         {VIEWS.map((option) => (
                             <button
@@ -654,7 +653,7 @@ function StockContent({ symbol }) {
                 {view === "history" && (history ? <HistoryTable history={history} /> : <div className="h-72"></div>)}
             </div>
 
-            <h2 className="text-lg font-serif font-black italic text-text-muted mb-2 border-b border-border pb-2">
+            <h2 className="text-lg font-serif font-black italic text-text-muted mb-2 pb-2">
                 Nyheter om {stock.name ?? stock.label}
             </h2>
             {news.length === 0 ? (

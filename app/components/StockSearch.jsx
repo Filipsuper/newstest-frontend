@@ -83,7 +83,7 @@ export default function StockSearch({ placeholder = "Sök aktie…", onSelect })
                 />
             </div>
             {open && results.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 bg-foreground border border-border border-t-0 shadow-xl">
+                <div className="absolute top-full left-0 right-0 z-50 bg-foreground rounded-b-xl shadow-xl">
                     {results.map((row, idx) => (
                         <button
                             key={row.symbol}

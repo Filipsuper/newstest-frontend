@@ -74,7 +74,7 @@ export default function PersonalizationSetup() {
                                 key={symbol}
                                 onClick={() => handleStockRemove(symbol)}
                                 title="Ta bort"
-                                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs border border-secondary/60 text-text cursor-pointer hover:border-border"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full bg-border/40 text-text cursor-pointer hover:bg-border/60 transition-colors"
                             >
                                 <FaStar className="text-secondary" />
                                 {companyBySymbol.get(symbol)?.name ?? symbol.replace(".ST", "")}
@@ -93,9 +93,9 @@ export default function PersonalizationSetup() {
                             <button
                                 key={topic}
                                 onClick={() => handleTopicToggle(topic)}
-                                className={`px-2 py-1 text-xs border cursor-pointer transition-colors ${topics.includes(topic)
-                                    ? "border-secondary bg-secondary/10 text-text"
-                                    : "border-border text-text-muted hover:text-text"} ${busy ? "opacity-50" : ""}`}
+                                className={`px-2.5 py-1 text-xs rounded-full cursor-pointer transition-colors ${topics.includes(topic)
+                                    ? "bg-secondary text-background font-semibold"
+                                    : "bg-border/40 text-text-muted hover:text-text"} ${busy ? "opacity-50" : ""}`}
                             >
                                 {TOPIC_LABELS[topic] ?? topic}
                             </button>
@@ -105,7 +105,7 @@ export default function PersonalizationSetup() {
             )}
 
             {hasPrefs && (
-                <div className="border border-border p-4">
+                <div className="bg-border/20 rounded-2xl p-4">
                     <p className="text-sm font-semibold text-text mb-1">
                         {isPlusUser ? "📌 Min sammanfattning" : "🔒 Min sammanfattning"}
                     </p>

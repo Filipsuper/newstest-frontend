@@ -40,7 +40,7 @@ export default function AccountCallToAction() {
 
                 {/* Create Account Card */}
                 <div className="flex-1 flex flex-col items-center justify-between ">
-                    <div className="w-fit px-12 p-8  border border-border bg-foreground text-text shadow-lg hover:shadow-xl transition-shadow ">
+                    <div className="w-fit px-12 p-8  bg-foreground rounded-2xl text-text shadow-lg hover:shadow-xl transition-shadow ">
                         <h3 className="text-2xl font-serif font-bold mb-6 text-center">Skapa ett konto</h3>
                         <ul className="flex flex-col list-disc list-inside space-y-3 text-base leading-relaxed mb-6">
                             {freeAccountList.map((item, idx) => {

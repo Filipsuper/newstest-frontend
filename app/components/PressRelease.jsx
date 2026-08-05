@@ -42,7 +42,7 @@ export default function PressRelease({ release }) {
 
     return (
         <div
-            className="relative mb-2 w-full md:min-w-96 bg-foreground p-2 px-4 border border-border border-opacity-10 cursor-pointer hover:brightness-110"
+            className="relative mb-2 w-full md:min-w-96 bg-foreground rounded-xl p-2 px-4 cursor-pointer hover:brightness-110"
             onClick={handleShowMore}
         >
             <div className="w-full flex gap-2 items-center">

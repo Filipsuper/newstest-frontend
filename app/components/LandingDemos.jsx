@@ -72,7 +72,7 @@ export function DemoStock() {
                 </div>
             </div>
 
-            <div className="flex flex-row justify-between items-center border-b border-border mb-4 font-sans text-xs">
+            <div className="flex flex-row justify-between items-center mb-4 font-sans text-xs">
                 <div className="flex flex-row">
                     <span className="px-2.5 py-1.5 text-text border-b-2 border-secondary font-semibold -mb-px">Kurs</span>
                     <span className="px-2.5 py-1.5 text-text-muted">Analys</span>
@@ -119,7 +119,7 @@ export function DemoLetter() {
                     "Rapportfokus: Lundin Gold och Int. Petroleum",
                     "Stoxx 600 +0,4% efter fallande räntor",
                 ].map((line, idx) => (
-                    <div key={idx} className="flex items-center gap-2 border border-secondary/30 bg-bullet text-amber-500 px-3 py-1 text-xs font-bold font-serif w-fit">
+                    <div key={idx} className="flex items-center gap-2 bg-bullet text-amber-500 rounded-full px-3 py-1 text-xs font-bold font-serif w-fit">
                         <svg className="w-1.5 h-1.5 fill-amber-500 shrink-0" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                         {line}
                     </div>
@@ -130,7 +130,7 @@ export function DemoLetter() {
                     <p className="text-text-muted">Dagens sentiment</p>
                     <p className="font-bold text-text">Bullish</p>
                 </div>
-                <div className="border-l border-border pl-4">
+                <div className="pl-4">
                     <p className="text-text-muted">OMXS30</p>
                     <p className="font-bold text-text">3 287,68 <span className="text-primary font-semibold">+0,31%</span></p>
                 </div>

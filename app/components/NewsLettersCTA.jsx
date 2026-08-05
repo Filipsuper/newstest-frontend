@@ -13,7 +13,7 @@ export default function NewsLettersCTA({ newletterCards }) {
                     <Link
                         href={card.link}
                         key={index}
-                        className="bg-foreground border border-border p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
+                        className="bg-foreground rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
                     >
                         <div className="flex flex-row items-center mb-2 gap-2">
                             <h3 className="text-xl font-semibold text-text ">{card.title}</h3>

@@ -68,7 +68,7 @@ function SettingsPage() {
         <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
             <h1 className="text-3xl font-bold  text-text mb-12">Inställningar</h1>
 
-            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md ">
+            <section className="max-w-4xl mx-auto mb-16">
                 <h2 className="text-xl font-bold text-text mb-4">Konto</h2>
                 <div className="inline-flex gap-2 body-text mb-4">
                     <span>För att ändra eller ta bort ditt konto, </span><a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline">kontakta oss</a>
@@ -93,7 +93,7 @@ function SettingsPage() {
                 </div>
             </section>
 
-            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+            <section className="max-w-4xl mx-auto mb-16">
                 <h2 className="text-xl font-bold text-text mb-4">Prenumeration</h2>
                 <div className="flex flex-col body-text gap-4">
                     <div className="flex flex-col">
@@ -112,7 +112,7 @@ function SettingsPage() {
                 </div>
             </section>
 
-            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+            <section className="max-w-4xl mx-auto mb-16">
                 <h2 className="text-xl font-bold text-text mb-4">Mina aktier</h2>
                 <div className="flex flex-col body-text gap-4">
                     <div className="flex flex-col">
@@ -141,7 +141,7 @@ function SettingsPage() {
                     </p>
                     <div className="flex flex-col space-y-4">
                         {newsletterTypes.map((newsletter, index) => (
-                            <label key={index} className="inline-flex items-center cursor-pointer border border-border p-4 gap-2">
+                            <label key={index} className="inline-flex items-center cursor-pointer py-2 gap-2">
                                 <span className="w-5 h-5  border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center">
                                     <input
                                         type="checkbox"

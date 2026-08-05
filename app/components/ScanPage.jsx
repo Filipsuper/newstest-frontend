@@ -117,7 +117,7 @@ export default function Scan() {
       <p className="text-text-article mb-8">Få en snabb och omfattande överblick över det nuvarande marknadsläget.</p>
 
       {isFreeUser ? (
-        <div className="bg-foreground border border-border p-6 mb-8">
+        <div className="bg-foreground rounded-2xl p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               <h2 className="text-2xl font-semibold mb-2">Generera marknadsöversikt</h2>
@@ -172,7 +172,7 @@ export default function Scan() {
           {message && <span className="text-red-500 mt-4 block">{message}</span>}
         </div>
       ) : (
-        <div className="bg-foreground border border-border p-8 text-center">
+        <div className="bg-foreground rounded-2xl p-8 text-center">
           <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst</h2>
           <p className="text-text-muted mb-2">Få en snabb marknadsöversikt på ett knapptryck</p>
           <p className="text-text-muted mb-4">Logga in för att få tillgång till denna funktion.</p>

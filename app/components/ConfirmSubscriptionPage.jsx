@@ -66,7 +66,7 @@ export default function ConfirmSubscriptionPage() {
                 </p>
             </div>
 
-            <div className="border border-border bg-foreground p-6 mb-8">
+            <div className="mb-12">
                 <h2 className="text-lg font-serif font-bold text-text mb-4">Vad händer nu?</h2>
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-row gap-3 items-start">
@@ -82,14 +82,14 @@ export default function ConfirmSubscriptionPage() {
                         </p>
                     </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-border">
+                <div className="mt-4">
                     <Link href="/morgonbrevet" className="text-primary underline text-sm">
                         Läs dagens morgonbrev redan nu →
                     </Link>
                 </div>
             </div>
 
-            <div className="border border-border bg-foreground p-6 mb-8">
+            <div className="mb-12">
                 <h2 className="text-lg font-serif font-bold text-text mb-1">Gör brevet till ditt</h2>
                 <p className="text-sm text-text-muted mb-6">
                     Stjärnmärk bolag och välj ämnen du bryr dig om — helt gratis —
@@ -98,7 +98,7 @@ export default function ConfirmSubscriptionPage() {
                 <PersonalizationSetup />
             </div>
 
-            <div className="border border-border bg-foreground p-6 mb-8">
+            <div className="mb-12">
                 <h2 className="text-lg font-serif font-bold text-text mb-1">Följ dina bolag hela dagen</h2>
                 <p className="text-sm text-text-muted mb-4">
                     Nyheterna i ditt brev kommer från vårt eget liveflöde – där kan du

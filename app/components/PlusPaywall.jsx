@@ -25,7 +25,7 @@ export default function PlusPaywall({ children, redirectTo = "/" }) {
     }
 
     return (
-        <div className="max-w-xl mx-auto my-16 border border-border bg-foreground p-8 text-center font-sans">
+        <div className="max-w-xl mx-auto my-16 p-8 text-center font-sans">
             <FaLock className="text-3xl text-secondary mx-auto mb-4" />
             <h2 className="text-2xl font-serif font-bold text-text mb-2">Det här ingår i Plus</h2>
             <p className="text-text-muted mb-6">

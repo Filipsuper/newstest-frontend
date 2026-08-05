@@ -44,7 +44,7 @@ function WatchlistPage() {
                     aktierna reagerade. Dina val styr också fliken "Mina aktier" i{" "}
                     <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>.
                 </p>
-                <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+                <section className="max-w-4xl mx-auto mb-16">
                     <h2 className="text-xl font-bold text-text mb-4">Logga in för att välja</h2>
                     <p className="body-text text-text-muted mb-6">
                         Logga in med din mailadress – samma som du prenumererar med – så
@@ -119,9 +119,9 @@ function WatchlistPage() {
         <button
             key={topic}
             onClick={() => handleTopicToggle(topic)}
-            className={`px-3 py-1 font-sans text-sm border cursor-pointer transition-colors ${topics.includes(topic)
-                ? "border-secondary bg-secondary/10 text-text"
-                : "border-border text-text-muted hover:text-text"} ${topicsBusy ? "opacity-50" : ""}`}
+            className={`px-3 py-1 font-sans text-sm rounded-full cursor-pointer transition-colors ${topics.includes(topic)
+                ? "bg-secondary text-background font-semibold"
+                : "bg-border/40 text-text-muted hover:text-text"} ${topicsBusy ? "opacity-50" : ""}`}
         >
             {TOPIC_LABELS[topic] ?? topic}
         </button>
@@ -136,7 +136,7 @@ function WatchlistPage() {
                 och den personliga sektionen i morgonbrevet.
             </p>
 
-            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+            <section className="max-w-4xl mx-auto mb-16">
                 <h2 className="text-xl font-bold text-text mb-4">Lägg till bolag</h2>
                 <p className="body-text text-text-muted mb-4">
                     Sök nedan, eller stjärnmärk direkt på en aktiesida.
@@ -144,7 +144,7 @@ function WatchlistPage() {
                 <StockSearch placeholder="Sök bolag att bevaka…" onSelect={handleAdd} />
             </section>
 
-            <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+            <section className="max-w-4xl mx-auto mb-16">
                 <div className="flex flex-row justify-between items-baseline mb-4">
                     <h2 className="text-xl font-bold text-text">Bevakade bolag</h2>
                     <span className="font-sans text-xs text-text-muted">
@@ -159,7 +159,7 @@ function WatchlistPage() {
                         Du bevakar inga bolag ännu. Sök ovan eller stjärnmärk bolag på deras aktiesidor.
                     </p>
                 ) : (
-                    <div className="flex flex-col divide-y divide-border">
+                    <div className="flex flex-col">
                         {watchlist.map((symbol) => {
                             const row = companyBySymbol.get(symbol);
                             return (
@@ -184,7 +184,7 @@ function WatchlistPage() {
             </section>
 
             {vocabulary && (
-                <section className="max-w-4xl mx-auto mb-12 border p-8 border-border shadow-md">
+                <section className="max-w-4xl mx-auto mb-16">
                     <div className="flex flex-row justify-between items-baseline mb-4">
                         <h2 className="text-xl font-bold text-text">Ämnen</h2>
                         <span className="font-sans text-xs text-text-muted">{topics.length} av {TOPICS_CAP}</span>

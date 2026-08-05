@@ -49,7 +49,7 @@ export const ModalProvider = ({ children }) => {
                         onClick={handleBackdropClick}
                     >
                         <div
-                            className="bg-background py-12 px-20 shadow-xl flex justify-center items-center relative border border-border transition-transform"
+                            className="bg-background py-12 px-20 shadow-xl rounded-3xl flex justify-center items-center relative transition-transform"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button

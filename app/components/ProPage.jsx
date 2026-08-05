@@ -111,7 +111,7 @@ export default function ProPage() {
                 {tiers.map((tier) => (
                     <div
                         key={tier.id}
-                        className={`flex flex-col border p-6 bg-foreground ${tier.highlight ? "border-secondary shadow-lg" : "border-border"}`}
+                        className={`flex flex-col p-6 bg-foreground rounded-2xl ${tier.highlight ? "shadow-xl" : "shadow-md"}`}
                     >
                         <div className="flex items-center gap-2 mb-1">
                             <h2 className="text-xl font-serif font-bold text-text">{tier.name}</h2>

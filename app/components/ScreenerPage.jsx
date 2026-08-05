@@ -76,7 +76,7 @@ function ScreenerTable() {
             ) : items.length === 0 ? (
                 <p className="text-text-muted font-sans py-8">Inga rörelser att visa ännu.</p>
             ) : (
-                <div className="flex flex-col divide-y divide-border font-sans">
+                <div className="flex flex-col gap-1 font-sans">
                     {items.map((row) => {
                         const up = (row.changePct ?? 0) >= 0;
                         return (

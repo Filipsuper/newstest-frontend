@@ -98,7 +98,7 @@ export default function TickerLink({ symbol, children }) {
                 {children}
             </Link>
             {open && (
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 block w-60 bg-foreground border border-border p-3 shadow-xl font-sans not-italic">
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 block w-60 bg-foreground rounded-xl p-3 shadow-xl font-sans not-italic">
                     {spark?.points?.length >= 2 ? (
                         <>
                             <span className="flex flex-row justify-between items-baseline mb-2">

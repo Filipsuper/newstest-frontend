@@ -26,7 +26,7 @@ export default function OnboardingModal({ email }) {
                         Vi har skickat en bekräftelselänk till<br />
                         <span className="text-text font-semibold">{email}</span>
                     </p>
-                    <div className="flex flex-col gap-3 w-full text-left border border-border p-4 mb-6">
+                    <div className="flex flex-col gap-3 w-full text-left bg-border/20 rounded-2xl p-4 mb-6">
                         <div className="flex flex-row gap-3 items-start">
                             <span className="text-secondary font-bold">08:00</span>
                             <p className="text-sm text-text-article">
@@ -54,7 +54,7 @@ export default function OnboardingModal({ email }) {
                         När du bekräftat din mail kan du välja bolag och ämnen att bevaka –
                         helt gratis
                     </p>
-                    <div className="flex flex-col gap-3 w-full text-left border border-border p-4 mb-4">
+                    <div className="flex flex-col gap-3 w-full text-left bg-border/20 rounded-2xl p-4 mb-4">
                         <div className="flex flex-row gap-3 items-center">
                             <FaStar className="text-secondary shrink-0" />
                             <p className="text-sm text-text-article"><span className="font-semibold">Mina aktier & ämnen</span> – stjärnmärk bolag och följ t.ex. Small Cap eller Hälsovård</p>
