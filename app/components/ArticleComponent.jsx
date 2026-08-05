@@ -52,7 +52,7 @@ export default function ArticleComponent({ article, index }) {
                             return (
                                 <li
                                     key={idx}
-                                    className="flex items-center w-full gap-2 bg-bullet text-text rounded-full px-3 py-0.5 text-sm font-bold"
+                                    className="flex items-center w-full gap-2 bg-bullet text-white rounded-full px-3 py-0.5 text-sm font-bold"
                                 >
                                     <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                                     {bullet.replaceAll("-", "").trim()}
@@ -119,9 +119,9 @@ export default function ArticleComponent({ article, index }) {
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic mt-2 mb-6">
                         {title}
                     </h1>
-                    {introText && <p className="text-xl font-bold hidden md:flex font-sans mb-4">
+                    {/* {introText && <p className="text-xl font-bold hidden md:flex font-sans mb-4">
                         {introText}
-                    </p>}
+                    </p>} */}
 
                     <SentimentDashboard
                         sentimentLabel={sentimentLabel}
