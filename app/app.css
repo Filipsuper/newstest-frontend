@@ -29,8 +29,8 @@
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
   --color-shadow: #000000df;
-  --color-bullet: var(--color-amber-50);
-  --color-bullet-text: var(--color-gray-950);
+  --color-bullet: var(--color-amber-500);
+  --color-bullet-text: #ffffff;
 }
 
 /* Light theme (inverted colors while maintaining contrast and readability) */
@@ -46,7 +46,7 @@
   --color-accent: var(--color-emerald-600);
   --color-muted: #0c0c0d;
   --color-shadow: #dfdfdfb3;
-  --color-bullet: var(--color-amber-400);
+  --color-bullet: var(--color-amber-500);
   --color-bullet-text: #ffffff;
 }
 
@@ -62,8 +62,8 @@
   --color-accent: var(--color-emerald-200);
   --color-muted: #808080;
   --color-shadow: #dfdfdfb3;
-  --color-bullet: var(--color-amber-950);
-  --color-bullet-text: var(--color-gray-950);
+  --color-bullet: var(--color-amber-500);
+  --color-bullet-text: #ffffff;
 }
 
 html,
