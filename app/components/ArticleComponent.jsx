@@ -40,7 +40,7 @@ export default function ArticleComponent({ article, index }) {
         };
 
         return (
-            <div className="flex flex-col md:flex-row justify-between gap-6 py-3 mb-6 w-full">
+            <div className="flex flex-col md:flex-row justify-between gap-6 py-3 mb-6 w-full bg-background px-2 rounded-xl">
 
 
                 {bulletPoints && (
@@ -144,29 +144,29 @@ export default function ArticleComponent({ article, index }) {
                             </div> : null
                     }
 
-                    {pressReleases ?
-                        <div className="text-sm font-sans text-text-article flex flex-col gap-1">
-                            <h2 className="text-xl font-serif font-black text-text italic pb-2">
-                                Viktiga pressmeddelanden
-                                <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span>
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"> {/* Changed to grid layout */}
-                                {pressReleases.map((release, idx) => {
-                                    return (
-                                        <PressRelease key={idx} idx={idx} release={release} />
-                                    )
-                                })}
-                            </div>
-                        </div>
-                        : null}
-                    <div className="flex flex-col py-4 font-bold" >
+                    {
+                        // <div className="text-sm font-sans text-text-article flex flex-col gap-1">
+                        //     <h2 className="text-xl font-serif font-black text-text italic pb-2">
+                        //         Viktiga pressmeddelanden
+                        //         <span className="text-xs text-text-muted">• Updaterad {dayjs(createdAt).format("HH:mm")}</span>
+                        //     </h2>
+                        //     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"> {/* Changed to grid layout */}
+                        //         {pressReleases.map((release, idx) => {
+                        //             return (
+                        //                 <PressRelease key={idx} idx={idx} release={release} />
+                        //             )
+                        //         })}
+                        //     </div>
+                        // </div>
+                        }
+                    {/* <div className="flex flex-col py-4 font-bold" >
                         <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
-                    </div>
-                    <div className="flex flex-col items-start pb-4 font-sans text-sm">
+                    </div> */}
+                    {/* <div className="flex flex-col items-start pb-4 font-sans text-sm">
                         <Link href="/marknadsnyheter" className="primary-btn extra-padding">
                             Se alla nyheter →
                         </Link>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
