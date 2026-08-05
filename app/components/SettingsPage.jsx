@@ -65,11 +65,11 @@ function SettingsPage() {
     const planLabel = user.plan === "premium" ? "Pro" : user.plan === "plus" ? "Plus" : "Gratis";
 
     return (
-        <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
-            <h1 className="text-3xl font-bold  text-text mb-12">Inställningar</h1>
+        <main className=" min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
+            <h1 className="text-4xl font-serif font-bold text-text mb-12">Inställningar</h1>
 
             <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-bold text-text mb-4">Konto</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-4">Konto</h2>
                 <div className="inline-flex gap-2 body-text mb-4">
                     <span>För att ändra eller ta bort ditt konto, </span><a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline">kontakta oss</a>
                 </div>
@@ -94,7 +94,7 @@ function SettingsPage() {
             </section>
 
             <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-bold text-text mb-4">Prenumeration</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-4">Prenumeration</h2>
                 <div className="flex flex-col body-text gap-4">
                     <div className="flex flex-col">
                         <span className="text-base font-bold font-serif mb-2">Din plan</span>
@@ -113,7 +113,7 @@ function SettingsPage() {
             </section>
 
             <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-bold text-text mb-4">Mina aktier</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-4">Mina aktier</h2>
                 <div className="flex flex-col body-text gap-4">
                     <div className="flex flex-col">
                         <span className="text-base font-bold font-serif mb-2">Bevakningslista</span>
@@ -135,7 +135,7 @@ function SettingsPage() {
 
             <section className="max-w-4xl mx-auto rounded-lg mb-12">
                 <div className="flex flex-col mb-8">
-                    <h2 className="text-xl font-bold text-text">Nyhetsbrevstyper</h2>
+                    <h2 className="text-xl font-serif font-bold text-text">Nyhetsbrevstyper</h2>
                     <p className="body-text mb-4">
                         Välj vilka nyhetsbrev du vill prenumerera på
                     </p>

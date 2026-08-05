@@ -61,7 +61,7 @@ export default function HomePage({ articles }) {
       <section className="min-h-[25vh] max-w-6xl flex flex-col md:flex-row justify-between font-sans mx-auto px-4 py-8 mt-16">
         <div>
           <h2 className="text-base font-bold text-text">{currentTime}</h2>
-          <h1 className="text-5xl font-serif font-bold text-text-article mb-4">
+          <h1 className="text-5xl font-serif font-bold text-text mb-4">
             Allt som rör börsen,
             <br />
             på <span className="underline">3 minuter</span>
@@ -186,7 +186,7 @@ export default function HomePage({ articles }) {
 
       {/* Previous letters */}
       <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-4xl font-serif font-bold text-text-article text-center">Tidigare utskick</h2>
+        <h2 className="text-3xl font-serif font-bold text-text text-center">Tidigare utskick</h2>
         <p className="text-text-muted text-base mt-2 text-center mb-10 font-sans">
           Läs tidigare utskick av morgon- och kvällsbrevet.
         </p>
@@ -199,7 +199,7 @@ export default function HomePage({ articles }) {
 
       {/* Bottom CTA */}
       <section className="max-w-3xl mx-auto px-4 py-24 text-center">
-        <h2 className="text-4xl font-serif font-bold text-text mb-4">
+        <h2 className="text-3xl font-serif font-bold text-text mb-4">
           Imorgon kl. 08:00 i din inkorg?
         </h2>
         <p className="text-text-muted font-sans mb-8">

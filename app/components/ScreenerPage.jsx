@@ -128,7 +128,7 @@ function ScreenerTable() {
 
 export default function ScreenerPage() {
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
+        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
             <div className="mb-8">
                 <h1 className="text-4xl font-serif font-bold text-text mb-2">Screener</h1>
                 <p className="text-text-muted font-sans">

@@ -35,8 +35,8 @@ function WatchlistPage() {
     // pitch the feature and offer login that returns here
     if (isGuestUser) {
         return (
-            <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
-                <h1 className="text-3xl font-bold text-text mb-4">Mina aktier</h1>
+            <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
+                <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
                 <p className="body-text text-text-muted mb-8 max-w-2xl">
                     Stjärnmärk bolag och välj ämnen du vill följa – så får ditt
                     morgonbrev en egen sektion, <span className="text-text font-semibold">Min
@@ -45,7 +45,7 @@ function WatchlistPage() {
                     <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>.
                 </p>
                 <section className="max-w-4xl mx-auto mb-16">
-                    <h2 className="text-xl font-bold text-text mb-4">Logga in för att välja</h2>
+                    <h2 className="text-xl font-serif font-bold text-text mb-4">Logga in för att välja</h2>
                     <p className="body-text text-text-muted mb-6">
                         Logga in med din mailadress – samma som du prenumererar med – så
                         kan du välja dina aktier och ämnen direkt.
@@ -128,8 +128,8 @@ function WatchlistPage() {
     );
 
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-8">
-            <h1 className="text-3xl font-bold text-text mb-4">Mina aktier</h1>
+        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
+            <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
             <p className="body-text text-text-muted mb-12 max-w-2xl">
                 Här samlas bolagen du stjärnmärkt och ämnena du följer. De styr fliken
                 "Mina aktier" i <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>{" "}
@@ -137,7 +137,7 @@ function WatchlistPage() {
             </p>
 
             <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-bold text-text mb-4">Lägg till bolag</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-4">Lägg till bolag</h2>
                 <p className="body-text text-text-muted mb-4">
                     Sök nedan, eller stjärnmärk direkt på en aktiesida.
                 </p>
@@ -146,7 +146,7 @@ function WatchlistPage() {
 
             <section className="max-w-4xl mx-auto mb-16">
                 <div className="flex flex-row justify-between items-baseline mb-4">
-                    <h2 className="text-xl font-bold text-text">Bevakade bolag</h2>
+                    <h2 className="text-xl font-serif font-bold text-text">Bevakade bolag</h2>
                     <span className="font-sans text-xs text-text-muted">
                         {user.plan === "premium"
                             ? `${watchlist.length} bolag`
@@ -186,7 +186,7 @@ function WatchlistPage() {
             {vocabulary && (
                 <section className="max-w-4xl mx-auto mb-16">
                     <div className="flex flex-row justify-between items-baseline mb-4">
-                        <h2 className="text-xl font-bold text-text">Ämnen</h2>
+                        <h2 className="text-xl font-serif font-bold text-text">Ämnen</h2>
                         <span className="font-sans text-xs text-text-muted">{topics.length} av {TOPICS_CAP}</span>
                     </div>
                     <p className="body-text text-text-muted mb-6">

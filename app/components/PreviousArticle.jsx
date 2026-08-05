@@ -18,7 +18,7 @@ export default function PreviousArticle({ article, idx }) {
             <article className=" mx-auto relative z-10 mb-8 ">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                        <span className={"bg-gray-100 text-white text-xs font-medium px-2 py-0.5   " + (isEveningLetter ? "bg-secondary " : "bg-primary ")}>
+                        <span className={"text-white text-xs font-medium rounded-full px-2 py-0.5 " + (isEveningLetter ? "bg-secondary " : "bg-primary ")}>
                             {isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"}
                         </span>
                         <span className="text-sm text-text-muted">
@@ -36,7 +36,7 @@ export default function PreviousArticle({ article, idx }) {
                 <h2 className="text-xl font-serif font-bold italic text-text group-hover:underline mb-1">
                     {title}
                 </h2>
-                <p className="text-base text-text-muted body-text line-clamp-2">
+                <p className="body-text text-text-muted line-clamp-2">
                     {parseSummary(summary.split("\n")[0])}
                 </p>
 

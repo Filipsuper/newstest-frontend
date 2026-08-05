@@ -58,7 +58,7 @@ export default function ConfirmSubscriptionPage() {
     }
 
     return (
-        <main className="min-h-[70vh] mx-auto max-w-2xl px-4 py-16 font-sans">
+        <main className="min-h-[70vh] mx-auto max-w-2xl px-4 py-12 font-sans">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-serif font-bold text-text mb-3">Du är med! 🎉</h1>
                 <p className="text-text-muted">
@@ -67,7 +67,7 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="mb-12">
-                <h2 className="text-lg font-serif font-bold text-text mb-4">Vad händer nu?</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-4">Vad händer nu?</h2>
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-row gap-3 items-start">
                         <span className="text-secondary font-bold shrink-0">08:00</span>
@@ -90,7 +90,7 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="mb-12">
-                <h2 className="text-lg font-serif font-bold text-text mb-1">Gör brevet till ditt</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-1">Gör brevet till ditt</h2>
                 <p className="text-sm text-text-muted mb-6">
                     Stjärnmärk bolag och välj ämnen du bryr dig om — helt gratis —
                     så bevakar vi dem åt dig i morgonbrevet.
@@ -99,7 +99,7 @@ export default function ConfirmSubscriptionPage() {
             </div>
 
             <div className="mb-12">
-                <h2 className="text-lg font-serif font-bold text-text mb-1">Följ dina bolag hela dagen</h2>
+                <h2 className="text-xl font-serif font-bold text-text mb-1">Följ dina bolag hela dagen</h2>
                 <p className="text-sm text-text-muted mb-4">
                     Nyheterna i ditt brev kommer från vårt eget liveflöde – där kan du
                     följa dem i realtid.
