@@ -56,7 +56,7 @@ function Chip({ color, children }) {
     );
 }
 
-const card = "bg-foreground shadow-2xl shadow-black/40 select-none pointer-events-none";
+const card = "bg-foreground select-none pointer-events-none";
 
 export function DemoStock() {
     return (
@@ -276,7 +276,7 @@ const terminalSeries = [
 
 export function DemoTerminal() {
     return (
-        <div className="bg-[#050a0e] p-4 shadow-2xl shadow-black/50 select-none pointer-events-none" aria-hidden="true">
+        <div className="bg-[#050a0e] p-4 select-none pointer-events-none" aria-hidden="true">
             <div className="flex flex-row justify-between items-center mb-3 px-1 font-mono text-[11px] tracking-wider">
                 <span className="text-gray-300 font-bold">STONKS <span className="text-gray-600 font-normal">/ MARKET DATA</span></span>
                 <span className="text-green-400 flex items-center gap-1.5">

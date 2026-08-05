@@ -92,7 +92,7 @@ export default function HomePage({ articles }) {
       </section>
 
       {/* Why — calm, no selling */}
-      <section className="max-w-3xl mx-auto px-4 py-24 text-center">
+      {/* <section className="max-w-3xl mx-auto px-4 py-24 text-center">
         <h2 className="text-3xl md:text-4xl font-serif font-bold text-text mb-6">
           Tre minuter om dagen räcker
         </h2>
@@ -102,6 +102,10 @@ export default function HomePage({ articles }) {
           insynshandel, med kursreaktionen på varje nyhet – innan börsen öppnar.
           Kvällsbrevet knyter ihop dagen kl. 17:30, direkt på sidan.
         </p>
+      </section> */}
+
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <Testimonials testimonials={testimonials} />
       </section>
 
       {/* The engine — our own newswire */}
@@ -179,9 +183,6 @@ export default function HomePage({ articles }) {
       </section>
 
       {/* Social proof */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <Testimonials testimonials={testimonials} />
-      </section>
 
       {/* Previous letters */}
       <section className="max-w-6xl mx-auto px-4 py-20">

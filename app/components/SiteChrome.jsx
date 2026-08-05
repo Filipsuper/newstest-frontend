@@ -27,7 +27,7 @@ export default function SiteChrome({ children }) {
     return (
         <main className="min-h-screen relative overflow-x-hidden">
             <header className="w-full px-4 pt-4 mb-8 relative z-10">
-                <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10">
+                <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10">
                     <div className="flex flex-row justify-between w-full md:w-fit items-center">
                         <Link href="/" className="flex flex-row items-center gap-3 pr-2">
                             <span className="w-4 h-4 rounded-full bg-secondary shrink-0"></span>
