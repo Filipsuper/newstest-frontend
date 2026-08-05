@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { FaTwitter, FaBars } from "react-icons/fa";
 import { FaBluesky, FaRegStar } from "react-icons/fa6";
@@ -13,14 +13,6 @@ export default function SiteChrome({ children }) {
     const { openModal } = useModal();
     const { user, isGuestUser } = useAuthContext();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isEvening, setIsEvening] = useState(false);
-
-    // Warm sunrise tint during the day, cool dusk tint in the evening.
-    // Set after mount so server and client markup always match.
-    useEffect(() => {
-        const hour = new Date().getHours();
-        setIsEvening(hour >= 17 || hour < 5);
-    }, []);
 
     const handleOpenModal = () => {
         openModal(<LogInModal />);
@@ -30,18 +22,18 @@ export default function SiteChrome({ children }) {
         setIsMenuOpen(!isMenuOpen);
     };
 
-    const navLink = "text-stone-400 hover:text-white transition-colors";
+    const navLink = "text-text-muted hover:text-text transition-colors";
 
     return (
         <main className="min-h-screen relative overflow-x-hidden">
-            <header className="w-full px-4 pt-4 mb-8 sticky top-0 z-50">
-                <div className={`max-w-5xl mx-auto ${isEvening ? "bg-[#151c2c]" : "bg-[#281e13]"} transition-colors duration-700 ${isMenuOpen ? "rounded-3xl" : "rounded-full"} px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10`}>
+            <header className="w-full px-4 pt-4 mb-8 relative z-10">
+                <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10">
                     <div className="flex flex-row justify-between w-full md:w-fit items-center">
                         <Link href="/" className="flex flex-row items-center gap-3 pr-2">
                             <span className="w-4 h-4 rounded-full bg-secondary shrink-0"></span>
-                            <span className="text-xl text-white font-serif font-black italic inline">Omxsum</span>
+                            <span className="text-xl text-text font-serif font-black italic inline">Omxsum</span>
                         </Link>
-                        <button className="md:hidden text-stone-300" onClick={toggleMenu}>
+                        <button className="md:hidden text-text-article" onClick={toggleMenu}>
                             <FaBars />
                         </button>
                     </div>
@@ -68,7 +60,7 @@ export default function SiteChrome({ children }) {
                             </button>
                         ) : (
                             <div className="flex flex-row items-center gap-4">
-                                <Link href="/settings" title="Inställningar" className="text-xl text-stone-400 hover:text-white transition-colors cursor-pointer"><IoIosSettings /></Link>
+                                <Link href="/settings" title="Inställningar" className="text-xl text-text-muted hover:text-text transition-colors cursor-pointer"><IoIosSettings /></Link>
                                 <Link
                                     href="/mina-aktier"
                                     className="bg-secondary text-white font-bold rounded-full px-5 py-2 hover:brightness-110 transition-all inline-flex items-center gap-2 w-fit"
