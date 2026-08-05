@@ -46,7 +46,7 @@ export default function ShareArticleComponent({ title }) {
 
     return (
         <div className="flex flex-row gap-4 items-center mb-2">
-            <h2 className="hidden md:flex text-xs font-sans text-text italic ">
+            <h2 className="hidden md:flex text-sm font-sans text-text">
                 Dela artiklen
             </h2>
             <div className="flex flex-row gap-4">
@@ -54,7 +54,7 @@ export default function ShareArticleComponent({ title }) {
                     onClick={nativeShare}
                     aria-label="Dela artikel"
                     title="Dela artikel"
-                    className="secondary-btn py-1 rounded"
+                    className=" py-1 rounded"
                     type="button"
                 >
                     <FaShareAlt />
@@ -63,7 +63,7 @@ export default function ShareArticleComponent({ title }) {
                     onClick={shareOnTwitter}
                     aria-label="Dela på Twitter"
                     title="Dela på Twitter"
-                    className="secondary-btn py-1 rounded"
+                    className=" py-1 rounded"
                     type="button"
                 >
                     <FaTwitter />
@@ -72,7 +72,7 @@ export default function ShareArticleComponent({ title }) {
                     onClick={copyToClipboard}
                     aria-label="Kopiera länk"
                     title="Kopiera länk"
-                    className=" secondary-btn py-1 rounded"
+                    className=" py-1 rounded"
                     type="button"
                 >
                     <FaLink />
