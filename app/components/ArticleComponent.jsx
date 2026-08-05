@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import { importanceColor, pnlColor } from "../utils/utils";
 import dayjs from "dayjs";
 import PressRelease from "./PressRelease";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
+import { FaChevronLeft } from "react-icons/fa6";
 import EmailInput from "./EmailInput";
 import IndexGraph from "./IndexGraph";
 import Link from "next/link";
@@ -51,7 +52,7 @@ export default function ArticleComponent({ article, index }) {
                             return (
                                 <li
                                     key={idx}
-                                    className="flex items-center w-full gap-2 bg-bullet text-amber-500 rounded-full px-3 text-sm font-bold"
+                                    className="flex items-center w-full gap-2 bg-bullet text-text rounded-full px-3 py-0.5 text-sm font-bold"
                                 >
                                     <svg className="w-2 h-2 fill-amber-500" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                                     {bullet.replaceAll("-", "").trim()}
@@ -90,8 +91,8 @@ export default function ArticleComponent({ article, index }) {
 
     return (
         <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8" >
-            <Link href="/" className="flex flex-row items-center gap-2 text-text-muted hover:text-secondary transition-colors mb-8">
-                <FaArrowLeft className="text-lg" />
+            <Link href="/" className="inline-flex flex-row items-center gap-1 text-text-muted hover:text-text transition-colors mb-8 group">
+                <FaChevronLeft className="text-xs transition-transform group-hover:-translate-x-0.5" />
                 <span className="text-sm font-sans">Tillbaka</span>
             </Link>
             < div className="flex flex-row justify-between items-start mb-4" >
@@ -115,7 +116,7 @@ export default function ArticleComponent({ article, index }) {
 
             <div className="flex flex-col md:flex-row gap-8">
                 <div >
-                    <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic  pb-2">
+                    <h1 className="text-3xl md:text-4xl font-serif font-black text-text italic mt-2 mb-6">
                         {title}
                     </h1>
                     {introText && <p className="text-xl font-bold hidden md:flex font-sans mb-4">

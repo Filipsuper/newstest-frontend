@@ -119,7 +119,7 @@ export function DemoLetter() {
                     "Rapportfokus: Lundin Gold och Int. Petroleum",
                     "Stoxx 600 +0,4% efter fallande räntor",
                 ].map((line, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-bullet text-amber-500 rounded-full px-3 py-1 text-xs font-bold font-serif w-fit">
+                    <div key={idx} className="flex items-center gap-2 bg-bullet text-text rounded-full px-3 py-1 text-xs font-bold font-serif w-fit">
                         <svg className="w-1.5 h-1.5 fill-amber-500 shrink-0" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                         {line}
                     </div>
