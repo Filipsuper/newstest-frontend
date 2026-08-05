@@ -52,9 +52,9 @@ export default function ArticleComponent({ article, index }) {
                             return (
                                 <li
                                     key={idx}
-                                    className="flex items-center w-full gap-2 bg-bullet text-bullet-text rounded-full px-3 py-0.5 text-sm font-bold"
+                                    className="flex items-center w-full gap-2 text-text text-sm md:text-base font-semibold"
                                 >
-                                    <svg className="w-2 h-2 fill-current" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
+                                    <svg className="w-2 h-2 fill-secondary shrink-0" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
                                     {bullet.replaceAll("-", "").trim()}
                                 </li>
                             );
