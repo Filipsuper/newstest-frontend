@@ -94,10 +94,10 @@ macro themes).
   movers panel on Marknadsnyheter.
 - ✅ "Störst reaktion" sort toggle in the live feed (aug 2026); reaction
   sorting already feeds the evening letter
-- Wire finding (aug 2026 rejection audit): CEO/management changes are
-  rejected as `materiality_gate:no_supported_event` (e.g. Recyctec new VD).
-  The wire needs a MANAGEMENT event type before "Ledning" news reaches
-  letters/feed.
+- ✅ Wire management coverage (aug 2026, from rejection audit): widened
+  `management` event patterns (wire-12) — passive "utses till ny VD",
+  ledningsförändringar, koncernchef/COO, interim. Rejected backlog
+  reprocessed surgically (9 stories rescued incl. ASSA ABLOY/Gunnebo M&A).
 - Reaction measured at fixed windows (+1h, +1d) besides "since publish"
 - Reaction history on stock pages: "how does this stock react to reports?"
 - Honest labeling: thin trading and index moves aren't causality
