@@ -48,6 +48,10 @@ export default function SiteChrome({ children }) {
                             <span>Screener</span>
                             <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>
                         </Link>
+                        <Link href="/terminal" className={`relative ${navLink}`}>
+                            <span>Terminal</span>
+                            <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>
+                        </Link>
                         <Link href="/om-oss" className={navLink}>Om oss</Link>
                         <Link href="/pro" className={navLink}>Pro</Link>
                         <div className="hidden md:flex flex-grow"></div>
