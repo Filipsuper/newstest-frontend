@@ -8,12 +8,25 @@ tags and a dynamically generated OG image (`/article/<slug>/opengraph-image`).
 
 ## Development
 
+Clone `newstest-frontend` and `newsbackend` beside each other, configure the
+backend `.env`, then start the complete local stack with:
+
 ```bash
-npm install
-npm run dev
+./scripts/dev-local.sh
 ```
 
-Expects the backend on `http://localhost:8000/api` (see `.env`).
+The launcher installs missing dependencies, starts the Express backend on
+`http://localhost:8000`, starts Next.js on `http://localhost:5173`, waits for
+both services, opens the site, streams both logs, and stops both processes with
+Ctrl+C.
+
+Use a backend checkout elsewhere or change the ports when needed:
+
+```bash
+OMXSUM_BACKEND_DIR=/path/to/newsbackend FRONTEND_PORT=3000 ./scripts/dev-local.sh
+```
+
+Run `./scripts/dev-local.sh --help` for all supported overrides.
 
 ## Environment variables
 
