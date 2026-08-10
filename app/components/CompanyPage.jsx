@@ -289,6 +289,7 @@ function CompanyChart({ chart, companyName }) {
             <div className="company-chart" role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={data} margin={{ top: 14, right: 8, bottom: 4, left: 4 }}>
+                        <CartesianGrid stroke="var(--company-grid-line)" strokeDasharray="2 6" />
                         <XAxis dataKey="date" tickFormatter={(value) => svDate(value, true)} minTickGap={58} axisLine={false} tickLine={false} />
                         <YAxis
                             yAxisId="price"
@@ -470,7 +471,7 @@ function FinancialDevelopmentChart({ periods, currency }) {
     const data = periods.map((period) => ({ ...period, label: periodLabel(period) }));
     const series = FINANCIAL_SERIES.filter((candidate) => periods.some((period) => period[candidate.key] != null));
     return (
-        <>
+        <div className="company-financial-visual">
             <div className="company-financial-legend" aria-hidden="true">
                 {series.map((item) => <span key={item.key}><i style={{ background: item.color }} />{item.label}</span>)}
                 {periods.some((period) => period.ebitMarginPct != null) && <span><i className="company-margin-line" />EBIT-marginal</span>}
@@ -507,7 +508,7 @@ function FinancialDevelopmentChart({ periods, currency }) {
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>
-        </>
+        </div>
     );
 }
 

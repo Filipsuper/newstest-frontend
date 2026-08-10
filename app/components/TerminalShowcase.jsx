@@ -23,7 +23,7 @@ export default function TerminalShowcase() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Öppna en större bild av OMXsum Terminal"
-                className="group block overflow-hidden rounded-lg border border-[#263b4b] bg-[#060d14] shadow-2xl shadow-black/20"
+                className="group block overflow-hidden rounded-xl bg-[#090b0f] shadow-2xl shadow-black/35"
             >
                 <Image
                     src="/images/terminal-showcase.png"
@@ -32,7 +32,7 @@ export default function TerminalShowcase() {
                     height={1109}
                     sizes="(max-width: 1280px) 100vw, 1280px"
                     quality={90}
-                    className="block h-auto w-full transition-transform duration-300 group-hover:scale-[1.005]"
+                    className="block h-auto w-full contrast-[1.1] saturate-[1.08] brightness-[1.04] transition-transform duration-300 group-hover:scale-[1.005]"
                 />
             </a>
             <p className="mt-2 text-center text-xs text-text-muted">Klicka på bilden för att visa den i full storlek.</p>

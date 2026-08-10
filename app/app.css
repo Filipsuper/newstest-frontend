@@ -18,17 +18,17 @@
 }
 
 :root.dark {
-  --color-background: var(--color-gray-950);
-  --color-foreground: #01030a;
-  --color-border: var(--color-gray-700);
-  --color-text: var(--color-gray-200);
-  --color-text-article: var(--color-gray-300);
-  --color-text-muted: var(--color-gray-400);
-  --color-primary: #668CF4;
+  --color-background: #181a21;
+  --color-foreground: #0e1015;
+  --color-border: #30333c;
+  --color-text: #f2f3f5;
+  --color-text-article: #d2d4da;
+  --color-text-muted: #9297a3;
+  --color-primary: #e7ad2f;
   --color-secondary: var(--color-amber-400);
-  --color-accent: var(--color-emerald-200);
+  --color-accent: #71d6b4;
   --color-muted: #808080;
-  --color-shadow: #000000df;
+  --color-shadow: #050608cc;
   --color-bullet: var(--color-amber-500);
   --color-bullet-text: #ffffff;
 }
@@ -206,6 +206,8 @@ body {
 :root {
   --company-surface: #ffffff;
   --company-surface-soft: #ffffff;
+  --company-panel: #ffffff;
+  --company-panel-raised: #f6f7f8;
   --company-yellow: #d79b00;
   --company-blue: #4070f4;
   --company-positive: #087f5b;
@@ -223,26 +225,28 @@ body {
 }
 
 :root.dark {
-  --company-surface: #01030a;
-  --company-surface-soft: #01030a;
-  --company-yellow: #fbbf24;
-  --company-blue: #7b9cff;
-  --company-positive: #69dbb4;
+  --company-surface: #090b0f;
+  --company-surface-soft: #101218;
+  --company-panel: #101217;
+  --company-panel-raised: #13161c;
+  --company-yellow: #ffc43d;
+  --company-blue: #9aafff;
+  --company-positive: #72dfb9;
   --company-negative: #ff8787;
-  --company-volume: rgba(123, 156, 255, 0.12);
-  --company-muted-line: #748094;
-  --company-fin-revenue: #5f91ae;
-  --company-fin-ebit: #a9df67;
-  --company-fin-ebita: #e3ad54;
-  --company-fin-ebitda: #78bde3;
-  --company-fin-margin: #c8f7a0;
-  --company-estimate-base: #1a2330;
-  --company-grid-line: rgba(120, 150, 175, 0.12);
-  --company-chart-cursor: rgba(120, 150, 175, 0.055);
+  --company-volume: rgba(255, 196, 61, 0.11);
+  --company-muted-line: #7f8795;
+  --company-fin-revenue: #78a7c2;
+  --company-fin-ebit: #b6eb72;
+  --company-fin-ebita: #f0bd62;
+  --company-fin-ebitda: #8bc9ec;
+  --company-fin-margin: #d3ffa9;
+  --company-estimate-base: #222630;
+  --company-grid-line: rgba(199, 205, 218, 0.105);
+  --company-chart-cursor: rgba(255, 255, 255, 0.045);
 }
 
 .company-page {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1320px, calc(100% - 40px));
   min-height: 78vh;
   margin: 0 auto;
   padding: 18px 0 72px;
@@ -288,7 +292,7 @@ body {
 .company-identity h1 {
   max-width: 760px;
   font-family: var(--font-serif);
-  font-size: clamp(2.35rem, 5vw, 4.75rem);
+  font-size: clamp(2.25rem, 4vw, 3.75rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 0.98;
@@ -438,8 +442,9 @@ body {
 }
 
 .company-chart-section {
-  padding: 0;
-  background: transparent;
+  padding: 34px 40px 26px;
+  border-radius: 12px;
+  background: var(--company-panel);
 }
 
 .company-section-heading {
@@ -570,7 +575,7 @@ body {
 
 .company-chart {
   width: 100%;
-  height: 430px;
+  height: 500px;
 }
 
 .company-chart .recharts-cartesian-axis-tick-value {
@@ -671,6 +676,9 @@ body {
 
 .company-context-section {
   margin-bottom: 58px;
+  padding: 24px;
+  border-radius: 10px;
+  background: var(--company-panel);
 }
 
 .company-context-section > p:not(.company-eyebrow) {
@@ -734,6 +742,9 @@ body {
 
 .company-table-wrap {
   max-width: 100%;
+  padding: 8px 18px;
+  border-radius: 10px;
+  background: var(--company-panel);
   overflow-x: auto;
 }
 
@@ -757,7 +768,7 @@ body {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: var(--color-background);
+  background: var(--company-panel);
   text-align: left;
 }
 
@@ -775,6 +786,13 @@ body {
   margin: 12px 0 28px;
 }
 
+.company-financial-visual {
+  margin: 28px 0 26px;
+  padding: 28px 30px 16px;
+  border-radius: 12px;
+  background: var(--company-panel);
+}
+
 .company-financial-chart .recharts-cartesian-axis-tick-value {
   fill: var(--color-text-muted);
   font-size: 0.75rem;
@@ -785,7 +803,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px 18px;
-  margin-top: 28px;
+  margin-top: 0;
   color: var(--color-text-muted);
   font-size: 0.8rem;
 }
@@ -854,6 +872,9 @@ body {
 .company-ceo-section {
   width: 100%;
   margin-top: 76px;
+  padding: 36px 40px;
+  border-radius: 12px;
+  background: var(--company-panel);
 }
 
 .company-ceo-heading {
@@ -1068,7 +1089,7 @@ body {
   .company-quote { align-items: flex-start; }
   .company-performance { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .company-tabs { gap: 24px; margin: 42px 0 30px; }
-  .company-chart-section { margin-inline: 0; padding: 0; }
+  .company-chart-section { margin-inline: -14px; padding: 24px 14px 18px; border-radius: 0; }
   .company-chart-heading { align-items: flex-start; flex-direction: column; }
   .company-chart-actions { width: 100%; }
   .company-chart { height: 340px; }
@@ -1083,8 +1104,10 @@ body {
   .company-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 18px; }
   .company-calendar-list > div { grid-template-columns: 1fr; gap: 5px; }
   .company-financial-chart { height: 330px; }
+  .company-financial-visual { margin-inline: -14px; padding: 24px 14px 12px; border-radius: 0; }
   .company-ceo-columns { grid-template-columns: 1fr; gap: 30px; }
   .company-ceo-keyfigures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .company-ceo-section { margin-inline: -14px; width: calc(100% + 28px); padding: 30px 14px; border-radius: 0; }
 }
 
 @media (max-width: 480px) {

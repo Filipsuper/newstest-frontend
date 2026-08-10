@@ -13,6 +13,12 @@ desktop density or abbreviated interaction model.
 - Use the established dark/light surfaces, OMXsum yellow identity, blue for
   neutral interaction, green only for positive values, and red only for
   negative values.
+- In dark mode, use a lighter charcoal page canvas with deeper neutral inset
+  surfaces for charts, financial tables, and source-backed narrative blocks.
+  The contrast comes from surface tone and spacing rather than bright borders.
+- Data marks and product screenshots may use slightly stronger contrast and
+  saturation than surrounding chrome, while preserving truthful values and
+  the OMXsum amber emphasis.
 - Never use color alone: show a sign, readable value, or label as well.
 - Keep body and metadata text comfortably readable. Comparable numbers use
   tabular numerals and align consistently.
