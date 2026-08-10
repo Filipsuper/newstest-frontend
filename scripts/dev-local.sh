@@ -11,6 +11,7 @@ FRONTEND_HOST="${FRONTEND_HOST:-localhost}"
 BACKEND_HOST="${BACKEND_HOST:-localhost}"
 INSTALL_MISSING="${INSTALL_MISSING:-1}"
 OPEN_BROWSER="${OPEN_BROWSER:-1}"
+MARKET_API_URL="${OMXSUM_MARKET_API_URL:-https://terminal.omxsum.com/api/v1}"
 
 usage() {
     cat <<'EOF'
@@ -26,6 +27,8 @@ Environment overrides:
   OMXSUM_BACKEND_DIR  Path to the newsbackend checkout
   FRONTEND_PORT       Next.js port (default: 5173)
   BACKEND_PORT        Express port (default: 8000)
+  OMXSUM_MARKET_API_URL
+                       Market API base URL (default: production v1 API)
   INSTALL_MISSING     Run npm ci when node_modules is absent (default: 1)
   OPEN_BROWSER        Open the site after startup (default: 1)
 EOF
@@ -227,6 +230,7 @@ echo "Starting OMXsum backend on ${BACKEND_URL}…"
         PORT="${BACKEND_PORT}" \
         CLIENT_URL="${FRONTEND_URL}" \
         API_URL="${BACKEND_URL}/api" \
+        STONKS_API_URL="${MARKET_API_URL}" \
         node --watch main.js
 ) >"${BACKEND_LOG}" 2>&1 &
 backend_pid=$!
@@ -251,6 +255,7 @@ echo
 echo "OMXsum local development is ready:"
 echo "  Frontend  ${FRONTEND_URL}"
 echo "  Backend   ${BACKEND_URL}/api"
+echo "  Market API ${MARKET_API_URL}"
 echo "  Logs      ${LOG_DIR}"
 echo
 echo "Press Ctrl+C to stop both services."
