@@ -52,7 +52,7 @@ export default function EmailInput({ centered }) {
                 <form onSubmit={handleSubmit} className="flex flex-row items-center  gap-2">
                     {/* Honeypot: hidden from humans, bots auto-fill it and get silently rejected */}
                     <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
-                    <input id="mail" name="mail" className="border rounded-full hover:border-white text-text outline-none w-5/6 md:w-full px-4 py-2 md:text-sm border-border placeholder:text-text-muted focus:border-white" placeholder="Din email" />
+                    <input id="mail" name="mail" className="border bg-foreground rounded-full hover:border-white text-text outline-none w-5/6 md:w-full px-4 py-2 md:text-sm border-border placeholder:text-text-muted focus:border-white" placeholder="Din email" />
                     <button type="submit" className="text-secondary hover:bg-secondary hover:text-background transition-colors duration-500 border rounded-full px-5 py-2 border-secondary bg-foreground text-sm md:text-sm hover:cursor-pointer active:text-text" >Skicka</button>
                 </form>
                 <span className="text-sm text-text-muted mt-1">Gör som <span className="underline">+100</span> andra och gå med idag!</span>

@@ -209,9 +209,12 @@ body {
   --company-panel: #ffffff;
   --company-panel-raised: #f6f7f8;
   --company-yellow: #d79b00;
+  --company-yellow-bright: #f7c85a;
   --company-blue: #4070f4;
-  --company-positive: #087f5b;
-  --company-negative: #c92a2a;
+  --company-blue-bright: #8aa6ff;
+  --company-muted-line-bright: #b9c0c8;
+  --company-positive: #4070f4;
+  --company-negative: #f7c85a;
   --company-volume: rgba(64, 112, 244, 0.12);
   --company-muted-line: #868e96;
   --company-fin-revenue: #527f9b;
@@ -230,9 +233,12 @@ body {
   --company-panel: #101217;
   --company-panel-raised: #13161c;
   --company-yellow: #ffc43d;
+  --company-yellow-bright: #fff3d0;
   --company-blue: #9aafff;
-  --company-positive: #72dfb9;
-  --company-negative: #ff8787;
+  --company-blue-bright: #e2e8ff;
+  --company-muted-line-bright: #cfd4dd;
+  --company-positive: #71ff86;
+  --company-negative: #ff6b66;
   --company-volume: rgba(255, 196, 61, 0.11);
   --company-muted-line: #7f8795;
   --company-fin-revenue: #78a7c2;
@@ -307,12 +313,11 @@ body {
 
 .company-watchlist {
   flex: 0 0 auto;
-  margin-top: 10px;
   padding: 8px;
   border: 0;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: color 150ms ease, transform 150ms ease;
 }
@@ -339,7 +344,7 @@ body {
 .company-quote {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -444,7 +449,7 @@ body {
 .company-chart-section {
   padding: 34px 40px 26px;
   border-radius: 12px;
-  background: var(--company-panel);
+  background: var(--color-background);
 }
 
 .company-section-heading {
@@ -490,7 +495,6 @@ body {
 .company-control,
 .company-icon-control {
   min-height: 38px;
-  border: 1px solid var(--color-border);
   border-radius: 7px;
   color: var(--color-text-muted);
   font-size: 0.875rem;
@@ -542,10 +546,51 @@ body {
 }
 
 .company-range-row {
-  margin: 25px 0 10px;
+  gap: 6px;
+  margin: 22px 0 10px;
+  margin-inline-start: -10px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.company-range-row button,
+.company-range-row::-webkit-scrollbar { display: none; }
+
+.company-range-row button {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.company-range-row button span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.company-range-row button strong {
+  font-size: 0.875rem;
+}
+
+.company-range-row button:not(:disabled):hover,
+.company-range-row button.company-range-active {
+  background: var(--company-surface);
+}
+
+.company-range-row button.company-range-active span {
+  color: var(--color-text);
+}
+
+.company-range-row button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .company-period-tabs button {
   padding: 6px 9px;
   color: var(--color-text-muted);
@@ -553,8 +598,6 @@ body {
   cursor: pointer;
 }
 
-.company-range-row button:hover,
-.company-range-row button.company-range-active,
 .company-period-tabs button:hover,
 .company-period-tabs button.active {
   color: var(--color-text);
@@ -562,20 +605,49 @@ body {
   border-radius: 6px;
 }
 
-.company-range-row button:disabled {
-  opacity: 0.3;
-  cursor: default;
-  background: transparent;
-}
-
 .company-period-tabs button:disabled {
   opacity: 0.35;
   cursor: default;
 }
 
+@property --company-chart-reveal {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+
 .company-chart {
   width: 100%;
   height: 500px;
+  mask-image: linear-gradient(to right,
+      #000 0%,
+      #000 var(--company-chart-reveal),
+      transparent calc(var(--company-chart-reveal) + 14%));
+  -webkit-mask-image: linear-gradient(to right,
+      #000 0%,
+      #000 var(--company-chart-reveal),
+      transparent calc(var(--company-chart-reveal) + 14%));
+  animation: company-chart-reveal 1100ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes company-chart-reveal {
+  from {
+    --company-chart-reveal: 0%;
+    opacity: 0.35;
+  }
+
+  to {
+    --company-chart-reveal: 100%;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .company-chart {
+    mask-image: none;
+    -webkit-mask-image: none;
+    animation: none;
+  }
 }
 
 .company-chart .recharts-cartesian-axis-tick-value {
@@ -790,7 +862,7 @@ body {
   margin: 28px 0 26px;
   padding: 28px 30px 16px;
   border-radius: 12px;
-  background: var(--company-panel);
+  background: var(--color-background);
 }
 
 .company-financial-chart .recharts-cartesian-axis-tick-value {

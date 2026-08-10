@@ -7,7 +7,13 @@ import { getCompanies } from "../utils/companies";
 
 const normalize = (value = "") => value.toLowerCase().trim();
 
-export default function StockSearch({ placeholder = "Sök aktie…", onSelect }) {
+export default function StockSearch({
+    placeholder = "Sök aktie…",
+    onSelect,
+    dropUp = false,
+    autoFocus = false,
+    fieldClassName = "border border-border px-3",
+}) {
     const [query, setQuery] = useState("");
     const [companies, setCompanies] = useState([]);
     const [open, setOpen] = useState(false);
@@ -67,10 +73,10 @@ export default function StockSearch({ placeholder = "Sök aktie…", onSelect })
 
     return (
         <div ref={wrapperRef} className="relative w-full max-w-md font-sans">
-            <div className="flex flex-row items-center gap-2 border border-border bg-foreground px-3">
-                <FiSearch className="text-text-muted shrink-0" />
+            <div className={`flex flex-row items-center gap-2 rounded-full ${fieldClassName}`}>
                 <input
                     value={query}
+                    autoFocus={autoFocus}
                     onChange={(e) => {
                         setQuery(e.target.value);
                         setOpen(true);
@@ -81,9 +87,10 @@ export default function StockSearch({ placeholder = "Sök aktie…", onSelect })
                     placeholder={placeholder}
                     className="w-full py-2 bg-transparent text-sm text-text outline-none placeholder:text-text-muted"
                 />
+                <FiSearch className="text-text-muted shrink-0" />
             </div>
             {open && results.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 bg-foreground rounded-b-xl shadow-xl">
+                <div className={`absolute left-0 right-0 z-50 bg-foreground shadow-xl ${dropUp ? "bottom-full mb-2 rounded-xl border border-border overflow-hidden" : "top-full rounded-b-xl"}`}>
                     {results.map((row, idx) => (
                         <button
                             key={row.symbol}

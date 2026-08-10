@@ -9,6 +9,7 @@ import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
 import LogInModal from "../modals/logInModal";
 import StockSearch from "./StockSearch";
+import FloatingDock from "./FloatingDock";
 
 export default function SiteChrome({ children }) {
     const { openModal } = useModal();
@@ -76,7 +77,8 @@ export default function SiteChrome({ children }) {
                 </div>
             </header>
             {children}
-            <footer className="w-full mx-auto px-8 py-12 mt-16 flex flex-col md:flex-row items-center relative z-10">
+            <FloatingDock />
+            <footer className="w-full mx-auto px-8 pt-12 pb-28 mt-16 flex flex-col md:flex-row items-center relative z-10">
                 <div className="flex flex-row flex-wrap items-center justify-center gap-4 mb-2 md:mb-0">
                     <p className="text-text-muted text-sm">© 2025 Omxsum</p>
                     <p className="text-text-muted text-sm">Socialt:</p>

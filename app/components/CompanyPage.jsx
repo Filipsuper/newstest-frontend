@@ -28,6 +28,12 @@ const TABS = [
     { id: "calendar", label: "Kalender" },
 ];
 
+const LINE_FADES = [
+    ["company-line-fade-yellow", "--company-yellow", "--company-yellow-bright"],
+    ["company-line-fade-blue", "--company-blue", "--company-blue-bright"],
+    ["company-line-fade-muted", "--company-muted-line", "--company-muted-line-bright"],
+];
+
 const RANGES = [
     { id: "6m", label: "6 mån", sessions: 130 },
     { id: "1y", label: "1 år", sessions: 260 },
@@ -204,7 +210,7 @@ function WatchlistButton({ symbol }) {
     );
 }
 
-function CompanyChart({ chart, companyName }) {
+function CompanyChart({ chart, companyName,summary,symbol }) {
     const [range, setRange] = useState("1y");
     const [compare, setCompare] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -236,59 +242,113 @@ function CompanyChart({ chart, companyName }) {
         });
     }, [chart, range]);
 
+    const rangeReturns = useMemo(() => {
+        const rows = (chart?.bars ?? []).filter((row) => row.close != null);
+        const last = rows[rows.length - 1]?.close;
+        return Object.fromEntries(RANGES.map((option) => {
+            const first = rows[Math.max(0, rows.length - option.sessions)]?.close;
+            return [option.id, first && last ? ((last / first) - 1) * 100 : null];
+        }));
+    }, [chart]);
+
     if (!data.length) {
         return <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p>;
     }
 
+    const profile = summary.profile;
+    const quote = summary.quote;
+    const changeTone = quote?.changePct == null ? "neutral" : quote.changePct >= 0 ? "positive" : "negative";
+
     return (
         <section className="company-chart-section" aria-labelledby="price-heading">
-            <div className="company-section-heading company-chart-heading">
-                <div>
+            <div className="flex flex-col company-chart-heading">
+                {/* <div>
                     <p className="company-eyebrow">Historisk utveckling</p>
                     <h2 id="price-heading">Hur har aktien utvecklats?</h2>
-                </div>
-                <div className="company-chart-actions">
-                    <button
-                        className={compare ? "company-control company-control-active" : "company-control"}
-                        onClick={() => setCompare((value) => !value)}
-                    >
-                        Jämför OMXSPI
-                    </button>
-                    <div className="company-settings-wrap">
+                </div> */}
+                <header className="w-full company-header">
+                    <div className="company-identity">
+                        <div className="company-symbol-row">
+                            {/* <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span> */}
+                            {/* {profile.market && <small>{profile.market}</small>} */}
+                            {profile.segment && <small className="font-bold">{profile.segment.replaceAll("_", " ")}</small>}
+                            <small>{profile.name ?? symbol}</small>
+                            <div>•</div>
+                            <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small>
+                            <WatchlistButton symbol={symbol} />
+                        </div>
+                        <div className="company-quote">
+                            <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} kr`}</strong>
+                            <span className={changeTone}>{quote?.change == null ? "–" : `${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} kr · ${pct(quote.changePct)}`}</span>
+                        </div>
+                        {/* <div className="company-title-row">
+                            <h1>{profile.name ?? symbol}</h1>
+                            <WatchlistButton symbol={symbol} />
+                        </div> */}
+                        
+                    </div>
+                    
+                </header>
+                <div className="flex flex-row w-full justify-between">
+                    <div className="company-range-row" aria-label="Välj tidsperiod">
+                        {RANGES.map((option) => {
+                            const value = rangeReturns[option.id];
+                            const tone = value == null ? "neutral" : value >= 0 ? "positive" : "negative";
+                            return (
+                                <button
+                                    key={option.id}
+                                    disabled={(chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
+                                    className={range === option.id ? "company-range-active" : ""}
+                                    onClick={() => setRange(option.id)}
+                                >
+                                    <span>{option.label}</span>
+                                    <strong className={tone}>{pct(value)}</strong>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="company-chart-actions">
                         <button
-                            className="company-icon-control"
-                            aria-label="Diagraminställningar"
-                            aria-expanded={settingsOpen}
-                            onClick={() => setSettingsOpen((value) => !value)}
+                            className={compare ? "company-control company-control-active" : "company-control"}
+                            onClick={() => setCompare((value) => !value)}
                         >
-                            <FiSliders />
+                            Jämför OMXSPI
                         </button>
-                        {settingsOpen && (
-                            <div className="company-chart-settings">
-                                <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
-                                <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
-                            </div>
-                        )}
+                        <div className="company-settings-wrap">
+                            <button
+                                className="company-icon-control"
+                                aria-label="Diagraminställningar"
+                                aria-expanded={settingsOpen}
+                                onClick={() => setSettingsOpen((value) => !value)}
+                            >
+                                <FiSliders />
+                            </button>
+                            {settingsOpen && (
+                                <div className="company-chart-settings">
+                                    <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
+                                    <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
+                 
             </div>
-
-            <div className="company-range-row" aria-label="Välj tidsperiod">
-                {RANGES.map((option) => (
-                    <button
-                        key={option.id}
-                        disabled={(chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
-                        className={range === option.id ? "company-range-active" : ""}
-                        onClick={() => setRange(option.id)}
-                    >
-                        {option.label}
-                    </button>
-                ))}
-            </div>
-
             <div className="company-chart" role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={data} margin={{ top: 14, right: 8, bottom: 4, left: 4 }}>
+                        <defs>
+                            {LINE_FADES.map(([id, color, bright]) => (
+                                <linearGradient key={id} id={id} x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" style={{ stopColor: `var(${color})`, stopOpacity: 0 }} />
+                                    <stop offset="22%" style={{ stopColor: `var(${color})`, stopOpacity: 1 }} />
+                                    
+                                    <stop offset="50%" style={{ stopColor: `var(${color})`, stopOpacity: 1 }} />
+                                    <stop offset="90%" style={{ stopColor: `var(${bright})`, stopOpacity: 1 }} />
+                                    <stop offset="100%" style={{ stopColor: `var(${color})`, stopOpacity: 1 }} />
+                                </linearGradient>
+                            ))}
+                        </defs>
                         <CartesianGrid stroke="var(--company-grid-line)" strokeDasharray="2 6" />
                         <XAxis dataKey="date" tickFormatter={(value) => svDate(value, true)} minTickGap={58} axisLine={false} tickLine={false} />
                         <YAxis
@@ -307,19 +367,19 @@ function CompanyChart({ chart, companyName }) {
                             yAxisId="price"
                             type="monotone"
                             dataKey={compare ? "returnPct" : "close"}
-                            stroke="var(--company-yellow)"
+                            stroke="url(#company-line-fade-yellow)"
                             strokeWidth={2.2}
                             dot={false}
                             isAnimationActive={false}
                         />
                         {compare && (
-                            <Line yAxisId="price" type="monotone" dataKey="benchmarkPct" stroke="var(--company-blue)" strokeWidth={1.6} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="monotone" dataKey="benchmarkPct" stroke="url(#company-line-fade-blue)" strokeWidth={1.6} dot={false} isAnimationActive={false} />
                         )}
                         {!compare && ma50 && (
-                            <Line yAxisId="price" type="monotone" dataKey="ma50" stroke="var(--company-blue)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="monotone" dataKey="ma50" stroke="url(#company-line-fade-blue)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
                         {!compare && ma200 && (
-                            <Line yAxisId="price" type="monotone" dataKey="ma200" stroke="var(--company-muted-line)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="monotone" dataKey="ma200" stroke="url(#company-line-fade-muted)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
                     </ComposedChart>
                 </ResponsiveContainer>
@@ -404,7 +464,7 @@ function OverviewTab({ data }) {
     const { summary, chart, news } = data;
     return (
         <>
-            <CompanyChart chart={chart} companyName={summary.profile.name ?? summary.symbol} />
+            {/* <CompanyChart chart={chart} companyName={summary.profile.name ?? summary.symbol} /> */}
             <div className="company-overview-layout">
                 <div className="company-main-column">
                     <section className="company-section" aria-labelledby="company-question">
@@ -590,7 +650,7 @@ function FinancialsTab({ financials, estimates }) {
         <section className="company-tab-section">
             <p className="company-eyebrow">Rapporterat, härlett och estimerat</p>
             <h2>Finansiell utveckling</h2>
-            <p className="company-intro">Jämför bolagets senaste perioder. R12 beräknas bara när fyra sammanhängande kvartal finns och estimat markeras med randiga staplar.</p>
+            {/* <p className="company-intro">Jämför bolagets senaste perioder. R12 beräknas bara när fyra sammanhängande kvartal finns och estimat markeras med randiga staplar.</p> */}
             <div className="company-period-tabs">
                 {options.map(([id, label, values]) => (
                     <button key={id} disabled={!values?.length} className={frequency === id ? "active" : ""} onClick={() => setFrequency(id)}>{label}</button>
@@ -734,27 +794,10 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
 
     return (
         <main className="company-page">
-            <header className="company-header">
-                <div className="company-identity">
-                    <div className="company-symbol-row">
-                        <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span>
-                        {profile.market && <small>{profile.market}</small>}
-                        {profile.segment && <small>{profile.segment.replaceAll("_", " ")}</small>}
-                    </div>
-                    <div className="company-title-row">
-                        <h1>{profile.name ?? symbol}</h1>
-                        <WatchlistButton symbol={symbol} />
-                    </div>
-                    <p>{profile.sector ?? "Sektor saknas"}{profile.industry ? ` · ${profile.industry}` : ""}</p>
-                </div>
-                <div className="company-quote">
-                    <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} kr`}</strong>
-                    <span className={changeTone}>{quote?.change == null ? "–" : `${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} kr · ${pct(quote.changePct)}`}</span>
-                    <small>{quote?.verifiedRealtime && quote?.fresh ? "Verifierad realtid" : quote?.quoteTime ? `Senaste tillgängliga · ${svDateTime(quote.quoteTime)}${quote.source ? ` · ${quote.source}` : ""}` : "Tidpunkt saknas"}</small>
-                </div>
-            </header>
+            
 
-            <Performance returns={summary.performance?.returns} />
+            {/* <Performance returns={summary.performance?.returns} /> */}
+            <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} companyName={initialData.summary.profile.name ?? initialData.summary.symbol} />
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
                 {TABS.map((item) => (
