@@ -2,11 +2,10 @@
 
 ## Identity
 
-**OMXsum is a news product.** The edge is synthesis: taking everything that
-happens on the Swedish market and turning it into something a busy person can
-absorb in three minutes — and showing how the market *reacted* to it.
-Charts, financials and the terminal are supporting utilities, not the product.
-Brokers have data; OMXsum has the story.
+**OMXsum is one Swedish-market data platform with two product surfaces.** News
+and the daily letters remain the acquisition and synthesis edge. The public
+site is the calmer company-research product for longer horizons; the terminal
+is the dense realtime workspace. Both consume the same source-attributed API.
 
 The funnel: **free morning letter (lead magnet) → habit → personalization
 (paid) → power tools (paid)**.
@@ -23,6 +22,17 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 - Clickable tickers in letters with hover mini-charts
 
 ## Now / next
+
+### Phase 2. Company-page MVP (in progress)
+
+- ✅ Stable company URLs and single-company search
+- ✅ Company identity, performance, source-aware quote status, daily chart,
+  OMXSPI comparison, and opt-in MA50/MA200
+- ✅ First financial view with annual, quarterly, and derived R12 periods
+- ✅ Report/calendar/news context from the shared Market API
+- Next: estimate visualization, full management commentary, chart event
+  markers, and decide which overview content is public versus Plus before SEO
+  indexing is enabled
 
 ### 0. Wire → letters: use our own newsfeed in the summaries
 

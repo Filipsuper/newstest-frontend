@@ -91,6 +91,27 @@ export async function fetchStock(symbol, range = "intraday") {
     }
 }
 
+export async function fetchCompanyOverview(symbol, cookieHeader = "") {
+    const response = await fetch(
+        `${API_URL}/feed/company/${encodeURIComponent(symbol)}/overview`,
+        {
+            cache: "no-store",
+            headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+            credentials: "include",
+        }
+    );
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || "Kunde inte hämta bolagsöversikten");
+    return body;
+}
+
+export async function fetchCompanyIdentity(symbol) {
+    const response = await fetch(`${API_URL}/feed/companies`, { next: { revalidate: 3600 } });
+    if (!response.ok) return null;
+    const rows = await response.json();
+    return Array.isArray(rows) ? rows.find((row) => row.symbol === symbol) ?? null : null;
+}
+
 export async function fetchFinancials(symbol) {
     try {
         const res = await fetch(`${API_URL}/feed/financials/${encodeURIComponent(symbol)}`, {

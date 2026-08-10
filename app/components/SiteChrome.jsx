@@ -8,6 +8,7 @@ import { IoIosSettings } from "react-icons/io";
 import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
 import LogInModal from "../modals/logInModal";
+import StockSearch from "./StockSearch";
 
 export default function SiteChrome({ children }) {
     const { openModal } = useModal();
@@ -37,7 +38,13 @@ export default function SiteChrome({ children }) {
                             <FaBars />
                         </button>
                     </div>
+                    <div className="hidden xl:block w-56 shrink-0">
+                        <StockSearch placeholder="Sök aktie…" />
+                    </div>
                     <nav className={`${isMenuOpen ? 'flex mt-4' : 'hidden mt-0'} md:flex flex-col md:flex-row text-sm space-y-4 md:space-y-0 md:space-x-5 w-full md:items-center pb-2 md:pb-0`}>
+                        <div className="md:hidden w-full">
+                            <StockSearch placeholder="Sök aktie…" />
+                        </div>
                         <Link href="/morgonbrevet" className={navLink}>Morgonbrevet</Link>
                         <Link href="/kvallsbrevet" className={navLink}>Kvällsbrevet</Link>
                         <Link href="/marknadsnyheter" className={`relative ${navLink}`}>
