@@ -29,14 +29,14 @@ export default function PlusPaywall({ children, redirectTo = "/" }) {
             <FaLock className="text-3xl text-secondary mx-auto mb-4" />
             <h2 className="text-2xl font-serif font-bold text-text mb-2">Det här ingår i Plus</h2>
             <p className="text-text-muted mb-6">
-                Live-nyhetsflödet och aktieöversikterna är en del av Omxsum Plus.
+                Live-nyhetsflödet är en del av Omxsum Plus.
             </p>
             <ul className="flex flex-col gap-2 mb-8 text-left w-fit mx-auto">
                 <li className="flex flex-row gap-2 items-center text-sm text-text-article">
                     <FaCheck className="text-primary shrink-0" /> Live-nyhetsflöde i realtid
                 </li>
                 <li className="flex flex-row gap-2 items-center text-sm text-text-article">
-                    <FaCheck className="text-primary shrink-0" /> Aktieöversikter med graf och nyheter per bolag
+                    <FaCheck className="text-primary shrink-0" /> Finansiell historik och estimat per bolag
                 </li>
                 <li className="flex flex-row gap-2 items-center text-sm text-text-article">
                     <FaCheck className="text-primary shrink-0" /> Klickbara tickers i nyhetsbreven

@@ -14,7 +14,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { FiChevronRight, FiExternalLink, FiSliders } from "react-icons/fi";
+import { FiChevronRight, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
 import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
@@ -226,8 +226,51 @@ function WatchlistButton({ symbol }) {
     );
 }
 
-function CompanyChart({ chart, companyName,summary,symbol }) {
-    const [range, setRange] = useState("1y");
+// Shares the move the reader is actually looking at: the selected period, its
+// return, and a link that opens on that same period.
+function ShareMoveButton({ symbol, companyName, range, returnPct }) {
+    const [status, setStatus] = useState("");
+
+    const share = async () => {
+        const rangeLabel = (RANGES.find((option) => option.id === range)?.label ?? "").toLowerCase();
+        const origin = typeof window === "undefined" ? "https://omxsum.com" : window.location.origin;
+        const url = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${range}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
+        const text = returnPct == null
+            ? `${companyName} på Omxsum`
+            : `${companyName} ${pct(returnPct)} senaste ${rangeLabel}`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: companyName, text, url });
+                return;
+            } catch {
+                // cancelled — fall through to the clipboard so the click still does something
+            }
+        }
+
+        try {
+            await navigator.clipboard.writeText(`${text} – ${url}`);
+            setStatus("Länk kopierad!");
+        } catch {
+            setStatus("Kunde inte kopiera");
+        }
+        setTimeout(() => setStatus(""), 2200);
+    };
+
+    return (
+        <div className="company-share-wrap">
+            <button className="company-icon-control" aria-label="Dela aktien" title="Dela aktien" onClick={share}>
+                <FiShare2 />
+            </button>
+            {status && <span className="company-share-status" role="status">{status}</span>}
+        </div>
+    );
+}
+
+function CompanyChart({ chart, companyName, summary, symbol, initialRange }) {
+    const [range, setRange] = useState(
+        RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
+    );
     const [compare, setCompare] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [ma50, setMa50] = useState(false);
@@ -327,6 +370,12 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
                         })}
                     </div>
                     <div className="company-chart-actions max-w-fit">
+                        <ShareMoveButton
+                            symbol={symbol}
+                            companyName={companyName}
+                            range={range}
+                            returnPct={rangeReturns[range]}
+                        />
                         <button
                             className={compare ? "company-control company-icon-control" : "company-control company-icon-control"}
                             onClick={() => setCompare((value) => !value)}
@@ -878,7 +927,7 @@ function PlusTabGate({ companyName }) {
     );
 }
 
-export default function CompanyPage({ symbol, initialData, initialTab, mentions = [] }) {
+export default function CompanyPage({ symbol, initialData, initialTab, initialRange, mentions = [] }) {
     const router = useRouter();
     const { isPlusUser } = useAuthContext();
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
@@ -912,7 +961,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, mentions 
             
 
             {/* <Performance returns={summary.performance?.returns} /> */}
-            <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} companyName={initialData.summary.profile.name ?? initialData.summary.symbol} />
+            <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} initialRange={initialRange} companyName={initialData.summary.profile.name ?? initialData.summary.symbol} />
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
                 {TABS.map((item) => (

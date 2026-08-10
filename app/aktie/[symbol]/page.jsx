@@ -47,5 +47,13 @@ export default async function Page({ params, searchParams }) {
         loadOverview(decoded, cookieHeader),
         fetchCompanyMentions(decoded).catch(() => []),
     ]);
-    return <CompanyPage symbol={decoded} initialData={overview} initialTab={query?.tab} mentions={mentions} />;
+    return (
+        <CompanyPage
+            symbol={decoded}
+            initialData={overview}
+            initialTab={query?.tab}
+            initialRange={query?.range}
+            mentions={mentions}
+        />
+    );
 }

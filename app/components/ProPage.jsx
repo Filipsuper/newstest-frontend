@@ -16,6 +16,7 @@ const tiers = [
         features: [
             "Morgonbrevet i inkorgen varje vardag 08:00",
             "Kvällsbrevet på sidan varje vardag 17:30",
+            "Aktieöversikter med kursgraf och bolagsnyheter",
             "Terminalen med grunddata",
             "Marknadslägesskannern",
         ],
@@ -31,7 +32,8 @@ const tiers = [
             "Allt i Gratis",
             "Min sammanfattning – personlig sektion i morgonbrevet med dina aktier & ämnen",
             "Marknadsnyheter – live-nyhetsflöde i realtid",
-            "Aktieöversikter med kursgraf, analys och nyheter per bolag",
+            "Finansiell historik per bolag – omsättning, resultat och marginaler",
+            "Analytikerestimat och värdering per bolag",
             "Klickbara tickers i breven",
         ],
         cta: "Uppgradera till Plus",
