@@ -28,5 +28,25 @@ export default async function sitemap() {
         // API unavailable — serve the static entries only
     }
 
-    return [...staticPages, ...articlePages];
+    // Every listed company has a public overview page.
+    let companyPages = [];
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/feed/companies`, {
+            next: { revalidate: 3600 },
+        });
+        const companies = response.ok ? await response.json() : [];
+        if (Array.isArray(companies)) {
+            companyPages = companies
+                .filter((company) => company?.symbol)
+                .map((company) => ({
+                    url: `https://omxsum.com/aktie/${encodeURIComponent(company.symbol)}`,
+                    changeFrequency: "daily",
+                    priority: 0.6,
+                }));
+        }
+    } catch (error) {
+        // API unavailable — the company pages are simply left out this time
+    }
+
+    return [...staticPages, ...articlePages, ...companyPages];
 }

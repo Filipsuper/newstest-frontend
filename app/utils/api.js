@@ -101,15 +101,41 @@ export async function fetchCompanyOverview(symbol, cookieHeader = "") {
         }
     );
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "Kunde inte hämta bolagsöversikten");
+    if (!response.ok) {
+        const error = new Error(body.error || "Kunde inte hämta bolagsöversikten");
+        // Lets the route tell "no such company" apart from a transient failure.
+        error.status = response.status;
+        throw error;
+    }
     return body;
 }
 
+export async function fetchCompanyMentions(symbol) {
+    const response = await fetch(
+        `${API_URL}/feed/company/${encodeURIComponent(symbol)}/mentions`,
+        { next: { revalidate: 900 } },
+    );
+    if (!response.ok) return [];
+    const body = await response.json();
+    return Array.isArray(body?.items) ? body.items : [];
+}
+
+// Returns null when the list could not be loaded, so callers can tell an
+// unknown company apart from an unavailable API.
+export async function fetchCompanyList() {
+    try {
+        const response = await fetch(`${API_URL}/feed/companies`, { next: { revalidate: 3600 } });
+        if (!response.ok) return null;
+        const rows = await response.json();
+        return Array.isArray(rows) ? rows : null;
+    } catch {
+        return null;
+    }
+}
+
 export async function fetchCompanyIdentity(symbol) {
-    const response = await fetch(`${API_URL}/feed/companies`, { next: { revalidate: 3600 } });
-    if (!response.ok) return null;
-    const rows = await response.json();
-    return Array.isArray(rows) ? rows.find((row) => row.symbol === symbol) ?? null : null;
+    const rows = await fetchCompanyList();
+    return rows?.find((row) => row.symbol === symbol) ?? null;
 }
 
 export async function fetchFinancials(symbol) {

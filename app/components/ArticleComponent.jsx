@@ -13,6 +13,37 @@ import ShareArticleComponent from "./ShareArticleComponent";
 import { parseSummary } from "../utils/parseSummary";
 import { useCompanyMap } from "../utils/useCompanyMap";
 
+// The letters tag companies as && Name &&. Collect the ones we can resolve to a
+// symbol and offer them as links to the stock pages.
+function CompaniesInArticle({ summary, resolveSymbol }) {
+    if (!resolveSymbol) return null;
+
+    const companies = new Map();
+    for (const match of String(summary ?? "").matchAll(/&&([\s\S]*?)&&/g)) {
+        const label = match[1].trim();
+        const symbol = label && resolveSymbol(label);
+        if (symbol && !companies.has(symbol)) companies.set(symbol, label);
+    }
+    if (!companies.size) return null;
+
+    return (
+        <div className="font-sans mb-8">
+            <h2 className="text-xs uppercase tracking-wide text-text-muted mb-3">Bolag i brevet</h2>
+            <div className="flex flex-row flex-wrap gap-2">
+                {[...companies].map(([symbol, label]) => (
+                    <Link
+                        key={symbol}
+                        href={`/aktie/${encodeURIComponent(symbol)}`}
+                        className="border border-border rounded-full px-3 py-1 text-sm text-text-muted hover:text-text hover:border-text-muted transition-colors"
+                    >
+                        {label}
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function ArticleComponent({ article, index }) {
     const { title, createdAt, summary, omxPrice, omxChange, omxChangePercentage, pressReleases, sentimentLabel, bulletPoints, introText } = article;
 
@@ -133,6 +164,8 @@ export default function ArticleComponent({ article, index }) {
                     <div className="text-base font-sans text-text-article mb-8 prose prose">
                         {parsedSummary}
                     </div>
+
+                    <CompaniesInArticle summary={summary} resolveSymbol={resolveSymbol} />
 
                     {
                         dayjs(createdAt).isSame(dayjs(), 'day') ?

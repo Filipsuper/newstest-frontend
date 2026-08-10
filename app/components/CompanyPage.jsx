@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,8 +15,10 @@ import {
     YAxis,
 } from "recharts";
 import { FiChevronRight, FiExternalLink, FiSliders } from "react-icons/fi";
-import { FaRegStar, FaStar } from "react-icons/fa6";
+import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
+import { useModal } from "../providers/ModalProvider";
+import LogInModal from "../modals/logInModal";
 import { toggleWatchlist } from "../utils/api";
 
 const TABS = [
@@ -78,6 +80,10 @@ const periodLabel = (period) => {
     if (period.frequency === "ttm") return `${period.fiscalPeriod?.replace("-TTM", "") ?? period.periodEnd} · R12`;
     return period.fiscalPeriod ?? period.fiscalYear ?? period.periodEnd;
 };
+
+// Matches the slug scheme the article route expects: spaces become hyphens,
+// existing hyphens become underscores.
+const articleSlug = (title = "") => title.replaceAll("-", "_").replaceAll(" ", "-");
 
 const compactAmount = new Intl.NumberFormat("sv-SE", {
     notation: "compact",
@@ -152,6 +158,16 @@ function movingAverage(rows, window) {
         if (index >= window) sum -= rows[index - window].close ?? 0;
         return index >= window - 1 ? sum / window : null;
     });
+}
+
+// Recharts left-anchors the ticks of a right-side axis, leaving the rest of the
+// axis box as dead space. Anchor them to the axis' right edge instead.
+function RightAxisTick({ x, y, width, payload, format }) {
+    return (
+        <text x={x + width - 2} y={y} dy="0.32em" textAnchor="end" className="recharts-cartesian-axis-tick-value">
+            {format(payload.value)}
+        </text>
+    );
 }
 
 function ChartTooltip({ active, payload, label, compare }) {
@@ -263,7 +279,7 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
         <section className="company-chart-section" aria-labelledby="price-heading">
             <div className="flex flex-col company-chart-heading">
                 {/* <div>
-                    <p className="company-eyebrow">Historisk utveckling</p>
+                    <p className="company-eyebrow">Historisk utvecklin g</p>
                     <h2 id="price-heading">Hur har aktien utvecklats?</h2>
                 </div> */}
                 <header className="w-full company-header">
@@ -272,7 +288,10 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
                             {/* <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span> */}
                             {/* {profile.market && <small>{profile.market}</small>} */}
                             {profile.segment && <small className="font-bold">{profile.segment.replaceAll("_", " ")}</small>}
-                            <small>{profile.name ?? symbol}</small>
+                            
+                        </div>
+                        <div className="company-symbol-row">
+                            <h1 className="text-primary!">{profile.name ?? symbol}</h1>
                             <div>•</div>
                             <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small>
                             <WatchlistButton symbol={symbol} />
@@ -307,12 +326,12 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
                             );
                         })}
                     </div>
-                    <div className="company-chart-actions">
+                    <div className="company-chart-actions max-w-fit">
                         <button
-                            className={compare ? "company-control company-control-active" : "company-control"}
+                            className={compare ? "company-control company-icon-control" : "company-control company-icon-control"}
                             onClick={() => setCompare((value) => !value)}
                         >
-                            Jämför OMXSPI
+                            <FaScaleBalanced/>
                         </button>
                         <div className="company-settings-wrap">
                             <button
@@ -336,7 +355,7 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
             </div>
             <div className="company-chart" role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 14, right: 8, bottom: 4, left: 4 }}>
+                    <ComposedChart data={data} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
                         <defs>
                             {LINE_FADES.map(([id, color, bright]) => (
                                 <linearGradient key={id} id={id} x1="0" y1="0" x2="1" y2="0">
@@ -354,11 +373,13 @@ function CompanyChart({ chart, companyName,summary,symbol }) {
                         <YAxis
                             yAxisId="price"
                             orientation="right"
-                            tickFormatter={(value) => compare ? `${value.toFixed(0)}%` : number(value, 0)}
                             axisLine={false}
                             tickLine={false}
+                            tickSize={0}
+                            tickMargin={0}
                             width={54}
                             domain={["auto", "auto"]}
+                            tick={<RightAxisTick format={(value) => compare ? `${value.toFixed(0)}%` : number(value, 0)} />}
                         />
                         {!compare && <YAxis yAxisId="volume" hide domain={[0, (maximum) => maximum * 4]} />}
                         <Tooltip content={(props) => <ChartTooltip {...props} compare={compare} />} />
@@ -425,7 +446,7 @@ function FinancialSnapshot({ highlights }) {
                 <Metric label="Nettoskuld" value={money(period.netDebt, currency)} />
                 <Metric label="Nettoskuld / EBITDA" value={period.netDebtToEbitda == null ? "Saknas" : `${number(period.netDebtToEbitda, 2)}×`} />
             </div>
-            <p className="company-source">Källa: {highlights?.source ?? "Yahoo"} · Uppdaterad {svDate(highlights?.dataAsOf)}</p>
+            {/* <p className="company-source">Källa: {highlights?.source ?? "Yahoo"} · Uppdaterad {svDate(highlights?.dataAsOf)}</p> */}
         </section>
     );
 }
@@ -442,25 +463,92 @@ function CalendarPreview({ calendar }) {
     );
 }
 
+const storyUrl = (story) => story.primarySource?.url ?? story.sources?.find((source) => source.url)?.url ?? null;
+
 function NewsList({ news, compact = false }) {
     if (!news?.length) return <p className="company-empty">Inga bolagsspecifika nyheter finns ännu.</p>;
     return (
         <div className="company-news-list">
-            {news.slice(0, compact ? 3 : 8).map((story) => (
-                <article key={story.id} className="company-news-item">
-                    <div className="company-news-meta">
-                        <time>{svDate(story.publishedAt, true)}</time>
-                        {(story.tags ?? []).slice(0, 2).map((tag) => <span key={tag}>{tag}</span>)}
-                    </div>
-                    <h3>{story.headline}</h3>
-                    {!compact && story.summary && <p>{story.summary}</p>}
-                </article>
-            ))}
+            {news.slice(0, compact ? 3 : 8).map((story) => {
+                const url = storyUrl(story);
+                const body = (
+                    <>
+                        <div className="company-news-meta">
+                            <time>{svDate(story.publishedAt, true)}</time>
+                            {(story.tags ?? []).slice(0, 2).map((tag) => <span key={tag}>{tag}</span>)}
+                        </div>
+                        <h3>{story.headline}{url && <FiExternalLink />}</h3>
+                        {!compact && story.summary && <p>{story.summary}</p>}
+                    </>
+                );
+                return (
+                    <article key={story.id} className={`company-news-item${url ? " company-news-linked" : ""}`}>
+                        {url
+                            ? <a href={url} target="_blank" rel="noreferrer">{body}</a>
+                            : body}
+                    </article>
+                );
+            })}
         </div>
     );
 }
 
-function OverviewTab({ data }) {
+// The letters that talked about this company — the way back into the editorial
+// side of the site from a stock page.
+function MentionsList({ mentions, companyName }) {
+    if (!mentions?.length) return null;
+    return (
+        <section className="company-context-section" aria-labelledby="company-mentions-heading">
+            <p className="company-eyebrow">I breven</p>
+            <h2 id="company-mentions-heading">Nämns i breven</h2>
+            <div className="company-mentions-list">
+                {mentions.map((item) => (
+                    <Link key={item.id} href={`/article/${articleSlug(item.title)}`}>
+                        <time>{svDate(item.createdAt, true)}</time>
+                        <span>{item.title}</span>
+                        <small>{item.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"}</small>
+                    </Link>
+                ))}
+            </div>
+            <p className="company-source">Sök efter {companyName} i alla brev via <Link className="company-text-link" href="/alla-nyhetsbrev">arkivet <FiChevronRight /></Link></p>
+        </section>
+    );
+}
+
+function ExpandableText({ text, className = "", lines = 6 }) {
+    const [expanded, setExpanded] = useState(false);
+    const [clipped, setClipped] = useState(false);
+    const textRef = useRef(null);
+
+    useEffect(() => {
+        const node = textRef.current;
+        if (!node || expanded) return;
+        const measure = () => setClipped(node.scrollHeight > node.clientHeight + 1);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [text, expanded, lines]);
+
+    return (
+        <>
+            <p
+                ref={textRef}
+                className={`${className} ${expanded ? "" : "company-clamp"}`.trim()}
+                style={expanded ? undefined : { "--company-clamp-lines": lines }}
+            >
+                {text}
+            </p>
+            {clipped && (
+                <button className="company-readmore" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+                    {expanded ? "Visa mindre" : "Läs mer"}
+                </button>
+            )}
+        </>
+    );
+}
+
+function OverviewTab({ data, mentions = [] }) {
     const { summary, chart, news } = data;
     return (
         <>
@@ -470,7 +558,7 @@ function OverviewTab({ data }) {
                     <section className="company-section" aria-labelledby="company-question">
                         <p className="company-eyebrow">Bolaget i korthet</p>
                         <h2 id="company-question">Vad gör bolaget?</h2>
-                        <p className="company-description">{summary.profile.description || "Bolagsbeskrivning saknas ännu."}</p>
+                        <ExpandableText className="company-description" text={summary.profile.description || "Bolagsbeskrivning saknas ännu."} />
                         <dl className="company-facts">
                             {summary.profile.sector && <><dt>Sektor</dt><dd>{summary.profile.sector}</dd></>}
                             {summary.profile.industry && <><dt>Bransch</dt><dd>{summary.profile.industry}</dd></>}
@@ -492,6 +580,7 @@ function OverviewTab({ data }) {
                         <NewsList news={news} compact />
                         <Link className="company-text-link" href="?tab=news">Alla nyheter <FiChevronRight /></Link>
                     </section>
+                    <MentionsList mentions={mentions} companyName={summary.profile.name ?? summary.symbol} />
                 </aside>
             </div>
         </>
@@ -539,7 +628,7 @@ function FinancialDevelopmentChart({ periods, currency }) {
             </div>
             <div className="company-financial-chart" role="img" aria-label="Omsättning, rörelseresultat och EBIT-marginal per period">
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 24, right: 8, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={2}>
+                    <ComposedChart data={data} margin={{ top: 24, right: 8, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={0}>
                         <defs>
                             {series.map((item) => (
                                 <pattern key={item.key} id={`estimate-${item.key}-${id}`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -548,8 +637,7 @@ function FinancialDevelopmentChart({ periods, currency }) {
                                 </pattern>
                             ))}
                         </defs>
-                        <CartesianGrid vertical={false} stroke="var(--company-grid-line)" />
-                        <XAxis dataKey="label" axisLine={false} tickLine={false} minTickGap={20} />
+                        <XAxis dataKey="label" axisLine={{ stroke: "var(--company-grid-line)" }} tickLine={false} minTickGap={20} />
                         <YAxis yAxisId="amount" axisLine={false} tickLine={false} tickFormatter={(value) => compactAmount.format(value)} width={58} />
                         <YAxis yAxisId="margin" orientation="right" axisLine={false} tickLine={false} tickFormatter={(value) => `${number(value)}%`} width={52} domain={["auto", "auto"]} />
                         <Tooltip content={(props) => <FinancialChartTooltip {...props} currency={currency} />} cursor={{ fill: "var(--company-chart-cursor)" }} />
@@ -575,7 +663,7 @@ function FinancialDevelopmentChart({ periods, currency }) {
 function ManagementComment({ comment, latestReport }) {
     if (!comment) {
         if (!latestReport) return null;
-        return <p className="company-ceo-pending">Senaste rapporten är hittad, men något tydligt VD-ord har ännu inte kunnat extraheras.</p>;
+        return <p className="company-ceo-pending">Inget VD-ord</p>;
     }
     const summary = comment.summary;
     const isComment = comment.type === "ceo_comment";
@@ -677,7 +765,6 @@ function FinancialsTab({ financials, estimates }) {
                 </>
             )}
             <p className="company-source">
-                Faktiska värden: {financials?.source ?? "Yahoo"}. R12: OMXsum-härlett.
                 {frequency === "quarterly" && estimatePeriod ? ` Estimat: ${estimatePeriod.estimateSource.publisher ?? estimatePeriod.estimateSource.name}${estimatePeriod.estimateSource.contributors ? `, ${estimatePeriod.estimateSource.contributors} bidragsgivare` : ""}.` : ""}
                 {frequency === "quarterly" && estimatePeriod?.estimateSource.url && <> <a href={estimatePeriod.estimateSource.url} target="_blank" rel="noreferrer">Visa estimatkällan <FiExternalLink /></a></>}
             </p>
@@ -766,8 +853,34 @@ function Performance({ returns }) {
     );
 }
 
-export default function CompanyPage({ symbol, initialData, initialTab }) {
+// Tabs that live behind Plus. Everything else — identity, chart, description,
+// news and calendar — stays open so the page works as a public landing page.
+const PLUS_TABS = new Set(["financials", "estimates", "valuation"]);
+
+function PlusTabGate({ companyName }) {
+    const { isGuestUser } = useAuthContext();
+    const { openModal } = useModal();
+    return (
+        <section className="company-tab-section company-plus-gate">
+            <FaLock />
+            <h2>Finansiell data ingår i Plus</h2>
+            <p>
+                Omsättning, resultat, marginaler och estimat för {companyName} – tillsammans med
+                live-nyhetsflödet och klickbara tickers i breven.
+            </p>
+            <div className="company-plus-gate-actions">
+                <Link href="/pro" className="primary-btn extra-padding">Se planer – från 49 kr/mån</Link>
+                {isGuestUser !== false && (
+                    <button onClick={() => openModal(<LogInModal />)}>Har du redan Plus? Logga in</button>
+                )}
+            </div>
+        </section>
+    );
+}
+
+export default function CompanyPage({ symbol, initialData, initialTab, mentions = [] }) {
     const router = useRouter();
+    const { isPlusUser } = useAuthContext();
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
     const [tab, setTab] = useState(allowedTab);
 
@@ -783,8 +896,10 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
 
     const { summary } = initialData;
     const profile = summary.profile;
-    const quote = summary.quote;
-    const changeTone = quote?.changePct == null ? "neutral" : quote.changePct >= 0 ? "positive" : "negative";
+    // The server already resolved the plan while fetching, so the correct view
+    // renders on the first paint; the context is only a fallback for payloads
+    // from a backend that predates the access flag.
+    const hasPlus = initialData.access?.plus ?? isPlusUser;
 
     const selectTab = (nextTab) => {
         setTab(nextTab);
@@ -801,14 +916,18 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
                 {TABS.map((item) => (
-                    <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => selectTab(item.id)}>{item.label}</button>
+                    <button key={item.id} className={"flex flex-row items-center " + (tab === item.id ? "active" : "")} onClick={() => selectTab(item.id)}>
+                        {item.label}
+                        {!hasPlus && PLUS_TABS.has(item.id) && <FaLock className="company-tab-lock" />}
+                    </button>
                 ))}
             </nav>
 
-            {tab === "overview" && <OverviewTab data={initialData} />}
-            {tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
-            {tab === "estimates" && <EstimatesTab summary={summary} estimates={initialData.estimates} />}
-            {tab === "valuation" && <ValuationTab />}
+            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} />}
+            {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
+            {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
+            {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} estimates={initialData.estimates} />}
+            {hasPlus && tab === "valuation" && <ValuationTab />}
             {tab === "news" && <NewsTab data={initialData} />}
             {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
         </main>
