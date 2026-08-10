@@ -205,7 +205,7 @@ body {
 /* OMXsum company research pages ------------------------------------------ */
 :root {
   --company-surface: #ffffff;
-  --company-surface-soft: #f1f3f5;
+  --company-surface-soft: #fffff;
   --company-yellow: #d79b00;
   --company-blue: #4070f4;
   --company-positive: #087f5b;
@@ -216,7 +216,7 @@ body {
 
 :root.dark {
   --company-surface: #01030a;
-  --company-surface-soft: #0b111b;
+  --company-surface-soft: #01030a;
   --company-yellow: #fbbf24;
   --company-blue: #7b9cff;
   --company-positive: #69dbb4;
