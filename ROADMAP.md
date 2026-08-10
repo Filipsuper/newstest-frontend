@@ -29,10 +29,12 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 - ✅ Company identity, performance, source-aware quote status, daily chart,
   OMXSPI comparison, and opt-in MA50/MA200
 - ✅ First financial view with annual, quarterly, and derived R12 periods
+- ✅ Actual/estimate financial chart with sourced striped consensus periods
+- ✅ Structured CEO summary with outlook, risks, key figures, and expandable
+  source text
 - ✅ Report/calendar/news context from the shared Market API
-- Next: estimate visualization, full management commentary, chart event
-  markers, and decide which overview content is public versus Plus before SEO
-  indexing is enabled
+- Next: chart event markers and decide which overview content is public versus
+  Plus before SEO indexing is enabled
 
 ### 0. Wire → letters: use our own newsfeed in the summaries
 

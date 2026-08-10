@@ -47,14 +47,6 @@ export default function SiteChrome({ children }) {
                         </div>
                         <Link href="/morgonbrevet" className={navLink}>Morgonbrevet</Link>
                         <Link href="/kvallsbrevet" className={navLink}>Kvällsbrevet</Link>
-                        <Link href="/marknadsnyheter" className={`relative ${navLink}`}>
-                            <span>Marknadsnyheter</span>
-                            <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>
-                        </Link>
-                        <Link href="/screener" className={`relative ${navLink}`}>
-                            <span>Screener</span>
-                            <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>
-                        </Link>
                         <Link href="/terminal" className={`relative ${navLink}`}>
                             <span>Terminal</span>
                             <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>

@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
     Bar,
+    CartesianGrid,
+    Cell,
     ComposedChart,
     Line,
     ResponsiveContainer,
@@ -14,7 +16,6 @@ import {
 } from "recharts";
 import { FiChevronRight, FiExternalLink, FiSliders } from "react-icons/fi";
 import { FaRegStar, FaStar } from "react-icons/fa6";
-import StockSearch from "./StockSearch";
 import { useAuthContext } from "../providers/AuthProvider";
 import { toggleWatchlist } from "../utils/api";
 
@@ -67,9 +68,76 @@ const svDateTime = (value) => value
 
 const periodLabel = (period) => {
     if (!period) return "Period saknas";
+    if (period.estimate) return `${period.periodLabel ?? period.fiscalPeriod ?? period.periodEnd}E`;
     if (period.frequency === "ttm") return `${period.fiscalPeriod?.replace("-TTM", "") ?? period.periodEnd} · R12`;
     return period.fiscalPeriod ?? period.fiscalYear ?? period.periodEnd;
 };
+
+const compactAmount = new Intl.NumberFormat("sv-SE", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+});
+
+function estimatePeriodFromSnapshot(snapshot) {
+    if (!snapshot?.metrics?.length) return null;
+    const eligible = snapshot.metrics.filter((metric) => !metric.scope && Number.isFinite(Number(metric.amount)));
+    const amountMetric = (...keys) => keys
+        .map((key) => eligible.find((metric) => metric.key === key && metric.unit !== "%" && metric.currency))
+        .find(Boolean) ?? null;
+    const marginMetric = (...keys) => keys
+        .map((key) => eligible.find((metric) => metric.key === key && (metric.unit === "%" || /margin/i.test(metric.label ?? ""))))
+        .find(Boolean) ?? eligible.find((metric) => /^ebit/.test(metric.key ?? "") && /margin/i.test(metric.label ?? "")) ?? null;
+
+    const revenue = amountMetric("revenue");
+    const ebitReported = amountMetric("ebit");
+    const ebitAdjusted = amountMetric("ebit_adjusted");
+    const ebitaReported = amountMetric("ebita");
+    const ebitaAdjusted = amountMetric("ebita_adjusted");
+    const ebitdaReported = amountMetric("ebitda");
+    const ebitdaAdjusted = amountMetric("ebitda_adjusted");
+    const marginReported = marginMetric("ebit_margin");
+    const marginAdjusted = marginMetric("ebit_margin_adjusted", "ebit_adjusted");
+    const selectedEbit = ebitReported ?? ebitAdjusted;
+    const selectedEbita = ebitaReported ?? ebitaAdjusted;
+    const selectedEbitda = ebitdaReported ?? ebitdaAdjusted;
+    const selectedMargin = marginReported ?? marginAdjusted;
+    if (![revenue, selectedEbit, selectedEbita, selectedEbitda, selectedMargin].some(Boolean)) return null;
+
+    return {
+        periodKey: snapshot.snapshotId,
+        periodEnd: snapshot.reportDate ?? snapshot.publishedAt,
+        fiscalPeriod: snapshot.fiscalPeriod,
+        periodLabel: snapshot.periodLabel,
+        frequency: "quarterly",
+        dataType: "estimate",
+        estimate: true,
+        revenue: revenue?.amount ?? null,
+        ebit: selectedEbit?.amount ?? null,
+        ebita: selectedEbita?.amount ?? null,
+        ebitda: selectedEbitda?.amount ?? null,
+        ebitMarginPct: selectedMargin?.amount ?? null,
+        estimateAdjusted: {
+            ebit: !ebitReported && Boolean(ebitAdjusted),
+            ebita: !ebitaReported && Boolean(ebitaAdjusted),
+            ebitda: !ebitdaReported && Boolean(ebitdaAdjusted),
+            ebitMarginPct: !marginReported && Boolean(marginAdjusted),
+        },
+        estimateSource: {
+            ...snapshot.source,
+            contributors: snapshot.contributors,
+            publishedAt: snapshot.publishedAt,
+        },
+    };
+}
+
+function statementParagraphs(text) {
+    return String(text ?? "")
+        .trim()
+        .replace(/([A-Za-zÅÄÖåäö])-\s*\n\s*([a-zåäö])/g, "$1$2")
+        .split(/\n\s*\n/)
+        .map((paragraph) => paragraph.replace(/\s*\n\s*/g, " ").trim())
+        .filter(Boolean);
+}
 
 function movingAverage(rows, window) {
     let sum = 0;
@@ -369,49 +437,190 @@ function OverviewTab({ data }) {
     );
 }
 
-const FINANCIAL_ROWS = [
-    ["Omsättning", "revenue", "money"],
-    ["EBIT", "ebit", "money"],
-    ["EBITDA", "ebitda", "money"],
-    ["Nettoresultat", "netIncome", "money"],
-    ["Fritt kassaflöde", "freeCashFlow", "money"],
-    ["EBIT-marginal", "ebitMarginPct", "pct"],
+const FINANCIAL_SERIES = [
+    { key: "revenue", label: "Omsättning", color: "var(--company-fin-revenue)" },
+    { key: "ebit", label: "EBIT", color: "var(--company-fin-ebit)" },
+    { key: "ebita", label: "EBITA", color: "var(--company-fin-ebita)" },
+    { key: "ebitda", label: "EBITDA", color: "var(--company-fin-ebitda)" },
 ];
 
-function FinancialsTab({ financials }) {
-    const [frequency, setFrequency] = useState(financials?.ttm?.length ? "ttm" : "annual");
+function FinancialChartTooltip({ active, payload, label, currency }) {
+    if (!active || !payload?.length) return null;
+    const point = payload[0]?.payload;
+    if (!point) return null;
+    return (
+        <div className="company-tooltip company-financial-tooltip">
+            <div className="company-financial-tooltip-title">
+                <strong>{label}</strong>
+                {point.estimate && <span>ESTIMAT</span>}
+            </div>
+            {FINANCIAL_SERIES.filter((series) => point[series.key] != null).map((series) => (
+                <div key={series.key}>
+                    <span style={{ color: series.color }}>{series.label}</span>
+                    <strong>{money(point[series.key], currency)}</strong>
+                </div>
+            ))}
+            {point.ebitMarginPct != null && <div><span>EBIT-marginal</span><strong>{number(point.ebitMarginPct)}%</strong></div>}
+        </div>
+    );
+}
+
+function FinancialDevelopmentChart({ periods, currency }) {
+    const id = useId().replace(/[^a-z0-9]/gi, "");
+    const data = periods.map((period) => ({ ...period, label: periodLabel(period) }));
+    const series = FINANCIAL_SERIES.filter((candidate) => periods.some((period) => period[candidate.key] != null));
+    return (
+        <>
+            <div className="company-financial-legend" aria-hidden="true">
+                {series.map((item) => <span key={item.key}><i style={{ background: item.color }} />{item.label}</span>)}
+                {periods.some((period) => period.ebitMarginPct != null) && <span><i className="company-margin-line" />EBIT-marginal</span>}
+                {periods.some((period) => period.estimate) && <span><i className="company-estimate-key" />Estimat</span>}
+            </div>
+            <div className="company-financial-chart" role="img" aria-label="Omsättning, rörelseresultat och EBIT-marginal per period">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={data} margin={{ top: 24, right: 8, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={2}>
+                        <defs>
+                            {series.map((item) => (
+                                <pattern key={item.key} id={`estimate-${item.key}-${id}`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                                    <rect width="7" height="7" fill="var(--company-estimate-base)" />
+                                    <line x1="0" y1="0" x2="0" y2="7" stroke={item.color} strokeWidth="2" />
+                                </pattern>
+                            ))}
+                        </defs>
+                        <CartesianGrid vertical={false} stroke="var(--company-grid-line)" />
+                        <XAxis dataKey="label" axisLine={false} tickLine={false} minTickGap={20} />
+                        <YAxis yAxisId="amount" axisLine={false} tickLine={false} tickFormatter={(value) => compactAmount.format(value)} width={58} />
+                        <YAxis yAxisId="margin" orientation="right" axisLine={false} tickLine={false} tickFormatter={(value) => `${number(value)}%`} width={52} domain={["auto", "auto"]} />
+                        <Tooltip content={(props) => <FinancialChartTooltip {...props} currency={currency} />} cursor={{ fill: "var(--company-chart-cursor)" }} />
+                        {series.map((item) => (
+                            <Bar key={item.key} yAxisId="amount" dataKey={item.key} fill={item.color} maxBarSize={42} radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                                {data.map((point) => (
+                                    <Cell
+                                        key={`${point.periodKey ?? point.periodEnd}-${item.key}`}
+                                        fill={point.estimate ? `url(#estimate-${item.key}-${id})` : item.color}
+                                        stroke={point.estimate ? item.color : "none"}
+                                    />
+                                ))}
+                            </Bar>
+                        ))}
+                        <Line yAxisId="margin" type="monotone" dataKey="ebitMarginPct" stroke="var(--company-fin-margin)" strokeWidth={2.3} dot={{ r: 3, fill: "var(--company-fin-margin)", strokeWidth: 0 }} connectNulls isAnimationActive={false} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+        </>
+    );
+}
+
+function ManagementComment({ comment, latestReport }) {
+    if (!comment) {
+        if (!latestReport) return null;
+        return <p className="company-ceo-pending">Senaste rapporten är hittad, men något tydligt VD-ord har ännu inte kunnat extraheras.</p>;
+    }
+    const summary = comment.summary;
+    const isComment = comment.type === "ceo_comment";
+    const sourceUrl = comment.source?.releaseUrl ?? comment.source?.url;
+    const paragraphs = statementParagraphs(comment.text);
+    return (
+        <section className="company-ceo-section" aria-labelledby="company-ceo-heading">
+            <div className="company-ceo-heading">
+                <div>
+                    <p className="company-eyebrow">{isComment ? "VD-kommentar" : "VD-ord"} · {comment.fiscalPeriod ?? comment.periodLabel ?? "senaste rapport"}</p>
+                    <h3 id="company-ceo-heading">Ledningens bild av läget</h3>
+                </div>
+                <time>{svDate(comment.publishedAt)}</time>
+            </div>
+            {summary ? (
+                <>
+                    <p className="company-ceo-lead">{summary.summary}</p>
+                    {summary.noMeaningfulUpdate && <p className="company-ceo-no-update">Ingen tydlig ny förändring i ledningens budskap.</p>}
+                    <div className="company-ceo-columns">
+                        {summary.outlook?.length > 0 && (
+                            <div><h4>Utsikter</h4><ul>{summary.outlook.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
+                        )}
+                        {summary.changesAndRisks?.length > 0 && (
+                            <div><h4>Förändringar och risker</h4><ul>{summary.changesAndRisks.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
+                        )}
+                    </div>
+                    {summary.keyFigures?.length > 0 && (
+                        <div className="company-ceo-keyfigures">
+                            {summary.keyFigures.slice(0, 5).map((item, index) => (
+                                <div key={`${item.label}-${index}`}><span>{item.label}</span><strong>{item.value}</strong>{item.context && <small>{item.context}</small>}</div>
+                            ))}
+                        </div>
+                    )}
+                    <p className="company-ceo-ai-note">AI-sammanfattning från det källbelagda {isComment ? "VD-uttalandet" : "VD-ordet"}. Kontrollera väsentliga detaljer i originaltexten.</p>
+                </>
+            ) : <p className="company-ceo-pending">Sammanfattningen förbereds. Originaltexten finns tillgänglig nedan.</p>}
+            {paragraphs.length > 0 && (
+                <details className="company-ceo-details">
+                    <summary>Läs hela {isComment ? "VD-kommentaren" : "VD-ordet"}</summary>
+                    <div>{paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                </details>
+            )}
+            {sourceUrl && <a className="company-text-link company-ceo-source" href={sourceUrl} target="_blank" rel="noreferrer">Öppna originalkällan <FiExternalLink /></a>}
+        </section>
+    );
+}
+
+function FinancialsTab({ financials, estimates }) {
+    const estimatePeriod = estimatePeriodFromSnapshot(estimates?.latest);
+    const [frequency, setFrequency] = useState(estimatePeriod ? "quarterly" : financials?.ttm?.length ? "ttm" : "annual");
     const options = [
         ["annual", "År", financials?.annual],
         ["quarterly", "Kvartal", financials?.quarterly],
         ["ttm", "R12", financials?.ttm],
     ];
-    const periods = (options.find(([id]) => id === frequency)?.[2] ?? []).slice(-6);
-    const currency = financials?.currency ?? "SEK";
+    const basePeriods = options.find(([id]) => id === frequency)?.[2] ?? [];
+    const periods = [
+        ...basePeriods.slice(frequency === "quarterly" && estimatePeriod ? -5 : -6),
+        ...(frequency === "quarterly" && estimatePeriod ? [estimatePeriod] : []),
+    ];
+    const currency = financials?.currency ?? estimates?.latest?.metrics?.find((metric) => metric.currency)?.currency ?? "SEK";
+    const financialRows = [
+        ["Omsättning", "revenue", "money"],
+        ["EBIT", "ebit", "money"],
+        ...(periods.some((period) => period.ebita != null) ? [["EBITA", "ebita", "money"]] : []),
+        ["EBITDA", "ebitda", "money"],
+        ["Nettoresultat", "netIncome", "money"],
+        ["Fritt kassaflöde", "freeCashFlow", "money"],
+        ["EBIT-marginal", "ebitMarginPct", "pct"],
+    ];
     return (
         <section className="company-tab-section">
-            <p className="company-eyebrow">Rapporterat och härlett</p>
+            <p className="company-eyebrow">Rapporterat, härlett och estimerat</p>
             <h2>Finansiell utveckling</h2>
-            <p className="company-intro">Jämför bolagets senaste perioder. R12 beräknas bara när fyra sammanhängande kvartal finns.</p>
+            <p className="company-intro">Jämför bolagets senaste perioder. R12 beräknas bara när fyra sammanhängande kvartal finns och estimat markeras med randiga staplar.</p>
             <div className="company-period-tabs">
                 {options.map(([id, label, values]) => (
                     <button key={id} disabled={!values?.length} className={frequency === id ? "active" : ""} onClick={() => setFrequency(id)}>{label}</button>
                 ))}
             </div>
             {!periods.length ? <p className="company-empty">Data saknas för vald period.</p> : (
-                <div className="company-table-wrap">
-                    <table className="company-financial-table">
-                        <thead><tr><th>Nyckeltal</th>{periods.map((period) => <th key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}</tr></thead>
-                        <tbody>
-                            {FINANCIAL_ROWS.map(([label, key, type]) => (
-                                <tr key={key}><th>{label}</th>{periods.map((period) => (
-                                    <td key={period.periodKey ?? period.periodEnd}>{type === "money" ? money(period[key], currency) : period[key] == null ? "–" : `${number(period[key])}%`}</td>
-                                ))}</tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <>
+                    <FinancialDevelopmentChart periods={periods} currency={currency} />
+                    <div className="company-table-wrap">
+                        <table className="company-financial-table">
+                            <thead><tr><th>Nyckeltal</th>{periods.map((period) => <th className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}</tr></thead>
+                            <tbody>
+                                {financialRows.map(([label, key, type]) => (
+                                    <tr key={key}><th>{label}</th>{periods.map((period) => (
+                                        <td className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>
+                                            {type === "money" ? money(period[key], currency) : period[key] == null ? "–" : `${number(period[key])}%`}
+                                            {period.estimateAdjusted?.[key] && <small className="company-adjusted-mark"> just.</small>}
+                                        </td>
+                                    ))}</tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
-            <p className="company-source">Faktiska värden och OMXsum-härledda R12-perioder visas separat. Saknade värden visas aldrig som noll.</p>
+            <p className="company-source">
+                Faktiska värden: {financials?.source ?? "Yahoo"}. R12: OMXsum-härlett.
+                {frequency === "quarterly" && estimatePeriod ? ` Estimat: ${estimatePeriod.estimateSource.publisher ?? estimatePeriod.estimateSource.name}${estimatePeriod.estimateSource.contributors ? `, ${estimatePeriod.estimateSource.contributors} bidragsgivare` : ""}.` : ""}
+                {frequency === "quarterly" && estimatePeriod?.estimateSource.url && <> <a href={estimatePeriod.estimateSource.url} target="_blank" rel="noreferrer">Visa estimatkällan <FiExternalLink /></a></>}
+            </p>
+            <ManagementComment comment={financials?.managementComment} latestReport={financials?.latestReport} />
         </section>
     );
 }
@@ -504,9 +713,9 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
     if (!initialData?.summary) {
         return (
             <main className="company-page company-not-found">
-                <StockSearch placeholder="Sök efter ett svenskt bolag…" />
                 <h1>Aktien kunde inte hittas</h1>
-                <p>Kontrollera symbolen eller sök efter bolagsnamnet.</p>
+                <p>Kontrollera symbolen eller använd aktiesökningen i sidhuvudet.</p>
+                <Link className="company-text-link" href="/">Till startsidan <FiChevronRight /></Link>
             </main>
         );
     }
@@ -524,10 +733,6 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
 
     return (
         <main className="company-page">
-            <div className="company-search-row">
-                <StockSearch placeholder="Sök efter ett svenskt bolag…" />
-            </div>
-
             <header className="company-header">
                 <div className="company-identity">
                     <div className="company-symbol-row">
@@ -557,7 +762,7 @@ export default function CompanyPage({ symbol, initialData, initialTab }) {
             </nav>
 
             {tab === "overview" && <OverviewTab data={initialData} />}
-            {tab === "financials" && <FinancialsTab financials={initialData.financials} />}
+            {tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {tab === "estimates" && <EstimatesTab summary={summary} estimates={initialData.estimates} />}
             {tab === "valuation" && <ValuationTab />}
             {tab === "news" && <NewsTab data={initialData} />}
