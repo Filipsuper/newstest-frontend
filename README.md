@@ -28,6 +28,12 @@ OMXSUM_BACKEND_DIR=/path/to/newsbackend FRONTEND_PORT=3000 ./scripts/dev-local.s
 
 Run `./scripts/dev-local.sh --help` for all supported overrides.
 
+In development mode, login does not send an email. Submitting the login form
+returns a localhost-only magic link and opens it immediately. The same link is
+also printed in the backend log. To test actual email delivery, set
+`DEV_SEND_EMAIL=1` and `RESEND_API_KEY` in the backend `.env`. Production
+continues to use Resend.
+
 ## Environment variables
 
 - `NEXT_PUBLIC_API_URL` — API base URL used by the browser. Baked into the

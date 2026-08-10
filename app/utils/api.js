@@ -273,7 +273,8 @@ export async function signUp(email, redirectTo = "/") {
             },
             body: JSON.stringify({ email, redirectTo })
         })
-        return res.json();
+        const body = await res.json();
+        return res.ok ? body : { ...body, error: true };
     } catch (error) {
         console.error('Error fetching data:', error);
         throw error;

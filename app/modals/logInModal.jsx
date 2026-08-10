@@ -20,8 +20,14 @@ export default function LogInModal({ redirectTo = "/" }) {
         const response = await signUp(email, redirectTo)
 
         if (response.error) {
-            setMessage(response.message)
+            setMessage(response.message || "Inloggningen kunde inte startas.")
             return false
+        }
+
+        if (response.devLoginUrl) {
+            setMessage("Öppnar lokal inloggning…")
+            window.location.assign(response.devLoginUrl)
+            return
         }
 
         setMessage("Inloggningslänk har skickats till din mail!")
