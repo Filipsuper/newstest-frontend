@@ -16,7 +16,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { FiChevronRight, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
 import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
@@ -655,7 +655,7 @@ function Metric({ label, value, detail }) {
     );
 }
 
-function FinancialSnapshot({ highlights }) {
+function FinancialSnapshot({ highlights, onSelectTab }) {
     const period = highlights?.ttm ?? highlights?.annual ?? highlights?.quarterly;
     if (!period) return <p className="company-empty">Finansiella nyckeltal saknas för bolaget.</p>;
     const currency = highlights?.currency ?? "SEK";
@@ -666,7 +666,7 @@ function FinancialSnapshot({ highlights }) {
                     <p className="company-eyebrow">Finansiell överblick</p>
                     <h2 id="financial-question">Vad tjänar bolaget?</h2>
                 </div>
-                <Link className="company-text-link" href="?tab=financials">Visa finansiellt <FiChevronRight /></Link>
+                <button type="button" className="company-text-link" onClick={() => onSelectTab("financials")}>Visa finansiellt <FiChevronRight /></button>
             </div>
             <div className="company-metric-grid">
                 <Metric label="Omsättning" value={money(period.revenue, currency)} detail={periodLabel(period)} />
@@ -681,14 +681,14 @@ function FinancialSnapshot({ highlights }) {
     );
 }
 
-function CalendarPreview({ calendar }) {
+function CalendarPreview({ calendar, onSelectTab }) {
     const earnings = calendar?.earningsDates?.[0] ?? calendar?.events?.find((event) => event.type === "earnings")?.date;
     return (
         <section className="company-context-section" aria-labelledby="calendar-preview-heading">
             <p className="company-eyebrow">Nästa händelse</p>
             <h2 id="calendar-preview-heading">{earnings ? svDate(earnings) : "Inget datum bekräftat"}</h2>
             <p>{earnings ? "Nästa rapportdatum enligt tillgänglig bolagskalender." : "Vi visar datumet när bolaget eller en verifierad källa publicerar det."}</p>
-            <Link className="company-text-link" href="?tab=calendar">Öppna kalendern <FiChevronRight /></Link>
+            <button type="button" className="company-text-link" onClick={() => onSelectTab("calendar")}>Öppna kalendern <FiChevronRight /></button>
         </section>
     );
 }
@@ -778,7 +778,7 @@ function ExpandableText({ text, className = "", lines = 6 }) {
     );
 }
 
-function OverviewTab({ data, mentions = [] }) {
+function OverviewTab({ data, mentions = [], onSelectTab }) {
     const { summary, chart, news } = data;
     return (
         <>
@@ -796,10 +796,10 @@ function OverviewTab({ data, mentions = [] }) {
                             {summary.profile.website && <><dt>Webbplats</dt><dd><a href={summary.profile.website} target="_blank" rel="noreferrer">Besök bolaget <FiExternalLink /></a></dd></>}
                         </dl>
                     </section>
-                    <FinancialSnapshot highlights={summary.financialHighlights} />
+                    <FinancialSnapshot highlights={summary.financialHighlights} onSelectTab={onSelectTab} />
                 </div>
                 <aside className="company-context-column">
-                    <CalendarPreview calendar={summary.calendar} />
+                    <CalendarPreview calendar={summary.calendar} onSelectTab={onSelectTab} />
                     <section className="company-context-section" aria-labelledby="news-preview-heading">
                         <div className="company-section-heading">
                             <div>
@@ -808,7 +808,7 @@ function OverviewTab({ data, mentions = [] }) {
                             </div>
                         </div>
                         <NewsList news={news} compact />
-                        <Link className="company-text-link" href="?tab=news">Alla nyheter <FiChevronRight /></Link>
+                        <button type="button" className="company-text-link" onClick={() => onSelectTab("news")}>Alla nyheter <FiChevronRight /></button>
                     </section>
                     <MentionsList mentions={mentions} companyName={summary.profile.name ?? summary.symbol} />
                 </aside>
@@ -1052,19 +1052,145 @@ function NewsTab({ data }) {
     );
 }
 
+const CALENDAR_EVENT_LABELS = {
+    earnings: "Rapport",
+    agm: "Årsstämma",
+    ex_dividend: "X-dag",
+    dividend: "Utdelning",
+    capital_market_day: "Kapitalmarknadsdag",
+};
+
+const parseCalendarDate = (value) => {
+    const [year, month, day] = String(value ?? "").slice(0, 10).split("-").map(Number);
+    if (!year || !month || !day) return null;
+    const date = new Date(year, month - 1, day, 12);
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const calendarDateKey = (value) => {
+    const date = value instanceof Date ? value : parseCalendarDate(value);
+    if (!date) return "";
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+};
+
+const calendarEventLabel = (type) => CALENDAR_EVENT_LABELS[type]
+    ?? String(type ?? "Händelse").replaceAll("_", " ");
+
 function CalendarTab({ calendar }) {
-    const events = calendar?.events ?? [];
+    const todayKey = stockholmDay(Date.now());
+    const today = parseCalendarDate(todayKey);
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12);
+    const [visibleMonth, setVisibleMonth] = useState(currentMonth);
+
+    const events = useMemo(() => {
+        const candidates = [
+            ...(calendar?.events ?? []),
+            ...(calendar?.earningsDates ?? []).map((date) => ({ type: "earnings", date })),
+            ...(calendar?.exDividendDate ? [{ type: "ex_dividend", date: calendar.exDividendDate }] : []),
+            ...(calendar?.dividendDate ? [{ type: "dividend", date: calendar.dividendDate }] : []),
+        ];
+        const seen = new Set();
+        return candidates
+            .filter((event) => calendarDateKey(event.date) >= todayKey)
+            .filter((event) => {
+                const key = `${calendarDateKey(event.date)}-${event.type}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .sort((left, right) => calendarDateKey(left.date).localeCompare(calendarDateKey(right.date)));
+    }, [calendar, todayKey]);
+
+    const eventsByDate = useMemo(() => events.reduce((result, event) => {
+        const key = calendarDateKey(event.date);
+        result.set(key, [...(result.get(key) ?? []), event]);
+        return result;
+    }, new Map()), [events]);
+
+    const days = useMemo(() => {
+        const first = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1, 12);
+        const mondayOffset = (first.getDay() + 6) % 7;
+        const start = new Date(first);
+        start.setDate(first.getDate() - mondayOffset);
+        const daysInMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate();
+        const cellCount = Math.ceil((mondayOffset + daysInMonth) / 7) * 7;
+        return Array.from({ length: cellCount }, (_, index) => {
+            const date = new Date(start);
+            date.setDate(start.getDate() + index);
+            return date;
+        });
+    }, [visibleMonth]);
+
+    const showingCurrentMonth = visibleMonth.getFullYear() === currentMonth.getFullYear()
+        && visibleMonth.getMonth() === currentMonth.getMonth();
+    const moveMonth = (offset) => setVisibleMonth((month) =>
+        new Date(month.getFullYear(), month.getMonth() + offset, 1, 12));
+    const showEventMonth = (event) => {
+        const date = parseCalendarDate(event.date);
+        if (date) setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1, 12));
+    };
+
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Bolagets datum</p>
             <h2>Rapporter och kapitalhändelser</h2>
-            <div className="company-calendar-list">
-                {events.length ? events.map((event) => (
-                    <div key={event.eventId ?? `${event.type}-${event.date}`}>
-                        <time>{svDate(event.date)}</time>
-                        <div><strong>{event.fiscalPeriod ?? event.type}</strong><span>{event.type?.replaceAll("_", " ")}</span></div>
+            <div className="company-calendar-layout">
+                <div className="company-calendar">
+                    <header className="company-calendar-toolbar">
+                        <button type="button" disabled={showingCurrentMonth} aria-label="Föregående månad" onClick={() => moveMonth(-1)}><FiChevronLeft /></button>
+                        <h3>{visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}</h3>
+                        <button type="button" aria-label="Nästa månad" onClick={() => moveMonth(1)}><FiChevronRight /></button>
+                    </header>
+                    <div className="company-calendar-weekdays" aria-hidden="true">
+                        {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map((day) => <span key={day}>{day}</span>)}
                     </div>
-                )) : <p className="company-empty">Inga bolagsbekräftade kalenderhändelser finns ännu.</p>}
+                    <div className="company-calendar-grid" role="grid" aria-label={visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}>
+                        {days.map((date) => {
+                            const key = calendarDateKey(date);
+                            const dayEvents = eventsByDate.get(key) ?? [];
+                            const outsideMonth = date.getMonth() !== visibleMonth.getMonth();
+                            const hasPassed = key < todayKey;
+                            return (
+                                <div
+                                    key={key}
+                                    role="gridcell"
+                                    className={`company-calendar-day ${outsideMonth ? "outside" : ""} ${hasPassed ? "past" : ""} ${key === todayKey ? "today" : ""}`}
+                                >
+                                    <time dateTime={key}>{date.getDate()}</time>
+                                    <div className="company-calendar-day-events">
+                                        {dayEvents.slice(0, 2).map((event) => (
+                                            <span key={event.id ?? event.eventId ?? `${event.type}-${event.date}`} title={`${calendarEventLabel(event.type)}${event.fiscalPeriod ? ` · ${event.fiscalPeriod}` : ""}`}>
+                                                {event.fiscalPeriod ?? calendarEventLabel(event.type)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+                <aside className="company-calendar-upcoming" aria-label="Kommande händelser">
+                    <div className="company-calendar-upcoming-heading">
+                        <h3>Kommande</h3>
+                        <span>{events.length}</span>
+                    </div>
+                    {events.length ? events.slice(0, 6).map((event) => {
+                        const date = parseCalendarDate(event.date);
+                        return (
+                            <button type="button" key={event.id ?? event.eventId ?? `${event.type}-${event.date}`} onClick={() => showEventMonth(event)}>
+                                <time dateTime={calendarDateKey(event.date)}>
+                                    <strong>{date?.getDate()}</strong>
+                                    <span>{date?.toLocaleDateString("sv-SE", { month: "short", year: "numeric" })}</span>
+                                </time>
+                                <span>
+                                    <strong>{event.fiscalPeriod ?? calendarEventLabel(event.type)}</strong>
+                                    <small>{calendarEventLabel(event.type)}</small>
+                                </span>
+                                <FiChevronRight />
+                            </button>
+                        );
+                    }) : <p className="company-empty">Inga kommande bolagshändelser är bekräftade.</p>}
+                </aside>
             </div>
         </section>
     );
@@ -1114,6 +1240,10 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
     const [tab, setTab] = useState(allowedTab);
 
+    useEffect(() => {
+        setTab(allowedTab);
+    }, [allowedTab]);
+
     if (!initialData?.summary) {
         return (
             <main className="company-page company-not-found">
@@ -1160,7 +1290,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 ))}
             </nav>
 
-            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} />}
+            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} onSelectTab={selectTab} />}
             {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} estimates={initialData.estimates} />}

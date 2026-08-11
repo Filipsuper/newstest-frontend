@@ -434,7 +434,9 @@ body {
 .company-control:focus-visible,
 .company-icon-control:focus-visible,
 .company-range-row button:focus-visible,
-.company-period-tabs button:focus-visible {
+.company-period-tabs button:focus-visible,
+.company-calendar-toolbar button:focus-visible,
+.company-calendar-upcoming > button:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
 }
@@ -866,6 +868,7 @@ body {
   color: var(--color-primary);
   font-size: 0.9rem;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .company-news-list {
@@ -1436,24 +1439,200 @@ body {
 
 .company-report-list small { color: var(--color-text-muted); }
 
-.company-calendar-list {
-  display: flex;
-  max-width: 760px;
-  flex-direction: column;
+.company-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(250px, 0.45fr);
+  gap: 28px;
   margin-top: 34px;
 }
 
-.company-calendar-list > div {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 30px;
-  padding: 18px 0;
+.company-calendar,
+.company-calendar-upcoming {
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--company-panel);
 }
 
-.company-calendar-list time { color: var(--color-text); font-weight: 650; }
-.company-calendar-list div div { display: flex; flex-direction: column; gap: 3px; }
-.company-calendar-list strong { color: var(--color-text); }
-.company-calendar-list span { color: var(--color-text-muted); font-size: 0.875rem; text-transform: capitalize; }
+.company-calendar-toolbar {
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.company-calendar-toolbar h3 {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.company-calendar-toolbar button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.company-calendar-toolbar button:not(:disabled):hover {
+  color: var(--color-text);
+  background: var(--company-surface);
+}
+
+.company-calendar-toolbar button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.company-calendar-weekdays,
+.company-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.company-calendar-weekdays {
+  padding: 9px 0;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.company-calendar-grid {
+  border-top: 1px solid var(--color-border);
+}
+
+.company-calendar-day {
+  min-width: 0;
+  min-height: 92px;
+  padding: 9px 8px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.company-calendar-day:nth-child(7n) { border-right: 0; }
+.company-calendar-day:nth-last-child(-n + 7) { border-bottom: 0; }
+.company-calendar-day.outside { opacity: 0.3; }
+.company-calendar-day.past:not(.outside) {
+  background: color-mix(in srgb, var(--company-surface) 34%, transparent);
+}
+.company-calendar-day.past > time {
+  color: color-mix(in srgb, var(--color-text-muted) 58%, transparent);
+}
+
+.company-calendar-day > time {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.company-calendar-day.today > time {
+  background: var(--company-yellow);
+  color: #111318;
+}
+
+.company-calendar-day-events {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.company-calendar-day-events span {
+  overflow: hidden;
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--company-yellow) 14%, transparent);
+  color: var(--color-text);
+  font-size: 0.67rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-calendar-upcoming {
+  align-self: start;
+  padding: 8px 18px 10px;
+}
+
+.company-calendar-upcoming-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 9px;
+}
+
+.company-calendar-upcoming-heading h3 {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.company-calendar-upcoming-heading > span {
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--company-surface);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.company-calendar-upcoming > button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 48px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.company-calendar-upcoming > button > time,
+.company-calendar-upcoming > button > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.company-calendar-upcoming > button > time strong { font-size: 1.2rem; line-height: 1; }
+.company-calendar-upcoming > button > time span,
+.company-calendar-upcoming > button small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  text-transform: capitalize;
+}
+.company-calendar-upcoming > button > span strong {
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.company-calendar-upcoming > button > svg {
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+}
+.company-calendar-upcoming > button:hover > svg { transform: translateX(2px); }
 
 .company-empty {
   padding: 30px 0;
@@ -1493,7 +1672,7 @@ body {
   .company-chart-section,
   .company-tab-section { margin-bottom: 58px; }
   .company-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 18px; }
-  .company-calendar-list > div { grid-template-columns: 1fr; gap: 5px; }
+  .company-calendar-layout { grid-template-columns: 1fr; }
   .company-financial-chart { height: 330px; }
   .company-financial-visual { margin-inline: -14px; padding: 24px 14px 12px; border-radius: 0; }
   .company-ceo-columns { grid-template-columns: 1fr; gap: 30px; }
@@ -1507,6 +1686,11 @@ body {
   .company-chart { height: 300px; }
   .company-skeleton { --company-skeleton-chart-height: 300px; }
   .company-metric-grid { grid-template-columns: 1fr 1fr; }
+  .company-calendar-layout { margin-inline: -10px; gap: 16px; }
+  .company-calendar-day { min-height: 66px; padding: 6px 4px; }
+  .company-calendar-day-events { gap: 3px; margin-top: 4px; }
+  .company-calendar-day-events span { padding: 3px 4px; font-size: 0.58rem; }
+  .company-calendar-weekdays { font-size: 0.61rem; }
   .company-financial-chart { height: 300px; margin-inline: -10px; width: calc(100% + 20px); }
   .company-ceo-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
 }
