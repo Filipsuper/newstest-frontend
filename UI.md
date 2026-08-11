@@ -38,9 +38,8 @@ desktop density or abbreviated interaction model.
 
 ## Data and charts
 
-- Historical daily data is the website default. The explicit one-day view may
-  use stored Yahoo WebSocket observations aggregated into chart bars; raw
-  tick-by-tick inspection remains a terminal feature.
+- Historical daily data is the website default. Tick data belongs in the
+  terminal.
 - OMXsum yellow is the primary stock line; comparisons and moving averages are
   quieter and opt-in.
 - Tooltips identify date, exact value, unit, and whether data is reported,

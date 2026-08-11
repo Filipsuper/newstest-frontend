@@ -358,7 +358,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         const latest = currentBars.at(-1);
                         const nextBars = latest?.time === bucketTime
                             ? [...currentBars.slice(0, -1), nextPoint]
-                            : [...currentBars, nextPoint].slice(-5000);
+                            : [...currentBars, nextPoint].slice(-700);
                         return {
                             ...current,
                             sessionDate: sessionDate ?? tickDay,
