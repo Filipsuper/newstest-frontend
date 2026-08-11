@@ -229,7 +229,7 @@ function WatchlistButton({ symbol }) {
 
 // Opens the share sheet for the move the reader is actually looking at: the
 // selected period and its return.
-function ShareMoveButton({ symbol, companyName, range, returnPct, ma50, ma200 }) {
+function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     const { openModal } = useModal();
 
     return (
@@ -242,8 +242,6 @@ function ShareMoveButton({ symbol, companyName, range, returnPct, ma50, ma200 })
                     symbol={symbol}
                     companyName={companyName}
                     rangeId={range}
-                    rangeLabel={RANGES.find((option) => option.id === range)?.label ?? ""}
-                    returnText={returnPct == null ? null : pct(returnPct)}
                     ma50={ma50}
                     ma200={ma200}
                 />,
@@ -289,15 +287,6 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         });
     }, [chart, range]);
 
-    const rangeReturns = useMemo(() => {
-        const rows = (chart?.bars ?? []).filter((row) => row.close != null);
-        const last = rows[rows.length - 1]?.close;
-        return Object.fromEntries(RANGES.map((option) => {
-            const first = rows[Math.max(0, rows.length - option.sessions)]?.close;
-            return [option.id, first && last ? ((last / first) - 1) * 100 : null];
-        }));
-    }, [chart]);
-
     if (!data.length) {
         return <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p>;
     }
@@ -339,28 +328,22 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 </header>
                 <div className="flex flex-row w-full justify-between">
                     <div className="company-range-row" aria-label="Välj tidsperiod">
-                        {RANGES.map((option) => {
-                            const value = rangeReturns[option.id];
-                            const tone = value == null ? "neutral" : value >= 0 ? "positive" : "negative";
-                            return (
-                                <button
-                                    key={option.id}
-                                    disabled={(chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
-                                    className={range === option.id ? "company-range-active" : ""}
-                                    onClick={() => setRange(option.id)}
-                                >
-                                    <span>{option.label}</span>
-                                    <strong className={tone}>{pct(value)}</strong>
-                                </button>
-                            );
-                        })}
+                        {RANGES.map((option) => (
+                            <button
+                                key={option.id}
+                                disabled={(chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
+                                className={range === option.id ? "company-range-active" : ""}
+                                onClick={() => setRange(option.id)}
+                            >
+                                <span>{option.label}</span>
+                            </button>
+                        ))}
                     </div>
                     <div className="company-chart-actions max-w-fit">
                         <ShareMoveButton
                             symbol={symbol}
                             companyName={companyName}
                             range={range}
-                            returnPct={rangeReturns[range]}
                             ma50={ma50}
                             ma200={ma200}
                         />

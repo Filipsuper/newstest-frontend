@@ -3,19 +3,21 @@
 import { useState } from "react";
 import { FaDownload, FaLink, FaShareAlt, FaTwitter } from "react-icons/fa";
 
+const SHARE_CARD_VERSION = "2";
+
 // Previews the very image that will unfurl when the link is shared: the <img>
 // below and the og:image meta tag point at the same /og/aktie URL, so the
 // preview cannot drift from the real card. The path deliberately avoids /api,
 // which nginx proxies to the backend.
-export default function ShareStockModal({ symbol, companyName, rangeId, rangeLabel, returnText, ma50 = false, ma200 = false }) {
+export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = false, ma200 = false }) {
     const [status, setStatus] = useState("");
     const [loaded, setLoaded] = useState(false);
 
     const origin = typeof window === "undefined" ? "https://omxsum.com" : window.location.origin;
     const movingAverages = [ma50 && "50", ma200 && "200"].filter(Boolean).join(",");
     const movingAverageQuery = movingAverages ? `&ma=${encodeURIComponent(movingAverages)}` : "";
-    const imageUrl = `${origin}/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}${movingAverageQuery}`;
-    const shareUrl = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${rangeId}${movingAverageQuery}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
+    const imageUrl = `${origin}/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}${movingAverageQuery}&v=${SHARE_CARD_VERSION}`;
+    const shareUrl = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${rangeId}${movingAverageQuery}&share=${SHARE_CARD_VERSION}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
     const shareText = "";
 
     const flash = (message) => {

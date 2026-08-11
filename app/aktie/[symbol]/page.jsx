@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
 
 const SHAREABLE_RANGES = new Set(["6m", "1y", "3y", "5y"]);
+const SHARE_CARD_VERSION = "2";
 
 const cleanMovingAverages = (value) => String(Array.isArray(value) ? value[0] : value ?? "")
     .split(",")
@@ -43,7 +44,7 @@ export async function generateMetadata({ params, searchParams }) {
     const movingAverages = cleanMovingAverages(query?.ma);
     const movingAverageQuery = movingAverages ? `&ma=${encodeURIComponent(movingAverages)}` : "";
     const image = {
-        url: `/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}${movingAverageQuery}`,
+        url: `/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}${movingAverageQuery}&v=${SHARE_CARD_VERSION}`,
         width: 1200,
         height: 630,
         alt: `Kursutveckling för ${identity?.name ?? decoded}`,

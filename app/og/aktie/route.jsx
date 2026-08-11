@@ -277,7 +277,6 @@ export async function GET(request) {
     }
 
     const chart = chartSvg(visible, movingAverages);
-    const changeTone = quote?.changePct == null ? MUTED : quote.changePct >= 0 ? POSITIVE : NEGATIVE;
     const companyLabel = name.length > 34 ? `${name.slice(0, 33)}…` : name;
 
     return new ImageResponse(
@@ -288,7 +287,7 @@ export async function GET(request) {
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    backgroundColor: "#181a21",
+                    backgroundColor: "#0e1015",
                     color: "#f2f3f5",
                     padding: "38px 52px 28px",
                     fontFamily: "sans-serif",
@@ -309,11 +308,9 @@ export async function GET(request) {
                             <span style={{ fontWeight: 700, fontSize: 52, lineHeight: 1 }}>
                                 {quote?.price == null ? "Kurs saknas" : `${svDecimal(quote.price, 2)} kr`}
                             </span>
-                            {quote?.change != null && quote?.changePct != null && (
-                                <span style={{ color: changeTone, fontWeight: 650, fontSize: 21, paddingBottom: 3 }}>
-                                    {quote.change > 0 ? "+" : ""}{svDecimal(quote.change, 2)} kr · {quote.changePct > 0 ? "+" : ""}{svDecimal(quote.changePct)}%
-                                </span>
-                            )}
+                            <span style={{ color: accent, fontWeight: 650, fontSize: 21, paddingBottom: 3 }}>
+                                {returnPct > 0 ? "+" : ""}{svDecimal(returnPct)}%
+                            </span>
                         </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -324,23 +321,8 @@ export async function GET(request) {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", marginTop: 18, marginBottom: 10 }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: 2,
-                            padding: "7px 12px",
-                            borderRadius: 8,
-                            backgroundColor: "#090b0f",
-                        }}
-                    >
-                        <span style={{ color: MUTED, fontSize: 17 }}>{range.label}</span>
-                        <span style={{ color: accent, fontSize: 21, fontWeight: 700 }}>
-                            {returnPct == null ? "–" : `${returnPct > 0 ? "+" : ""}${svDecimal(returnPct)}%`}
-                        </span>
-                    </div>
+                <div style={{ display: "flex", marginTop: 18, marginBottom: 10, color: MUTED, fontSize: 17 }}>
+                    {range.label}
                 </div>
 
                 <div style={{ display: "flex", position: "relative", width: CHART.width, height: CHART.height }}>

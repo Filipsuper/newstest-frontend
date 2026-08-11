@@ -555,9 +555,7 @@ body {
 .company-range-row button {
   display: flex;
   flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  align-items: center;
   padding: 5px 10px;
   border-radius: 7px;
   font-variant-numeric: tabular-nums;
@@ -568,10 +566,6 @@ body {
 .company-range-row button span {
   color: var(--color-text-muted);
   font-size: 0.75rem;
-}
-
-.company-range-row button strong {
-  font-size: 0.875rem;
 }
 
 .company-range-row button:not(:disabled):hover,
