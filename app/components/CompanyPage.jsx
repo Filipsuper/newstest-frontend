@@ -85,6 +85,29 @@ const svTime = (value) => value
 
 const stockholmDay = (value) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
 
+const fiscalPeriodRank = (value) => {
+    const match = typeof value === "string" ? /^(\d{4})-Q([1-4])$/.exec(value) : null;
+    return match ? Number(match[1]) * 10 + Number(match[2]) : null;
+};
+
+function upcomingEstimateSnapshot(snapshot, financials) {
+    if (!snapshot) return null;
+    const estimateRank = fiscalPeriodRank(snapshot.fiscalPeriod);
+    const actualRanks = [
+        fiscalPeriodRank(financials?.latestReport?.fiscalPeriod),
+        ...(financials?.quarterly ?? []).map((period) => fiscalPeriodRank(period.fiscalPeriod)),
+    ].filter((rank) => rank != null);
+
+    if (estimateRank != null && actualRanks.length) {
+        return estimateRank > Math.max(...actualRanks) ? snapshot : null;
+    }
+
+    const reportDate = String(snapshot.reportDate ?? "").slice(0, 10);
+    return !/^\d{4}-\d{2}-\d{2}$/.test(reportDate) || reportDate >= stockholmDay(Date.now())
+        ? snapshot
+        : null;
+}
+
 const periodLabel = (period) => {
     if (!period) return "Period saknas";
     if (period.estimate) return `${period.periodLabel ?? period.fiscalPeriod ?? period.periodEnd}E`;
@@ -941,7 +964,8 @@ function ManagementComment({ comment, latestReport }) {
 }
 
 function FinancialsTab({ financials, estimates }) {
-    const estimatePeriod = estimatePeriodFromSnapshot(estimates?.latest);
+    const latestEstimate = upcomingEstimateSnapshot(estimates?.latest, financials);
+    const estimatePeriod = estimatePeriodFromSnapshot(latestEstimate);
     const [frequency, setFrequency] = useState(estimatePeriod ? "quarterly" : financials?.ttm?.length ? "ttm" : "annual");
     const options = [
         ["annual", "År", financials?.annual],
@@ -953,7 +977,7 @@ function FinancialsTab({ financials, estimates }) {
         ...basePeriods.slice(frequency === "quarterly" && estimatePeriod ? -5 : -6),
         ...(frequency === "quarterly" && estimatePeriod ? [estimatePeriod] : []),
     ];
-    const currency = financials?.currency ?? estimates?.latest?.metrics?.find((metric) => metric.currency)?.currency ?? "SEK";
+    const currency = financials?.currency ?? latestEstimate?.metrics?.find((metric) => metric.currency)?.currency ?? "SEK";
     const financialRows = [
         ["Omsättning", "revenue", "money"],
         ["EBIT", "ebit", "money"],
@@ -1002,9 +1026,10 @@ function FinancialsTab({ financials, estimates }) {
     );
 }
 
-function EstimatesTab({ summary, estimates }) {
+function EstimatesTab({ summary, financials, estimates }) {
     const calendar = summary.calendar;
-    const latest = estimates?.latest;
+    const latest = upcomingEstimateSnapshot(estimates?.latest, financials);
+    const summaryEstimate = upcomingEstimateSnapshot(summary.upcomingEstimate, financials);
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Offentligt konsensus</p>
@@ -1013,7 +1038,7 @@ function EstimatesTab({ summary, estimates }) {
             <div className="company-metric-grid company-metric-grid-small">
                 <Metric label="EPS-estimat" value={calendar?.epsEstimate?.average == null ? "Saknas" : `${number(calendar.epsEstimate.average, 2)} ${calendar.currency ?? "SEK"}`} />
                 <Metric label="Omsättningsestimat" value={money(calendar?.revenueEstimate?.average, calendar?.currency ?? "SEK")} />
-                <Metric label="Nästa estimatperiod" value={latest?.fiscalPeriod ?? summary.upcomingEstimate?.fiscalPeriod ?? "Saknas"} />
+                <Metric label="Nästa estimatperiod" value={latest?.fiscalPeriod ?? summaryEstimate?.fiscalPeriod ?? "Saknas"} />
             </div>
             {!latest && <p className="company-empty">Inget öppet konsensusestimat har samlats in för bolaget ännu.</p>}
         </section>
@@ -1295,7 +1320,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} onSelectTab={selectTab} />}
             {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
-            {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} estimates={initialData.estimates} />}
+            {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab />}
             {tab === "news" && <NewsTab data={initialData} />}
             {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
