@@ -365,7 +365,7 @@ export async function GET(request) {
                             <span style={{ fontFamily: "serif", fontWeight: 700 }}>{companyLabel}</span>
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 18 }}>
-                            <span style={{ fontWeight: 700, fontSize: 52, lineHeight: 1 }}>
+                            <span style={{ fontWeight: 800, fontSize: 52, lineHeight: 1 }}>
                                 {quote?.price == null ? "Kurs saknas" : `${svDecimal(quote.price, 2)} kr`}
                             </span>
                             <span style={{ color: accent, fontWeight: 650, fontSize: 21, paddingBottom: 3 }}>
@@ -374,8 +374,8 @@ export async function GET(request) {
                         </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <div style={{ display: "flex", width: 22, height: 22, borderRadius: 11, backgroundColor: "#ffc43d" }} />
-                        <div style={{ display: "flex", fontSize: 36, fontWeight: 900, fontStyle: "italic", fontFamily: "serif" }}>
+                        <div style={{ display: "flex", width: 18, height: 18, borderRadius: 9, backgroundColor: "#ffc43d" }} />
+                        <div style={{ display: "flex", fontSize: 30, fontWeight: 900, fontStyle: "italic", fontFamily: "serif" }}>
                             Omxsum
                         </div>
                     </div>
