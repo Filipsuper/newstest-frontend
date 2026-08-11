@@ -4,14 +4,15 @@ import { useState } from "react";
 import { FaDownload, FaLink, FaShareAlt, FaTwitter } from "react-icons/fa";
 
 // Previews the very image that will unfurl when the link is shared: the <img>
-// below and the og:image meta tag point at the same /api/og/aktie URL, so the
-// preview cannot drift from the real card.
+// below and the og:image meta tag point at the same /og/aktie URL, so the
+// preview cannot drift from the real card. The path deliberately avoids /api,
+// which nginx proxies to the backend.
 export default function ShareStockModal({ symbol, companyName, rangeId, rangeLabel, returnText }) {
     const [status, setStatus] = useState("");
     const [loaded, setLoaded] = useState(false);
 
     const origin = typeof window === "undefined" ? "https://omxsum.com" : window.location.origin;
-    const imageUrl = `${origin}/api/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}`;
+    const imageUrl = `${origin}/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}`;
     const shareUrl = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${rangeId}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
     const shareText = returnText
         ? `${companyName} ${returnText} senaste ${rangeLabel.toLowerCase()}`

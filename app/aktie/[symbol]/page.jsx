@@ -35,7 +35,7 @@ export async function generateMetadata({ params, searchParams }) {
     // the move that was shared. Same URL the share modal previews.
     const range = SHAREABLE_RANGES.has(query?.range) ? query.range : "1y";
     const image = {
-        url: `/api/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}`,
+        url: `/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}`,
         width: 1200,
         height: 630,
         alt: `Kursutveckling för ${identity?.name ?? decoded}`,
