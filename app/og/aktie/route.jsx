@@ -17,59 +17,91 @@ const RANGES = {
 };
 
 const SIZE = { width: 1200, height: 630 };
-const CHART = { width: 1080, height: 260 };
+// Plot plus the right-hand price gutter, matching the chart's YAxis width.
+const CHART = { width: 1080, height: 268, axis: 62 };
+
+// The dark theme's chart tokens — this card always renders dark.
+const YELLOW = "#ffc43d";
+const YELLOW_BRIGHT = "#fff3d0";
+const VOLUME = "rgba(255, 196, 61, 0.11)";
+const GRID = "rgba(199, 205, 218, 0.105)";
+const MUTED = "#9297a3";
+const POSITIVE = "#71ff86";
+const NEGATIVE = "#ff6b66";
 
 const svDecimal = (value, digits = 1) =>
     Number(value).toLocaleString("sv-SE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-// Line + area for the visible closes, as a standalone SVG. Satori renders it
-// through <img>, which handles gradients and paths that Satori's own SVG
-// support does not.
-// Mirrors --company-positive / --company-negative from the dark theme, which is
-// the theme this card always renders in.
-const POSITIVE = "#71ff86";
-const NEGATIVE = "#ff6b66";
+// Round gridline values over [min, max], the way the chart's "auto" domain does.
+function niceTicks(min, max, count = 4) {
+    const span = (max - min) || 1;
+    const rough = span / count;
+    const magnitude = 10 ** Math.floor(Math.log10(rough));
+    const step = [1, 2, 2.5, 5, 10].find((factor) => factor * magnitude >= rough) * magnitude;
+    const ticks = [];
+    for (let value = Math.ceil(min / step) * step; value <= max; value += step) ticks.push(value);
+    return ticks;
+}
 
-function chartDataUri(closes, positive) {
-    const stroke = positive ? POSITIVE : NEGATIVE;
-    const { width, height } = CHART;
-    const pad = 10;
+// The site's chart, redrawn as a standalone SVG: dotted grid, faint volume bars
+// along the bottom, and the yellow price line whose gradient fades in from the
+// left and brightens towards the end. Satori cannot run Recharts, so this is
+// rasterised through <img> — which is also what makes gradients work.
+function chartSvg(rows) {
+    const width = CHART.width - CHART.axis;
+    const { height } = CHART;
+    const pad = 12;
 
-    if (closes.length < 2) {
-        return `data:image/svg+xml;base64,${Buffer.from(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"></svg>`,
-        ).toString("base64")}`;
-    }
-
+    const closes = rows.map((row) => row.close);
     const min = Math.min(...closes);
     const max = Math.max(...closes);
     const span = max - min || 1;
-    const stepX = width / (closes.length - 1);
-    const points = closes.map((close, index) => [
-        index * stepX,
-        pad + (1 - (close - min) / span) * (height - pad * 2),
-    ]);
+    const y = (close) => pad + (1 - (close - min) / span) * (height - pad * 2);
+    const stepX = width / (rows.length - 1);
 
-    const line = points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-    const area = `${line} L${width} ${height} L0 ${height} Z`;
+    // Volume shares the axis with the price, scaled to a quarter of the height
+    // exactly like the chart's [0, max * 4] volume domain.
+    const maxVolume = Math.max(...rows.map((row) => row.volume ?? 0)) || 1;
+    const barWidth = Math.max(1, stepX * 0.7);
+    const volumeBars = rows
+        .map((row, index) => {
+            const value = row.volume ?? 0;
+            if (!value) return "";
+            const barHeight = (value / (maxVolume * 4)) * height;
+            return `<rect x="${(index * stepX - barWidth / 2).toFixed(1)}" y="${(height - barHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${VOLUME}"/>`;
+        })
+        .join("");
+
+    const horizontals = niceTicks(min, max)
+        .map((value) => `<line x1="0" y1="${y(value).toFixed(1)}" x2="${width}" y2="${y(value).toFixed(1)}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`)
+        .join("");
+    const verticals = Array.from({ length: 6 }, (_, index) => {
+        const x = ((index + 1) / 7) * width;
+        return `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${height}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`;
+    }).join("");
+
+    const line = rows
+        .map((row, index) => `${index === 0 ? "M" : "L"}${(index * stepX).toFixed(1)} ${y(row.close).toFixed(1)}`)
+        .join(" ");
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
         <defs>
-            <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="${stroke}" stop-opacity="0.28"/>
-                <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="${stroke}" stop-opacity="0"/>
-                <stop offset="12%" stop-color="${stroke}" stop-opacity="1"/>
-                <stop offset="100%" stop-color="${stroke}" stop-opacity="1"/>
+            <linearGradient id="price" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="${YELLOW}" stop-opacity="0"/>
+                <stop offset="22%" stop-color="${YELLOW}" stop-opacity="1"/>
+                <stop offset="50%" stop-color="${YELLOW}" stop-opacity="1"/>
+                <stop offset="90%" stop-color="${YELLOW_BRIGHT}" stop-opacity="1"/>
+                <stop offset="100%" stop-color="${YELLOW}" stop-opacity="1"/>
             </linearGradient>
         </defs>
-        <path d="${area}" fill="url(#fill)"/>
-        <path d="${line}" fill="none" stroke="url(#stroke)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${horizontals}${verticals}${volumeBars}
+        <path d="${line}" fill="none" stroke="url(#price)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
     </svg>`;
 
-    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+    return {
+        uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
+        labels: niceTicks(min, max).map((value) => ({ value, top: y(value) })),
+    };
 }
 
 async function loadCompany(symbol) {
@@ -137,6 +169,8 @@ export async function GET(request) {
         );
     }
 
+    const chart = chartSvg(visible);
+
     return new ImageResponse(
         (
             <div
@@ -179,8 +213,25 @@ export async function GET(request) {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", width: CHART.width, height: CHART.height }}>
-                    <img src={chartDataUri(closes, positive)} width={CHART.width} height={CHART.height} alt="" />
+                <div style={{ display: "flex", position: "relative", width: CHART.width, height: CHART.height }}>
+                    <img src={chart.uri} width={CHART.width - CHART.axis} height={CHART.height} alt="" />
+                    {chart.labels.map((label) => (
+                        <div
+                            key={label.value}
+                            style={{
+                                display: "flex",
+                                position: "absolute",
+                                right: 0,
+                                top: label.top - 13,
+                                width: CHART.axis,
+                                justifyContent: "flex-end",
+                                fontSize: 22,
+                                color: MUTED,
+                            }}
+                        >
+                            {Number(label.value).toLocaleString("sv-SE", { maximumFractionDigits: 0 })}
+                        </div>
+                    ))}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 28 }}>
