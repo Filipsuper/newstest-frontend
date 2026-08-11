@@ -229,7 +229,7 @@ function WatchlistButton({ symbol }) {
 
 // Opens the share sheet for the move the reader is actually looking at: the
 // selected period and its return.
-function ShareMoveButton({ symbol, companyName, range, returnPct }) {
+function ShareMoveButton({ symbol, companyName, range, returnPct, ma50, ma200 }) {
     const { openModal } = useModal();
 
     return (
@@ -244,6 +244,8 @@ function ShareMoveButton({ symbol, companyName, range, returnPct }) {
                     rangeId={range}
                     rangeLabel={RANGES.find((option) => option.id === range)?.label ?? ""}
                     returnText={returnPct == null ? null : pct(returnPct)}
+                    ma50={ma50}
+                    ma200={ma200}
                 />,
             )}
         >
@@ -252,14 +254,15 @@ function ShareMoveButton({ symbol, companyName, range, returnPct }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "" }) {
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
     );
     const [compare, setCompare] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [ma50, setMa50] = useState(false);
-    const [ma200, setMa200] = useState(false);
+    const initialMaSelection = String(initialMovingAverages).split(",");
+    const [ma50, setMa50] = useState(initialMaSelection.includes("50"));
+    const [ma200, setMa200] = useState(initialMaSelection.includes("200"));
 
     const data = useMemo(() => {
         const allRows = chart?.bars ?? [];
@@ -316,15 +319,13 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange }) {
                             {/* <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span> */}
                             {/* {profile.market && <small>{profile.market}</small>} */}
                             {profile.segment && <small className="font-bold">{profile.segment.replaceAll("_", " ")}</small>}
-                            
-                        </div>
-                        <div className="company-symbol-row">
-                            <h1 className="text-primary!">{profile.name ?? symbol}</h1>
-                            <div>•</div>
-                            <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small>
+                            <div className="text-text-muted">•</div>
+                            <h1 className="font-serif "> {profile.name ?? symbol}</h1>
+                            {/* <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small> */}
                             <WatchlistButton symbol={symbol} />
                         </div>
-                        <div className="company-quote">
+                        <div className="company-symbol-row" />
+                        <div className="company-quote gap-4">
                             <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} kr`}</strong>
                             <span className={changeTone}>{quote?.change == null ? "–" : `${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} kr · ${pct(quote.changePct)}`}</span>
                         </div>
@@ -360,6 +361,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange }) {
                             companyName={companyName}
                             range={range}
                             returnPct={rangeReturns[range]}
+                            ma50={ma50}
+                            ma200={ma200}
                         />
                         <button
                             className={compare ? "company-control company-icon-control" : "company-control company-icon-control"}
@@ -912,7 +915,7 @@ function PlusTabGate({ companyName }) {
     );
 }
 
-export default function CompanyPage({ symbol, initialData, initialTab, initialRange, mentions = [] }) {
+export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [] }) {
     const router = useRouter();
     const { isPlusUser } = useAuthContext();
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
@@ -946,7 +949,14 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             
 
             {/* <Performance returns={summary.performance?.returns} /> */}
-            <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} initialRange={initialRange} companyName={initialData.summary.profile.name ?? initialData.summary.symbol} />
+            <CompanyChart
+                summary={summary}
+                symbol={symbol}
+                chart={initialData.chart}
+                initialRange={initialRange}
+                initialMovingAverages={initialMovingAverages}
+                companyName={initialData.summary.profile.name ?? initialData.summary.symbol}
+            />
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
                 {TABS.map((item) => (

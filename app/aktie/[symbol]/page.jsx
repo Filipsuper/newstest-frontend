@@ -6,6 +6,12 @@ const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
 
 const SHAREABLE_RANGES = new Set(["6m", "1y", "3y", "5y"]);
 
+const cleanMovingAverages = (value) => String(Array.isArray(value) ? value[0] : value ?? "")
+    .split(",")
+    .filter((item) => item === "50" || item === "200")
+    .filter((item, index, values) => values.indexOf(item) === index)
+    .join(",");
+
 async function loadOverview(symbol, cookieHeader = "") {
     try {
         return await fetchCompanyOverview(symbol, cookieHeader);
@@ -34,8 +40,10 @@ export async function generateMetadata({ params, searchParams }) {
     // The share card follows the period in the link, so a shared move unfurls as
     // the move that was shared. Same URL the share modal previews.
     const range = SHAREABLE_RANGES.has(query?.range) ? query.range : "1y";
+    const movingAverages = cleanMovingAverages(query?.ma);
+    const movingAverageQuery = movingAverages ? `&ma=${encodeURIComponent(movingAverages)}` : "";
     const image = {
-        url: `/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}`,
+        url: `/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}${movingAverageQuery}`,
         width: 1200,
         height: 630,
         alt: `Kursutveckling för ${identity?.name ?? decoded}`,
@@ -67,6 +75,7 @@ export default async function Page({ params, searchParams }) {
             initialData={overview}
             initialTab={query?.tab}
             initialRange={query?.range}
+            initialMovingAverages={cleanMovingAverages(query?.ma)}
             mentions={mentions}
         />
     );

@@ -17,12 +17,17 @@ const RANGES = {
 };
 
 const SIZE = { width: 1200, height: 630 };
-// Plot plus the right-hand price gutter, matching the chart's YAxis width.
-const CHART = { width: 1080, height: 268, axis: 62 };
+// Plot plus the right-hand price gutter and bottom date axis, matching the
+// structure of the Recharts chart on the company page.
+const CHART = { width: 1096, height: 330, axis: 62, xAxis: 30 };
 
 // The dark theme's chart tokens — this card always renders dark.
 const YELLOW = "#ffc43d";
 const YELLOW_BRIGHT = "#fff3d0";
+const BLUE = "#4d69dc";
+const BLUE_BRIGHT = "#e2e8ff";
+const MUTED_LINE = "#7f8795";
+const MUTED_LINE_BRIGHT = "#cfd4dd";
 const VOLUME = "rgba(255, 196, 61, 0.11)";
 const GRID = "rgba(199, 205, 218, 0.105)";
 const MUTED = "#9297a3";
@@ -31,6 +36,17 @@ const NEGATIVE = "#ff6b66";
 
 const svDecimal = (value, digits = 1) =>
     Number(value).toLocaleString("sv-SE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+const svDate = (value) => new Date(value).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+
+function movingAverage(rows, window) {
+    let sum = 0;
+    return rows.map((row, index) => {
+        sum += row.close ?? 0;
+        if (index >= window) sum -= rows[index - window].close ?? 0;
+        return index >= window - 1 ? sum / window : null;
+    });
+}
 
 // Round gridline values over [min, max], the way the chart's "auto" domain does.
 function niceTicks(min, max, count = 4) {
@@ -43,21 +59,77 @@ function niceTicks(min, max, count = 4) {
     return ticks;
 }
 
-// The site's chart, redrawn as a standalone SVG: dotted grid, faint volume bars
-// along the bottom, and the yellow price line whose gradient fades in from the
-// left and brightens towards the end. Satori cannot run Recharts, so this is
-// rasterised through <img> — which is also what makes gradients work.
-function chartSvg(rows) {
+// Build the same smooth, monotone curve Recharts uses without depending on a
+// browser DOM. Null values split the line into separate drawable sections.
+function monotonePath(rows, key, x, y) {
+    const sections = [];
+    let current = [];
+    rows.forEach((row, index) => {
+        const value = row[key];
+        if (value == null || !Number.isFinite(Number(value))) {
+            if (current.length) sections.push(current);
+            current = [];
+            return;
+        }
+        current.push({ x: x(index), y: y(Number(value)) });
+    });
+    if (current.length) sections.push(current);
+
+    return sections.map((points) => {
+        if (points.length === 1) return `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+        const slopes = points.slice(0, -1).map((point, index) =>
+            (points[index + 1].y - point.y) / (points[index + 1].x - point.x));
+        const tangents = points.map((point, index) => {
+            if (index === 0) return slopes[0];
+            if (index === points.length - 1) return slopes[slopes.length - 1];
+            return slopes[index - 1] * slopes[index] <= 0 ? 0 : (slopes[index - 1] + slopes[index]) / 2;
+        });
+
+        slopes.forEach((slope, index) => {
+            if (slope === 0) {
+                tangents[index] = 0;
+                tangents[index + 1] = 0;
+                return;
+            }
+            const alpha = tangents[index] / slope;
+            const beta = tangents[index + 1] / slope;
+            const length = Math.hypot(alpha, beta);
+            if (length > 3) {
+                const scale = 3 / length;
+                tangents[index] = scale * alpha * slope;
+                tangents[index + 1] = scale * beta * slope;
+            }
+        });
+
+        let path = `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+        for (let index = 0; index < points.length - 1; index += 1) {
+            const from = points[index];
+            const to = points[index + 1];
+            const third = (to.x - from.x) / 3;
+            path += ` C${(from.x + third).toFixed(1)} ${(from.y + tangents[index] * third).toFixed(1)}`;
+            path += ` ${(to.x - third).toFixed(1)} ${(to.y - tangents[index + 1] * third).toFixed(1)}`;
+            path += ` ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
+        }
+        return path;
+    }).join(" ");
+}
+
+// The company-page chart, redrawn as a standalone SVG because Satori cannot
+// run Recharts. It keeps the same grid, volume scale, fading line gradients,
+// smooth curves, right-side price ticks, and optional MA50/MA200 series.
+function chartSvg(rows, movingAverages) {
     const width = CHART.width - CHART.axis;
-    const { height } = CHART;
+    const height = CHART.height - CHART.xAxis;
     const pad = 12;
 
-    const closes = rows.map((row) => row.close);
-    const min = Math.min(...closes);
-    const max = Math.max(...closes);
+    const seriesKeys = ["close", movingAverages.ma50 && "ma50", movingAverages.ma200 && "ma200"].filter(Boolean);
+    const values = rows.flatMap((row) => seriesKeys.map((key) => row[key]).filter((value) => value != null));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
     const span = max - min || 1;
     const y = (close) => pad + (1 - (close - min) / span) * (height - pad * 2);
     const stepX = width / (rows.length - 1);
+    const x = (index) => index * stepX;
 
     // Volume shares the axis with the price, scaled to a quarter of the height
     // exactly like the chart's [0, max * 4] volume domain.
@@ -68,21 +140,23 @@ function chartSvg(rows) {
             const value = row.volume ?? 0;
             if (!value) return "";
             const barHeight = (value / (maxVolume * 4)) * height;
-            return `<rect x="${(index * stepX - barWidth / 2).toFixed(1)}" y="${(height - barHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${VOLUME}"/>`;
+            return `<rect x="${(x(index) - barWidth / 2).toFixed(1)}" y="${(height - barHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${VOLUME}"/>`;
         })
         .join("");
 
-    const horizontals = niceTicks(min, max)
+    const ticks = niceTicks(min, max);
+    const horizontals = ticks
         .map((value) => `<line x1="0" y1="${y(value).toFixed(1)}" x2="${width}" y2="${y(value).toFixed(1)}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`)
         .join("");
-    const verticals = Array.from({ length: 6 }, (_, index) => {
-        const x = ((index + 1) / 7) * width;
-        return `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${height}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`;
-    }).join("");
+    const labelIndexes = Array.from(new Set([0, 1, 2, 3, 4].map((index) =>
+        Math.round((index / 4) * (rows.length - 1)))));
+    const verticals = labelIndexes
+        .map((index) => `<line x1="${x(index).toFixed(1)}" y1="0" x2="${x(index).toFixed(1)}" y2="${height}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`)
+        .join("");
 
-    const line = rows
-        .map((row, index) => `${index === 0 ? "M" : "L"}${(index * stepX).toFixed(1)} ${y(row.close).toFixed(1)}`)
-        .join(" ");
+    const priceLine = monotonePath(rows, "close", x, y);
+    const ma50Line = movingAverages.ma50 ? monotonePath(rows, "ma50", x, y) : "";
+    const ma200Line = movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
         <defs>
@@ -93,14 +167,37 @@ function chartSvg(rows) {
                 <stop offset="90%" stop-color="${YELLOW_BRIGHT}" stop-opacity="1"/>
                 <stop offset="100%" stop-color="${YELLOW}" stop-opacity="1"/>
             </linearGradient>
+            <linearGradient id="ma50" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="${BLUE}" stop-opacity="0"/>
+                <stop offset="22%" stop-color="${BLUE}" stop-opacity="1"/>
+                <stop offset="50%" stop-color="${BLUE}" stop-opacity="1"/>
+                <stop offset="90%" stop-color="${BLUE_BRIGHT}" stop-opacity="1"/>
+                <stop offset="100%" stop-color="${BLUE}" stop-opacity="1"/>
+            </linearGradient>
+            <linearGradient id="ma200" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="${MUTED_LINE}" stop-opacity="0"/>
+                <stop offset="22%" stop-color="${MUTED_LINE}" stop-opacity="1"/>
+                <stop offset="50%" stop-color="${MUTED_LINE}" stop-opacity="1"/>
+                <stop offset="90%" stop-color="${MUTED_LINE_BRIGHT}" stop-opacity="1"/>
+                <stop offset="100%" stop-color="${MUTED_LINE}" stop-opacity="1"/>
+            </linearGradient>
         </defs>
         ${horizontals}${verticals}${volumeBars}
-        <path d="${line}" fill="none" stroke="url(#price)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${priceLine}" fill="none" stroke="url(#price)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        ${ma50Line ? `<path d="${ma50Line}" fill="none" stroke="url(#ma50)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
+        ${ma200Line ? `<path d="${ma200Line}" fill="none" stroke="url(#ma200)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
     </svg>`;
 
     return {
         uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
-        labels: niceTicks(min, max).map((value) => ({ value, top: y(value) })),
+        labels: ticks.map((value) => ({ value, top: y(value) })),
+        dateLabels: labelIndexes.map((index) => ({
+            value: svDate(rows[index].date),
+            left: x(index),
+            edge: index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle",
+        })),
+        hasMa50: Boolean(ma50Line),
+        hasMa200: Boolean(ma200Line),
     };
 }
 
@@ -118,16 +215,26 @@ export async function GET(request) {
     const symbol = String(searchParams.get("symbol") ?? "").toUpperCase().slice(0, 20);
     const rangeId = RANGES[searchParams.get("range")] ? searchParams.get("range") : "1y";
     const range = RANGES[rangeId];
+    const movingAverageValues = new Set(String(searchParams.get("ma") ?? "").split(","));
+    const movingAverages = {
+        ma50: movingAverageValues.has("50"),
+        ma200: movingAverageValues.has("200"),
+    };
 
     const data = symbol && /^[A-Z0-9.\-]{1,20}$/.test(symbol) ? await loadCompany(symbol).catch(() => null) : null;
     const profile = data?.summary?.profile;
     const quote = data?.summary?.quote;
 
     const name = profile?.name ?? symbol.replace(".ST", "").replaceAll("-", " ") ?? "Omxsum";
-    const ticker = profile?.nativeSymbol ?? symbol.replace(".ST", "");
-
     const bars = (data?.chart?.bars ?? []).filter((bar) => bar?.close != null);
-    const visible = bars.slice(Math.max(0, bars.length - range.sessions));
+    const ma50Values = movingAverage(bars, 50);
+    const ma200Values = movingAverage(bars, 200);
+    const enrichedBars = bars.map((bar, index) => ({
+        ...bar,
+        ma50: ma50Values[index],
+        ma200: ma200Values[index],
+    }));
+    const visible = enrichedBars.slice(Math.max(0, enrichedBars.length - range.sessions));
     const closes = visible.map((bar) => bar.close);
     const first = closes[0];
     const last = closes[closes.length - 1];
@@ -169,7 +276,9 @@ export async function GET(request) {
         );
     }
 
-    const chart = chartSvg(visible);
+    const chart = chartSvg(visible, movingAverages);
+    const changeTone = quote?.changePct == null ? MUTED : quote.changePct >= 0 ? POSITIVE : NEGATIVE;
+    const companyLabel = name.length > 34 ? `${name.slice(0, 33)}…` : name;
 
     return new ImageResponse(
         (
@@ -179,21 +288,32 @@ export async function GET(request) {
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between",
-                    backgroundColor: "#101217",
+                    backgroundColor: "#181a21",
                     color: "#f2f3f5",
-                    padding: "54px 60px 44px",
+                    padding: "38px 52px 28px",
                     fontFamily: "sans-serif",
                 }}
             >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                        <div style={{ display: "flex", fontSize: 26, color: "#9297a3", marginBottom: 10 }}>
-                            {ticker}
-                            {profile?.segment ? `  ·  ${profile.segment.replaceAll("_", " ")}` : ""}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 23 }}>
+                            {profile?.segment && (
+                                <span style={{ color: MUTED, fontWeight: 700, textTransform: "capitalize" }}>
+                                    {profile.segment.replaceAll("_", " ").toLowerCase()}
+                                </span>
+                            )}
+                            {profile?.segment && <span style={{ color: MUTED }}>•</span>}
+                            <span style={{ fontFamily: "serif", fontWeight: 700 }}>{companyLabel}</span>
                         </div>
-                        <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em" }}>
-                            {name.length > 28 ? `${name.slice(0, 27)}…` : name}
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 18 }}>
+                            <span style={{ fontWeight: 700, fontSize: 52, lineHeight: 1 }}>
+                                {quote?.price == null ? "Kurs saknas" : `${svDecimal(quote.price, 2)} kr`}
+                            </span>
+                            {quote?.change != null && quote?.changePct != null && (
+                                <span style={{ color: changeTone, fontWeight: 650, fontSize: 21, paddingBottom: 3 }}>
+                                    {quote.change > 0 ? "+" : ""}{svDecimal(quote.change, 2)} kr · {quote.changePct > 0 ? "+" : ""}{svDecimal(quote.changePct)}%
+                                </span>
+                            )}
                         </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -204,17 +324,27 @@ export async function GET(request) {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 26 }}>
-                    <div style={{ display: "flex", fontSize: 112, fontWeight: 700, color: accent, lineHeight: 1 }}>
-                        {returnPct == null ? "–" : `${returnPct > 0 ? "+" : ""}${svDecimal(returnPct)}%`}
-                    </div>
-                    <div style={{ display: "flex", fontSize: 32, color: "#9297a3", paddingBottom: 12 }}>
-                        senaste {range.label.toLowerCase()}
+                <div style={{ display: "flex", marginTop: 18, marginBottom: 10 }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: 2,
+                            padding: "7px 12px",
+                            borderRadius: 8,
+                            backgroundColor: "#090b0f",
+                        }}
+                    >
+                        <span style={{ color: MUTED, fontSize: 17 }}>{range.label}</span>
+                        <span style={{ color: accent, fontSize: 21, fontWeight: 700 }}>
+                            {returnPct == null ? "–" : `${returnPct > 0 ? "+" : ""}${svDecimal(returnPct)}%`}
+                        </span>
                     </div>
                 </div>
 
                 <div style={{ display: "flex", position: "relative", width: CHART.width, height: CHART.height }}>
-                    <img src={chart.uri} width={CHART.width - CHART.axis} height={CHART.height} alt="" />
+                    <img src={chart.uri} width={CHART.width - CHART.axis} height={CHART.height - CHART.xAxis} alt="" />
                     {chart.labels.map((label) => (
                         <div
                             key={label.value}
@@ -225,21 +355,47 @@ export async function GET(request) {
                                 top: label.top - 13,
                                 width: CHART.axis,
                                 justifyContent: "flex-end",
-                                fontSize: 22,
+                                fontSize: 17,
                                 color: MUTED,
                             }}
                         >
                             {Number(label.value).toLocaleString("sv-SE", { maximumFractionDigits: 0 })}
                         </div>
                     ))}
+                    {chart.dateLabels.map((label) => (
+                        <div
+                            key={`${label.value}-${label.left}`}
+                            style={{
+                                display: "flex",
+                                position: "absolute",
+                                left: label.edge === "start" ? label.left : label.edge === "end" ? label.left - 90 : label.left - 45,
+                                top: CHART.height - CHART.xAxis + 7,
+                                width: 90,
+                                justifyContent: label.edge === "start" ? "flex-start" : label.edge === "end" ? "flex-end" : "center",
+                                fontSize: 16,
+                                color: MUTED,
+                            }}
+                        >
+                            {label.value}
+                        </div>
+                    ))}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 28 }}>
-                    <div style={{ display: "flex", color: "#9297a3" }}>omxsum.com</div>
-                    {quote?.price != null && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <span style={{ color: "#9297a3" }}>Kurs</span>
-                            <span style={{ fontWeight: 700 }}>{svDecimal(quote.price, 2)} kr</span>
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 22, minHeight: 22, color: MUTED, fontSize: 17 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ display: "flex", width: 18, height: 2, backgroundColor: YELLOW }} />
+                        <span>{companyLabel}</span>
+                    </div>
+                    {chart.hasMa50 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ display: "flex", width: 18, height: 2, backgroundColor: BLUE }} />
+                            <span>MA50</span>
+                        </div>
+                    )}
+                    {chart.hasMa200 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ display: "flex", width: 18, height: 2, backgroundColor: MUTED_LINE }} />
+                            <span>MA200</span>
                         </div>
                     )}
                 </div>

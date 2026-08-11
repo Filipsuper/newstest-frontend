@@ -7,16 +7,16 @@ import { FaDownload, FaLink, FaShareAlt, FaTwitter } from "react-icons/fa";
 // below and the og:image meta tag point at the same /og/aktie URL, so the
 // preview cannot drift from the real card. The path deliberately avoids /api,
 // which nginx proxies to the backend.
-export default function ShareStockModal({ symbol, companyName, rangeId, rangeLabel, returnText }) {
+export default function ShareStockModal({ symbol, companyName, rangeId, rangeLabel, returnText, ma50 = false, ma200 = false }) {
     const [status, setStatus] = useState("");
     const [loaded, setLoaded] = useState(false);
 
     const origin = typeof window === "undefined" ? "https://omxsum.com" : window.location.origin;
-    const imageUrl = `${origin}/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}`;
-    const shareUrl = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${rangeId}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
-    const shareText = returnText
-        ? `${companyName} ${returnText} senaste ${rangeLabel.toLowerCase()}`
-        : `${companyName} på Omxsum`;
+    const movingAverages = [ma50 && "50", ma200 && "200"].filter(Boolean).join(",");
+    const movingAverageQuery = movingAverages ? `&ma=${encodeURIComponent(movingAverages)}` : "";
+    const imageUrl = `${origin}/og/aktie?symbol=${encodeURIComponent(symbol)}&range=${rangeId}${movingAverageQuery}`;
+    const shareUrl = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${rangeId}${movingAverageQuery}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
+    const shareText = "";
 
     const flash = (message) => {
         setStatus(message);
@@ -37,7 +37,7 @@ export default function ShareStockModal({ symbol, companyName, rangeId, rangeLab
 
     const copyLink = async () => {
         try {
-            await navigator.clipboard.writeText(`${shareText} – ${shareUrl}`);
+            await navigator.clipboard.writeText(`${shareUrl}`);
             flash("Länk kopierad!");
         } catch {
             flash("Kunde inte kopiera länken");
@@ -74,9 +74,7 @@ export default function ShareStockModal({ symbol, companyName, rangeId, rangeLab
 
             <div className="relative w-full aspect-[1200/630] rounded-xl overflow-hidden bg-foreground border border-border mb-5">
                 {!loaded && (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-text-muted">
-                        Skapar bild…
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-sm text-text-muted" />
                 )}
                 <img
                     src={imageUrl}
