@@ -216,6 +216,7 @@ body {
   --company-positive: #4070f4;
   --company-negative: #f7c85a;
   --company-volume: rgba(64, 112, 244, 0.12);
+  --company-muted-volume: rgba(134, 142, 150, 0.08);
   --company-muted-line: #868e96;
   --company-fin-revenue: #101218;
   --company-fin-ebit: #adadad;
@@ -240,6 +241,7 @@ body {
   --company-positive: #71ff86;
   --company-negative: #ff6b66;
   --company-volume: rgba(255, 196, 61, 0.11);
+  --company-muted-volume: rgba(127, 135, 149, 0.08);
   --company-muted-line: #7f8795;
   --company-fin-revenue: #ffffff;
   --company-fin-ebit: #d8d8d8;
@@ -608,6 +610,7 @@ body {
 }
 
 .company-chart {
+  position: relative;
   width: 100%;
   height: 500px;
   mask-image: linear-gradient(to right,
@@ -644,6 +647,86 @@ body {
 .company-chart .recharts-cartesian-axis-tick-value {
   fill: var(--color-text-muted);
   font-size: 12px;
+}
+
+.company-chart-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  pointer-events: none;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-shadow: 0 1px 12px var(--color-background);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.company-chart-loading-visible {
+  opacity: 1;
+  animation: company-chart-loading-in 220ms ease-out both;
+}
+
+.company-chart-loading-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--company-yellow);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--company-yellow) 28%, transparent);
+}
+
+.company-chart-loading-visible .company-chart-loading-pulse {
+  animation: company-chart-loading-pulse 1.7s ease-out infinite;
+}
+
+.company-chart-loading-error {
+  color: var(--company-negative);
+}
+
+.company-chart .recharts-line-curve {
+  transition: stroke-opacity 360ms ease, opacity 360ms ease;
+}
+
+.company-chart-is-loading .recharts-cartesian-grid,
+.company-chart-is-loading .recharts-cartesian-axis {
+  opacity: 0.72;
+  transition: opacity 300ms ease;
+}
+
+@keyframes company-chart-loading-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes company-chart-loading-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--company-yellow) 28%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 9px transparent; }
+}
+
+.company-live-endpoint-core {
+  fill: var(--company-yellow-bright);
+}
+
+.company-live-endpoint-pulse {
+  fill: var(--company-yellow);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: company-live-pulse 2.2s ease-out infinite;
+}
+
+@keyframes company-live-pulse {
+  0% { opacity: 0.28; transform: scale(0.7); }
+  70%, 100% { opacity: 0; transform: scale(1.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .company-live-endpoint-pulse,
+  .company-chart-loading,
+  .company-chart-loading-pulse { animation: none; }
 }
 
 .company-tooltip {

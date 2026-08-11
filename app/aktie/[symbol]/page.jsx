@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
 
-const SHAREABLE_RANGES = new Set(["6m", "1y", "3y", "5y"]);
+const SHAREABLE_RANGES = new Set(["1d", "6m", "1y", "3y", "5y"]);
 const SHARE_CARD_VERSION = "2";
 
 const cleanMovingAverages = (value) => String(Array.isArray(value) ? value[0] : value ?? "")

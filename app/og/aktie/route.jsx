@@ -7,9 +7,10 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "nodejs";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
 
 const RANGES = {
+    "1d": { label: "1 dag", intraday: true },
     "6m": { label: "6 månader", sessions: 130 },
     "1y": { label: "1 år", sessions: 260 },
     "3y": { label: "3 år", sessions: 780 },
@@ -29,6 +30,7 @@ const BLUE_BRIGHT = "#e2e8ff";
 const MUTED_LINE = "#7f8795";
 const MUTED_LINE_BRIGHT = "#cfd4dd";
 const VOLUME = "rgba(255, 196, 61, 0.11)";
+const MUTED_VOLUME = "rgba(127, 135, 149, 0.08)";
 const GRID = "rgba(199, 205, 218, 0.105)";
 const MUTED = "#9297a3";
 const POSITIVE = "#71ff86";
@@ -38,6 +40,7 @@ const svDecimal = (value, digits = 1) =>
     Number(value).toLocaleString("sv-SE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 const svDate = (value) => new Date(value).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+const svTime = (value) => new Date(value).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
 function movingAverage(rows, window) {
     let sum = 0;
@@ -117,13 +120,18 @@ function monotonePath(rows, key, x, y) {
 // The company-page chart, redrawn as a standalone SVG because Satori cannot
 // run Recharts. It keeps the same grid, volume scale, fading line gradients,
 // smooth curves, right-side price ticks, and optional MA50/MA200 series.
-function chartSvg(rows, movingAverages) {
+function chartSvg(rows, movingAverages, { intraday = false, previousClose = null, live = false } = {}) {
     const width = CHART.width - CHART.axis;
     const height = CHART.height - CHART.xAxis;
     const pad = 12;
 
-    const seriesKeys = ["close", movingAverages.ma50 && "ma50", movingAverages.ma200 && "ma200"].filter(Boolean);
-    const values = rows.flatMap((row) => seriesKeys.map((key) => row[key]).filter((value) => value != null));
+    const seriesKeys = intraday
+        ? ["previousPrice", "currentPrice"]
+        : ["close", movingAverages.ma50 && "ma50", movingAverages.ma200 && "ma200"].filter(Boolean);
+    const values = [
+        ...rows.flatMap((row) => seriesKeys.map((key) => row[key]).filter((value) => value != null)),
+        ...(previousClose == null ? [] : [previousClose]),
+    ];
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min || 1;
@@ -140,7 +148,8 @@ function chartSvg(rows, movingAverages) {
             const value = row.volume ?? 0;
             if (!value) return "";
             const barHeight = (value / (maxVolume * 4)) * height;
-            return `<rect x="${(x(index) - barWidth / 2).toFixed(1)}" y="${(height - barHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${VOLUME}"/>`;
+            const fill = intraday && row.session === "previous" ? MUTED_VOLUME : VOLUME;
+            return `<rect x="${(x(index) - barWidth / 2).toFixed(1)}" y="${(height - barHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}"/>`;
         })
         .join("");
 
@@ -154,9 +163,17 @@ function chartSvg(rows, movingAverages) {
         .map((index) => `<line x1="${x(index).toFixed(1)}" y1="0" x2="${x(index).toFixed(1)}" y2="${height}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`)
         .join("");
 
-    const priceLine = monotonePath(rows, "close", x, y);
-    const ma50Line = movingAverages.ma50 ? monotonePath(rows, "ma50", x, y) : "";
-    const ma200Line = movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
+    const priceLine = monotonePath(rows, intraday ? "currentPrice" : "close", x, y);
+    const previousLine = intraday ? monotonePath(rows, "previousPrice", x, y) : "";
+    const ma50Line = !intraday && movingAverages.ma50 ? monotonePath(rows, "ma50", x, y) : "";
+    const ma200Line = !intraday && movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
+    const lastLiveIndex = intraday ? rows.findLastIndex((row) => row.currentPrice != null) : -1;
+    const liveDot = live && lastLiveIndex >= 0
+        ? `<circle cx="${x(lastLiveIndex).toFixed(1)}" cy="${y(rows[lastLiveIndex].currentPrice).toFixed(1)}" r="4" fill="${YELLOW_BRIGHT}"/>`
+        : "";
+    const referenceLine = intraday && previousClose != null
+        ? `<line x1="0" y1="${y(previousClose).toFixed(1)}" x2="${width}" y2="${y(previousClose).toFixed(1)}" stroke="${MUTED_LINE}" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 6"/>`
+        : "";
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
         <defs>
@@ -182,17 +199,19 @@ function chartSvg(rows, movingAverages) {
                 <stop offset="100%" stop-color="${MUTED_LINE}" stop-opacity="1"/>
             </linearGradient>
         </defs>
-        ${horizontals}${verticals}${volumeBars}
+        ${horizontals}${verticals}${volumeBars}${referenceLine}
+        ${previousLine ? `<path d="${previousLine}" fill="none" stroke="${MUTED_LINE}" stroke-opacity="0.62" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
         <path d="${priceLine}" fill="none" stroke="url(#price)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
         ${ma50Line ? `<path d="${ma50Line}" fill="none" stroke="url(#ma50)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
         ${ma200Line ? `<path d="${ma200Line}" fill="none" stroke="url(#ma200)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
+        ${liveDot}
     </svg>`;
 
     return {
         uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
         labels: ticks.map((value) => ({ value, top: y(value) })),
         dateLabels: labelIndexes.map((index) => ({
-            value: svDate(rows[index].date),
+            value: intraday ? svTime(rows[index].date) : svDate(rows[index].date),
             left: x(index),
             edge: index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle",
         })),
@@ -210,6 +229,15 @@ async function loadCompany(symbol) {
     return response.json();
 }
 
+async function loadIntraday(symbol) {
+    const response = await fetch(
+        `${API_URL}/feed/company/${encodeURIComponent(symbol)}/intraday`,
+        { cache: "no-store" },
+    );
+    if (!response.ok) return null;
+    return response.json();
+}
+
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const symbol = String(searchParams.get("symbol") ?? "").toUpperCase().slice(0, 20);
@@ -221,23 +249,54 @@ export async function GET(request) {
         ma200: movingAverageValues.has("200"),
     };
 
-    const data = symbol && /^[A-Z0-9.\-]{1,20}$/.test(symbol) ? await loadCompany(symbol).catch(() => null) : null;
+    const validSymbol = symbol && /^[A-Z0-9.\-]{1,20}$/.test(symbol);
+    const [data, intraday] = validSymbol
+        ? await Promise.all([
+            loadCompany(symbol).catch(() => null),
+            range.intraday ? loadIntraday(symbol).catch(() => null) : null,
+        ])
+        : [null, null];
     const profile = data?.summary?.profile;
-    const quote = data?.summary?.quote;
+    const quote = intraday?.quote ?? data?.summary?.quote;
 
     const name = profile?.name ?? symbol.replace(".ST", "").replaceAll("-", " ") ?? "Omxsum";
-    const bars = (data?.chart?.bars ?? []).filter((bar) => bar?.close != null);
-    const ma50Values = movingAverage(bars, 50);
-    const ma200Values = movingAverage(bars, 200);
-    const enrichedBars = bars.map((bar, index) => ({
-        ...bar,
-        ma50: ma50Values[index],
-        ma200: ma200Values[index],
-    }));
-    const visible = enrichedBars.slice(Math.max(0, enrichedBars.length - range.sessions));
-    const closes = visible.map((bar) => bar.close);
-    const first = closes[0];
-    const last = closes[closes.length - 1];
+    let visible;
+    let closes;
+    let first;
+    let last;
+    let chartOptions = {};
+
+    if (range.intraday) {
+        const previous = (intraday?.previous ?? []).filter((bar) => bar?.close != null);
+        const current = (intraday?.current ?? []).filter((bar) => bar?.close != null);
+        visible = [
+            ...previous.map((bar) => ({ ...bar, date: bar.time, session: "previous", previousPrice: bar.close, currentPrice: null })),
+            ...current.map((bar) => ({ ...bar, date: bar.time, session: "current", previousPrice: null, currentPrice: bar.close })),
+        ];
+        closes = current.map((bar) => bar.close);
+        first = intraday?.previousClose;
+        last = closes.at(-1);
+        movingAverages.ma50 = false;
+        movingAverages.ma200 = false;
+        chartOptions = {
+            intraday: true,
+            previousClose: intraday?.previousClose,
+            live: intraday?.quote?.fresh === true,
+        };
+    } else {
+        const bars = (data?.chart?.bars ?? []).filter((bar) => bar?.close != null);
+        const ma50Values = movingAverage(bars, 50);
+        const ma200Values = movingAverage(bars, 200);
+        const enrichedBars = bars.map((bar, index) => ({
+            ...bar,
+            ma50: ma50Values[index],
+            ma200: ma200Values[index],
+        }));
+        visible = enrichedBars.slice(Math.max(0, enrichedBars.length - range.sessions));
+        closes = visible.map((bar) => bar.close);
+        first = closes[0];
+        last = closes.at(-1);
+    }
     const returnPct = first && last ? ((last / first) - 1) * 100 : null;
     const positive = (returnPct ?? 0) >= 0;
     const accent = positive ? POSITIVE : NEGATIVE;
@@ -276,7 +335,7 @@ export async function GET(request) {
         );
     }
 
-    const chart = chartSvg(visible, movingAverages);
+    const chart = chartSvg(visible, movingAverages, chartOptions);
     const companyLabel = name.length > 34 ? `${name.slice(0, 33)}…` : name;
 
     return new ImageResponse(
@@ -386,7 +445,9 @@ export async function GET(request) {
         {
             ...SIZE,
             headers: {
-                "Cache-Control": "public, max-age=600, s-maxage=600, stale-while-revalidate=86400",
+                "Cache-Control": range.intraday
+                    ? "public, max-age=15, s-maxage=30, stale-while-revalidate=60"
+                    : "public, max-age=600, s-maxage=600, stale-while-revalidate=86400",
             },
         },
     );

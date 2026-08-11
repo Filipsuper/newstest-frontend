@@ -9,6 +9,8 @@ import {
     Cell,
     ComposedChart,
     Line,
+    ReferenceDot,
+    ReferenceLine,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -20,7 +22,9 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
-import { toggleWatchlist } from "../utils/api";
+import { fetchCompanyIntraday, toggleWatchlist } from "../utils/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TABS = [
     { id: "overview", label: "Översikt" },
@@ -38,6 +42,7 @@ const LINE_FADES = [
 ];
 
 const RANGES = [
+    { id: "1d", label: "1 dag", intraday: true },
     { id: "6m", label: "6 mån", sessions: 130 },
     { id: "1y", label: "1 år", sessions: 260 },
     { id: "3y", label: "3 år", sessions: 780 },
@@ -74,6 +79,12 @@ const svDate = (value, compact = false) => {
 const svDateTime = (value) => value
     ? new Date(value).toLocaleString("sv-SE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
     : "Tidpunkt saknas";
+
+const svTime = (value) => value
+    ? new Date(value).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })
+    : "–";
+
+const stockholmDay = (value) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
 
 const periodLabel = (period) => {
     if (!period) return "Period saknas";
@@ -171,13 +182,25 @@ function RightAxisTick({ x, y, width, payload, format }) {
     );
 }
 
-function ChartTooltip({ active, payload, label, compare }) {
+function LiveEndpointDot({ cx, cy }) {
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+    return (
+        <g className="company-live-endpoint" aria-hidden="true">
+            <circle className="company-live-endpoint-pulse" cx={cx} cy={cy} r="7" />
+            <circle className="company-live-endpoint-core" cx={cx} cy={cy} r="3.2" />
+        </g>
+    );
+}
+
+function ChartTooltip({ active, payload, label, compare, intraday }) {
     if (!active || !payload?.length) return null;
     const values = Object.fromEntries(payload.map((entry) => [entry.dataKey, entry.value]));
     return (
         <div className="company-tooltip">
-            <strong>{svDate(label)}</strong>
-            {compare ? (
+            <strong>{intraday ? svDateTime(label) : svDate(label)}</strong>
+            {intraday ? (
+                <span>Kurs {number(values.currentPrice ?? values.previousPrice, 2)} kr</span>
+            ) : compare ? (
                 <>
                     <span>Aktien {pct(values.returnPct)}</span>
                     <span>OMXSPI {pct(values.benchmarkPct)}</span>
@@ -261,10 +284,14 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const initialMaSelection = String(initialMovingAverages).split(",");
     const [ma50, setMa50] = useState(initialMaSelection.includes("50"));
     const [ma200, setMa200] = useState(initialMaSelection.includes("200"));
+    const [intraday, setIntraday] = useState(null);
+    const [intradayError, setIntradayError] = useState("");
+    const [intradayLive, setIntradayLive] = useState(false);
+    const lastLiveTickRef = useRef(null);
 
-    const data = useMemo(() => {
+    const dailyData = useMemo(() => {
         const allRows = chart?.bars ?? [];
-        const selectedRange = RANGES.find((item) => item.id === range) ?? RANGES[1];
+        const selectedRange = RANGES.find((item) => item.id === range && !item.intraday) ?? RANGES[2];
         const ma50Values = movingAverage(allRows, 50);
         const ma200Values = movingAverage(allRows, 200);
         const benchmark = new Map((chart?.benchmark?.bars ?? []).map((row) => [row.date, row.close]));
@@ -287,12 +314,146 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         });
     }, [chart, range]);
 
-    if (!data.length) {
+    useEffect(() => {
+        if (range !== "1d") {
+            setIntradayLive(false);
+            return undefined;
+        }
+
+        let active = true;
+        let source;
+        let staleTimer;
+
+        const openStream = () => {
+            if (!active) return;
+            source = new EventSource(`${API_URL}/feed/company/${encodeURIComponent(symbol)}/stream`);
+
+            source.addEventListener("quote", (event) => {
+                if (!active) return;
+                try {
+                    const tick = JSON.parse(event.data);
+                    if (tick.symbol !== symbol || !Number.isFinite(Number(tick.price)) || !Number.isFinite(Number(tick.ts))) return;
+                    const tickTime = Number(tick.ts);
+                    const tickDay = stockholmDay(tickTime);
+                    const bucketTime = Math.floor(tickTime / 10_000) * 10_000;
+                    lastLiveTickRef.current = tickTime;
+                    setIntradayLive(tick.freshStream === true && Math.abs(Date.now() - tickTime) <= 90_000);
+                    setIntraday((current) => {
+                        if (!current) return current;
+                        let previous = current.previous ?? [];
+                        let currentBars = current.current ?? [];
+                        let previousClose = current.previousClose;
+                        let sessionDate = current.sessionDate;
+                        let previousSessionDate = current.previousSessionDate;
+
+                        if (sessionDate && tickDay !== sessionDate) {
+                            previous = currentBars.slice(Math.floor(currentBars.length * 0.75));
+                            previousClose = currentBars.at(-1)?.close ?? previousClose;
+                            previousSessionDate = sessionDate;
+                            sessionDate = tickDay;
+                            currentBars = [];
+                        }
+
+                        const nextPoint = { time: bucketTime, close: Number(tick.price), volume: null };
+                        const latest = currentBars.at(-1);
+                        const nextBars = latest?.time === bucketTime
+                            ? [...currentBars.slice(0, -1), nextPoint]
+                            : [...currentBars, nextPoint].slice(-700);
+                        return {
+                            ...current,
+                            sessionDate: sessionDate ?? tickDay,
+                            previousSessionDate,
+                            previousClose,
+                            previous,
+                            current: nextBars,
+                            quote: {
+                                ...current.quote,
+                                price: Number(tick.price),
+                                change: Number.isFinite(Number(tick.change)) ? Number(tick.change) : current.quote?.change,
+                                changePct: Number.isFinite(Number(tick.changePct)) ? Number(tick.changePct) : current.quote?.changePct,
+                                quoteTime: tickTime,
+                                fresh: tick.freshStream === true,
+                            },
+                        };
+                    });
+                } catch {
+                    // Ignore malformed stream frames; EventSource remains open.
+                }
+            });
+
+            source.addEventListener("status", (event) => {
+                try {
+                    if (JSON.parse(event.data)?.connected === false) setIntradayLive(false);
+                } catch {
+                    // Ignore malformed status frames.
+                }
+            });
+            source.onerror = () => setIntradayLive(false);
+            staleTimer = setInterval(() => {
+                if (!lastLiveTickRef.current || Date.now() - lastLiveTickRef.current > 90_000) setIntradayLive(false);
+            }, 15_000);
+        };
+
+        setIntradayError("");
+        setIntraday(null);
+        lastLiveTickRef.current = null;
+        fetchCompanyIntraday(symbol)
+            .then((payload) => {
+                if (active) setIntraday(payload);
+            })
+            .catch(() => {
+                if (active) setIntradayError("Kunde inte hämta intradagsdata.");
+            })
+            .finally(openStream);
+
+        return () => {
+            active = false;
+            source?.close();
+            clearInterval(staleTimer);
+        };
+    }, [range, symbol]);
+
+    const intradayData = useMemo(() => [
+        ...(intraday?.previous ?? []).map((row) => ({
+            ...row,
+            date: row.time,
+            session: "previous",
+            previousPrice: row.close,
+            currentPrice: null,
+        })),
+        ...(intraday?.current ?? []).map((row) => ({
+            ...row,
+            date: row.time,
+            session: "current",
+            previousPrice: null,
+            currentPrice: row.close,
+        })),
+    ], [intraday]);
+
+    const isIntraday = range === "1d";
+    const data = isIntraday ? intradayData : dailyData;
+    const chartCompare = !isIntraday && compare;
+    const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
+    const profile = summary.profile;
+    const quote = isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote;
+    const loadingIntraday = isIntraday && !data.length;
+    const placeholderPrice = Number(quote?.price ?? dailyData.at(-1)?.close ?? 1);
+    const quoteTimeValue = quote?.quoteTime ?? quote?.dataAsOf ?? dailyData.at(-1)?.date;
+    const quoteTime = typeof quoteTimeValue === "number" ? quoteTimeValue : Date.parse(quoteTimeValue);
+    const placeholderEnd = Number.isFinite(quoteTime) ? quoteTime : 0;
+    const placeholderData = Array.from({ length: 5 }, (_, index) => ({
+        date: placeholderEnd - (4 - index) * 2 * 60 * 60 * 1000,
+        session: "current",
+        currentPrice: placeholderPrice,
+        previousPrice: null,
+        volume: null,
+    }));
+    const renderedData = loadingIntraday ? placeholderData : data;
+
+    if (!dailyData.length) {
         return <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p>;
     }
 
-    const profile = summary.profile;
-    const quote = summary.quote;
     const changeTone = quote?.changePct == null ? "neutral" : quote.changePct >= 0 ? "positive" : "negative";
 
     return (
@@ -331,7 +492,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         {RANGES.map((option) => (
                             <button
                                 key={option.id}
-                                disabled={(chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
+                                disabled={!option.intraday && (chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
                                 className={range === option.id ? "company-range-active" : ""}
                                 onClick={() => setRange(option.id)}
                             >
@@ -344,38 +505,42 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             symbol={symbol}
                             companyName={companyName}
                             range={range}
-                            ma50={ma50}
-                            ma200={ma200}
+                            ma50={!isIntraday && ma50}
+                            ma200={!isIntraday && ma200}
                         />
-                        <button
-                            className={compare ? "company-control company-icon-control" : "company-control company-icon-control"}
-                            onClick={() => setCompare((value) => !value)}
-                        >
-                            <FaScaleBalanced/>
-                        </button>
-                        <div className="company-settings-wrap">
+                        {!isIntraday && (
                             <button
-                                className="company-icon-control"
-                                aria-label="Diagraminställningar"
-                                aria-expanded={settingsOpen}
-                                onClick={() => setSettingsOpen((value) => !value)}
+                                className="company-control company-icon-control"
+                                onClick={() => setCompare((value) => !value)}
                             >
-                                <FiSliders />
+                                <FaScaleBalanced/>
                             </button>
-                            {settingsOpen && (
-                                <div className="company-chart-settings">
-                                    <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
-                                    <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
-                                </div>
-                            )}
-                        </div>
+                        )}
+                        {!isIntraday && (
+                            <div className="company-settings-wrap">
+                                <button
+                                    className="company-icon-control"
+                                    aria-label="Diagraminställningar"
+                                    aria-expanded={settingsOpen}
+                                    onClick={() => setSettingsOpen((value) => !value)}
+                                >
+                                    <FiSliders />
+                                </button>
+                                {settingsOpen && (
+                                    <div className="company-chart-settings">
+                                        <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
+                                        <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
                  
             </div>
-            <div className="company-chart" role="img" aria-label={`Kursutveckling för ${companyName}`}>
+            <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={data} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
+                    <ComposedChart data={renderedData} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
                         <defs>
                             {LINE_FADES.map(([id, color, bright]) => (
                                 <linearGradient key={id} id={id} x1="0" y1="0" x2="1" y2="0">
@@ -389,7 +554,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             ))}
                         </defs>
                         <CartesianGrid stroke="var(--company-grid-line)" strokeDasharray="2 6" />
-                        <XAxis dataKey="date" tickFormatter={(value) => svDate(value, true)} minTickGap={58} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="date" tickFormatter={(value) => isIntraday ? svTime(value) : svDate(value, true)} minTickGap={58} axisLine={false} tickLine={false} />
                         <YAxis
                             yAxisId="price"
                             orientation="right"
@@ -399,37 +564,65 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             tickMargin={0}
                             width={54}
                             domain={["auto", "auto"]}
-                            tick={<RightAxisTick format={(value) => compare ? `${value.toFixed(0)}%` : number(value, 0)} />}
+                            tick={<RightAxisTick format={(value) => chartCompare ? `${value.toFixed(0)}%` : number(value, 0)} />}
                         />
-                        {!compare && <YAxis yAxisId="volume" hide domain={[0, (maximum) => maximum * 4]} />}
-                        <Tooltip content={(props) => <ChartTooltip {...props} compare={compare} />} />
-                        {!compare && <Bar yAxisId="volume" dataKey="volume" fill="var(--company-volume)" isAnimationActive={false} />}
-                        <Line
-                            yAxisId="price"
-                            type="monotone"
-                            dataKey={compare ? "returnPct" : "close"}
-                            stroke="url(#company-line-fade-yellow)"
-                            strokeWidth={2.2}
-                            dot={false}
-                            isAnimationActive={false}
-                        />
-                        {compare && (
+                        {!chartCompare && <YAxis yAxisId="volume" hide domain={[0, (maximum) => maximum * 4]} />}
+                        <Tooltip content={(props) => loadingIntraday ? null : <ChartTooltip {...props} compare={chartCompare} intraday={isIntraday} />} />
+                        {!chartCompare && (
+                            <Bar yAxisId="volume" dataKey="volume" fill="var(--company-volume)" isAnimationActive={false}>
+                                {isIntraday && renderedData.map((row) => (
+                                    <Cell key={`${row.session}-${row.date}`} fill={row.session === "previous" ? "var(--company-muted-volume)" : "var(--company-volume)"} />
+                                ))}
+                            </Bar>
+                        )}
+                        {isIntraday ? (
+                            <>
+                                {intraday?.previousClose != null && (
+                                    <ReferenceLine yAxisId="price" y={intraday.previousClose} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" ifOverflow="extendDomain" />
+                                )}
+                                <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
+                                <Line yAxisId="price" type="monotone" dataKey="currentPrice" stroke="url(#company-line-fade-yellow)" strokeOpacity={loadingIntraday ? 0 : 1} strokeWidth={2.2} dot={false} isAnimationActive={false} connectNulls={false} />
+                                {!loadingIntraday && intradayLive && lastIntradayPoint && (
+                                    <ReferenceDot yAxisId="price" x={lastIntradayPoint.date} y={lastIntradayPoint.currentPrice} isFront shape={(props) => <LiveEndpointDot {...props} />} />
+                                )}
+                            </>
+                        ) : (
+                            <Line
+                                yAxisId="price"
+                                type="monotone"
+                                dataKey={chartCompare ? "returnPct" : "close"}
+                                stroke="url(#company-line-fade-yellow)"
+                                strokeWidth={2.2}
+                                dot={false}
+                                isAnimationActive={false}
+                            />
+                        )}
+                        {chartCompare && (
                             <Line yAxisId="price" type="monotone" dataKey="benchmarkPct" stroke="url(#company-line-fade-blue)" strokeWidth={1.6} dot={false} isAnimationActive={false} />
                         )}
-                        {!compare && ma50 && (
+                        {!isIntraday && !chartCompare && ma50 && (
                             <Line yAxisId="price" type="monotone" dataKey="ma50" stroke="url(#company-line-fade-blue)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
-                        {!compare && ma200 && (
+                        {!isIntraday && !chartCompare && ma200 && (
                             <Line yAxisId="price" type="monotone" dataKey="ma200" stroke="url(#company-line-fade-muted)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
                     </ComposedChart>
                 </ResponsiveContainer>
+                {isIntraday && (
+                    <div
+                        className={`company-chart-loading ${loadingIntraday ? "company-chart-loading-visible" : ""} ${intradayError ? "company-chart-loading-error" : ""}`}
+                        aria-hidden={!loadingIntraday}
+                    >
+                        {!intradayError && <span className="company-chart-loading-pulse" />}
+                        <span>{intradayError || "Hämtar dagens kurs"}</span>
+                    </div>
+                )}
             </div>
             <div className="company-chart-legend">
                 <span><i className="legend-yellow" />{companyName}</span>
-                {compare && <span><i className="legend-blue" />OMXSPI</span>}
-                {!compare && ma50 && <span><i className="legend-blue" />MA50</span>}
-                {!compare && ma200 && <span><i className="legend-muted" />MA200</span>}
+                {chartCompare && <span><i className="legend-blue" />OMXSPI</span>}
+                {!isIntraday && !chartCompare && ma50 && <span><i className="legend-blue" />MA50</span>}
+                {!isIntraday && !chartCompare && ma200 && <span><i className="legend-muted" />MA200</span>}
             </div>
         </section>
     );
