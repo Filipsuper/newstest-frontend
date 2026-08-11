@@ -433,6 +433,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const isIntraday = range === "1d";
     const data = isIntraday ? intradayData : dailyData;
     const chartCompare = !isIntraday && compare;
+    const firstIntradayPoint = intradayData.find((row) => row.currentPrice != null);
     const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
     const profile = summary.profile;
     const quote = isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote;
@@ -590,8 +591,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                 ))}
                             </Bar>
                         )}
-                        {isIntraday && !loadingIntraday && intraday?.previousClose != null && (
-                            <ReferenceLine yAxisId="price" y={intraday.previousClose} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
+                        {isIntraday && !loadingIntraday && firstIntradayPoint && (
+                            <ReferenceLine x={firstIntradayPoint.date} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
                         )}
                         {isIntraday && !loadingIntraday && (
                             <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />

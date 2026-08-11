@@ -167,12 +167,13 @@ function chartSvg(rows, movingAverages, { intraday = false, previousClose = null
     const previousLine = intraday ? monotonePath(rows, "previousPrice", x, y) : "";
     const ma50Line = !intraday && movingAverages.ma50 ? monotonePath(rows, "ma50", x, y) : "";
     const ma200Line = !intraday && movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
+    const firstCurrentIndex = intraday ? rows.findIndex((row) => row.currentPrice != null) : -1;
     const lastLiveIndex = intraday ? rows.findLastIndex((row) => row.currentPrice != null) : -1;
     const liveDot = live && lastLiveIndex >= 0
         ? `<circle cx="${x(lastLiveIndex).toFixed(1)}" cy="${y(rows[lastLiveIndex].currentPrice).toFixed(1)}" r="4" fill="${YELLOW_BRIGHT}"/>`
         : "";
-    const referenceLine = intraday && previousClose != null
-        ? `<line x1="0" y1="${y(previousClose).toFixed(1)}" x2="${width}" y2="${y(previousClose).toFixed(1)}" stroke="${MUTED_LINE}" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 6"/>`
+    const sessionDivider = firstCurrentIndex > 0
+        ? `<line x1="${x(firstCurrentIndex).toFixed(1)}" y1="0" x2="${x(firstCurrentIndex).toFixed(1)}" y2="${height}" stroke="${MUTED_LINE}" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 6"/>`
         : "";
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -199,7 +200,7 @@ function chartSvg(rows, movingAverages, { intraday = false, previousClose = null
                 <stop offset="100%" stop-color="${MUTED_LINE}" stop-opacity="1"/>
             </linearGradient>
         </defs>
-        ${horizontals}${verticals}${volumeBars}${referenceLine}
+        ${horizontals}${verticals}${volumeBars}${sessionDivider}
         ${previousLine ? `<path d="${previousLine}" fill="none" stroke="${MUTED_LINE}" stroke-opacity="0.62" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
         <path d="${priceLine}" fill="none" stroke="url(#price)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
         ${ma50Line ? `<path d="${ma50Line}" fill="none" stroke="url(#ma50)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
