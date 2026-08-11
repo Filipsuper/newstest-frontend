@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
     Bar,
     CartesianGrid,
@@ -1235,7 +1234,6 @@ function PlusTabGate({ companyName }) {
 }
 
 export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [] }) {
-    const router = useRouter();
     const { isPlusUser } = useAuthContext();
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
     const [tab, setTab] = useState(allowedTab);
@@ -1263,8 +1261,12 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
 
     const selectTab = (nextTab) => {
         setTab(nextTab);
-        const path = `/aktie/${encodeURIComponent(symbol)}${nextTab === "overview" ? "" : `?tab=${nextTab}`}`;
-        router.replace(path, { scroll: false });
+        const params = new URLSearchParams(window.location.search);
+        if (nextTab === "overview") params.delete("tab");
+        else params.set("tab", nextTab);
+        const query = params.toString();
+        const path = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+        window.history.replaceState(window.history.state, "", path);
     };
 
     return (
@@ -1283,7 +1285,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
                 {TABS.map((item) => (
-                    <button key={item.id} className={"flex flex-row items-center " + (tab === item.id ? "active" : "")} onClick={() => selectTab(item.id)}>
+                    <button type="button" key={item.id} className={"flex flex-row items-center " + (tab === item.id ? "active" : "")} onClick={() => selectTab(item.id)}>
                         {item.label}
                         {!hasPlus && PLUS_TABS.has(item.id) && <FaLock className="company-tab-lock" />}
                     </button>
