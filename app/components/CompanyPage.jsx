@@ -592,7 +592,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             </Bar>
                         )}
                         {isIntraday && !loadingIntraday && firstIntradayPoint && (
-                            <ReferenceLine x={firstIntradayPoint.date} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
+                            <ReferenceLine yAxisId="price" x={firstIntradayPoint.date} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
                         )}
                         {isIntraday && !loadingIntraday && (
                             <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
