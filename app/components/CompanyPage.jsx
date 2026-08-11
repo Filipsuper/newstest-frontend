@@ -449,6 +449,20 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         volume: null,
     }));
     const renderedData = loadingIntraday ? placeholderData : data;
+    const intradayPrices = [
+        intraday?.previousClose,
+        ...intradayData.map((row) => row.previousPrice ?? row.currentPrice),
+    ].map(Number).filter(Number.isFinite);
+    const intradayMinimum = intradayPrices.length ? Math.min(...intradayPrices) : placeholderPrice;
+    const intradayMaximum = intradayPrices.length ? Math.max(...intradayPrices) : placeholderPrice;
+    const intradayPadding = Math.max(
+        (intradayMaximum - intradayMinimum) * 0.08,
+        Math.max(Math.abs(intradayMinimum), Math.abs(intradayMaximum), 1) * 0.004,
+    );
+    const intradayPriceDomain = [
+        intradayMinimum - intradayPadding,
+        intradayMaximum + intradayPadding,
+    ];
 
     if (!dailyData.length) {
         return <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p>;
@@ -563,7 +577,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             tickSize={0}
                             tickMargin={0}
                             width={54}
-                            domain={["auto", "auto"]}
+                            domain={isIntraday ? intradayPriceDomain : ["auto", "auto"]}
+                            allowDataOverflow={isIntraday}
                             tick={<RightAxisTick format={(value) => chartCompare ? `${value.toFixed(0)}%` : number(value, 0)} />}
                         />
                         {!chartCompare && <YAxis yAxisId="volume" hide domain={[0, (maximum) => maximum * 4]} />}
@@ -575,18 +590,19 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                 ))}
                             </Bar>
                         )}
-                        {isIntraday ? (
-                            <>
-                                {intraday?.previousClose != null && (
-                                    <ReferenceLine yAxisId="price" y={intraday.previousClose} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" ifOverflow="extendDomain" />
-                                )}
-                                <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
-                                <Line yAxisId="price" type="monotone" dataKey="currentPrice" stroke="url(#company-line-fade-yellow)" strokeOpacity={loadingIntraday ? 0 : 1} strokeWidth={2.2} dot={false} isAnimationActive={false} connectNulls={false} />
-                                {!loadingIntraday && intradayLive && lastIntradayPoint && (
-                                    <ReferenceDot yAxisId="price" x={lastIntradayPoint.date} y={lastIntradayPoint.currentPrice} isFront shape={(props) => <LiveEndpointDot {...props} />} />
-                                )}
-                            </>
-                        ) : (
+                        {isIntraday && !loadingIntraday && intraday?.previousClose != null && (
+                            <ReferenceLine yAxisId="price" y={intraday.previousClose} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
+                        )}
+                        {isIntraday && !loadingIntraday && (
+                            <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
+                        )}
+                        {isIntraday && !loadingIntraday && (
+                            <Line yAxisId="price" type="monotone" dataKey="currentPrice" stroke="url(#company-line-fade-yellow)" strokeWidth={2.2} dot={false} isAnimationActive={false} connectNulls={false} />
+                        )}
+                        {isIntraday && !loadingIntraday && intradayLive && lastIntradayPoint && (
+                            <ReferenceDot yAxisId="price" x={lastIntradayPoint.date} y={lastIntradayPoint.currentPrice} isFront shape={(props) => <LiveEndpointDot {...props} />} />
+                        )}
+                        {!isIntraday && (
                             <Line
                                 yAxisId="price"
                                 type="monotone"
