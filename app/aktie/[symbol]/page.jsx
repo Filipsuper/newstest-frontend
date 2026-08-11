@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 
 const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
 
+const SHAREABLE_RANGES = new Set(["6m", "1y", "3y", "5y"]);
+
 async function loadOverview(symbol, cookieHeader = "") {
     try {
         return await fetchCompanyOverview(symbol, cookieHeader);
@@ -12,8 +14,9 @@ async function loadOverview(symbol, cookieHeader = "") {
     }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
     const { symbol } = await params;
+    const query = await searchParams;
     const decoded = cleanSymbol(symbol);
     const companies = await fetchCompanyList();
     const identity = companies?.find((row) => row.symbol === decoded) ?? null;
@@ -28,11 +31,22 @@ export async function generateMetadata({ params }) {
         ? `${identity.name} (${identity.nativeSymbol ?? decoded.replace(".ST", "")})`
         : decoded.replace(".ST", "").replaceAll("-", " ");
     const description = `Kurs, finansiell utveckling, rapportkalender och bolagsnyheter för ${title}.`;
+    // The share card follows the period in the link, so a shared move unfurls as
+    // the move that was shared. Same URL the share modal previews.
+    const range = SHAREABLE_RANGES.has(query?.range) ? query.range : "1y";
+    const image = {
+        url: `/api/og/aktie?symbol=${encodeURIComponent(decoded)}&range=${range}`,
+        width: 1200,
+        height: 630,
+        alt: `Kursutveckling för ${identity?.name ?? decoded}`,
+    };
+
     return {
         title,
         description,
         alternates: { canonical: `/aktie/${encodeURIComponent(decoded)}` },
-        openGraph: { title, description, type: "website" },
+        openGraph: { title, description, type: "website", images: [image] },
+        twitter: { card: "summary_large_image", title, description, images: [image] },
         ...(missing ? { robots: { index: false, follow: false } } : {}),
     };
 }

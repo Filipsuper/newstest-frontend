@@ -19,6 +19,7 @@ import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
+import ShareStockModal from "../modals/ShareStockModal";
 import { toggleWatchlist } from "../utils/api";
 
 const TABS = [
@@ -226,44 +227,28 @@ function WatchlistButton({ symbol }) {
     );
 }
 
-// Shares the move the reader is actually looking at: the selected period, its
-// return, and a link that opens on that same period.
+// Opens the share sheet for the move the reader is actually looking at: the
+// selected period and its return.
 function ShareMoveButton({ symbol, companyName, range, returnPct }) {
-    const [status, setStatus] = useState("");
-
-    const share = async () => {
-        const rangeLabel = (RANGES.find((option) => option.id === range)?.label ?? "").toLowerCase();
-        const origin = typeof window === "undefined" ? "https://omxsum.com" : window.location.origin;
-        const url = `${origin}/aktie/${encodeURIComponent(symbol)}?range=${range}&utm_source=share&utm_medium=web&utm_campaign=stock_share`;
-        const text = returnPct == null
-            ? `${companyName} på Omxsum`
-            : `${companyName} ${pct(returnPct)} senaste ${rangeLabel}`;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: companyName, text, url });
-                return;
-            } catch {
-                // cancelled — fall through to the clipboard so the click still does something
-            }
-        }
-
-        try {
-            await navigator.clipboard.writeText(`${text} – ${url}`);
-            setStatus("Länk kopierad!");
-        } catch {
-            setStatus("Kunde inte kopiera");
-        }
-        setTimeout(() => setStatus(""), 2200);
-    };
+    const { openModal } = useModal();
 
     return (
-        <div className="company-share-wrap">
-            <button className="company-icon-control" aria-label="Dela aktien" title="Dela aktien" onClick={share}>
-                <FiShare2 />
-            </button>
-            {status && <span className="company-share-status" role="status">{status}</span>}
-        </div>
+        <button
+            className="company-icon-control"
+            aria-label="Dela aktien"
+            title="Dela aktien"
+            onClick={() => openModal(
+                <ShareStockModal
+                    symbol={symbol}
+                    companyName={companyName}
+                    rangeId={range}
+                    rangeLabel={RANGES.find((option) => option.id === range)?.label ?? ""}
+                    returnText={returnPct == null ? null : pct(returnPct)}
+                />,
+            )}
+        >
+            <FiShare2 />
+        </button>
     );
 }
 
