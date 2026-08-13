@@ -10,6 +10,10 @@ export default async function sitemap() {
         { url: "https://omxsum.com/borsnyheter", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/morgonbrevet", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/kvallsbrevet", changeFrequency: "daily", priority: 0.9 },
+        { url: "https://omxsum.com/marknadsnyheter", changeFrequency: "daily", priority: 0.9 },
+        { url: "https://omxsum.com/screener", changeFrequency: "daily", priority: 0.8 },
+        { url: "https://omxsum.com/terminal", changeFrequency: "weekly", priority: 0.7 },
+        { url: "https://omxsum.com/pro", changeFrequency: "monthly", priority: 0.6 },
         { url: "https://omxsum.com/om-oss", changeFrequency: "monthly", priority: 0.5 },
     ];
 

@@ -4,13 +4,34 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import Link from "next/link";
-import ArticleComponent from "./ArticleComponent";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
 import Testimonials from "./Testimonials";
 import { DemoNewsFeed } from "./LandingDemos";
+import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
 
 dayjs.extend(utc);
+
+const formatLetterDate = (date) =>
+  new Intl.DateTimeFormat("sv-SE", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Stockholm",
+  }).format(new Date(date));
+
+const getLetterExcerpt = (article) => {
+  const firstBullet = article?.bulletPoints
+    ?.split("\n")
+    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .find(Boolean);
+  const excerpt = stripSummaryMarkup(
+    article?.introText?.trim() || firstBullet || article?.summary || ""
+  );
+
+  if (excerpt.length <= 220) return excerpt;
+  return `${excerpt.slice(0, 217).trimEnd()}…`;
+};
 
 const testimonials = [
   {
@@ -54,6 +75,9 @@ export default function HomePage({ articles }) {
   const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
   const latestArticle = articles[0];
   const previousArticles = isTodaysArticle ? articles.slice(1) : articles;
+  const latestLetterHref = latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet";
+  const latestLetterName = latestArticle.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet";
+  const latestLetterExcerpt = getLetterExcerpt(latestArticle);
 
   return (
     <>
@@ -76,33 +100,51 @@ export default function HomePage({ articles }) {
         </div>
         <div className="flex w-full md:w-1/2 mb-4 min-h-40">
           <Link
-            href={latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet"}
-            className="flex flex-col items-center justify-center w-full min-h-56 h-full hover:bg-primary-dark transition-colors duration-300 relative overflow-hidden"
+            href={latestLetterHref}
+            className="group relative flex min-h-56 w-full flex-col items-center justify-center overflow-hidden transition-colors duration-300 hover:bg-primary-dark"
           >
-            <div className="absolute inset-0 h-full p-2 fade-edges">
-              <ArticleComponent article={articles[0]} />
-            </div>
+            <article className="fade-edges absolute inset-0 h-full px-6 py-5 md:px-8">
+              <p className="mb-3 font-sans text-sm font-semibold text-primary">
+                Senaste {latestLetterName.toLowerCase()} · {formatLetterDate(latestArticle.createdAt)}
+              </p>
+              <h2 className="mb-3 font-serif text-2xl font-bold italic leading-tight text-text">
+                {latestArticle.title}
+              </h2>
+              {latestLetterExcerpt && (
+                <p className="font-sans leading-relaxed text-text-muted">
+                  {latestLetterExcerpt}
+                </p>
+              )}
+            </article>
             <div className="relative z-10 shadow-xl">
-              <span className="primary-btn text-center extra-padding">
-                Läs senaste {latestArticle.isEveningLetter ? "kvällsbrevet" : "morgonbrevet"}
+              <span className="primary-btn extra-padding text-center">
+                Läs senaste {latestLetterName.toLowerCase()}
               </span>
             </div>
           </Link>
         </div>
       </section>
 
-      {/* Why — calm, no selling */}
-      {/* <section className="max-w-3xl mx-auto px-4 py-24 text-center">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-text mb-6">
-          Tre minuter om dagen räcker
+      <section className="max-w-3xl mx-auto px-4 py-20">
+        <h2 className="text-3xl font-serif font-bold text-text mb-5">
+          Vad är OMXsum?
         </h2>
-        <p className="text-text-muted font-sans leading-relaxed max-w-xl mx-auto">
-          Du behöver inte scrolla nyhetsflöden hela dagen. Morgonbrevet summerar
-          det som faktiskt rörde marknaden – rapporter, pressmeddelanden och
-          insynshandel, med kursreaktionen på varje nyhet – innan börsen öppnar.
-          Kvällsbrevet knyter ihop dagen kl. 17:30, direkt på sidan.
+        <p className="text-text-muted font-sans leading-relaxed mb-4">
+          OMXsum är ett svenskt börsverktyg som samlar marknadsnyheter,
+          bolagssidor, kursdata och dagliga sammanfattningar på ett ställe.
+          Nyhetsbevakningen följer pressmeddelanden, rapporter och insynshandel
+          från ursprungliga källor och visar hur marknaden reagerade.
         </p>
-      </section> */}
+        <p className="text-text-muted font-sans leading-relaxed">
+          Automatiska modeller hjälper till att sortera och sammanfatta
+          materialet. Källor och tidpunkter visas där informationen används.
+          OMXsum är ett informationsverktyg, inte personlig investeringsrådgivning. {" "}
+          <Link href="/om-oss" className="text-primary hover:underline">
+            Läs mer om projektet
+          </Link>
+          .
+        </p>
+      </section>
 
       <section className="max-w-6xl mx-auto px-4 py-16">
         <Testimonials testimonials={testimonials} />
@@ -183,6 +225,74 @@ export default function HomePage({ articles }) {
       </section>
 
       {/* Social proof */}
+
+      <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_2fr] md:gap-16">
+          <div>
+            <h2 className="text-3xl font-serif font-bold text-text mb-4">
+              Utforska OMXsum
+            </h2>
+            <p className="font-sans leading-relaxed text-text-muted">
+              Gå direkt till nyhetsflödet, breven eller verktygen för svenska
+              börsbolag.
+            </p>
+          </div>
+          <div>
+            <nav
+              aria-label="Utforska OMXsum"
+              className="grid grid-cols-1 gap-x-10 gap-y-7 sm:grid-cols-2"
+            >
+              <Link href="/marknadsnyheter" className="group">
+                <span className="block font-serif text-xl font-bold text-text group-hover:underline">
+                  Marknadsnyheter
+                </span>
+                <span className="mt-1 block font-sans text-sm leading-relaxed text-text-muted">
+                  Pressmeddelanden, rapporter och kursreaktioner från svenska bolag.
+                </span>
+              </Link>
+              <Link href="/morgonbrevet" className="group">
+                <span className="block font-serif text-xl font-bold text-text group-hover:underline">
+                  Morgon- och kvällsbrevet
+                </span>
+                <span className="mt-1 block font-sans text-sm leading-relaxed text-text-muted">
+                  Börsdagens viktigaste händelser sammanfattade före och efter handeln.
+                </span>
+              </Link>
+              <Link href="/screener" className="group">
+                <span className="block font-serif text-xl font-bold text-text group-hover:underline">
+                  Aktiescreener
+                </span>
+                <span className="mt-1 block font-sans text-sm leading-relaxed text-text-muted">
+                  Filtrera och jämför bolag på Stockholmsbörsen.
+                </span>
+              </Link>
+              <Link href="/terminal" className="group">
+                <span className="block font-serif text-xl font-bold text-text group-hover:underline">
+                  Börsterminal
+                </span>
+                <span className="mt-1 block font-sans text-sm leading-relaxed text-text-muted">
+                  Följ marknaden i ett tätare arbetsflöde för löpande bevakning.
+                </span>
+              </Link>
+            </nav>
+            <p className="mt-10 font-sans text-sm text-text-muted">
+              Populära bolag: {" "}
+              <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">
+                Volvo
+              </Link>
+              , {" "}
+              <Link href="/aktie/INVE-B.ST" className="text-primary hover:underline">
+                Investor
+              </Link>{" "}
+              och {" "}
+              <Link href="/aktie/SAAB-B.ST" className="text-primary hover:underline">
+                Saab
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Previous letters */}
       <section className="max-w-6xl mx-auto px-4 py-20">
