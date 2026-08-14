@@ -54,8 +54,9 @@ Options:
   --yes           Skip the confirmation prompt
   -h, --help      This text
 
-The frontend image is built here and shipped; the backend is always built on
-the VPS because its image bakes the .env that only exists there.
+Both images are built here and shipped. A backend checkout without a
+.dockerignore that excludes .env falls back to building on the VPS, because
+such an image would bake this machine's configuration.
 
 Environment overrides:
   OMXSUM_REMOTE          ssh target            (default: root@omxsum.com)
@@ -108,15 +109,23 @@ service_image() {
 # public/ and .next/, so no local config travels with it — the API URL is fixed
 # by ENV in the Dockerfile, which Next prefers over any .env file.
 #
-# backend: on the VPS only. Its Dockerfile does `COPY . .` with no .dockerignore,
-# so the image bakes whatever .env sits next to it. Built here, that is the
-# developer's local .env — wrong Mongo host, wrong client URL, dev keys. It has
-# already been tried: the container came up unable to serve and was rolled back.
-# The build itself is small (npm ci --omit=dev), so capped it is harmless there.
+# backend: here too, but only since its .dockerignore stopped the image from
+# carrying .env — the container now receives that file from the host. Before
+# that, `COPY . .` baked whatever .env sat beside it, so a local build shipped
+# the developer's dev config and the container came up unable to serve. A
+# checkout without that .dockerignore falls back to building on the VPS, and
+# either way assert_image_clean re-checks the built image rather than trusting
+# this decision.
 service_build_mode() {
     case "$1" in
         frontend) [[ "$REMOTE_BUILD" -eq 1 ]] && printf 'remote' || printf 'local' ;;
-        backend)  printf 'remote' ;;
+        backend)
+            if [[ "$REMOTE_BUILD" -eq 1 ]] || ! grep -qxF '.env' "$BACKEND_DIR/.dockerignore" 2>/dev/null; then
+                printf 'remote'
+            else
+                printf 'local'
+            fi
+            ;;
     esac
 }
 
@@ -220,6 +229,28 @@ pull_remote() {
     ok "$target: remote at $(remote "git -C '$remote_dir' rev-parse --short HEAD")"
 }
 
+# Both of these failures survive every HTTP check. A bundle built against a dev
+# API renders perfectly server-side and only breaks in the visitor's browser,
+# and a baked .env produces a container that either serves the wrong data or
+# refuses to start — after the swap, when it is already live.
+assert_image_clean() {
+    local target="$1" image; image="$(service_image "$target")"
+    case "$target" in
+        frontend)
+            docker run --rm --entrypoint sh "$image:latest" \
+                -c "grep -rlE 'localhost:[0-9]+|127\.0\.0\.1' .next/static 2>/dev/null | head -1" | grep -q . \
+                && die "$target: the built bundle references a local API — check NEXT_PUBLIC_API_URL; nothing was shipped"
+            ok "$target: bundle points at the production API"
+            ;;
+        backend)
+            docker run --rm --entrypoint sh "$image:latest" -c 'ls .env >/dev/null 2>&1' \
+                && die "$target: the image carries a .env — it must come from the host at runtime; nothing was shipped"
+            ok "$target: image carries no configuration"
+            ;;
+    esac
+    return 0
+}
+
 build_and_ship() {
     local target="$1" dir image
     dir="$(service_dir "$target")"
@@ -229,16 +260,7 @@ build_and_ship() {
     docker buildx build --platform "$PLATFORM" --load -t "$image:latest" "$dir" \
         || die "$target: local build failed — nothing on the VPS was touched"
 
-    # A locally built bundle that points at a dev API looks completely healthy
-    # server-side and only breaks in the visitor's browser, so it is caught here
-    # rather than by the HTTP checks after the swap.
-    if [[ "$target" == "frontend" ]]; then
-        if docker run --rm --entrypoint sh "$image:latest" \
-            -c "grep -rlE 'localhost:[0-9]+|127\.0\.0\.1' .next/static 2>/dev/null | head -1" | grep -q .; then
-            die "$target: the built bundle references a local API — check NEXT_PUBLIC_API_URL; nothing was shipped"
-        fi
-        ok "$target: bundle points at the production API"
-    fi
+    assert_image_clean "$target"
 
     local size; size="$(docker image inspect "$image:latest" --format '{{.Size}}')"
     log "$target: shipping $(( size / 1024 / 1024 ))MB to $REMOTE"
