@@ -44,6 +44,33 @@ continues to use Resend.
   (e.g. `http://localhost:8000/api` or `http://172.17.0.1:8000/api` from inside
   Docker) so SSR doesn't round-trip through nginx.
 
+## SEO and indexing policy
+
+Company pages are the largest crawlable surface on the site, so the rules for
+them are explicit:
+
+- **Indexable:** every symbol in the tracked listing (`/feed/companies`). The
+  overview — identity, description, chart, calendar, news — is public, so the
+  page a visitor from search lands on is the page Google saw. Financials,
+  estimates and valuation stay behind Plus and are not part of the indexed
+  content.
+- **`noindex, nofollow`:** a symbol missing from the listing (delisted, or a
+  hand-typed URL) and a symbol the API reports as unknown. The route streams, so
+  its 200 status is committed before render and `notFound()` can no longer change
+  it — the robots directive is the signal that still works.
+- **Transient failures stay indexable.** A listing or backend that failed to
+  answer is not evidence that a company is gone.
+- **One URL per company.** `/aktie/<SYMBOL>` is canonical; the `tab`, `range` and
+  `ma` parameters change the view and the share card but never the canonical URL.
+  Tabs are buttons with `replaceState`, so no parameter variants are crawlable.
+- **Structured data** describes the company (`Corporation` with ticker, ISIN,
+  employees and description), the page and its breadcrumb. Prices and estimates
+  change by the minute and are deliberately never emitted as structured facts.
+- **Sitemap** lists exactly the tracked companies, so it cannot disagree with the
+  per-page directive.
+- **Out of the index entirely:** `/settings`, `/mina-aktier`, `/bekrafta` and
+  `/pro/klart` — personal, token-bearing or post-checkout pages.
+
 ## Production (VPS)
 
 ```bash

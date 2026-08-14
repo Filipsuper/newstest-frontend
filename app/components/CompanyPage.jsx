@@ -124,6 +124,111 @@ const compactAmount = new Intl.NumberFormat("sv-SE", {
     maximumFractionDigits: 1,
 });
 
+const storyUrl = (story) => story.primarySource?.url ?? story.sources?.find((source) => source.url)?.url ?? null;
+
+// Chart event markers -------------------------------------------------------
+// A story only earns a mark on the chart if the wire ranked it material; the
+// rest of the company news stays in the news list.
+const MATERIAL_NEWS_IMPORTANCE = 70;
+const MAX_NEWS_MARKERS_PER_DAY = 2;
+
+const EVENT_MARKERS = {
+    earnings: { rank: 0, letter: "R", legend: "Rapport", className: "company-marker-report" },
+    dividend: { rank: 1, letter: "U", legend: "Utdelning", className: "company-marker-dividend" },
+    news: { rank: 2, letter: "N", legend: "Väsentlig nyhet", className: "company-marker-news" },
+};
+
+const eventDayKey = (value) => {
+    if (!value) return "";
+    const text = String(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text.slice(0, 10)) && !text.includes("T")) return text.slice(0, 10);
+    const time = Date.parse(text);
+    return Number.isFinite(time) ? stockholmDay(time) : "";
+};
+
+const daysApart = (from, to) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
+
+// A dividend on a Sunday or a report released before the open still belongs to
+// a session the chart actually draws, so events attach to the first trading day
+// at or after them. Anything more than a week away from a traded day, or
+// outside the stored history, has no bar to point at and is left out.
+function snapToTradingDay(dayKey, barDates) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return null;
+    if (!barDates.length || dayKey < barDates[0] || dayKey > barDates.at(-1)) return null;
+    let low = 0;
+    let high = barDates.length - 1;
+    while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (barDates[middle] < dayKey) low = middle + 1;
+        else high = middle;
+    }
+    return daysApart(dayKey, barDates[low]) <= 7 ? barDates[low] : null;
+}
+
+function buildEventMarkers({ calendar, news, reports, bars }) {
+    const barDates = bars.map((bar) => bar.date);
+    const byDate = new Map();
+
+    const add = (rawDate, item) => {
+        const date = snapToTradingDay(eventDayKey(rawDate), barDates);
+        if (!date) return;
+        const items = byDate.get(date) ?? [];
+        if (item.type === "news") {
+            if (items.some((existing) => existing.label === item.label)) return;
+            if (items.filter((existing) => existing.type === "news").length >= MAX_NEWS_MARKERS_PER_DAY) return;
+        } else if (items.some((existing) => existing.type === item.type)) {
+            // One report and one dividend line per session. Reports are added
+            // first so the issuer document, not the calendar entry, keeps the link.
+            return;
+        }
+        byDate.set(date, [...items, item]);
+    };
+
+    (reports ?? []).forEach((report) => add(report.publishedAt, {
+        type: "earnings",
+        label: report.periodLabel ?? report.fiscalPeriod ?? "Rapport",
+        url: report.attachment?.url ?? report.releaseUrl ?? null,
+    }));
+    (calendar?.events ?? []).forEach((event) => {
+        if (event.type === "earnings") add(event.date, { type: "earnings", label: event.fiscalPeriod ?? "Rapport" });
+        if (event.type === "ex_dividend") add(event.date, { type: "dividend", label: "X-dag", detail: event.fiscalPeriod });
+        if (event.type === "dividend") add(event.date, { type: "dividend", label: "Utdelning", detail: event.fiscalPeriod });
+    });
+    add(calendar?.exDividendDate, { type: "dividend", label: "X-dag" });
+    add(calendar?.dividendDate, { type: "dividend", label: "Utdelning" });
+    (news ?? []).forEach((story) => {
+        if (Number(story.importance) < MATERIAL_NEWS_IMPORTANCE) return;
+        add(story.publishedAt, { type: "news", label: story.headline, url: storyUrl(story) });
+    });
+
+    return new Map([...byDate].map(([date, items]) => [
+        date,
+        [...items].sort((left, right) => EVENT_MARKERS[left.type].rank - EVENT_MARKERS[right.type].rank),
+    ]));
+}
+
+const markerTypeLabel = (item) => (item.type === "earnings"
+    ? `Rapport ${item.label}`
+    : item.detail ? `${item.label} ${item.detail}` : item.label);
+
+function EventMarker({ cx, cy, items }) {
+    if (!Number.isFinite(cx) || !Number.isFinite(cy) || !items?.length) return null;
+    const marker = EVENT_MARKERS[items[0].type];
+    const url = items.find((item) => item.url)?.url ?? null;
+    return (
+        <g
+            role="img"
+            aria-label={items.map(markerTypeLabel).join(", ")}
+            className={`company-event-marker ${marker.className}${url ? " company-event-marker-linked" : ""}`}
+            transform={`translate(${cx}, ${cy - 11})`}
+            onClick={url ? () => window.open(url, "_blank", "noopener,noreferrer") : undefined}
+        >
+            <circle r="7.5" />
+            <text textAnchor="middle" dy="0.32em">{marker.letter}</text>
+        </g>
+    );
+}
+
 function estimatePeriodFromSnapshot(snapshot) {
     if (!snapshot?.metrics?.length) return null;
     const eligible = snapshot.metrics.filter((metric) => !metric.scope && Number.isFinite(Number(metric.amount)));
@@ -217,9 +322,19 @@ function LiveEndpointDot({ cx, cy }) {
 function ChartTooltip({ active, payload, label, compare, intraday }) {
     if (!active || !payload?.length) return null;
     const values = Object.fromEntries(payload.map((entry) => [entry.dataKey, entry.value]));
+    const events = payload[0]?.payload?.events ?? [];
     return (
         <div className="company-tooltip">
             <strong>{intraday ? svDateTime(label) : svDate(label)}</strong>
+            {events.length > 0 && (
+                <div className="company-tooltip-events">
+                    {events.map((event, index) => (
+                        <span key={`${event.type}-${index}`} className={EVENT_MARKERS[event.type].className}>
+                            <i />{markerTypeLabel(event)}
+                        </span>
+                    ))}
+                </div>
+            )}
             {intraday ? (
                 <span>Kurs {number(values.currentPrice ?? values.previousPrice, 2)} kr</span>
             ) : compare ? (
@@ -297,7 +412,7 @@ function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "" }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports }) {
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
     );
@@ -306,14 +421,27 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const initialMaSelection = String(initialMovingAverages).split(",");
     const [ma50, setMa50] = useState(initialMaSelection.includes("50"));
     const [ma200, setMa200] = useState(initialMaSelection.includes("200"));
+    const [showEvents, setShowEvents] = useState(true);
     const [intraday, setIntraday] = useState(null);
     const [intradayError, setIntradayError] = useState("");
     const [intradayLive, setIntradayLive] = useState(false);
     const lastLiveTickRef = useRef(null);
 
+    const markers = useMemo(() => buildEventMarkers({
+        calendar: summary?.calendar,
+        news,
+        reports,
+        bars: chart?.bars ?? [],
+    }), [summary?.calendar, news, reports, chart?.bars]);
+
     const dailyData = useMemo(() => {
         const allRows = chart?.bars ?? [];
         const selectedRange = RANGES.find((item) => item.id === range && !item.intraday) ?? RANGES[2];
+        // The wire's story history only reaches back a few months, so on the
+        // multi-year ranges the news marks would bunch against the right edge
+        // instead of explaining moves. Reports and dividends span the full
+        // stored calendar and stay.
+        const withNews = range === "6m" || range === "1y";
         const ma50Values = movingAverage(allRows, 50);
         const ma200Values = movingAverage(allRows, 200);
         const benchmark = new Map((chart?.benchmark?.bars ?? []).map((row) => [row.date, row.close]));
@@ -324,17 +452,20 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         return visible.map((row, visibleIndex) => {
             const index = start + visibleIndex;
             const benchmarkClose = benchmark.get(row.date);
+            const rowEvents = (showEvents ? markers.get(row.date) ?? [] : [])
+                .filter((event) => withNews || event.type !== "news");
             return {
                 ...row,
                 ma50: ma50Values[index],
                 ma200: ma200Values[index],
+                events: rowEvents,
                 returnPct: firstClose ? ((row.close / firstClose) - 1) * 100 : null,
                 benchmarkPct: firstBenchmark && benchmarkClose
                     ? ((benchmarkClose / firstBenchmark) - 1) * 100
                     : null,
             };
         });
-    }, [chart, range]);
+    }, [chart, range, markers, showEvents]);
 
     useEffect(() => {
         if (range !== "1d") {
@@ -455,6 +586,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const isIntraday = range === "1d";
     const data = isIntraday ? intradayData : dailyData;
     const chartCompare = !isIntraday && compare;
+    // Tick data has no event history of its own, so the marks belong to the
+    // daily ranges only.
+    const markedRows = isIntraday ? [] : dailyData.filter((row) => row.events.length);
+    const markedTypes = [...new Set(markedRows.flatMap((row) => row.events.map((event) => event.type)))]
+        .sort((left, right) => EVENT_MARKERS[left].rank - EVENT_MARKERS[right].rank);
     const firstIntradayPoint = intradayData.find((row) => row.currentPrice != null);
     const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
     const profile = summary.profile;
@@ -567,6 +703,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                     <div className="company-chart-settings">
                                         <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
                                         <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
+                                        <label><input type="checkbox" checked={showEvents} onChange={(event) => setShowEvents(event.target.checked)} /> Händelser</label>
+                                        {showEvents && <small>Rapport och utdelning visas för hela perioden. Väsentliga nyheter visas för 6 mån och 1 år.</small>}
                                     </div>
                                 )}
                             </div>
@@ -604,7 +742,9 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             allowDataOverflow={isIntraday}
                             tick={<RightAxisTick format={(value) => chartCompare ? `${value.toFixed(0)}%` : number(value, 0)} />}
                         />
-                        {!chartCompare && <YAxis yAxisId="volume" hide domain={[0, (maximum) => maximum * 4]} />}
+                        {/* Kept mounted in compare mode as well: the event marks
+                            hang off the bottom of this axis. */}
+                        <YAxis yAxisId="volume" hide domain={chartCompare ? [0, 1] : [0, (maximum) => maximum * 4]} />
                         <Tooltip content={(props) => loadingIntraday ? null : <ChartTooltip {...props} compare={chartCompare} intraday={isIntraday} />} />
                         {!chartCompare && (
                             <Bar yAxisId="volume" dataKey="volume" fill="var(--company-volume)" isAnimationActive={false}>
@@ -645,6 +785,16 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         {!isIntraday && !chartCompare && ma200 && (
                             <Line yAxisId="price" type="monotone" dataKey="ma200" stroke="url(#company-line-fade-muted)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
+                        {markedRows.map((row) => (
+                            <ReferenceDot
+                                key={`event-${row.date}`}
+                                yAxisId="volume"
+                                x={row.date}
+                                y={0}
+                                isFront
+                                shape={(props) => <EventMarker {...props} items={row.events} />}
+                            />
+                        ))}
                     </ComposedChart>
                 </ResponsiveContainer>
                 {isIntraday && (
@@ -662,6 +812,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 {chartCompare && <span><i className="legend-blue" />OMXSPI</span>}
                 {!isIntraday && !chartCompare && ma50 && <span><i className="legend-blue" />MA50</span>}
                 {!isIntraday && !chartCompare && ma200 && <span><i className="legend-muted" />MA200</span>}
+                {markedTypes.map((type) => (
+                    <span key={type} className={EVENT_MARKERS[type].className}>
+                        <i className="legend-marker" />{EVENT_MARKERS[type].legend}
+                    </span>
+                ))}
             </div>
         </section>
     );
@@ -714,8 +869,6 @@ function CalendarPreview({ calendar, onSelectTab }) {
         </section>
     );
 }
-
-const storyUrl = (story) => story.primarySource?.url ?? story.sources?.find((source) => source.url)?.url ?? null;
 
 function NewsList({ news, compact = false }) {
     if (!news?.length) return <p className="company-empty">Inga bolagsspecifika nyheter finns ännu.</p>;
@@ -1303,6 +1456,8 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 summary={summary}
                 symbol={symbol}
                 chart={initialData.chart}
+                news={initialData.news}
+                reports={initialData.reports}
                 initialRange={initialRange}
                 initialMovingAverages={initialMovingAverages}
                 companyName={initialData.summary.profile.name ?? initialData.summary.symbol}

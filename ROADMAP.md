@@ -23,7 +23,7 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 
 ## Now / next
 
-### Phase 2. Company-page MVP (in progress)
+### Phase 2. Company-page MVP (klar aug 2026)
 
 - ✅ Stable company URLs and single-company search
 - ✅ Company identity, performance, source-aware quote status, daily chart,
@@ -33,8 +33,13 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 - ✅ Structured CEO summary with outlook, risks, key figures, and expandable
   source text
 - ✅ Report/calendar/news context from the shared Market API
-- Next: chart event markers and decide which overview content is public versus
-  Plus before SEO indexing is enabled
+- ✅ Händelsemarkeringar i kursgrafen: rapport (R), utdelning (U) och
+  väsentlig nyhet (N) från bolagskalendern och wire-stories, med händelserna i
+  grafens tooltip och nyhetsmarkeringen länkad till primärkällan
+- ✅ Strukturerad data (`Corporation` + `WebPage` + brödsmulor) och en
+  uttalad indexeringspolicy — översikt/nyheter/kalender är publika och
+  indexeras, finansiellt/estimat/värdering ligger kvar bakom Plus
+  (se README "SEO and indexing policy")
 
 ### 0. Wire → letters: use our own newsfeed in the summaries
 

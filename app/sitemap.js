@@ -32,7 +32,9 @@ export default async function sitemap() {
         // API unavailable — serve the static entries only
     }
 
-    // Every listed company has a public overview page.
+    // Every tracked company has a public overview page. The listing is the same
+    // source the page uses to decide indexability, so the sitemap and the
+    // per-page robots directive can never disagree (see README.md).
     let companyPages = [];
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/feed/companies`, {

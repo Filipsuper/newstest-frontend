@@ -528,7 +528,7 @@ body {
   top: calc(100% + 8px);
   right: 0;
   display: flex;
-  min-width: 150px;
+  min-width: 205px;
   flex-direction: column;
   gap: 11px;
   padding: 14px;
@@ -544,6 +544,13 @@ body {
   align-items: center;
   gap: 9px;
   cursor: pointer;
+}
+
+.company-chart-settings small {
+  margin-top: -4px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .company-range-row {
@@ -747,6 +754,31 @@ body {
 
 .company-tooltip strong { color: var(--color-text); }
 
+.company-tooltip-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--company-grid-line);
+}
+
+.company-tooltip-events span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--color-text);
+  font-variant-numeric: normal;
+}
+
+.company-tooltip-events i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--marker-color);
+}
+
 .company-chart-legend {
   justify-content: flex-end;
   min-height: 24px;
@@ -759,6 +791,40 @@ body {
 .legend-yellow { background: var(--company-yellow); }
 .legend-blue { background: var(--company-blue); }
 .legend-muted { background: var(--company-muted-line); }
+
+.company-chart-legend i.legend-marker {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.4px solid var(--marker-color);
+  background: transparent;
+}
+
+/* Report, dividend and material-news marks on the daily chart. The letter
+   carries the meaning; the colour only supports it. */
+.company-marker-report { --marker-color: var(--company-blue); }
+.company-marker-dividend { --marker-color: var(--company-muted-line); }
+.company-marker-news { --marker-color: var(--company-yellow); }
+
+.company-event-marker circle {
+  fill: var(--color-background);
+  stroke: var(--marker-color);
+  stroke-width: 1.4;
+}
+
+.company-event-marker text {
+  fill: var(--marker-color);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.company-event-marker-linked { cursor: pointer; }
+
+.company-event-marker-linked:hover circle {
+  fill: color-mix(in srgb, var(--marker-color) 16%, var(--color-background));
+}
 
 .company-overview-layout {
   display: grid;
