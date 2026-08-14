@@ -19,6 +19,28 @@ from stonks.report_documents import ReportDocumentStore
 print(json.dumps(ReportDocumentStore(get_db()).status(), indent=1))"'
 ```
 
+## 2026-08-15
+
+Spotlight-connector tillagd i wiren (`sources=...,spotlight,...`): Spotlight-
+listade bolag publicerar via börsens eget nyhetssystem, inte MFN eller
+Cision — beQuoted (den misstänkta källan) visade sig inte ha ett enda av
+gap-bolagen. Connectorn läser Spotlights publika GetNews-endpoint plus
+artikelsidorna, där rapport-PDF:en ligger på Cisions mediabank. Backfill
+körd per bolag via NEWSWIRE_SPOTLIGHT_QUERY.
+
+| | 2026-08-14 kväll | Efter Spotlight |
+|---|---:|---:|
+| Bolag med VD-ord | 701 (80,6%) | **712 (81,8%)** |
+| Bolag utan upptäckt rapportdokument | 27 | **15** |
+| Rapport-PDF:er med extraherat VD-ord | 1 021 | 1 030 |
+
+12 av 17 Spotlight-gap-bolag fick rapport + VD-ord (NFO Drives, Spermosens,
+EcoRub, Xoma, Norden Estates, FX International, Upgrade Invest, Proport,
+Stockholm Treasury, Touchtech, Hunter Capital RTO 1/2 m.fl.). Kvarvarande 15:
+Beowulf (rapporterar via brittiska RNS), Traton och PPI (utanför MFN),
+RTO-skal utan kvartalsrapporter, samt några First North-bolag med udda
+kanaler. Nya Spotlight-rapporter flödar in automatiskt framöver.
+
 ## 2026-08-14
 
 ### Finansiella data
