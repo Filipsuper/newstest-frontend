@@ -16,7 +16,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { FiChevronLeft, FiChevronRight, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiExternalLink, FiInfo, FiShare2, FiSliders } from "react-icons/fi";
 import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
@@ -1321,7 +1321,13 @@ function FinancialsTab({ financials, estimates }) {
                 <>
                     <FinancialDevelopmentChart periods={periods} currency={currency} />
                     <div className="company-table-wrap">
-                        <table className="company-financial-table">
+                        <table className="company-financial-table company-financial-statement">
+                            <colgroup>
+                                <col className="company-metric-column" />
+                                {periods.map((period) => (
+                                    <col className="company-period-column" key={period.periodKey ?? period.periodEnd} />
+                                ))}
+                            </colgroup>
                             <thead><tr><th>Nyckeltal</th>{periods.map((period) => <th className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}</tr></thead>
                             <tbody>
                                 {financialGroups.map(([groupLabel, rows]) => (
@@ -1393,6 +1399,27 @@ const UNRELIABLE_COPY = {
     mostly_not_meaningful: "Bolaget låg nära nollresultat större delen av perioden, så nyckeltalet saknar meningsfull historik. Titta på P/S eller EV/S i stället.",
 };
 
+function ValuationNote({ title, label, children }) {
+    const tooltipId = useId();
+
+    return (
+        <div className="company-valuation-note-wrap">
+            <button
+                type="button"
+                className="company-valuation-note-trigger"
+                aria-describedby={tooltipId}
+            >
+                <FiInfo aria-hidden="true" />
+                <span>{label}</span>
+            </button>
+            <div id={tooltipId} role="tooltip" className="company-valuation-note-tooltip">
+                <strong>{title}</strong>
+                {children}
+            </div>
+        </div>
+    );
+}
+
 function ValuationTab({ symbol, companyName }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
@@ -1426,9 +1453,15 @@ function ValuationTab({ symbol, companyName }) {
             {!data && !error && <p className="company-empty">Hämtar värderingshistorik …</p>}
 
             {data?.unavailableReason && (
-                <p className="company-valuation-note">{UNAVAILABLE_COPY[data.unavailableReason] ?? "Värderingshistoriken går inte att visa för det här bolaget."}
-                    {data.unavailableReason === "reporting_currency_mismatch" && ` Rapporterar i ${data.reportingCurrency}, handlas i ${data.tradingCurrency}.`}
-                </p>
+                <ValuationNote
+                    title="Varför saknas värderingshistoriken?"
+                    label="Varför saknas värderingshistoriken?"
+                >
+                    <p>
+                        {UNAVAILABLE_COPY[data.unavailableReason] ?? "Värderingshistoriken går inte att visa för det här bolaget."}
+                        {data.unavailableReason === "reporting_currency_mismatch" && ` Rapporterar i ${data.reportingCurrency}, handlas i ${data.tradingCurrency}.`}
+                    </p>
+                </ValuationNote>
             )}
 
             {data && !data.unavailableReason && !usable.length && (
@@ -1456,11 +1489,21 @@ function ValuationTab({ symbol, companyName }) {
                     <p className="company-valuation-help">{MULTIPLE_HELP[active.id]}</p>
 
                     {!multiples.find((multiple) => multiple.id === selected)?.available && (
-                        <p className="company-valuation-note">{MULTIPLES_LABEL[selected] ?? "Nyckeltalet"} går inte att beräkna — nämnaren är negativ eller saknas för bolagets rapporterade helår.</p>
+                        <ValuationNote
+                            title={`Varför saknas ${MULTIPLES_LABEL[selected] ?? "nyckeltalet"}?`}
+                            label={`Varför saknas ${MULTIPLES_LABEL[selected] ?? "nyckeltalet"}?`}
+                        >
+                            <p>{MULTIPLES_LABEL[selected] ?? "Nyckeltalet"} går inte att beräkna eftersom nämnaren är negativ eller saknas för bolagets rapporterade helår.</p>
+                        </ValuationNote>
                     )}
 
                     {!active.reliable && (
-                        <p className="company-valuation-note">{UNRELIABLE_COPY[active.unreliableReason] ?? "Underlaget är för tunt för att spannet ska läsas som ett normalläge."}</p>
+                        <ValuationNote
+                            title={`Om underlaget för ${active.label}`}
+                            label="Läs om det osäkra underlaget"
+                        >
+                            <p>{UNRELIABLE_COPY[active.unreliableReason] ?? "Underlaget är för tunt för att spannet ska läsas som ett normalläge."}</p>
+                        </ValuationNote>
                     )}
 
                     <ValuationMethod data={data} multiple={active} />
@@ -1626,9 +1669,14 @@ function ValuationMethod({ data, multiple }) {
                 </table>
             </div>
             {data.rejectedPeriods?.length > 0 && (
-                <p className="company-valuation-note">
-                    Utelämnade rader ur underlaget: {data.rejectedPeriods.map((row) => `${row.periodEnd} (${row.reason === "non_positive_revenue" ? "omsättning saknas eller är negativ" : row.reason === "scale_mismatch" ? "siffrorna ligger i en annan storleksordning än övriga år" : "överlappar föregående räkenskapsår"})`).join(", ")}. Det är nästan alltid en R12-kolumn som datakällan har lagt in som ett räkenskapsår.
-                </p>
+                <ValuationNote
+                    title="Utelämnade rader ur underlaget"
+                    label="Visa utelämnade rader"
+                >
+                    <p>
+                        {data.rejectedPeriods.map((row) => `${row.periodEnd} (${row.reason === "non_positive_revenue" ? "omsättning saknas eller är negativ" : row.reason === "scale_mismatch" ? "siffrorna ligger i en annan storleksordning än övriga år" : "överlappar föregående räkenskapsår"})`).join(", ")}. Det är nästan alltid en R12-kolumn som datakällan har lagt in som ett räkenskapsår.
+                    </p>
+                </ValuationNote>
             )}
             <p className="company-source">Kurshistorik: dagliga stängningskurser. Rapporterade siffror från bolagets egna bokslut. Detta är ingen riktkurs och ingen rekommendation.</p>
         </details>

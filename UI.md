@@ -8,8 +8,11 @@ desktop density or abbreviated interaction model.
 
 - Separate ordinary content with space, alignment, typography, and changes in
   surface tone. Do not wrap every section in a bordered card.
-- Borders are reserved for tables, charts, focused controls, form fields, and
-  warnings where the edge has meaning.
+- Default to no border. Borders are reserved for tables, charts, focused
+  controls, form fields, and warnings where the edge communicates a real
+  boundary or state.
+- Never use a left border as a visual accent, callout, status marker, or
+  decoration on any UI component.
 - Use the established dark/light surfaces, OMXsum yellow identity, blue for
   neutral interaction, green only for positive values, and red only for
   negative values.
