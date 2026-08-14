@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiExternalLink } from "react-icons/fi";
 import { tagLabel, tagColor } from "../utils/newsTags";
 import { useModal } from "../providers/ModalProvider";
+import { fetchStory } from "../utils/api";
 
 // Accepts either the Market API's Story v1 payload (company pages hold the raw
 // stories) or the flat shape the live feed renders, so one modal serves both
@@ -11,6 +13,7 @@ import { useModal } from "../providers/ModalProvider";
 function normalizeStory(input = {}) {
     if (input.headline) {
         return {
+            id: input.id,
             publishedAt: input.publishedAt,
             headline: input.headline,
             tags: input.tags ?? [],
@@ -25,6 +28,7 @@ function normalizeStory(input = {}) {
         };
     }
     return {
+        id: input.id,
         publishedAt: input.ts,
         headline: input.title,
         tags: input.labels ?? [],
@@ -69,6 +73,70 @@ const VERDICTS = {
     miss: ["Under förväntan", "text-secondary"],
     inline: ["I linje", "text-text-muted"],
 };
+
+// The wire normalises every release with re.sub(r"\s+", " ", …) before storing
+// it, so the text arrives as one run with no line breaks and no column
+// alignment. What survives is whatever list markers were characters in the
+// source, and splitting on those beats presenting a 4,000-character wall.
+//
+// The paragraph and table branches below are for text that kept its shape:
+// they do nothing today and start working by themselves if the wire ever
+// preserves the original alongside the normalised copy.
+const BULLET = /\s+[*•]\s+/;
+const isTabularLine = (line) => (line.match(/ {2,}/g) ?? []).length >= 2;
+
+function classifyBlock(block) {
+    const lines = block.split("\n").filter((line) => line.trim());
+    const tabular = lines.filter(isTabularLine).length;
+    return {
+        kind: lines.length >= 2 && tabular >= Math.max(2, Math.ceil(lines.length * 0.6)) ? "table" : "p",
+        text: block,
+    };
+}
+
+function releaseBlocks(text) {
+    const paragraphs = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+    if (paragraphs.length > 1) return paragraphs.map(classifyBlock);
+
+    const flat = paragraphs[0] ?? "";
+    const parts = flat.split(BULLET).map((part) => part.trim()).filter(Boolean);
+    if (parts.length < 3) return [classifyBlock(flat)];
+    const [lead, ...items] = parts;
+    return [classifyBlock(lead), ...items.map((item) => ({ kind: "li", text: item }))];
+}
+
+function ReleaseText({ text }) {
+    const blocks = releaseBlocks(text);
+    return (
+        <div className="mt-4 flex flex-col gap-3">
+            {blocks.map((block, index) => {
+                if (block.kind === "table") {
+                    return (
+                        <pre
+                            key={index}
+                            className="overflow-x-auto rounded-md bg-shadow/40 px-3 py-2 font-mono text-[11.5px] leading-[1.55] text-text-article"
+                        >
+                            {block.text}
+                        </pre>
+                    );
+                }
+                if (block.kind === "li") {
+                    return (
+                        <div key={index} className="flex gap-2 text-sm leading-relaxed text-text-article">
+                            <span aria-hidden="true" className="text-text-muted">•</span>
+                            <span>{block.text}</span>
+                        </div>
+                    );
+                }
+                return (
+                    <p key={index} className="whitespace-pre-wrap text-sm leading-relaxed text-text-article">
+                        {block.text}
+                    </p>
+                );
+            })}
+        </div>
+    );
+}
 
 function Section({ title, children }) {
     return (
@@ -176,6 +244,33 @@ export default function NewsModal({ item, story }) {
     const facts = data.facts ?? {};
     const reactionPct = Number(data.reaction?.pct);
 
+    // The story opens instantly from what the page already holds; the release
+    // it was built from is fetched alongside and fills in underneath.
+    const [release, setRelease] = useState(null);
+    const [loadingRelease, setLoadingRelease] = useState(Boolean(data.id));
+    const [expanded, setExpanded] = useState(false);
+
+    useEffect(() => {
+        if (!data.id) return undefined;
+        let active = true;
+        setRelease(null);
+        setExpanded(false);
+        setLoadingRelease(true);
+        fetchStory(data.id)
+            .then((detail) => { if (active) setRelease(detail?.document ?? null); })
+            .catch(() => { /* the summary and source link still stand on their own */ })
+            .finally(() => { if (active) setLoadingRelease(false); });
+        return () => { active = false; };
+    }, [data.id]);
+
+    const body = release?.body?.trim() ?? "";
+    const preamble = release?.preamble?.trim() ?? "";
+    // With figures to read, the release folds away: the numbers answer most
+    // questions and the full text is there for the ones they do not.
+    const hasFigures = Boolean(facts.reportMetrics?.length || facts.estimateComparisons?.length);
+    const collapsible = hasFigures && Boolean(body);
+    const showBody = Boolean(body) && (!collapsible || expanded);
+
     return (
         <div className="w-[min(660px,86vw)] font-sans max-h-[78vh] overflow-y-auto pr-1">
             <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mb-3 pr-6 text-xs">
@@ -214,6 +309,26 @@ export default function NewsModal({ item, story }) {
             <ReportMetrics metrics={facts.reportMetrics} />
             <EstimateComparisons comparisons={facts.estimateComparisons} />
             <InsiderTransactions facts={facts} />
+
+            {preamble && preamble !== data.summary && !collapsible && (
+                <p className="mt-5 text-sm font-semibold leading-relaxed text-text">{preamble}</p>
+            )}
+
+            {collapsible && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((open) => !open)}
+                    className="mt-6 text-xs text-text-muted hover:text-text cursor-pointer"
+                >
+                    {expanded ? "▾ Dölj pressmeddelandet" : "▸ Läs hela pressmeddelandet"}
+                </button>
+            )}
+
+            {loadingRelease && !body && (
+                <p className="mt-5 text-xs text-text-muted">Hämtar pressmeddelandet…</p>
+            )}
+
+            {showBody && <ReleaseText text={body} />}
 
             {data.companies.length > 0 && (
                 <Section title={data.companies.length > 1 ? "Berörda bolag" : "Bolag"}>

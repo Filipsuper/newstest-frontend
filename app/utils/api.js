@@ -120,6 +120,17 @@ export async function fetchCompanyIntraday(symbol) {
     return body;
 }
 
+// The story plus the release it was built from. Public, and immutable once
+// published, so the browser may keep it.
+export async function fetchStory(storyId) {
+    const response = await fetch(
+        `${API_URL}/feed/news/${encodeURIComponent(storyId)}`,
+        { next: { revalidate: 3600 } },
+    );
+    if (!response.ok) throw new Error("Kunde inte hämta nyheten");
+    return response.json();
+}
+
 export async function fetchCompanyMentions(symbol) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/mentions`,

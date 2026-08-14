@@ -17,9 +17,11 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BACKEND_DIR="${OMXSUM_BACKEND_DIR:-$(cd "${FRONTEND_DIR}/../newsbackend" 2>/dev/null && pwd || true)}"
+STONKS_DIR="${OMXSUM_STONKS_DIR:-$(cd "${HOME}/stonks" 2>/dev/null && pwd || true)}"
 
 REMOTE="${OMXSUM_REMOTE:-root@omxsum.com}"
 REMOTE_DIR="${OMXSUM_REMOTE_DIR:-/root/newsweb}"
+STONKS_REMOTE_DIR="${OMXSUM_STONKS_REMOTE_DIR:-/root/stonks}"
 SITE_URL="${OMXSUM_SITE_URL:-https://omxsum.com}"
 COMPOSE_PROJECT="${OMXSUM_COMPOSE_PROJECT:-newsweb}"
 PLATFORM="${OMXSUM_PLATFORM:-linux/arm64}"
@@ -36,6 +38,7 @@ DRY_RUN=0
 REMOTE_BUILD=0
 ASSUME_YES=0
 STATUS_ONLY=0
+SKIP_PULL=0
 
 SSH_OPTS=(-o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=6)
 
@@ -44,17 +47,23 @@ usage() {
 Deploy OMXsum to the VPS.
 
 Usage:
-  ./scripts/deploy.sh [frontend|backend|all] [options]
+  ./scripts/deploy.sh [frontend|backend|stonks|all] [options]
 
 Options:
   --dry-run       Run every check and print the plan, change nothing
   --status        Show what is deployed right now and exit
   --remote-build  Build the frontend on the VPS too (CPU- and memory-capped,
                   hard timeout). For when Docker is unavailable locally.
+  --no-pull       Ship the image without touching the remote checkout. For when
+                  that checkout holds work in progress — the image is built here
+                  and self-contained, so the container does not need it. Note
+                  that anything running from the checkout rather than the image
+                  (the stonks collectors, for one) then stays as it is.
   --yes           Skip the confirmation prompt
   -h, --help      This text
 
-Both images are built here and shipped. A backend checkout without a
+All three images are built here and shipped. `all` deploys stonks first: it
+serves the Market API the other two read from. A backend checkout without a
 .dockerignore that excludes .env falls back to building on the VPS, because
 such an image would bake this machine's configuration.
 
@@ -62,6 +71,7 @@ Environment overrides:
   OMXSUM_REMOTE          ssh target            (default: root@omxsum.com)
   OMXSUM_REMOTE_DIR      compose directory     (default: /root/newsweb)
   OMXSUM_BACKEND_DIR     newsbackend checkout  (default: ../newsbackend)
+  OMXSUM_STONKS_DIR      stonks checkout       (default: ~/stonks)
   OMXSUM_SITE_URL        public URL to verify  (default: https://omxsum.com)
   OMXSUM_PLATFORM        image platform        (default: linux/arm64)
 
@@ -83,24 +93,54 @@ die()  { printf '\033[1;31m  ✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 remote() { ssh "${SSH_OPTS[@]}" "$REMOTE" "$@"; }
 
-# Service definitions: local checkout, deploy branch, remote checkout, image.
-service_dir() {
+# Service definitions. stonks is its own compose project in its own checkout —
+# it serves the Market API both other services read from, so it deploys first
+# when it is part of the same change.
+service_repo() {
     case "$1" in
         frontend) printf '%s' "$FRONTEND_DIR" ;;
         backend)  printf '%s' "$BACKEND_DIR" ;;
+        stonks)   printf '%s' "$STONKS_DIR" ;;
+    esac
+}
+# What docker builds: usually the repo, but stonks-web is one app inside its repo.
+service_dir() {
+    case "$1" in
+        stonks) printf '%s/web' "$(service_repo "$1")" ;;
+        *)      service_repo "$1" ;;
     esac
 }
 service_branch() {
     case "$1" in
         frontend) printf 'nextjs' ;;
         backend)  printf 'main' ;;
+        stonks)   printf 'master' ;;
     esac
 }
 service_remote_dir() {
-    printf '%s/%s' "$REMOTE_DIR" "$1"
+    case "$1" in
+        stonks) printf '%s' "$STONKS_REMOTE_DIR" ;;
+        *)      printf '%s/%s' "$REMOTE_DIR" "$1" ;;
+    esac
+}
+# Where `docker compose` runs for this service.
+service_compose_dir() {
+    case "$1" in
+        stonks) printf '%s' "$STONKS_REMOTE_DIR" ;;
+        *)      printf '%s' "$REMOTE_DIR" ;;
+    esac
+}
+service_compose_name() {
+    case "$1" in
+        stonks) printf 'stonks-web' ;;
+        *)      printf '%s' "$1" ;;
+    esac
 }
 service_image() {
-    printf '%s-%s' "$COMPOSE_PROJECT" "$1"
+    case "$1" in
+        stonks) printf 'stonks-stonks-web' ;;
+        *)      printf '%s-%s' "$COMPOSE_PROJECT" "$1" ;;
+    esac
 }
 
 # Where each image may be built.
@@ -116,9 +156,13 @@ service_image() {
 # checkout without that .dockerignore falls back to building on the VPS, and
 # either way assert_image_clean re-checks the built image rather than trusting
 # this decision.
+#
+# stonks: here. It takes its configuration from compose environment variables
+# and its .dockerignore already excludes node_modules and .next, so the image
+# carries nothing machine-specific.
 service_build_mode() {
     case "$1" in
-        frontend) [[ "$REMOTE_BUILD" -eq 1 ]] && printf 'remote' || printf 'local' ;;
+        frontend|stonks) [[ "$REMOTE_BUILD" -eq 1 ]] && printf 'remote' || printf 'local' ;;
         backend)
             if [[ "$REMOTE_BUILD" -eq 1 ]] || ! grep -qxF '.env' "$BACKEND_DIR/.dockerignore" 2>/dev/null; then
                 printf 'remote'
@@ -131,11 +175,12 @@ service_build_mode() {
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        frontend|backend) TARGETS+=("$1") ;;
-        all) TARGETS=(frontend backend) ;;
+        frontend|backend|stonks) TARGETS+=("$1") ;;
+        all) TARGETS=(stonks backend frontend) ;;
         --dry-run) DRY_RUN=1 ;;
         --status) STATUS_ONLY=1 ;;
         --remote-build) REMOTE_BUILD=1 ;;
+        --no-pull) SKIP_PULL=1 ;;
         --yes|-y) ASSUME_YES=1 ;;
         -h|--help) usage; exit 0 ;;
         *) usage; die "Unknown argument: $1" ;;
@@ -149,17 +194,17 @@ done
 
 show_status() {
     log "Deployed right now"
-    remote "cd '$REMOTE_DIR' && for svc in frontend backend; do
-        printf '%-9s %s  %s\n' \"\$svc\" \
-            \"\$(git -C \$svc rev-parse --short HEAD)\" \
-            \"\$(git -C \$svc log -1 --format=%s | cut -c1-58)\"
+    remote "for repo in '$REMOTE_DIR/frontend' '$REMOTE_DIR/backend' '$STONKS_REMOTE_DIR'; do
+        printf '%-9s %s  %s\n' \"\$(basename \$repo)\" \
+            \"\$(git -C \$repo rev-parse --short HEAD)\" \
+            \"\$(git -C \$repo log -1 --format=%s | cut -c1-58)\"
     done
     echo
     docker ps --format '  {{.Names}}\t{{.Image}}\t{{.Status}}'
     echo
     uptime"
     for target in "${TARGETS[@]}"; do
-        local dir; dir="$(service_dir "$target")"
+        local dir; dir="$(service_repo "$target")"
         [[ -d "$dir" ]] || continue
         printf '  local %-9s %s\n' "$target" "$(git -C "$dir" rev-parse --short HEAD)"
     done
@@ -169,7 +214,7 @@ show_status() {
 
 check_local() {
     local target="$1" dir branch head upstream
-    dir="$(service_dir "$target")"
+    dir="$(service_repo "$target")"
     [[ -n "$dir" && -d "$dir" ]] || die "$target: checkout not found (set OMXSUM_BACKEND_DIR)"
     branch="$(service_branch "$target")"
 
@@ -295,7 +340,7 @@ build_remote() {
 tag_rollback() {
     local target="$1" image running
     image="$(service_image "$target")"
-    running="$(remote "docker inspect -f '{{.Image}}' '$target' 2>/dev/null" || true)"
+    running="$(remote "docker inspect -f '{{.Image}}' '$(service_compose_name "$target")' 2>/dev/null" || true)"
     if [[ -n "$running" ]]; then
         remote "docker tag '$running' '$image:rollback'"
         ok "$target: rollback point is the running image ${running:7:12}"
@@ -307,7 +352,7 @@ tag_rollback() {
 swap_container() {
     local target="$1"
     log "$target: recreating the container"
-    remote "cd '$REMOTE_DIR' && docker compose up -d --no-build --force-recreate '$target'" \
+    remote "cd '$(service_compose_dir "$target")' && docker compose up -d --no-build --force-recreate '$(service_compose_name "$target")'" \
         || die "$target: compose up failed"
 }
 
@@ -340,7 +385,7 @@ rollback() {
     warn "$target: rolling back to the previous image"
     remote "docker image inspect '$image:rollback' >/dev/null 2>&1" \
         || die "$target: no rollback image exists — fix forward"
-    remote "docker tag '$image:rollback' '$image:latest' && cd '$REMOTE_DIR' && docker compose up -d --no-build --force-recreate '$target'"
+    remote "docker tag '$image:rollback' '$image:latest' && cd '$(service_compose_dir "$target")' && docker compose up -d --no-build --force-recreate '$(service_compose_name "$target")'"
     reload_nginx
     if verify_site; then
         die "$target: deploy failed and was rolled back; the site is serving the previous image"
@@ -358,7 +403,7 @@ fi
 log "Preflight"
 for target in "${TARGETS[@]}"; do check_local "$target"; done
 check_remote
-for target in "${TARGETS[@]}"; do check_remote_checkout "$target"; done
+[[ "$SKIP_PULL" -eq 1 ]] || for target in "${TARGETS[@]}"; do check_remote_checkout "$target"; done
 
 needs_local_build=0
 for target in "${TARGETS[@]}"; do
@@ -375,7 +420,7 @@ log "Plan"
 for target in "${TARGETS[@]}"; do
     printf '  %-9s %s → %s  (%s)\n' "$target" \
         "$(remote "git -C '$(service_remote_dir "$target")' rev-parse --short HEAD")" \
-        "$(git -C "$(service_dir "$target")" rev-parse --short HEAD)" \
+        "$(git -C "$(service_repo "$target")" rev-parse --short HEAD)" \
         "$([[ "$(service_build_mode "$target")" == "remote" ]] && echo 'build on VPS, capped' || echo 'build here, ship image')"
 done
 echo
@@ -400,7 +445,11 @@ trap 'remote "rm -f $LOCK_FILE" >/dev/null 2>&1 || true' EXIT
 for target in "${TARGETS[@]}"; do
     echo
     log "Deploying $target"
-    pull_remote "$target"
+    if [[ "$SKIP_PULL" -eq 1 ]]; then
+        warn "$target: remote checkout left untouched (--no-pull)"
+    else
+        pull_remote "$target"
+    fi
     tag_rollback "$target"
     if [[ "$(service_build_mode "$target")" == "remote" ]]; then
         build_remote "$target"
