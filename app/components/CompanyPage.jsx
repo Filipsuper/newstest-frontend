@@ -21,6 +21,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
+import NewsModal from "./NewsModal";
 import { fetchCompanyIntraday, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 
@@ -199,7 +200,8 @@ function buildEventMarkers({ calendar, news, reports, bars }) {
     add(calendar?.dividendDate, { type: "dividend", label: "Utdelning" });
     (news ?? []).forEach((story) => {
         if (Number(story.importance) < MATERIAL_NEWS_IMPORTANCE) return;
-        add(story.publishedAt, { type: "news", label: story.headline, url: storyUrl(story) });
+        // Carries the story itself so the mark opens the reader, not the issuer's site.
+        add(story.publishedAt, { type: "news", label: story.headline, story });
     });
 
     return new Map([...byDate].map(([date, items]) => [
@@ -261,11 +263,12 @@ function benchmarkMoveSince(dayKey, bars) {
 }
 
 function MoveDrivers({ drivers, benchmarkBars }) {
+    const { openModal } = useModal();
     const [lead, ...rest] = drivers;
     const benchmarkPct = benchmarkMoveSince(eventDayKey(lead.publishedAt), benchmarkBars);
     const reactionPct = Number(lead.reaction?.pct);
-    const url = storyUrl(lead);
     const tag = (lead.tags ?? []).find((item) => DRIVER_TAGS.has(item));
+    const openStory = (story) => openModal(<NewsModal story={story} />);
 
     return (
         <aside className="company-mover" aria-labelledby="company-mover-heading">
@@ -274,7 +277,7 @@ function MoveDrivers({ drivers, benchmarkBars }) {
                 <time dateTime={lead.publishedAt}>{svDateTime(lead.publishedAt)}</time>
             </div>
             <h3 className="company-mover-headline">
-                {url ? <a href={url} target="_blank" rel="noreferrer">{lead.headline}</a> : lead.headline}
+                <button type="button" onClick={() => openStory(lead)}>{lead.headline}</button>
             </h3>
             {tag && <span className="company-mover-tag">{tagLabel(tag)}</span>}
             {lead.summary && <ExpandableText className="company-mover-summary" text={lead.summary} lines={4} />}
@@ -294,35 +297,40 @@ function MoveDrivers({ drivers, benchmarkBars }) {
             </div>
             <p className="company-mover-source">
                 <span>Källa: {lead.primarySource?.publisher ?? lead.primarySource?.name ?? "Okänd"}</span>
-                {url && <a href={url} target="_blank" rel="noreferrer">Öppna <FiExternalLink /></a>}
+                <button type="button" onClick={() => openStory(lead)}>Läs nyheten</button>
             </p>
             {rest.length > 0 && (
                 <div className="company-mover-more">
                     <p className="company-eyebrow">Även i perioden</p>
-                    {rest.map((story) => {
-                        const storyLink = storyUrl(story);
-                        const body = <><time>{svDate(story.publishedAt, true)}</time><span>{story.headline}</span></>;
-                        return storyLink
-                            ? <a key={story.id} href={storyLink} target="_blank" rel="noreferrer">{body}</a>
-                            : <div key={story.id}>{body}</div>;
-                    })}
+                    {rest.map((story) => (
+                        <button key={story.id} type="button" onClick={() => openStory(story)}>
+                            <time>{svDate(story.publishedAt, true)}</time>
+                            <span>{story.headline}</span>
+                        </button>
+                    ))}
                 </div>
             )}
         </aside>
     );
 }
 
-function EventMarker({ cx, cy, items }) {
+function EventMarker({ cx, cy, items, onOpenStory }) {
     if (!Number.isFinite(cx) || !Number.isFinite(cy) || !items?.length) return null;
     const marker = EVENT_MARKERS[items[0].type];
+    // A news mark opens the story in the reader; a report mark points at the
+    // issuer's own PDF, which belongs in a new tab.
+    const story = items.find((item) => item.story)?.story ?? null;
     const url = items.find((item) => item.url)?.url ?? null;
+    const activate = story
+        ? () => onOpenStory(story)
+        : url ? () => window.open(url, "_blank", "noopener,noreferrer") : undefined;
     return (
         <g
             role="img"
             aria-label={items.map(markerTypeLabel).join(", ")}
-            className={`company-event-marker ${marker.className}${url ? " company-event-marker-linked" : ""}`}
+            className={`company-event-marker ${marker.className}${activate ? " company-event-marker-linked" : ""}`}
             transform={`translate(${cx}, ${cy - 11})`}
-            onClick={url ? () => window.open(url, "_blank", "noopener,noreferrer") : undefined}
+            onClick={activate}
         >
             <circle r="7.5" />
             <text textAnchor="middle" dy="0.32em">{marker.letter}</text>
@@ -523,6 +531,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const [ma50, setMa50] = useState(initialMaSelection.includes("50"));
     const [ma200, setMa200] = useState(initialMaSelection.includes("200"));
     const [showEvents, setShowEvents] = useState(true);
+    const { openModal } = useModal();
     const [intraday, setIntraday] = useState(null);
     const [intradayError, setIntradayError] = useState("");
     const [intradayLive, setIntradayLive] = useState(false);
@@ -903,7 +912,13 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                 x={row.date}
                                 y={0}
                                 isFront
-                                shape={(props) => <EventMarker {...props} items={row.events} />}
+                                shape={(props) => (
+                                    <EventMarker
+                                        {...props}
+                                        items={row.events}
+                                        onOpenStory={(story) => openModal(<NewsModal story={story} />)}
+                                    />
+                                )}
                             />
                         ))}
                     </ComposedChart>
@@ -986,30 +1001,26 @@ function CalendarPreview({ calendar, onSelectTab }) {
     );
 }
 
+// The wire's own story opens in place. Every field the modal shows is already
+// in this payload, so reading the news never leaves the company page and never
+// costs another request; the original release stays one click away inside it.
 function NewsList({ news, compact = false }) {
+    const { openModal } = useModal();
     if (!news?.length) return <p className="company-empty">Inga bolagsspecifika nyheter finns ännu.</p>;
     return (
         <div className="company-news-list">
-            {news.slice(0, compact ? 3 : 8).map((story) => {
-                const url = storyUrl(story);
-                const body = (
-                    <>
+            {news.slice(0, compact ? 3 : 8).map((story) => (
+                <article key={story.id} className="company-news-item company-news-linked">
+                    <button type="button" onClick={() => openModal(<NewsModal story={story} />)}>
                         <div className="company-news-meta">
                             <time>{svDate(story.publishedAt, true)}</time>
-                            {(story.tags ?? []).slice(0, 2).map((tag) => <span key={tag}>{tag}</span>)}
+                            {(story.tags ?? []).slice(0, 2).map((tag) => <span key={tag}>{tagLabel(tag)}</span>)}
                         </div>
-                        <h3>{story.headline}{url && <FiExternalLink />}</h3>
+                        <h3>{story.headline}</h3>
                         {!compact && story.summary && <p>{story.summary}</p>}
-                    </>
-                );
-                return (
-                    <article key={story.id} className={`company-news-item${url ? " company-news-linked" : ""}`}>
-                        {url
-                            ? <a href={url} target="_blank" rel="noreferrer">{body}</a>
-                            : body}
-                    </article>
-                );
-            })}
+                    </button>
+                </article>
+            ))}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { FaX } from "react-icons/fa6";
 
 const ModalContext = createContext();
@@ -10,6 +10,17 @@ export const useModal = () => useContext(ModalContext);
 export const ModalProvider = ({ children }) => {
     const [modalContent, setModalContent] = useState(null);
     const [isClosing, setIsClosing] = useState(false);
+
+    // Escape closes any modal. Reading a news story is now a common enough
+    // action that reaching for the corner button every time is friction.
+    useEffect(() => {
+        if (!modalContent) return undefined;
+        const onKeyDown = (event) => {
+            if (event.key === "Escape") closeModal();
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [modalContent]);
 
     const openModal = (content) => {
         setIsClosing(false);

@@ -671,12 +671,15 @@ body {
   letter-spacing: -0.01em;
 }
 
-.company-mover-headline a {
+.company-mover-headline button {
   display: inline;
-  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
 }
 
-.company-mover-headline a:hover { text-decoration: underline; }
+.company-mover-headline button:hover { text-decoration: underline; }
 
 .company-mover-tag {
   align-self: flex-start;
@@ -740,16 +743,14 @@ body {
   font-size: 0.72rem;
 }
 
-.company-mover-source a {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.company-mover-source button {
   color: var(--color-text-muted);
+  font-size: inherit;
   white-space: nowrap;
-  text-decoration: none;
+  cursor: pointer;
 }
 
-.company-mover-source a:hover {
+.company-mover-source button:hover {
   color: var(--color-text);
   text-decoration: underline;
 }
@@ -767,17 +768,17 @@ body {
   font-size: 0.68rem;
 }
 
-.company-mover-more a,
-.company-mover-more div {
+.company-mover-more button {
   display: flex;
   gap: 8px;
   color: var(--color-text-article);
   font-size: 0.79rem;
   line-height: 1.35;
-  text-decoration: none;
+  text-align: start;
+  cursor: pointer;
 }
 
-.company-mover-more a:hover { color: var(--color-text); }
+.company-mover-more button:hover { color: var(--color-text); }
 
 .company-mover-more time {
   flex: 0 0 auto;
@@ -1148,21 +1149,17 @@ body {
   line-height: 1.55;
 }
 
-.company-news-linked a {
+/* Each story opens in the reader instead of leaving the site, so the row is a
+   button. It keeps the anchor's block behaviour and left-aligned text. */
+.company-news-linked button {
   display: block;
+  width: 100%;
+  text-align: start;
   cursor: pointer;
 }
 
-.company-news-linked a:hover h3 {
+.company-news-linked button:hover h3 {
   color: var(--color-primary);
-}
-
-.company-news-item h3 svg {
-  display: inline;
-  margin-left: 6px;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  vertical-align: baseline;
 }
 
 .company-mentions-list {
