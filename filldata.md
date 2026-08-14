@@ -43,33 +43,38 @@ pipelinen. Utdelningshistorik står som egen Phase 1-punkt i PROJECT_PLAN.
 
 ### VD-ord
 
-Dagens extraktionsfixar (regexbuggen `kommentarer?`, titelgrinden för
-upptäckta rapport-PDF:er, ihopklistrade rubrikrader) plus omprocessning av
-backloggen och periodjoinen för språkdubbletter:
+Tre omgångar samma dag: extraktionsfixar (regexbuggen `kommentarer?`,
+titelgrinden för upptäckta rapport-PDF:er, ihopklistrade rubrikrader,
+omvänd rolordning "Koncernchef och VD har ordet", svenska typografiska
+citat ”…”), periodjoin för språkdubbletter med relink av strandade rader,
+och discovery-fixen för storbolag som sätter marknadsrubriker på sina
+rapporter (periodupplösning via MFN:s egna sub:report-taggar,
+dagnummer i månadsintervall, Kv1–Kv4, sexmånadersrapport m.m.):
 
 | | I morse | Efter |
 |---|---:|---:|
-| Rapport-PDF:er med extraherat VD-ord | 699 | 812 |
-| PDF:er utan sektion (`no_section`) | 707 | 344 |
-| Bolag med VD-ord | 592 (68,0%) | 635 (73,0%) |
-| Innevarande kvartal complete/no_section | — | 631 / 172 (≈78% av upptäckta) |
+| Rapport-PDF:er med extraherat VD-ord | 699 | 1 021 |
+| PDF:er utan sektion (`no_section`) | 707 | 337 |
+| Bolag med VD-ord | 592 (68,0%) | **701 (80,6%)** |
+| Bolag utan upptäckt rapportdokument | 66 | **27** |
+| Innevarande kvartal complete/no_section | — | 693 / 150 (≈82% av upptäckta) |
 
-2 052 sektioner totalt (156 nya idag), 1 756 med färdig AI-sammanfattning,
-sammanfattningskön tom. Hela dokumentbackloggen dränerad: 0 pending,
-4 failed, 5 needs_ocr.
-
-19 bolag (bl.a. Volvo, Atlas Copco, Oneflow, Synsam) hade extraherade
-sektioner som aldrig nådde sajten för att aktuell-raden pekade på fel
-språkdubblett; relinkade 2026-08-14, joinen går nu på symbol + räkenskaps-
-period.
+2 400+ sektioner totalt, AI-sammanfattningskön tom. Storbolagsluckan
+(Alfa Laval, AstraZeneca, H&M, Axfood, Kinnevik, Munters, Dustin, MTG,
+Cavotec, Sampo) stängd på discovery-nivå; alla utom Alfa Laval och Sampo
+har även VD-ord. 19 strandade bolag (bl.a. Volvo, Atlas Copco, Oneflow)
+relinkade till redan extraherade sektioner.
 
 ### Kvarvarande luckor, i angreppsordning
 
-1. **66 bolag utan upptäckt rapportdokument** — discovery-luckan (rapporter
-   utanför MFN/Cision-flödena).
-2. **172 bolag med aktuell rapport men inget VD-ord** — delvis äkta (banker
-   och fastighetsbolag skriver ofta inget), delvis PDF:er där pypdf kastar om
-   kolumnordningen; hellre tomt än ihopblandad text.
+1. **27 bolag utan upptäckt rapportdokument** — utanför MFN:s flöde helt
+   (Traton, PPI Public Property, Spotlight-bolag via beQuoted m.fl.).
+   Nästa steg är en beQuoted/Spotlight-connector.
+2. **150 bolag med aktuell rapport men inget VD-ord** — delvis äkta (banker
+   och fastighetsbolag skriver ofta inget; Alfa Laval har bara ett citat
+   som pypdf:s textordning splittrar; Sampos länkade PDF är den finska
+   utgåvan), delvis PDF:er med omkastad kolumnordning; hellre tomt än
+   ihopblandad text.
 3. **TTM 49,3%** — begränsas av kvartalsdjupet hos källan.
 4. **Estimat 6,7%** — ingen historik över vad konsensus var före tidigare
    rapporter; Phase 5-frågan.
@@ -77,3 +82,8 @@ period.
 6. `financialComplete: 289` — PDF-siffertabellextraktionen är en yngre,
    kompletterande pipeline ovanpå Yahoo-boksluten; syns inte som hål på
    sajten.
+
+Driftnotis 2026-08-14: mongod OOM-dödades två gånger under dagen (09:29
+utan pågående batcharbete, 21:38 under omprocessningen) och startades om
+automatiskt av docker utan dataförlust. Boxen har 3,8 GB och ingen swap;
+en swapfil är fortfarande den utestående åtgärden.
