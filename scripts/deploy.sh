@@ -49,10 +49,13 @@ Usage:
 Options:
   --dry-run       Run every check and print the plan, change nothing
   --status        Show what is deployed right now and exit
-  --remote-build  Build on the VPS instead of here (CPU- and memory-capped,
-                  hard timeout). Only for when Docker is unavailable locally.
+  --remote-build  Build the frontend on the VPS too (CPU- and memory-capped,
+                  hard timeout). For when Docker is unavailable locally.
   --yes           Skip the confirmation prompt
   -h, --help      This text
+
+The frontend image is built here and shipped; the backend is always built on
+the VPS because its image bakes the .env that only exists there.
 
 Environment overrides:
   OMXSUM_REMOTE          ssh target            (default: root@omxsum.com)
@@ -97,6 +100,24 @@ service_remote_dir() {
 }
 service_image() {
     printf '%s-%s' "$COMPOSE_PROJECT" "$1"
+}
+
+# Where each image may be built.
+#
+# frontend: here. Its build is the heavy one, and the runtime image copies only
+# public/ and .next/, so no local config travels with it — the API URL is fixed
+# by ENV in the Dockerfile, which Next prefers over any .env file.
+#
+# backend: on the VPS only. Its Dockerfile does `COPY . .` with no .dockerignore,
+# so the image bakes whatever .env sits next to it. Built here, that is the
+# developer's local .env — wrong Mongo host, wrong client URL, dev keys. It has
+# already been tried: the container came up unable to serve and was rolled back.
+# The build itself is small (npm ci --omit=dev), so capped it is harmless there.
+service_build_mode() {
+    case "$1" in
+        frontend) [[ "$REMOTE_BUILD" -eq 1 ]] && printf 'remote' || printf 'local' ;;
+        backend)  printf 'remote' ;;
+    esac
 }
 
 while [[ $# -gt 0 ]]; do
@@ -208,6 +229,17 @@ build_and_ship() {
     docker buildx build --platform "$PLATFORM" --load -t "$image:latest" "$dir" \
         || die "$target: local build failed — nothing on the VPS was touched"
 
+    # A locally built bundle that points at a dev API looks completely healthy
+    # server-side and only breaks in the visitor's browser, so it is caught here
+    # rather than by the HTTP checks after the swap.
+    if [[ "$target" == "frontend" ]]; then
+        if docker run --rm --entrypoint sh "$image:latest" \
+            -c "grep -rlE 'localhost:[0-9]+|127\.0\.0\.1' .next/static 2>/dev/null | head -1" | grep -q .; then
+            die "$target: the built bundle references a local API — check NEXT_PUBLIC_API_URL; nothing was shipped"
+        fi
+        ok "$target: bundle points at the production API"
+    fi
+
     local size; size="$(docker image inspect "$image:latest" --format '{{.Size}}')"
     log "$target: shipping $(( size / 1024 / 1024 ))MB to $REMOTE"
     docker save "$image:latest" | gzip -1 | remote "gunzip | docker load" \
@@ -306,7 +338,11 @@ for target in "${TARGETS[@]}"; do check_local "$target"; done
 check_remote
 for target in "${TARGETS[@]}"; do check_remote_checkout "$target"; done
 
-if [[ "$REMOTE_BUILD" -eq 0 ]]; then
+needs_local_build=0
+for target in "${TARGETS[@]}"; do
+    [[ "$(service_build_mode "$target")" == "local" ]] && needs_local_build=1
+done
+if [[ "$needs_local_build" -eq 1 ]]; then
     docker version >/dev/null 2>&1 \
         || die "local Docker is not running (start Docker Desktop, or use --remote-build)"
     ok "local Docker ready"
@@ -318,7 +354,7 @@ for target in "${TARGETS[@]}"; do
     printf '  %-9s %s → %s  (%s)\n' "$target" \
         "$(remote "git -C '$(service_remote_dir "$target")' rev-parse --short HEAD")" \
         "$(git -C "$(service_dir "$target")" rev-parse --short HEAD)" \
-        "$([[ "$REMOTE_BUILD" -eq 1 ]] && echo 'build on VPS' || echo 'build here, ship image')"
+        "$([[ "$(service_build_mode "$target")" == "remote" ]] && echo 'build on VPS, capped' || echo 'build here, ship image')"
 done
 echo
 
@@ -344,7 +380,7 @@ for target in "${TARGETS[@]}"; do
     log "Deploying $target"
     pull_remote "$target"
     tag_rollback "$target"
-    if [[ "$REMOTE_BUILD" -eq 1 ]]; then
+    if [[ "$(service_build_mode "$target")" == "remote" ]]; then
         build_remote "$target"
     else
         build_and_ship "$target"
