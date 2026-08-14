@@ -612,6 +612,180 @@ body {
   cursor: default;
 }
 
+/* The chart shares its row with the "Vad rör aktien?" box only when there is a
+   material story to show; otherwise it keeps the full width. */
+.company-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 30px;
+}
+
+.company-chart-has-context {
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 310px);
+}
+
+.company-chart-main {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .company-chart-has-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.company-mover {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-self: start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 20px 22px 18px;
+  border-radius: 10px;
+  background: var(--company-panel-raised);
+}
+
+.company-mover-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.company-mover-head .company-eyebrow { margin-bottom: 0; }
+
+.company-mover-head time {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.company-mover-headline {
+  color: var(--color-text);
+  font-family: var(--font-serif);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.company-mover-headline a {
+  display: inline;
+  text-decoration: none;
+}
+
+.company-mover-headline a:hover { text-decoration: underline; }
+
+.company-mover-tag {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--company-surface);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 640;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.company-mover-summary {
+  color: var(--color-text-article);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.company-mover .company-readmore {
+  align-self: flex-start;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.company-mover .company-readmore:hover { color: var(--color-text); }
+
+.company-mover-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--company-grid-line);
+}
+
+.company-mover-metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.company-mover-metrics span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.company-mover-metrics strong {
+  color: var(--color-text);
+  font-size: 1.02rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.company-mover-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.company-mover-source a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.company-mover-source a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.company-mover-more {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid var(--company-grid-line);
+}
+
+.company-mover-more .company-eyebrow {
+  margin-bottom: 1px;
+  font-size: 0.68rem;
+}
+
+.company-mover-more a,
+.company-mover-more div {
+  display: flex;
+  gap: 8px;
+  color: var(--color-text-article);
+  font-size: 0.79rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.company-mover-more a:hover { color: var(--color-text); }
+
+.company-mover-more time {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 @property --company-chart-reveal {
   syntax: "<percentage>";
   inherits: false;

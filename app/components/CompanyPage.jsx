@@ -22,6 +22,7 @@ import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import { fetchCompanyIntraday, toggleWatchlist } from "../utils/api";
+import { tagLabel } from "../utils/newsTags";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -210,6 +211,106 @@ function buildEventMarkers({ calendar, news, reports, bars }) {
 const markerTypeLabel = (item) => (item.type === "earnings"
     ? `Rapport ${item.label}`
     : item.detail ? `${item.label} ${item.detail}` : item.label);
+
+// "Vad rör aktien?" -------------------------------------------------------
+// Composed entirely from what the wire already publishes: its own headline and
+// summary, the reaction it measured, and the index over the same days. Nothing
+// here is generated, so the box states only what a source says and what the
+// numbers show — never why the market did something.
+//
+// Importance alone picks the wrong story: insider transactions score 66-76 and
+// would outrank the quarter's report. REGULATORY co-occurs with half the wire
+// and never makes a story material on its own.
+const DRIVER_TAGS = new Set([
+    "EARNINGS", "ORDER", "GUIDANCE", "M_AND_A", "MA", "M&A", "MERGER", "ACQUISITION",
+    "DISPOSAL", "DIVESTMENT", "CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "MANAGEMENT",
+    "AGREEMENT", "PARTNERSHIP", "LEGAL", "HALT",
+]);
+// Checked before anything else, because these arrive alongside a strong tag:
+// an insider sale is filed as INSIDER + DISPOSAL and would otherwise be
+// presented as the reason a large cap moved.
+const EXCLUDED_DRIVER_TAGS = new Set(["INSIDER", "REPORT_INVITATION", "OBSERVATION"]);
+const DRIVER_MIN_IMPORTANCE = 65;
+const DRIVER_SESSION_WINDOW = 5;
+const MAX_DRIVERS = 2;
+
+function selectMoveDrivers(news, bars) {
+    if (!news?.length || !bars?.length) return [];
+    // Five sessions of real trading days rather than calendar days, so a long
+    // weekend does not quietly shorten the window.
+    const windowStart = bars[Math.max(0, bars.length - DRIVER_SESSION_WINDOW)].date;
+    return news
+        .filter((story) => Number(story.importance) >= DRIVER_MIN_IMPORTANCE
+            && !(story.tags ?? []).some((tag) => EXCLUDED_DRIVER_TAGS.has(tag))
+            && (story.tags ?? []).some((tag) => DRIVER_TAGS.has(tag))
+            && eventDayKey(story.publishedAt) >= windowStart)
+        .sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt))
+        .slice(0, MAX_DRIVERS);
+}
+
+// The index across the same days, so a broad market move is not read as company
+// news. Benchmark history is daily, so on the day a story breaks there is no
+// index bar to compare against yet and the number is left out instead of
+// approximated from a different window.
+function benchmarkMoveSince(dayKey, bars) {
+    const start = (bars ?? []).findLast((bar) => bar.date <= dayKey);
+    const end = (bars ?? []).at(-1);
+    if (!start || !end || start.date >= end.date) return null;
+    if (!Number.isFinite(start.close) || !Number.isFinite(end.close) || !start.close) return null;
+    return ((end.close / start.close) - 1) * 100;
+}
+
+function MoveDrivers({ drivers, benchmarkBars }) {
+    const [lead, ...rest] = drivers;
+    const benchmarkPct = benchmarkMoveSince(eventDayKey(lead.publishedAt), benchmarkBars);
+    const reactionPct = Number(lead.reaction?.pct);
+    const url = storyUrl(lead);
+    const tag = (lead.tags ?? []).find((item) => DRIVER_TAGS.has(item));
+
+    return (
+        <aside className="company-mover" aria-labelledby="company-mover-heading">
+            <div className="company-mover-head">
+                <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
+                <time dateTime={lead.publishedAt}>{svDateTime(lead.publishedAt)}</time>
+            </div>
+            <h3 className="company-mover-headline">
+                {url ? <a href={url} target="_blank" rel="noreferrer">{lead.headline}</a> : lead.headline}
+            </h3>
+            {tag && <span className="company-mover-tag">{tagLabel(tag)}</span>}
+            {lead.summary && <ExpandableText className="company-mover-summary" text={lead.summary} lines={4} />}
+            <div className="company-mover-metrics">
+                {Number.isFinite(reactionPct) && (
+                    <div title="Kursreaktion sedan nyheten publicerades">
+                        <span>Sedan nyheten</span>
+                        <strong className={reactionPct >= 0 ? "positive" : "negative"}>{pct(reactionPct)}</strong>
+                    </div>
+                )}
+                {benchmarkPct != null && (
+                    <div title="OMX Stockholm All-Share, stängning före nyheten till senaste stängning">
+                        <span>OMXSPI</span>
+                        <strong>{pct(benchmarkPct)}</strong>
+                    </div>
+                )}
+            </div>
+            <p className="company-mover-source">
+                <span>Källa: {lead.primarySource?.publisher ?? lead.primarySource?.name ?? "Okänd"}</span>
+                {url && <a href={url} target="_blank" rel="noreferrer">Öppna <FiExternalLink /></a>}
+            </p>
+            {rest.length > 0 && (
+                <div className="company-mover-more">
+                    <p className="company-eyebrow">Även i perioden</p>
+                    {rest.map((story) => {
+                        const storyLink = storyUrl(story);
+                        const body = <><time>{svDate(story.publishedAt, true)}</time><span>{story.headline}</span></>;
+                        return storyLink
+                            ? <a key={story.id} href={storyLink} target="_blank" rel="noreferrer">{body}</a>
+                            : <div key={story.id}>{body}</div>;
+                    })}
+                </div>
+            )}
+        </aside>
+    );
+}
 
 function EventMarker({ cx, cy, items }) {
     if (!Number.isFinite(cx) || !Number.isFinite(cy) || !items?.length) return null;
@@ -433,6 +534,14 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         reports,
         bars: chart?.bars ?? [],
     }), [summary?.calendar, news, reports, chart?.bars]);
+
+    // Most companies have no material story in a given week, and an empty
+    // column beside the chart would read as something failing to load. When
+    // there is nothing to explain, the chart simply takes the full width.
+    const drivers = useMemo(
+        () => selectMoveDrivers(news, chart?.bars ?? []),
+        [news, chart?.bars],
+    );
 
     const dailyData = useMemo(() => {
         const allRows = chart?.bars ?? [];
@@ -713,6 +822,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 </div>
                  
             </div>
+            <div className={`company-chart-layout${drivers.length ? " company-chart-has-context" : ""}`}>
+            <div className="company-chart-main">
             <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={renderedData} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
@@ -817,6 +928,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         <i className="legend-marker" />{EVENT_MARKERS[type].legend}
                     </span>
                 ))}
+            </div>
+            </div>
+                {drivers.length > 0 && (
+                    <MoveDrivers drivers={drivers} benchmarkBars={chart?.benchmark?.bars} />
+                )}
             </div>
         </section>
     );
