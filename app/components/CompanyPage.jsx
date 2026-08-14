@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
     Bar,
@@ -1259,15 +1259,54 @@ function FinancialsTab({ financials, estimates }) {
         ...(frequency === "quarterly" && estimatePeriod ? [estimatePeriod] : []),
     ];
     const currency = financials?.currency ?? latestEstimate?.metrics?.find((metric) => metric.currency)?.currency ?? "SEK";
-    const financialRows = [
-        ["Omsättning", "revenue", "money"],
-        ["EBIT", "ebit", "money"],
-        ...(periods.some((period) => period.ebita != null) ? [["EBITA", "ebita", "money"]] : []),
-        ["EBITDA", "ebitda", "money"],
-        ["Nettoresultat", "netIncome", "money"],
-        ["Fritt kassaflöde", "freeCashFlow", "money"],
-        ["EBIT-marginal", "ebitMarginPct", "pct"],
-    ];
+    const has = (key) => periods.some((period) => period[key] != null);
+    // The full statement view, grouped the way an annual report reads. A row
+    // only appears when at least one shown period carries the figure, so a
+    // company without gross-profit data gets no row of "Saknas".
+    const financialGroups = [
+        ["Resultat", [
+            ["Omsättning", "revenue", "money"],
+            ["EBIT", "ebit", "money"],
+            ...(has("ebita") ? [["EBITA", "ebita", "money"]] : []),
+            ["EBITDA", "ebitda", "money"],
+            ["Nettoresultat", "netIncome", "money"],
+            ...(has("dilutedEps") ? [["Vinst per aktie", "dilutedEps", "eps"]] : []),
+        ]],
+        ["Marginaler och avkastning", [
+            ...(has("grossMarginPct") ? [["Bruttomarginal", "grossMarginPct", "pct"]] : []),
+            ["EBIT-marginal", "ebitMarginPct", "pct"],
+            ...(has("netMarginPct") ? [["Nettomarginal", "netMarginPct", "pct"]] : []),
+            ...(has("roePct") ? [["Avkastning på eget kapital (ROE)", "roePct", "pct"]] : []),
+            ...(has("roicPct") ? [["Avkastning på investerat kapital (ROIC)", "roicPct", "pct"]] : []),
+        ]],
+        ["Balans och skuldsättning", [
+            ...(has("equity") ? [["Eget kapital", "equity", "money"]] : []),
+            ...(has("netDebt") ? [["Nettoskuld", "netDebt", "money"]] : []),
+            ...(has("equityRatioPct") ? [["Soliditet", "equityRatioPct", "pct"]] : []),
+            ...(has("netDebtToEbitda") ? [["Nettoskuld / EBITDA", "netDebtToEbitda", "x"]] : []),
+        ]],
+        ["Kassaflöde", [
+            ...(has("operatingCashFlow") ? [["Kassaflöde från driften", "operatingCashFlow", "money"]] : []),
+            ...(has("capitalExpenditure") ? [["Investeringar (capex)", "capitalExpenditure", "money"]] : []),
+            ["Fritt kassaflöde", "freeCashFlow", "money"],
+            ...(has("freeCashFlowMarginPct") ? [["FCF-marginal", "freeCashFlowMarginPct", "pct"]] : []),
+            ...(has("cashConversionPct") ? [["Kassagenerering (OCF/EBITDA)", "cashConversionPct", "pct"]] : []),
+        ]],
+        ["Tillväxt", [
+            ...(has("revenueGrowthPct") ? [["Omsättningstillväxt", "revenueGrowthPct", "signedPct"]] : []),
+        ]],
+    ].filter(([, rows]) => rows.length);
+    const financialCell = (period, key, type) => {
+        const value = period[key];
+        // Estimate columns only carry a handful of figures; a dash reads
+        // better than a wall of "Saknas" for rows nobody estimates.
+        if (value == null) return period.estimate ? "–" : type === "money" ? "Saknas" : "–";
+        if (type === "money") return money(value, currency);
+        if (type === "eps") return number(value, 2);
+        if (type === "x") return `${number(value, 1)}x`;
+        if (type === "signedPct") return pct(value);
+        return `${number(value)}%`;
+    };
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Rapporterat, härlett och estimerat</p>
@@ -1285,13 +1324,18 @@ function FinancialsTab({ financials, estimates }) {
                         <table className="company-financial-table">
                             <thead><tr><th>Nyckeltal</th>{periods.map((period) => <th className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}</tr></thead>
                             <tbody>
-                                {financialRows.map(([label, key, type]) => (
-                                    <tr key={key}><th>{label}</th>{periods.map((period) => (
-                                        <td className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>
-                                            {type === "money" ? money(period[key], currency) : period[key] == null ? "–" : `${number(period[key])}%`}
-                                            {period.estimateAdjusted?.[key] && <small className="company-adjusted-mark"> just.</small>}
-                                        </td>
-                                    ))}</tr>
+                                {financialGroups.map(([groupLabel, rows]) => (
+                                    <Fragment key={groupLabel}>
+                                        <tr className="company-row-group"><th colSpan={periods.length + 1}>{groupLabel}</th></tr>
+                                        {rows.map(([label, key, type]) => (
+                                            <tr key={key}><th>{label}</th>{periods.map((period) => (
+                                                <td className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>
+                                                    {financialCell(period, key, type)}
+                                                    {period.estimateAdjusted?.[key] && <small className="company-adjusted-mark"> just.</small>}
+                                                </td>
+                                            ))}</tr>
+                                        ))}
+                                    </Fragment>
                                 ))}
                             </tbody>
                         </table>
@@ -1299,6 +1343,7 @@ function FinancialsTab({ financials, estimates }) {
                 </>
             )}
             <p className="company-source">
+                ROE, ROIC, soliditet, kassagenerering och tillväxt beräknas av OMXsum ur bolagets rapporterade siffror. Avkastningsmått visas bara där resultatsidan täcker ett helt år (helår och R12); kvartalstillväxt jämför samma kvartal föregående år.
                 {frequency === "quarterly" && estimatePeriod ? ` Estimat: ${estimatePeriod.estimateSource.publisher ?? estimatePeriod.estimateSource.name}${estimatePeriod.estimateSource.contributors ? `, ${estimatePeriod.estimateSource.contributors} bidragsgivare` : ""}.` : ""}
                 {frequency === "quarterly" && estimatePeriod?.estimateSource.url && <> <a href={estimatePeriod.estimateSource.url} target="_blank" rel="noreferrer">Visa estimatkällan <FiExternalLink /></a></>}
             </p>
@@ -1337,7 +1382,7 @@ const MULTIPLE_HELP = {
 };
 
 const UNAVAILABLE_COPY = {
-    reporting_currency_mismatch: "Bolaget rapporterar i en annan valuta än den aktien handlas i. Vi räknar inte om historiska multiplar utan att kunna redovisa växelkursen för varje dag, så vi visar dem hellre inte alls.",
+    fx_unavailable: "Bolaget rapporterar i en annan valuta än den aktien handlas i, och det saknas växelkurshistorik att räkna om med. Vi visar hellre ingenting än multiplar med en påhittad kurs.",
     unknown_reporting_currency: "Rapportvalutan saknas i underlaget, och utan den går multiplarna inte att jämföra med kursen.",
     unknown_trading_currency: "Handelsvalutan för listningen saknas i underlaget.",
     no_usable_annual_period: "Det finns inga rapporterade helår som klarar rimlighetskontrollen, så det går inte att bygga någon historik.",
@@ -1345,7 +1390,7 @@ const UNAVAILABLE_COPY = {
 
 const UNRELIABLE_COPY = {
     short_history: "Spannet bygger på mindre än ett års observationer och säger ännu inte vad som är normalt för bolaget.",
-    near_break_even_period: "Bolaget passerade nollresultat under perioden. Multiplarna blir då matematiskt korrekta men missvisande stora, och nyckeltalet är fel lins för det här bolaget.",
+    mostly_not_meaningful: "Bolaget låg nära nollresultat större delen av perioden, så nyckeltalet saknar meningsfull historik. Titta på P/S eller EV/S i stället.",
 };
 
 function ValuationTab({ symbol, companyName }) {
@@ -1406,7 +1451,7 @@ function ValuationTab({ symbol, companyName }) {
                         ))}
                     </div>
 
-                    <ValuationBand multiple={active} asOf={data.asOf} />
+                    <ValuationBand multiple={active} asOf={data.asOf} fx={data.fx} />
 
                     <p className="company-valuation-help">{MULTIPLE_HELP[active.id]}</p>
 
@@ -1441,7 +1486,7 @@ function niceScale(rough) {
     return { ceiling, ticks };
 }
 
-function ValuationBand({ multiple, asOf }) {
+function ValuationBand({ multiple, asOf, fx }) {
     const stats = multiple.stats;
     const { ceiling, ticks: yTicks } = niceScale(multiple.displayMax ?? stats?.max ?? 0);
     const data = multiple.series.map((point) => ({
@@ -1536,8 +1581,12 @@ function ValuationBand({ multiple, asOf }) {
                     ? <>Aktien handlas till {multiple.label} {number(stats.current, 1)} — {verdict} sitt eget spann sedan {String(multiple.from).slice(0, 4)}.</>
                     : "För få observationer för att placera dagens nivå i historiken."}
                 {multiple.outliersAbove > 0 && ` ${multiple.outliersAbove} av ${stats.count} observationer ligger över skalan och är utelämnade ur linjen, men ingår i statistiken.`}
+                {multiple.notMeaningful > 0 && ` Under ${multiple.notMeaningful} handelsdagar låg resultatet så nära noll att nyckeltalet saknade mening — de dagarna ingår inte i spannet.`}
             </p>
-            <p className="company-source">Beräknat på stängningskurs {svDate(asOf)}.</p>
+            <p className="company-source">
+                Beräknat på stängningskurs {svDate(asOf)}.
+                {fx && ` Rapportsiffror omräknade med daglig växelkurs (${fx.pair}, nu ${number(fx.rateNow, 2)}).`}
+            </p>
         </div>
     );
 }
@@ -1546,7 +1595,7 @@ function ValuationMethod({ data, multiple }) {
     return (
         <details className="company-valuation-method">
             <summary>Så räknas {multiple.label}</summary>
-            <p>{MULTIPLE_HELP[multiple.id]} Siffrorna gäller från det datum de var offentliga — {data.method.publicationLagDays} dagar efter bokslutsdagen — så ingen punkt i grafen bygger på en rapport marknaden ännu inte sett. Nettoskulden hämtas från samma period som resultatet och antas aldrig vara noll när den saknas.</p>
+            <p>{MULTIPLE_HELP[multiple.id]} Siffrorna gäller från det datum de var offentliga — {data.method.publicationLagDays} dagar efter bokslutsdagen — så ingen punkt i grafen bygger på en rapport marknaden ännu inte sett. Nettoskulden hämtas från samma period som resultatet och antas aldrig vara noll när den saknas.{data.fx && ` Bolaget rapporterar i ${data.reportingCurrency} men handlas i ${data.tradingCurrency}; varje dags multipel använder den dagens växelkurs (${data.fx.pair}), inte dagens kurs bakåt i tiden. Tabellen nedan visar siffrorna i rapportvalutan.`}{data.method.notMeaningfulAbove && ` Resultatmultiplar över ${data.method.notMeaningfulAbove} behandlas som "ej meningsfulla" — de uppstår när resultatet passerar noll och beskriver inte någon värdering.`}</p>
             <div className="company-table-wrap">
                 <table className="company-financial-table">
                     <thead>
