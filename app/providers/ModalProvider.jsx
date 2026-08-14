@@ -60,12 +60,12 @@ export const ModalProvider = ({ children }) => {
                         onClick={handleBackdropClick}
                     >
                         <div
-                            className="bg-background py-8 px-6 md:py-12 md:px-20 mx-4 max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto shadow-xl rounded-3xl flex justify-center items-center relative transition-transform"
+                            className="bg-background py-5 px-5 md:py-6 md:px-7 mx-4 max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto shadow-xl rounded-2xl flex justify-center items-center relative transition-transform"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button
                                 onClick={closeModal}
-                                className="absolute top-2 right-2 text-text-muted cursor-pointer font-sans text-xs hover:text-text transition-colors"
+                                className="absolute top-3 right-3 z-10 text-text-muted cursor-pointer font-sans text-xs hover:text-text transition-colors"
                             >
                                 <FaX />
                             </button>

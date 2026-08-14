@@ -177,8 +177,8 @@ export default function NewsModal({ item, story }) {
     const reactionPct = Number(data.reaction?.pct);
 
     return (
-        <div className="w-full max-w-2xl font-sans max-h-[74vh] overflow-y-auto">
-            <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-xs">
+        <div className="w-[min(660px,86vw)] font-sans max-h-[78vh] overflow-y-auto pr-1">
+            <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mb-3 pr-6 text-xs">
                 <span className="text-text-muted font-semibold">{svDateTime(data.publishedAt)}</span>
                 {data.regulatory && (
                     <span className="border border-text-muted/40 px-1.5 py-0.5 uppercase tracking-wide text-[10px] text-text-muted">
