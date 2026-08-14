@@ -131,6 +131,25 @@ export async function fetchStory(storyId) {
     return response.json();
 }
 
+// Valuation bands are Plus-only and move once a day, so the tab loads them on
+// demand rather than weighing down every company page.
+export async function fetchValuation(symbol) {
+    const response = await fetch(
+        `${API_URL}/feed/company/${encodeURIComponent(symbol)}/valuation`,
+        { cache: "no-store", credentials: "include" },
+    );
+    const body = await response.json();
+    // A Plus route answers a missing or expired session with 200 and an error
+    // body, so the status alone does not say whether this succeeded.
+    if (!response.ok || body?.error) {
+        const expiredSession = body?.upgrade || /token/i.test(body?.error ?? "");
+        throw new Error(expiredSession
+            ? "Logga in igen för att se värderingshistoriken"
+            : body?.error || "Kunde inte hämta värderingen");
+    }
+    return body;
+}
+
 export async function fetchCompanyMentions(symbol) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/mentions`,

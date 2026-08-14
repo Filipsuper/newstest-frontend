@@ -8,6 +8,7 @@ import {
     Cell,
     ComposedChart,
     Line,
+    ReferenceArea,
     ReferenceDot,
     ReferenceLine,
     ResponsiveContainer,
@@ -22,7 +23,7 @@ import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsModal from "./NewsModal";
-import { fetchCompanyIntraday, toggleWatchlist } from "../utils/api";
+import { fetchCompanyIntraday, fetchValuation, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -1325,13 +1326,263 @@ function EstimatesTab({ summary, financials, estimates }) {
     );
 }
 
-function ValuationTab() {
+// The band answers one question: what has the market paid for this company's
+// own reported figures, and where does today sit in that range? It is not a
+// fair value and carries no rating.
+const MULTIPLE_HELP = {
+    pe: "Aktiekurs delat med vinst per aktie för det senast rapporterade helåret.",
+    ps: "Börsvärde delat med omsättningen för det senast rapporterade helåret.",
+    evEbit: "Börsvärde plus rapporterad nettoskuld, delat med rörelseresultatet.",
+    evSales: "Börsvärde plus rapporterad nettoskuld, delat med omsättningen.",
+};
+
+const UNAVAILABLE_COPY = {
+    reporting_currency_mismatch: "Bolaget rapporterar i en annan valuta än den aktien handlas i. Vi räknar inte om historiska multiplar utan att kunna redovisa växelkursen för varje dag, så vi visar dem hellre inte alls.",
+    unknown_reporting_currency: "Rapportvalutan saknas i underlaget, och utan den går multiplarna inte att jämföra med kursen.",
+    unknown_trading_currency: "Handelsvalutan för listningen saknas i underlaget.",
+    no_usable_annual_period: "Det finns inga rapporterade helår som klarar rimlighetskontrollen, så det går inte att bygga någon historik.",
+};
+
+const UNRELIABLE_COPY = {
+    short_history: "Spannet bygger på mindre än ett års observationer och säger ännu inte vad som är normalt för bolaget.",
+    near_break_even_period: "Bolaget passerade nollresultat under perioden. Multiplarna blir då matematiskt korrekta men missvisande stora, och nyckeltalet är fel lins för det här bolaget.",
+};
+
+function ValuationTab({ symbol, companyName }) {
+    const [data, setData] = useState(null);
+    const [error, setError] = useState(null);
+    const [selected, setSelected] = useState("pe");
+
+    useEffect(() => {
+        let active = true;
+        setData(null);
+        setError(null);
+        fetchValuation(symbol)
+            .then((body) => { if (active) setData(body); })
+            .catch((cause) => { if (active) setError(cause.message); });
+        return () => { active = false; };
+    }, [symbol]);
+
+    const multiples = data?.multiples ?? [];
+    const usable = multiples.filter((multiple) => multiple.available);
+    // Land on something worth reading rather than an empty P/E for a loss-maker.
+    const active = usable.find((multiple) => multiple.id === selected)
+        ?? usable.find((multiple) => multiple.reliable)
+        ?? usable[0]
+        ?? null;
+
     return (
-        <section className="company-tab-section company-narrow-copy">
-            <p className="company-eyebrow">Under utveckling</p>
-            <h2>Värdering utan svart låda</h2>
-            <p className="company-intro">OMXsum publicerar inte ett förenklat totalbetyg eller ett påhittat riktvärde. Den här sidan öppnas när jämförelsegrupper, aktieantal och värderingsdefinitioner kan visas tillsammans med varje beräkning.</p>
+        <section className="company-tab-section">
+            <p className="company-eyebrow">Bolagets egen historik</p>
+            <h2>Värdering</h2>
+            <p className="company-intro">Vad marknaden har betalat för {companyName}s egna rapporterade siffror, och var dagens kurs ligger i det spannet. Ingen riktkurs, inget totalbetyg — varje tal går att räkna om från underlaget längst ned.</p>
+
+            {error && <p className="company-empty">{error}</p>}
+            {!data && !error && <p className="company-empty">Hämtar värderingshistorik …</p>}
+
+            {data?.unavailableReason && (
+                <p className="company-valuation-note">{UNAVAILABLE_COPY[data.unavailableReason] ?? "Värderingshistoriken går inte att visa för det här bolaget."}
+                    {data.unavailableReason === "reporting_currency_mismatch" && ` Rapporterar i ${data.reportingCurrency}, handlas i ${data.tradingCurrency}.`}
+                </p>
+            )}
+
+            {data && !data.unavailableReason && !usable.length && (
+                <p className="company-empty">Inget nyckeltal går att beräkna på bolagets rapporterade helår.</p>
+            )}
+
+            {active && (
+                <>
+                    <div className="company-period-tabs">
+                        {multiples.map((multiple) => (
+                            <button
+                                key={multiple.id}
+                                disabled={!multiple.available}
+                                className={active.id === multiple.id ? "active" : ""}
+                                onClick={() => setSelected(multiple.id)}
+                            >
+                                {multiple.label}
+                                {multiple.available && !multiple.reliable && <span className="company-valuation-warn-mark" aria-label="osäkert underlag">!</span>}
+                            </button>
+                        ))}
+                    </div>
+
+                    <ValuationBand multiple={active} asOf={data.asOf} />
+
+                    <p className="company-valuation-help">{MULTIPLE_HELP[active.id]}</p>
+
+                    {!multiples.find((multiple) => multiple.id === selected)?.available && (
+                        <p className="company-valuation-note">{MULTIPLES_LABEL[selected] ?? "Nyckeltalet"} går inte att beräkna — nämnaren är negativ eller saknas för bolagets rapporterade helår.</p>
+                    )}
+
+                    {!active.reliable && (
+                        <p className="company-valuation-note">{UNRELIABLE_COPY[active.unreliableReason] ?? "Underlaget är för tunt för att spannet ska läsas som ett normalläge."}</p>
+                    )}
+
+                    <ValuationMethod data={data} multiple={active} />
+                </>
+            )}
         </section>
+    );
+}
+
+const MULTIPLES_LABEL = { pe: "P/E", ps: "P/S", evEbit: "EV/EBIT", evSales: "EV/S" };
+
+// A readable scale: round the axis top up to a whole step so it reads 0–25 in
+// fives rather than 0–23,4 in quarters.
+function niceScale(rough) {
+    if (!Number.isFinite(rough) || rough <= 0) return { ceiling: 0, ticks: [0] };
+    const target = rough / 5;
+    const magnitude = 10 ** Math.floor(Math.log10(target));
+    const normalized = target / magnitude;
+    const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10) * magnitude;
+    const ceiling = Math.ceil(rough / step) * step;
+    const ticks = [];
+    for (let value = 0; value <= ceiling + step / 2; value += step) ticks.push(Number(value.toFixed(6)));
+    return { ceiling, ticks };
+}
+
+function ValuationBand({ multiple, asOf }) {
+    const stats = multiple.stats;
+    const { ceiling, ticks: yTicks } = niceScale(multiple.displayMax ?? stats?.max ?? 0);
+    const data = multiple.series.map((point) => ({
+        ...point,
+        time: Date.parse(point.date),
+        // Values above the readable ceiling are clipped from the line, not from
+        // the statistics; outliersAbove below says how many.
+        plotted: point.value <= ceiling ? point.value : null,
+    }));
+    // A real time axis, not one category per sample. A year the metric could
+    // not be computed for — a loss year drops out of P/E entirely — then reads
+    // as the gap it is instead of being collapsed into the neighbouring years.
+    const yearTicks = [];
+    if (data.length) {
+        const lastYear = new Date(data.at(-1).time).getFullYear();
+        for (let year = new Date(data[0].time).getFullYear(); year <= lastYear; year += 1) {
+            const tick = Date.parse(`${year}-01-01`);
+            if (tick >= data[0].time) yearTicks.push(tick);
+        }
+    }
+    const percentile = stats?.currentPercentile;
+    const verdict = percentile == null ? null
+        : percentile >= 80 ? "högre än nästan hela"
+            : percentile >= 60 ? "i övre delen av"
+                : percentile >= 40 ? "mitt i"
+                    : percentile >= 20 ? "i nedre delen av"
+                        : "lägre än nästan hela";
+
+    return (
+        <div className="company-valuation">
+            <div className="company-valuation-stats">
+                <div className="company-valuation-now">
+                    <small>Nu</small>
+                    <strong>{number(stats?.current, 1)}</strong>
+                </div>
+                <div><small>Median</small><span>{number(stats?.median, 1)}</span></div>
+                <div><small>Normalspann</small><span>{number(stats?.p25, 1)}–{number(stats?.p75, 1)}</span></div>
+                <div><small>Lägsta–högsta</small><span>{number(stats?.min, 1)}–{number(stats?.max, 1)}</span></div>
+                <div><small>Percentil</small><span>{percentile == null ? "Saknas" : `${percentile}`}</span></div>
+            </div>
+
+            <div className="company-valuation-chart" role="img" aria-label={`${multiple.label} över tid mot bolagets eget historiska spann`}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+                        <CartesianGrid stroke="var(--company-grid-line)" vertical={false} />
+                        {stats?.p25 != null && stats?.p75 != null && (
+                            <ReferenceArea y1={stats.p25} y2={stats.p75} fill="var(--company-yellow)" fillOpacity={0.13} stroke="none" />
+                        )}
+                        {stats?.median != null && (
+                            <ReferenceLine y={stats.median} stroke="var(--company-muted-line)" strokeDasharray="4 4" />
+                        )}
+                        <XAxis
+                            dataKey="time"
+                            type="number"
+                            scale="time"
+                            domain={["dataMin", "dataMax"]}
+                            axisLine={{ stroke: "var(--company-grid-line)" }}
+                            tickLine={false}
+                            ticks={yearTicks}
+                            tickFormatter={(value) => new Date(value).getFullYear()}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            width={46}
+                            domain={[0, ceiling]}
+                            ticks={yTicks}
+                            allowDataOverflow
+                            tickFormatter={(value) => number(value, 1)}
+                        />
+                        <Tooltip
+                            cursor={{ stroke: "var(--company-grid-line)" }}
+                            content={({ active: hovered, payload }) => {
+                                if (!hovered || !payload?.length) return null;
+                                const point = payload[0].payload;
+                                return (
+                                    <div className="company-tooltip">
+                                        <strong>{svDate(point.date)}</strong>
+                                        <span>{multiple.label} {number(point.value, 1)}</span>
+                                        <span className="company-tooltip-note">Rapporterat helår</span>
+                                    </div>
+                                );
+                            }}
+                        />
+                        <Line type="monotone" dataKey="plotted" stroke="var(--company-yellow)" strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+
+            <p className="company-valuation-verdict">
+                {verdict
+                    ? <>Aktien handlas till {multiple.label} {number(stats.current, 1)} — {verdict} sitt eget spann sedan {String(multiple.from).slice(0, 4)}.</>
+                    : "För få observationer för att placera dagens nivå i historiken."}
+                {multiple.outliersAbove > 0 && ` ${multiple.outliersAbove} av ${stats.count} observationer ligger över skalan och är utelämnade ur linjen, men ingår i statistiken.`}
+            </p>
+            <p className="company-source">Beräknat på stängningskurs {svDate(asOf)}.</p>
+        </div>
+    );
+}
+
+function ValuationMethod({ data, multiple }) {
+    return (
+        <details className="company-valuation-method">
+            <summary>Så räknas {multiple.label}</summary>
+            <p>{MULTIPLE_HELP[multiple.id]} Siffrorna gäller från det datum de var offentliga — {data.method.publicationLagDays} dagar efter bokslutsdagen — så ingen punkt i grafen bygger på en rapport marknaden ännu inte sett. Nettoskulden hämtas från samma period som resultatet och antas aldrig vara noll när den saknas.</p>
+            <div className="company-table-wrap">
+                <table className="company-financial-table">
+                    <thead>
+                        <tr>
+                            <th>Räkenskapsår</th>
+                            <th>Gäller från</th>
+                            <th>Vinst/aktie</th>
+                            <th>Omsättning</th>
+                            <th>EBIT</th>
+                            <th>Nettoskuld</th>
+                            <th>Aktier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.periods.map((period) => (
+                            <tr key={period.periodEnd}>
+                                <th>{period.fiscalPeriod ?? period.periodEnd}</th>
+                                <td>{svDate(period.effectiveFrom)}</td>
+                                <td>{number(period.eps, 2)}</td>
+                                <td>{money(period.revenue, data.currency ?? "SEK")}</td>
+                                <td>{money(period.ebit, data.currency ?? "SEK")}</td>
+                                <td>{money(period.netDebt, data.currency ?? "SEK")}</td>
+                                {/* An audit table: the exact share count, not "2 md". */}
+                                <td>{number(period.sharesOutstanding, 0)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            {data.rejectedPeriods?.length > 0 && (
+                <p className="company-valuation-note">
+                    Utelämnade rader ur underlaget: {data.rejectedPeriods.map((row) => `${row.periodEnd} (${row.reason === "non_positive_revenue" ? "omsättning saknas eller är negativ" : row.reason === "scale_mismatch" ? "siffrorna ligger i en annan storleksordning än övriga år" : "överlappar föregående räkenskapsår"})`).join(", ")}. Det är nästan alltid en R12-kolumn som datakällan har lagt in som ett räkenskapsår.
+                </p>
+            )}
+            <p className="company-source">Kurshistorik: dagliga stängningskurser. Rapporterade siffror från bolagets egna bokslut. Detta är ingen riktkurs och ingen rekommendation.</p>
+        </details>
     );
 }
 
@@ -1603,7 +1854,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
-            {hasPlus && tab === "valuation" && <ValuationTab />}
+            {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
             {tab === "news" && <NewsTab data={initialData} />}
             {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
         </main>
