@@ -85,5 +85,7 @@ relinkade till redan extraherade sektioner.
 
 Driftnotis 2026-08-14: mongod OOM-dödades två gånger under dagen (09:29
 utan pågående batcharbete, 21:38 under omprocessningen) och startades om
-automatiskt av docker utan dataförlust. Boxen har 3,8 GB och ingen swap;
-en swapfil är fortfarande den utestående åtgärden.
+automatiskt av docker utan dataförlust. Boxen har 3,8 GB. Åtgärdat 2026-08-15: 4 GB swapfil (swappiness 10) och
+Claude Code-tmuxen på VPS:en (544 MB) avstängd. Kvarstående möjlig åtgärd:
+capa WiredTiger-cachen (~0,75 GB) — mongods standard är ~1,4 GB på den här
+boxen, vilket gör den till OOM-killerns förstahandsval.
