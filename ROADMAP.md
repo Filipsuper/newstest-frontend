@@ -41,6 +41,23 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
   indexeras, finansiellt/estimat/värdering ligger kvar bakom Plus
   (se README "SEO and indexing policy")
 
+### Phase 3. Research depth (pågår)
+
+- ✅ Värderingshistorik (aug 2026): P/E, P/S, EV/EBIT och EV/S mot bolagets
+  eget spann, med percentil, normalspann och ett "Så räknas"-underlag som
+  visar varje rapporterad siffra och från vilket datum den var offentlig.
+  Bolag som rapporterar i annan valuta än de handlas i får en förklaring i
+  stället för en omräknad multipel.
+- Nästa steg som data faktiskt räcker till: fullständiga resultat-, balans-
+  och kassaflödesvyer (vi visar 7 av ~29 insamlade fält), tillväxt-/marginal-/
+  avkastnings-/skuldsättningstrender (ROE och ROIC behöver läggas till i
+  API:ets härledda mått), och en insynsvy — FI:s insynsaffärer kommer redan in
+  som strukturerade wire-dokument.
+- Blockerat på täckning, inte på arbete: utfall mot historiskt konsensus,
+  estimatrevideringar och rapportöverraskningar. Publika estimat finns för 58
+  av 870 bolag, och det saknas arkiv över vad konsensus sa före tidigare
+  rapporter. Det löses av Phase 5, inte av mer frontend.
+
 ### 0. Wire → letters: use our own newsfeed in the summaries
 
 The morgon-/kvällsbrev generation should consume the OMXsum wire as a
