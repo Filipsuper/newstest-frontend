@@ -1437,7 +1437,30 @@ const INSIDER_DIRECTION = {
     other: { label: "Övrigt", tone: "neutral" },
 };
 
-function InsidersTab({ symbol, companyName }) {
+// Net per person over the stored window. FI's register does not publish
+// total holdings — unlike the US Form 4 — so the honest context we can give
+// is each person's own pattern within our 24 months, and the trade's scale
+// against the company's market value.
+function insiderPersons(rows) {
+    const byPerson = new Map();
+    for (const row of rows) {
+        if (typeof row.value !== "number" || (row.currency && row.currency !== "SEK")) continue;
+        const entry = byPerson.get(row.person) ?? { person: row.person, position: row.position, count: 0, net: 0 };
+        entry.count += 1;
+        if (row.direction === "acquisition" || row.direction === "subscription") entry.net += row.value;
+        else if (row.direction === "disposal") entry.net -= row.value;
+        byPerson.set(row.person, entry);
+    }
+    return [...byPerson.values()]
+        .filter((entry) => entry.count >= 2)
+        .sort((left, right) => Math.abs(right.net) - Math.abs(left.net))
+        .slice(0, 5);
+}
+
+const capSharePct = (value, marketCap) =>
+    marketCap && value ? (Math.abs(value) / marketCap) * 100 : null;
+
+function InsidersTab({ symbol, companyName, marketCap }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
 
@@ -1459,7 +1482,7 @@ function InsidersTab({ symbol, companyName }) {
         <section className="company-tab-section">
             <p className="company-eyebrow">FI:s insynsregister</p>
             <h2>Insynshandel</h2>
-            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien — varje registrerad transaktion, utan beloppsgräns. Nyhetsflödet visar bara de stora affärerna; här är mönstret.</p>
+            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien</p>
 
             {error && <p className="company-empty">{error}</p>}
             {!data && !error && <p className="company-empty">Hämtar insynshandel …</p>}
@@ -1473,7 +1496,10 @@ function InsidersTab({ symbol, companyName }) {
                             <strong className={`company-insider-net ${summary365.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}`}>
                                 {summary365.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary365.netValue))}
                             </strong>
-                            <small className="company-insider-sub">{summary365.transactions} affärer netto · {summary365.buyers} köpare · {summary365.sellers} säljare</small>
+                            <small className="company-insider-sub">
+                                {summary365.transactions} affärer · {summary365.buyers} köpare · {summary365.sellers} säljare
+                                {capSharePct(summary365.netValue, marketCap) != null && ` · ≈ ${number(capSharePct(summary365.netValue, marketCap), 3)} % av börsvärdet`}
+                            </small>
                             <div className="company-insider-split">
                                 <div>
                                     <span><i className="company-insider-dot company-insider-dot-buy" />Köp</span>
@@ -1487,6 +1513,23 @@ function InsidersTab({ symbol, companyName }) {
                             {(summary90?.transactions ?? 0) > 0 && summary90.transactions !== summary365.transactions && (
                                 <small className="company-insider-sub">Senaste 3 mån: netto {summary90.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary90.netValue))} ({summary90.transactions} affärer)</small>
                             )}
+                        </div>
+                    )}
+
+                    {insiderPersons(rows).length > 0 && (
+                        <div className="company-insider-persons">
+                            <small className="company-insider-heading">Störst nettohandel per person · 24 mån</small>
+                            {insiderPersons(rows).map((entry) => (
+                                <div key={entry.person} className="company-insider-person-row">
+                                    <span className="company-insider-person-name">{entry.person}<small>{entry.position}</small></span>
+                                    <span className="company-insider-person-net">
+                                        <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
+                                            {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
+                                        </strong>
+                                        <small>{entry.count} affärer{capSharePct(entry.net, marketCap) != null ? ` · ≈ ${number(capSharePct(entry.net, marketCap), 3)} % av börsvärdet` : ""}</small>
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     )}
 
@@ -1513,7 +1556,7 @@ function InsidersTab({ symbol, companyName }) {
                         })}
                     </div>
                     {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
-                    <p className="company-source">Källa: Finansinspektionens insynsregister. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
+                    <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
                 </>
             )}
         </section>
@@ -2052,7 +2095,18 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
-            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} />}
+            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} marketCap={(() => {
+                // The newest period does not always carry a share count; use
+                // the most recent one that does.
+                const price = summary.quote?.price;
+                if (!price) return null;
+                for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
+                    for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
+                        if (periods[index]?.sharesOutstanding) return price * periods[index].sharesOutstanding;
+                    }
+                }
+                return null;
+            })()} />}
             {tab === "news" && <NewsTab data={initialData} />}
             {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
         </main>

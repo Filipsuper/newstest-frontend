@@ -63,6 +63,12 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 - Idé senare: gör nyhetsflödets insynströskel relativ (andel av börsvärde
   eller omsättning) i stället för absoluta 50 kSEK — 50k betyder olika saker
   i Ericsson och i ett microcap.
+- Insynsvyns nästa nivå: totalt innehav per person. FI:s register innehåller
+  det inte (till skillnad från amerikanska Form 4), men årsredovisningarna
+  redovisar styrelsens och ledningens aktieinnehav per person — och vi har
+  redan PDF:erna och en extraktionspipeline. Först då kan "sålde 10 MSEK"
+  bli "sålde 40 % av sitt innehav". Kommersiella alternativ (Holdings,
+  Euroclear) finns om det ska gå fortare.
 - Blockerat på täckning, inte på arbete: utfall mot historiskt konsensus,
   estimatrevideringar och rapportöverraskningar. Publika estimat finns för 58
   av 870 bolag, och det saknas arkiv över vad konsensus sa före tidigare
