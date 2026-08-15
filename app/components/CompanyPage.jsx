@@ -1460,7 +1460,7 @@ function insiderPersons(rows) {
 const capSharePct = (value, marketCap) =>
     marketCap && value ? (Math.abs(value) / marketCap) * 100 : null;
 
-function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
+function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
 
@@ -1480,7 +1480,39 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
     const ownership = data?.ownership?.available ? data.ownership : null;
     const persons = insiderPersons(rows);
     const hasOwners = Boolean(ownership?.largestOwners?.length);
+    // computed below once holdings exist; aside shows for either section
     const holdings = new Map((data?.personHoldings ?? []).map((entry) => [entry.person, entry]));
+    // People in ledande ställning with a known or estimated position, valued
+    // at today's price. Positions are report-anchored and rolled forward with
+    // registry flows; roles come from the report or FI's own wording.
+    const insiderPeople = (() => {
+        const roleByPerson = new Map();
+        for (const row of rows) {
+            if (row.person && row.position && !roleByPerson.has(row.person)) roleByPerson.set(row.person, row.position);
+        }
+        const byName = new Map();
+        for (const holding of holdings.values()) {
+            const shares = holding.estimatedShares ?? holding.shares;
+            if (shares == null) continue;
+            byName.set(holding.person, {
+                name: holding.person,
+                role: holding.role || roleByPerson.get(holding.person) || null,
+                shares,
+                estimated: holding.flowCount > 0 && holding.estimatedShares != null && holding.estimatedShares !== holding.shares,
+                includesRelated: holding.includesRelated,
+            });
+        }
+        for (const lead of ownership?.leadership ?? []) {
+            if (lead.shares == null || byName.has(lead.name)) continue;
+            byName.set(lead.name, {
+                name: lead.name, role: lead.role || null, shares: lead.shares,
+                estimated: false, includesRelated: lead.includesRelated,
+            });
+        }
+        return [...byName.values()]
+            .map((person) => ({ ...person, value: price ? person.shares * price : null }))
+            .sort((left, right) => (right.value ?? right.shares) - (left.value ?? left.shares));
+    })();
     const holdingShare = (row) => {
         const holding = holdings.get(row.person);
         if (!holding?.shares || row.unit !== "Quantity" || !row.volume) return null;
@@ -1498,7 +1530,7 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
             {data && !rows.length && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>}
 
             {rows.length > 0 && (
-                <div className={`company-insider-layout ${hasOwners ? "" : "company-insider-layout-single"}`}>
+                <div className={`company-insider-layout ${hasOwners || insiderPeople.length ? "" : "company-insider-layout-single"}`}>
                     <div className="company-insider-transactions">
                         {(summary365?.transactions ?? 0) > 0 && (
                             <div className="company-insider-summary">
@@ -1578,8 +1610,32 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
                         <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
                     </div>
 
-                    {hasOwners && (
+                    {(hasOwners || insiderPeople.length > 0) && (
                         <aside className="company-insider-owner-panel" aria-labelledby="company-insider-owners-heading">
+                            {insiderPeople.length > 0 && (
+                                <>
+                                    <h3 className="company-insider-section-title">Insynspersoners innehav</h3>
+                                    <p className="company-insider-sub">Ur bolagets rapporter{insiderPeople.some((person) => person.estimated) ? ", framrullat med registrerade affärer" : ""}; värderat till dagens kurs.</p>
+                                    <div className="company-insider-persons">
+                                        {insiderPeople.slice(0, 10).map((person) => (
+                                            <div key={person.name} className="company-insider-person-row">
+                                                <span className="company-insider-person-name">{person.name}
+                                                    <small>{person.role || "Person i ledande ställning"}</small>
+                                                </span>
+                                                <span className="company-insider-person-net">
+                                                    <strong>{person.value != null ? money(person.value, "SEK") : `${Math.round(person.shares).toLocaleString("sv-SE")} st`}</strong>
+                                                    <small>
+                                                        {Math.round(person.shares).toLocaleString("sv-SE")} aktier
+                                                        {sharesOutstanding ? ` · ${number((person.shares / sharesOutstanding) * 100, 2)} %` : ""}
+                                                        {person.estimated ? " · uppskattat" : ""}
+                                                    </small>
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {hasOwners && (<>
                             <h3 id="company-insider-owners-heading" className="company-insider-section-title">Största ägare</h3>
                             {ownership.ownersAsOf && <p className="company-insider-sub">Ägarbild {ownership.ownersAsOf}</p>}
                             <div className="company-insider-persons company-insider-owners">
@@ -1596,6 +1652,7 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
                                 ))}
                             </div>
                             <p className="company-source">Ur {ownership.source?.issuer ? `${ownership.source.issuer}s` : "bolagets"} årsredovisning{ownership.fiscalYear ? ` ${ownership.fiscalYear - 1}` : ""}{ownership.source?.url ? <> · <a href={ownership.source.url} target="_blank" rel="noreferrer">källa</a></> : null}. Innehav per rapportdatum, inte dagens position.</p>
+                            </>)}
                         </aside>
                     )}
                 </div>
@@ -2136,7 +2193,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
-            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} sharesOutstanding={(() => {
+            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} price={summary.quote?.price ?? null} sharesOutstanding={(() => {
                 for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
                     for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
                         if (periods[index]?.sharesOutstanding) return periods[index].sharesOutstanding;
