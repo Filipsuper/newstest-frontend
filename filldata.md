@@ -42,7 +42,7 @@ print(json.dumps(ReportDocumentStore(get_db()).status(), indent=1))"'
 | Dataset | Omfattning |
 |---|---|
 | Insynstransaktioner (FI) | 4 397 rader, mars 2025 → idag, 460 bolag, ingen beloppsgräns |
-| Ägardata ur årsredovisningar | 48 extraherade: 39 bolag med största ägare-tabell, 31 med ledningens innehav per person; 0 felslag |
+| Ägardata ur rapporter | **399 bolag (46%)** efter universumsvepet: största ägare-tabeller + ledningens innehav där de redovisas; 927 dokument ärligt utan tabell; 9 felslag |
 | Valutakurser (FX) | EURSEK + USDSEK, 5 205 dagliga kurser, ~10 år |
 | VD-ord-sektioner | 2 439 totalt, 2 143 med AI-sammanfattning |
 | Spotlight-källan | 411 dokument, live-pollning var 60:e sekund |
@@ -50,6 +50,12 @@ print(json.dumps(ReportDocumentStore(get_db()).status(), indent=1))"'
 
 Not: 1 153 insynsrader är olänkade (utländska emittenter, onoterade
 instrument, namnvarianter) — ärlig rest, syns inte på sajten.
+
+Ägardata-analysen: alla kvartalsrapporter innehåller inte ägartabeller
+(verifierat — Absolent/Acconeer/Absolicon har inga), och ~450 bolags
+redovisning finns bara i årsredovisningar vi saknar PDF för (publiceras ofta
+som webblänk utan bilaga). Nästa spak: följ länken i publicerings-releasen
+och hämta ÅR-PDF:en från bolagets sajt.
 
 ## 2026-08-15 (förmiddag)
 
