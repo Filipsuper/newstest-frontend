@@ -1460,7 +1460,7 @@ function insiderPersons(rows) {
 const capSharePct = (value, marketCap) =>
     marketCap && value ? (Math.abs(value) / marketCap) * 100 : null;
 
-function InsidersTab({ symbol, companyName, marketCap }) {
+function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
 
@@ -2136,7 +2136,14 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
-            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} marketCap={(() => {
+            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} sharesOutstanding={(() => {
+                for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
+                    for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
+                        if (periods[index]?.sharesOutstanding) return periods[index].sharesOutstanding;
+                    }
+                }
+                return null;
+            })()} marketCap={(() => {
                 // The newest period does not always carry a share count; use
                 // the most recent one that does.
                 const price = summary.quote?.price;

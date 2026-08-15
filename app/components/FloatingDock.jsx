@@ -16,7 +16,7 @@ const LINKS = [
     // { href: "/om-oss", label: "Om oss", icon: FiInfo },
 ];
 
-export default function FloatingDock() {
+export default function FloatingDock({ alwaysVisible = false }) {
     const { user, isGuestUser } = useAuthContext();
     const pathname = usePathname();
     const [visible, setVisible] = useState(false);
@@ -24,6 +24,10 @@ export default function FloatingDock() {
     const dockRef = useRef(null);
 
     useEffect(() => {
+        if (alwaysVisible) {
+            setVisible(true);
+            return undefined;
+        }
         let frame = 0;
         const onScroll = () => {
             if (frame) return;
@@ -38,11 +42,13 @@ export default function FloatingDock() {
             window.removeEventListener("scroll", onScroll);
             if (frame) cancelAnimationFrame(frame);
         };
-    }, []);
+    }, [alwaysVisible]);
+
+    const dockVisible = alwaysVisible || visible;
 
     useEffect(() => {
-        if (!visible) setSearchOpen(false);
-    }, [visible]);
+        if (!dockVisible) setSearchOpen(false);
+    }, [dockVisible]);
 
     useEffect(() => {
         if (!searchOpen) return;
@@ -63,9 +69,9 @@ export default function FloatingDock() {
     return (
         <div
             ref={dockRef}
-            aria-hidden={!visible}
+            aria-hidden={!dockVisible}
             className={`fixed bottom-5 left-1/2 z-40 -translate-x-1/2 font-sans transition-all duration-300 ease-out ${
-                visible ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0 pointer-events-none"
+                dockVisible ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0 pointer-events-none"
             }`}
         >
             <nav

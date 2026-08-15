@@ -8,7 +8,6 @@ import {
     FiChevronDown,
     FiPlus,
     FiRefreshCw,
-    FiSliders,
     FiX,
 } from "react-icons/fi";
 import { fetchScreener } from "../utils/api";
@@ -38,16 +37,6 @@ const FILTER_GROUPS = [
     },
     { label: "Värdering", metrics: ["pe", "ps", "evEbit"] },
     { label: "Tekniskt", metrics: ["changePct", "rvolAtTime", "return15mPct", "gapPct"] },
-];
-
-const QUICK_FILTERS = [
-    { label: "Lönsam tillväxt", conditions: [
-        { metric: "revenueGrowthPct", operator: "gte", value: 10 },
-        { metric: "ebitMarginPct", operator: "gte", value: 10 },
-    ] },
-    { label: "P/E under 15", conditions: [{ metric: "pe", operator: "lte", value: 15 }] },
-    { label: "ROE över 15%", conditions: [{ metric: "roePct", operator: "gte", value: 15 }] },
-    { label: "Hög relativ volym", conditions: [{ metric: "rvolAtTime", operator: "gte", value: 1.5 }] },
 ];
 
 const COLUMNS = [
@@ -170,6 +159,20 @@ function ScreenerTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        if (!filterOpen) return undefined;
+        const onKeyDown = (event) => {
+            if (event.key === "Escape") setFilterOpen(false);
+        };
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        window.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener("keydown", onKeyDown);
+        };
+    }, [filterOpen]);
+
     const segments = useMemo(() => [...new Set((items ?? []).map((row) => row.segment).filter(Boolean))].sort(), [items]);
     const sectors = useMemo(() => [...new Set((items ?? []).map((row) => row.sector).filter(Boolean))].sort(), [items]);
 
@@ -207,19 +210,6 @@ function ScreenerTable() {
 
     const addDraftFilter = () => {
         addFilter({ metric: draftMetric, operator: draftOperator, value: draftValue });
-        setFilterOpen(false);
-    };
-
-    const applyQuickFilter = (preset) => {
-        setFilters((current) => {
-            const next = [...current];
-            for (const condition of preset.conditions) {
-                const index = next.findIndex((item) => item.metric === condition.metric && item.operator === condition.operator);
-                if (index >= 0) next[index] = condition;
-                else next.push(condition);
-            }
-            return next;
-        });
     };
 
     const resetFilters = () => {
@@ -242,72 +232,18 @@ function ScreenerTable() {
     return (
         <section className="font-sans" aria-label="Aktiescreener">
             <div className="screener-toolbar">
-                <label className="screener-select">
-                    <span className="sr-only">Välj segment</span>
-                    <select value={segment} onChange={(event) => setSegment(event.target.value)}>
-                        <option value="all">Alla listor</option>
-                        {segments.map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
-                    <FiChevronDown aria-hidden="true" />
-                </label>
-
-                <label className="screener-select">
-                    <span className="sr-only">Välj sektor</span>
-                    <select value={sector} onChange={(event) => setSector(event.target.value)}>
-                        <option value="all">Alla sektorer</option>
-                        {sectors.map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
-                    <FiChevronDown aria-hidden="true" />
-                </label>
-
                 <div className="screener-toolbar-actions">
-                    <div className="screener-filter-wrap">
-                        <button
-                            type="button"
-                            className={`screener-toolbar-button ${filterOpen ? "is-active" : ""}`}
-                            onClick={() => setFilterOpen((open) => !open)}
-                            aria-expanded={filterOpen}
-                            aria-label="Lägg till filter"
-                            title="Lägg till filter"
-                        >
-                            <FiSliders aria-hidden="true" />
-                        </button>
-                        {filterOpen && (
-                            <div className="screener-filter-menu">
-                            <label>
-                                <span>Nyckeltal</span>
-                                <select value={draftMetric} onChange={(event) => setDraftMetric(event.target.value)}>
-                                    {FILTER_GROUPS.map((group) => (
-                                        <optgroup key={group.label} label={group.label}>
-                                            {group.metrics.map((key) => <option key={key} value={key}>{METRICS[key].label}</option>)}
-                                        </optgroup>
-                                    ))}
-                                </select>
-                            </label>
-                            <div className="screener-filter-rule">
-                                <label>
-                                    <span>Villkor</span>
-                                    <select value={draftOperator} onChange={(event) => setDraftOperator(event.target.value)}>
-                                        <option value="gte">Minst</option>
-                                        <option value="lte">Högst</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>Värde ({METRICS[draftMetric].unit})</span>
-                                    <input
-                                        type="number"
-                                        inputMode="decimal"
-                                        step={METRICS[draftMetric].step}
-                                        value={draftValue}
-                                        onChange={(event) => setDraftValue(event.target.value)}
-                                        onKeyDown={(event) => { if (event.key === "Enter") addDraftFilter(); }}
-                                    />
-                                </label>
-                            </div>
-                            <button type="button" className="screener-apply" onClick={addDraftFilter}>Använd filter</button>
-                            </div>
-                        )}
-                    </div>
+                    <button
+                        type="button"
+                        className={`screener-toolbar-button ${filterOpen ? "is-active" : ""}`}
+                        onClick={() => setFilterOpen(true)}
+                        aria-haspopup="dialog"
+                        aria-expanded={filterOpen}
+                        aria-label="Lägg till filter"
+                        title="Lägg till filter"
+                    >
+                        <FiPlus aria-hidden="true" />
+                    </button>
                     <button
                         type="button"
                         className="screener-toolbar-button"
@@ -321,27 +257,125 @@ function ScreenerTable() {
                 </div>
             </div>
 
-            <div className="screener-chips" aria-label="Aktiva filter">
-                {filters.map((filter) => (
-                    <button
-                        type="button"
-                        key={`${filter.metric}-${filter.operator}`}
-                        className="screener-chip is-active"
-                        onClick={() => setFilters((current) => current.filter((item) => item !== filter))}
-                        aria-label={`Ta bort ${activeFilterLabel(filter)}`}
+            {hasFilters && (
+                <div className="screener-chips" aria-label="Aktiva filter">
+                    {segment !== "all" && (
+                        <button type="button" className="screener-chip is-active" onClick={() => setSegment("all")} aria-label={`Ta bort listfilter ${segment}`}>
+                            {segment} <FiX aria-hidden="true" />
+                        </button>
+                    )}
+                    {sector !== "all" && (
+                        <button type="button" className="screener-chip is-active" onClick={() => setSector("all")} aria-label={`Ta bort sektorfilter ${sector}`}>
+                            {sector} <FiX aria-hidden="true" />
+                        </button>
+                    )}
+                    {filters.map((filter) => (
+                        <button
+                            type="button"
+                            key={`${filter.metric}-${filter.operator}`}
+                            className="screener-chip is-active"
+                            onClick={() => setFilters((current) => current.filter((item) => item !== filter))}
+                            aria-label={`Ta bort ${activeFilterLabel(filter)}`}
+                        >
+                            {activeFilterLabel(filter)} <FiX aria-hidden="true" />
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {filterOpen && (
+                <div className="screener-filter-backdrop" onMouseDown={() => setFilterOpen(false)}>
+                    <div
+                        className="screener-filter-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="screener-filter-title"
+                        onMouseDown={(event) => event.stopPropagation()}
                     >
-                        {activeFilterLabel(filter)} <FiX aria-hidden="true" />
-                    </button>
-                ))}
-                {!filters.length && QUICK_FILTERS.map((preset) => (
-                    <button type="button" key={preset.label} className="screener-chip" onClick={() => applyQuickFilter(preset)}>
-                        {preset.label} <FiPlus aria-hidden="true" />
-                    </button>
-                ))}
-                {hasFilters && (
-                    <button type="button" className="screener-reset" onClick={resetFilters}>Rensa urval</button>
-                )}
-            </div>
+                        <div className="screener-filter-modal-heading">
+                            <div>
+                                <h2 id="screener-filter-title">Filtrera bolag</h2>
+                                <p>Kombinera marknad, finansiella nyckeltal och tekniska signaler.</p>
+                            </div>
+                            <button type="button" onClick={() => setFilterOpen(false)} aria-label="Stäng filter">
+                                <FiX aria-hidden="true" />
+                            </button>
+                        </div>
+
+                        <div className="screener-filter-modal-body">
+                            <div className="screener-filter-market">
+                                <label>
+                                    <span>Lista</span>
+                                    <div className="screener-filter-select">
+                                        <select value={segment} onChange={(event) => setSegment(event.target.value)}>
+                                            <option value="all">Alla listor</option>
+                                            {segments.map((value) => <option key={value} value={value}>{value}</option>)}
+                                        </select>
+                                        <FiChevronDown aria-hidden="true" />
+                                    </div>
+                                </label>
+                                <label>
+                                    <span>Sektor</span>
+                                    <div className="screener-filter-select">
+                                        <select value={sector} onChange={(event) => setSector(event.target.value)}>
+                                            <option value="all">Alla sektorer</option>
+                                            {sectors.map((value) => <option key={value} value={value}>{value}</option>)}
+                                        </select>
+                                        <FiChevronDown aria-hidden="true" />
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div className="screener-filter-divider" />
+
+                            <label className="screener-filter-field">
+                                <span>Nyckeltal</span>
+                                <div className="screener-filter-select">
+                                    <select value={draftMetric} onChange={(event) => setDraftMetric(event.target.value)}>
+                                        {FILTER_GROUPS.map((group) => (
+                                            <optgroup key={group.label} label={group.label}>
+                                                {group.metrics.map((key) => <option key={key} value={key}>{METRICS[key].label}</option>)}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                    <FiChevronDown aria-hidden="true" />
+                                </div>
+                            </label>
+                            <div className="screener-filter-rule">
+                                <label className="screener-filter-field">
+                                    <span>Villkor</span>
+                                    <div className="screener-filter-select">
+                                        <select value={draftOperator} onChange={(event) => setDraftOperator(event.target.value)}>
+                                            <option value="gte">Minst</option>
+                                            <option value="lte">Högst</option>
+                                        </select>
+                                        <FiChevronDown aria-hidden="true" />
+                                    </div>
+                                </label>
+                                <label className="screener-filter-field">
+                                    <span>Värde ({METRICS[draftMetric].unit})</span>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        step={METRICS[draftMetric].step}
+                                        value={draftValue}
+                                        onChange={(event) => setDraftValue(event.target.value)}
+                                        onKeyDown={(event) => { if (event.key === "Enter") addDraftFilter(); }}
+                                    />
+                                </label>
+                            </div>
+                            <button type="button" className="screener-add-condition" onClick={addDraftFilter}>
+                                <FiPlus aria-hidden="true" /> Lägg till villkor
+                            </button>
+                        </div>
+
+                        <div className="screener-filter-modal-footer">
+                            {hasFilters && <button type="button" className="screener-clear-filters" onClick={resetFilters}>Rensa alla</button>}
+                            <button type="button" className="screener-filter-done" onClick={() => setFilterOpen(false)}>Klar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="screener-result-bar">
                 <div>
@@ -423,9 +457,9 @@ function ScreenerTable() {
 export default function ScreenerPage() {
     return (
         <main className="screener-page">
-            <header className="screener-heading">
+            {/* <header className="screener-heading">
                 <h1>Aktiescreener</h1>
-            </header>
+            </header> */}
             <PlusPaywall redirectTo="/screener">
                 <ScreenerTable />
             </PlusPaywall>

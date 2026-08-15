@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FaTwitter, FaBars } from "react-icons/fa";
 import { FaBluesky, FaRegStar } from "react-icons/fa6";
 import { IoIosSettings } from "react-icons/io";
@@ -11,10 +12,26 @@ import LogInModal from "../modals/logInModal";
 import StockSearch from "./StockSearch";
 import FloatingDock from "./FloatingDock";
 
+const APP_ROUTE_PREFIXES = [
+    "/aktie",
+    "/screener",
+    "/marknadsnyheter",
+    "/mina-aktier",
+    "/skanna",
+    "/settings",
+    "/terminal",
+];
+
+const isAppRoute = (pathname) => APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+);
+
 export default function SiteChrome({ children }) {
     const { openModal } = useModal();
     const { user, isGuestUser } = useAuthContext();
+    const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const appView = isAppRoute(pathname);
 
     const handleOpenModal = () => {
         openModal(<LogInModal />);
@@ -28,7 +45,7 @@ export default function SiteChrome({ children }) {
 
     return (
         <main className="min-h-screen relative overflow-x-hidden">
-            <header className="w-full px-4 pt-4 mb-8 relative z-10">
+            {!appView && <header className="w-full px-4 pt-4 mb-8 relative z-10">
                 <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10">
                     <div className="flex flex-row justify-between w-full md:w-fit items-center">
                         <Link href="/" className="flex flex-row items-center gap-3 pr-2">
@@ -75,10 +92,10 @@ export default function SiteChrome({ children }) {
                         )}
                     </nav>
                 </div>
-            </header>
+            </header>}
             {children}
-            <FloatingDock />
-            <footer className="w-full mx-auto px-8 pt-12 pb-28 mt-16 flex flex-col md:flex-row items-center relative z-10">
+            <FloatingDock alwaysVisible={appView} />
+            {!appView && <footer className="w-full mx-auto px-8 pt-12 pb-28 mt-16 flex flex-col md:flex-row items-center relative z-10">
                 <div className="flex flex-row flex-wrap items-center justify-center gap-4 mb-2 md:mb-0">
                     <p className="text-text-muted text-sm">© 2025 Omxsum</p>
                     <p className="text-text-muted text-sm">Socialt:</p>
@@ -88,7 +105,7 @@ export default function SiteChrome({ children }) {
                     <Link href="/borsnyheter" className="text-text-muted underline">Börsnyheter</Link>
                     <a href="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</a>
                 </div>
-            </footer>
+            </footer>}
         </main>
     )
 }
