@@ -42,7 +42,7 @@ print(json.dumps(ReportDocumentStore(get_db()).status(), indent=1))"'
 | Dataset | Omfattning |
 |---|---|
 | Insynstransaktioner (FI) | 4 397 rader, mars 2025 → idag, 460 bolag, ingen beloppsgräns |
-| Ägardata ur rapporter | **479 bolag (55%)** efter universumsvep + sajtkrypning: största ägare + ledningens innehav där de redovisas |
+| Ägardata ur rapporter | **509 bolag (58,5%)** efter universumsvep + sajtkrypning + ÅR-först-prioritering: största ägare + ledningens innehav där de redovisas |
 | Valutakurser (FX) | EURSEK + USDSEK, 5 205 dagliga kurser, ~10 år |
 | VD-ord-sektioner | 2 439 totalt, 2 143 med AI-sammanfattning |
 | Spotlight-källan | 411 dokument, live-pollning var 60:e sekund |
