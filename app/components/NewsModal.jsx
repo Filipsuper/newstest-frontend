@@ -290,11 +290,25 @@ export default function NewsModal({ item, story }) {
             <h2 className="text-2xl font-serif font-bold italic text-text mb-3">{data.headline}</h2>
 
             {Number.isFinite(reactionPct) && (
-                <p className="text-sm mb-4">
-                    <span className="text-text-muted">Kursreaktion sedan publicering: </span>
-                    <span className={`font-semibold tabular-nums ${reactionPct >= 0 ? "text-primary" : "text-secondary"}`}>
-                        {reactionPct >= 0 ? "+" : ""}{reactionPct.toFixed(2)}%
+                <p className="text-sm mb-4 flex flex-row flex-wrap gap-x-4 gap-y-1">
+                    <span>
+                        <span className="text-text-muted">Kursreaktion sedan publicering: </span>
+                        <span className={`font-semibold tabular-nums ${reactionPct >= 0 ? "text-primary" : "text-secondary"}`}>
+                            {reactionPct >= 0 ? "+" : ""}{reactionPct.toFixed(2)}%
+                        </span>
                     </span>
+                    {/* Fixed windows are final numbers — they only render once the
+                        window has closed, so they never tick. */}
+                    {[["+1h", data.reaction?.h1Pct], ["+1 dag", data.reaction?.d1Pct]].map(([label, value]) =>
+                        Number.isFinite(value) ? (
+                            <span key={label} title={`Kursreaktion ${label} efter publicering`}>
+                                <span className="text-text-muted">{label}: </span>
+                                <span className={`font-semibold tabular-nums ${value >= 0 ? "text-primary" : "text-secondary"}`}>
+                                    {value >= 0 ? "+" : ""}{value.toFixed(2)}%
+                                </span>
+                            </span>
+                        ) : null
+                    )}
                 </p>
             )}
 

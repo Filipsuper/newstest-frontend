@@ -8,6 +8,7 @@ import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
 import { getCompanies } from '../utils/companies';
 import { TOPIC_LABELS } from '../utils/topicLabels';
 import StockSearch from './StockSearch';
+import PersonalPreview from './PersonalPreview';
 
 // Compact stock + topics picker used in onboarding (/bekrafta). The full
 // management UI lives on /mina-aktier.
@@ -104,30 +105,7 @@ export default function PersonalizationSetup() {
                 </div>
             )}
 
-            {hasPrefs && (
-                <div className="bg-border/20 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-text mb-1">
-                        {isPlusUser ? "📌 Min sammanfattning" : "🔒 Min sammanfattning"}
-                    </p>
-                    <p className="text-xs text-text-muted mb-3">
-                        Från och med imorgon innehåller ditt morgonbrev en egen sektion
-                        med nyheter som matchar dina val — med kursreaktioner.
-                    </p>
-                    {!isPlusUser && (
-                        <>
-                            <div className="flex flex-col gap-1.5 mb-3" aria-hidden="true">
-                                {[92, 68, 84].map((width) => (
-                                    <div key={width} className="h-2.5 bg-border" style={{ width: `${width}%` }} />
-                                ))}
-                            </div>
-                            <p className="text-xs text-text-muted">
-                                Du ser hur många nyheter som matchar — hela innehållet låses upp med{" "}
-                                <Link href="/pro" className="text-primary underline">Plus, 49 kr/mån</Link>.
-                            </p>
-                        </>
-                    )}
-                </div>
-            )}
+            {hasPrefs && <PersonalPreview />}
 
             <p className="text-xs text-text-muted">
                 Du kan alltid ändra dina val på{" "}

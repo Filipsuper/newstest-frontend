@@ -77,13 +77,14 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 
 ### 0. Wire → letters: use our own newsfeed in the summaries
 
-The morgon-/kvällsbrev generation should consume the OMXsum wire as a
-first-class source alongside the existing scrapes: top stories since the last
-letter (importance-ranked, Swedish, deduplicated, **with price reactions**)
-go into the summarization prompt. The evening letter especially benefits:
-"dagens mest marknadspåverkande nyheter" comes straight from reaction data.
-Additive and fail-safe — if the wire is unreachable the letters generate
-exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
+✅ Shipped aug 2026: both letters consume the wire via `getWireStoriesText`
+(newsbackend `jobs/utils/wireUtils.js`) — importance-ranked stories with
+price reactions injected into the summarization prompt; the evening letter
+sorts by absolute reaction ("dagens mest marknadspåverkande nyheter").
+Fail-safe: any wire error returns an empty block and the letters generate
+exactly as before. Windows: morning 16h back, evening 12h back — fixed
+hours rather than "since last letter", which overlap rather than gap.
+Long term the wire replaces the ad-hoc scrapes entirely.
 
 ### 1. Personalized letters (the big paid feature)
 
@@ -113,8 +114,12 @@ exactly as before. Long term the wire replaces the ad-hoc scrapes entirely.
 4. ✅ Indirect impact v1 (aug 2026): stories from the same industry as a
    watched stock (importance ≥70, max 2) appended to the personal block;
    AI bullets render them as "Inom din bransch: …"
-5. Onboarding upsell: after e-mail confirm → pick stocks + topics free →
-   preview the personalized section with real stories → "aktivera med Plus"
+5. ✅ Onboarding upsell (aug 2026): confirm → stock/topic picker (free) →
+   live preview of "Min sammanfattning" with real matched stories and
+   reactions (GET /api/user/personal-preview, same matching as the letter
+   composer) → "Aktivera med Plus". Preview also on /mina-aktier. The
+   letter section itself stays Plus-gated — the on-site preview is the
+   taste that sells it.
 
 **Identity merge (prerequisite for step 5):** newsletter signups live in the
 `mails` collection and are not accounts — but watchlists live on `users`.
@@ -149,7 +154,11 @@ macro themes).
   `management` event patterns (wire-12) — passive "utses till ny VD",
   ledningsförändringar, koncernchef/COO, interim. Rejected backlog
   reprocessed surgically (9 stories rescued incl. ASSA ABLOY/Gunnebo M&A).
-- Reaction measured at fixed windows (+1h, +1d) besides "since publish"
+- ✅ Fixed reaction windows (aug 2026): +1h and +1d beside "sedan
+  publicering", computed against the same baseline, reported only once the
+  window has closed (final numbers, never ticking). Minute bars where the
+  rolling cache reaches, daily-close fallback for older stories. Shown in
+  the news modal; `h1Pct`/`d1Pct` on the news resource for other consumers.
 - Reaction history on stock pages: "how does this stock react to reports?"
 - Honest labeling: thin trading and index moves aren't causality
 

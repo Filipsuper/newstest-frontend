@@ -9,6 +9,7 @@ import LogInModal from "../modals/logInModal";
 import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
 import { getCompanies } from '../utils/companies';
 import StockSearch from './StockSearch';
+import PersonalPreview from './PersonalPreview';
 import { TOPIC_LABELS } from '../utils/topicLabels';
 
 const WATCHLIST_CAPS = { free: 5, plus: 10, premium: 100 }; // keep in sync with backend routes/user.js
@@ -182,6 +183,13 @@ function WatchlistPage() {
                     </div>
                 )}
             </section>
+
+            {(watchlist.length > 0 || topics.length > 0) && (
+                <section className="max-w-4xl mx-auto mb-16">
+                    <h2 className="text-xl font-serif font-bold text-text mb-4">Din sektion i morgonbrevet</h2>
+                    <PersonalPreview />
+                </section>
+            )}
 
             {vocabulary && (
                 <section className="max-w-4xl mx-auto mb-16">

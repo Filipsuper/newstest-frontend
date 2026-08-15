@@ -234,6 +234,21 @@ export async function toggleWatchlist(symbol) {
     }
 }
 
+// Live preview of "Min sammanfattning": real matched stories for the
+// logged-in user, same matching as the letter composer.
+export async function fetchPersonalPreview() {
+    try {
+        const res = await fetch(`${API_URL}/user/personal-preview`, {
+            credentials: "include",
+        });
+        if (!res.ok) return null;
+        return res.json();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        return null;
+    }
+}
+
 export async function fetchScreener(order = "absolute", limit = 20) {
     try {
         const res = await fetch(`${API_URL}/feed/screener?order=${order}&limit=${limit}`, {
