@@ -1245,6 +1245,58 @@ function ManagementComment({ comment, latestReport }) {
     );
 }
 
+// A row's whole history in one glance: tiny bars over every known period,
+// each filled with a gradient that is strongest at the bar's tip and fades
+// toward the row's own zero level. Bars below zero wear the negative color.
+// Plain SVG — thirty rows of a charting library would be felt, this is not.
+function MiniTrend({ points, format }) {
+    const id = useId().replace(/[^a-z0-9]/gi, "");
+    const width = 148;
+    const height = 30;
+    const known = points.filter((point) => point.value != null);
+    if (known.length < 2) return null;
+    const top = Math.max(0, ...known.map((point) => point.value));
+    const bottom = Math.min(0, ...known.map((point) => point.value));
+    const range = top - bottom || 1;
+    const y = (value) => ((top - value) / range) * (height - 2) + 1;
+    const zero = y(0);
+    const hasNegative = bottom < 0;
+    const gap = points.length > 20 ? 1 : 2;
+    const barWidth = Math.max(1.5, (width - gap * (points.length - 1)) / points.length);
+    return (
+        <svg className="company-trend" viewBox={`0 0 ${width} ${height}`} width={width} height={height} role="img" aria-label="Utveckling över alla tillgängliga perioder">
+            <defs>
+                {/* Rendered even when degenerate (top === 0): SVG then paints
+                    the last stop, which is exactly the faint stub we want. */}
+                <linearGradient id={`trend-bar-pos-${id}`} gradientUnits="userSpaceOnUse" x1="0" y1="1" x2="0" y2={zero}>
+                    <stop offset="0" className="company-trend-stop-strong" />
+                    <stop offset="1" className="company-trend-stop-faint" />
+                </linearGradient>
+                {hasNegative && (
+                    <linearGradient id={`trend-bar-neg-${id}`} gradientUnits="userSpaceOnUse" x1="0" y1={zero} x2="0" y2={height - 1}>
+                        <stop offset="0" className="company-trend-stop-neg-faint" />
+                        <stop offset="1" className="company-trend-stop-neg-strong" />
+                    </linearGradient>
+                )}
+            </defs>
+            {hasNegative && <line className="company-trend-zero" x1="1" x2={width - 1} y1={zero} y2={zero} />}
+            {points.map((point, index) => point.value == null ? null : (
+                <rect
+                    key={index}
+                    x={index * (barWidth + gap)}
+                    y={point.value >= 0 ? y(point.value) : zero}
+                    width={barWidth}
+                    height={Math.max(Math.abs(y(point.value) - zero), 1.5)}
+                    fill={`url(#trend-bar-${point.value < 0 ? "neg" : "pos"}-${id})`}
+                    className={point.estimate ? "company-trend-estimate" : ""}
+                >
+                    <title>{`${point.label}: ${format(point.value)}`}</title>
+                </rect>
+            ))}
+        </svg>
+    );
+}
+
 function FinancialsTab({ financials, estimates }) {
     const latestEstimate = upcomingEstimateSnapshot(estimates?.latest, financials);
     const estimatePeriod = estimatePeriodFromSnapshot(latestEstimate);
@@ -1255,64 +1307,150 @@ function FinancialsTab({ financials, estimates }) {
         ["ttm", "R12", financials?.ttm],
     ];
     const basePeriods = options.find(([id]) => id === frequency)?.[2] ?? [];
+    const estimateTail = frequency === "quarterly" && estimatePeriod ? [estimatePeriod] : [];
     const periods = [
-        ...basePeriods.slice(frequency === "quarterly" && estimatePeriod ? -5 : -6),
-        ...(frequency === "quarterly" && estimatePeriod ? [estimatePeriod] : []),
+        ...basePeriods.slice(estimateTail.length ? -5 : -6),
+        ...estimateTail,
     ];
+    // The trend column reads the whole history, not just the visible slice —
+    // that is what lets the visible table stay narrow without losing the long view.
+    const trendPeriods = [...basePeriods, ...estimateTail];
     const currency = financials?.currency ?? latestEstimate?.metrics?.find((metric) => metric.currency)?.currency ?? "SEK";
-    const has = (key) => periods.some((period) => period[key] != null);
-    // The full statement view, grouped the way an annual report reads. A row
-    // only appears when at least one shown period carries the figure, so a
-    // company without gross-profit data gets no row of "Saknas".
+    const valueOf = (period, row) => (row.get ? row.get(period) : period[row.key]);
+    const has = (row) => periods.some((period) => valueOf(period, row) != null);
+    const row = (label, key, type, subs = []) => ({ label, key, type, subs });
+    const sub = (label, key, type, get) => ({ label, key, type, get, sub: true });
+    // The statement view, grouped the way an annual report reads. Percent rows
+    // sit directly under the figure they qualify — the rhythm of absolute
+    // numbers broken by relative ones is what makes the table scannable. A row
+    // only appears when at least one shown period carries the figure.
     const financialGroups = [
-        ["Resultat", [
-            ["Omsättning", "revenue", "money"],
-            ["EBIT", "ebit", "money"],
-            ...(has("ebita") ? [["EBITA", "ebita", "money"]] : []),
-            ["EBITDA", "ebitda", "money"],
-            ["Nettoresultat", "netIncome", "money"],
-            ...(has("dilutedEps") ? [["Vinst per aktie", "dilutedEps", "eps"]] : []),
+        ["Resultaträkning", [
+            row("Omsättning", "revenue", "money", [
+                sub("Tillväxt å/å", "revenueGrowthPct", "signedPct"),
+            ]),
+            row("Bruttoresultat", "grossProfit", "money", [
+                sub("Bruttomarginal", "grossMarginPct", "pct"),
+            ]),
+            row("EBITDA", "ebitda", "money", [
+                sub("EBITDA-marginal", "ebitdaMarginPct", "pct", (period) =>
+                    period.ebitda != null && period.revenue > 0 ? (period.ebitda / period.revenue) * 100 : null),
+            ]),
+            row("EBITA", "ebita", "money"),
+            row("Rörelseresultat (EBIT)", "ebit", "money", [
+                sub("EBIT-marginal", "ebitMarginPct", "pct"),
+            ]),
+            row("Resultat före skatt", "pretaxIncome", "money"),
+            row("Nettoresultat", "netIncome", "money", [
+                sub("Nettomarginal", "netMarginPct", "pct"),
+            ]),
+            row("Vinst per aktie", "dilutedEps", "eps"),
+            row("Antal aktier", "sharesOutstanding", "shares"),
         ]],
-        ["Marginaler och avkastning", [
-            ...(has("grossMarginPct") ? [["Bruttomarginal", "grossMarginPct", "pct"]] : []),
-            ["EBIT-marginal", "ebitMarginPct", "pct"],
-            ...(has("netMarginPct") ? [["Nettomarginal", "netMarginPct", "pct"]] : []),
-            ...(has("roePct") ? [["Avkastning på eget kapital (ROE)", "roePct", "pct"]] : []),
-            ...(has("roicPct") ? [["Avkastning på investerat kapital (ROIC)", "roicPct", "pct"]] : []),
+        ["Balansräkning", [
+            row("Eget kapital", "equity", "money", [
+                sub("Soliditet", "equityRatioPct", "pct"),
+            ]),
+            row("Rörelsekapital", "workingCapital", "money"),
         ]],
-        ["Balans och skuldsättning", [
-            ...(has("equity") ? [["Eget kapital", "equity", "money"]] : []),
-            ...(has("netDebt") ? [["Nettoskuld", "netDebt", "money"]] : []),
-            ...(has("equityRatioPct") ? [["Soliditet", "equityRatioPct", "pct"]] : []),
-            ...(has("netDebtToEbitda") ? [["Nettoskuld / EBITDA", "netDebtToEbitda", "x"]] : []),
+        ["Tillgångar", [
+            row("Totala tillgångar", "totalAssets", "money"),
+            row("Kassa och likvida medel", "cash", "money"),
+        ]],
+        ["Skulder", [
+            row("Totala skulder", "totalLiabilities", "money"),
+            row("Räntebärande skulder", "totalDebt", "money"),
+            row("Nettoskuld", "netDebt", "money", [
+                sub("Nettoskuld / EBITDA", "netDebtToEbitda", "x"),
+            ]),
         ]],
         ["Kassaflöde", [
-            ...(has("operatingCashFlow") ? [["Kassaflöde från driften", "operatingCashFlow", "money"]] : []),
-            ...(has("capitalExpenditure") ? [["Investeringar (capex)", "capitalExpenditure", "money"]] : []),
-            ["Fritt kassaflöde", "freeCashFlow", "money"],
-            ...(has("freeCashFlowMarginPct") ? [["FCF-marginal", "freeCashFlowMarginPct", "pct"]] : []),
-            ...(has("cashConversionPct") ? [["Kassagenerering (OCF/EBITDA)", "cashConversionPct", "pct"]] : []),
+            row("Kassaflöde från driften", "operatingCashFlow", "money", [
+                sub("Kassagenerering (OCF/EBITDA)", "cashConversionPct", "pct"),
+            ]),
+            row("Investeringar (capex)", "capitalExpenditure", "money"),
+            row("Fritt kassaflöde", "freeCashFlow", "money", [
+                sub("FCF-marginal", "freeCashFlowMarginPct", "pct"),
+            ]),
+            row("Utdelning", "dividendsPaid", "money"),
+            row("Återköp av aktier", "shareRepurchases", "money"),
         ]],
-        ["Tillväxt", [
-            ...(has("revenueGrowthPct") ? [["Omsättningstillväxt", "revenueGrowthPct", "signedPct"]] : []),
+        ["Avkastning", [
+            row("Avkastning på eget kapital (ROE)", "roePct", "pct"),
+            row("Avkastning på investerat kapital (ROIC)", "roicPct", "pct"),
         ]],
-    ].filter(([, rows]) => rows.length);
-    const financialCell = (period, key, type) => {
-        const value = period[key];
-        // Estimate columns only carry a handful of figures; a dash reads
-        // better than a wall of "Saknas" for rows nobody estimates.
-        if (value == null) return period.estimate ? "–" : type === "money" ? "Saknas" : "–";
+    ]
+        .map(([groupLabel, rows]) => [
+            groupLabel,
+            rows.filter(has).map((item) => ({ ...item, subs: (item.subs ?? []).filter(has) })),
+        ])
+        .filter(([, rows]) => rows.length);
+    const formatValue = (value, type) => {
+        if (value == null) return "–";
         if (type === "money") return money(value, currency);
         if (type === "eps") return number(value, 2);
+        if (type === "shares") return `${number(value / 1e6, 1)} M`;
         if (type === "x") return `${number(value, 1)}x`;
         if (type === "signedPct") return pct(value);
         return `${number(value)}%`;
     };
+    const valueClass = (value, type) =>
+        (type === "signedPct" || type === "pct" || type === "x") && value != null
+            ? value < 0 ? "company-fin-neg" : "company-fin-pos"
+            : "";
+    // CSS sticky cannot pin the header to the viewport from inside the
+    // horizontal scroll wrap, so a scroll handler slides the thead down while
+    // the page scrolls through the table, and lets it go at the last row.
+    const tableWrapRef = useRef(null);
+    useEffect(() => {
+        const thead = tableWrapRef.current?.querySelector("thead");
+        if (!thead) return undefined;
+        let frame = 0;
+        const align = () => {
+            frame = 0;
+            const table = thead.parentElement;
+            const shift = Math.min(Math.max(-table.getBoundingClientRect().top, 0), table.clientHeight - thead.clientHeight);
+            thead.style.transform = shift > 0 ? `translateY(${shift}px)` : "";
+        };
+        const onScroll = () => { if (!frame) frame = requestAnimationFrame(align); };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        align();
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", onScroll);
+            thead.style.transform = "";
+        };
+    }, [frequency, periods.length]);
+    const renderRow = (item) => (
+        <tr key={item.key} className={item.sub ? "company-row-sub" : ""}>
+            <th>{item.label}</th>
+            {periods.map((period) => {
+                const value = valueOf(period, item);
+                return (
+                    <td className={`${period.estimate ? "company-estimate-cell " : ""}${valueClass(value, item.type)}`} key={period.periodKey ?? period.periodEnd}>
+                        {formatValue(value, item.type)}
+                        {period.estimateAdjusted?.[item.key] && <small className="company-adjusted-mark"> just.</small>}
+                    </td>
+                );
+            })}
+            <td className="company-trend-cell">
+                <MiniTrend
+                    points={trendPeriods.map((period) => ({
+                        value: valueOf(period, item),
+                        estimate: Boolean(period.estimate),
+                        label: periodLabel(period),
+                    }))}
+                    format={(value) => formatValue(value, item.type)}
+                />
+            </td>
+        </tr>
+    );
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Rapporterat, härlett och estimerat</p>
             <h2>Finansiell utveckling</h2>
-            {/* <p className="company-intro">Jämför bolagets senaste perioder. R12 beräknas bara när fyra sammanhängande kvartal finns och estimat markeras med randiga staplar.</p> */}
             <div className="company-period-tabs">
                 {options.map(([id, label, values]) => (
                     <button key={id} disabled={!values?.length} className={frequency === id ? "active" : ""} onClick={() => setFrequency(id)}>{label}</button>
@@ -1321,26 +1459,29 @@ function FinancialsTab({ financials, estimates }) {
             {!periods.length ? <p className="company-empty">Data saknas för vald period.</p> : (
                 <>
                     <FinancialDevelopmentChart periods={periods} currency={currency} />
-                    <div className="company-table-wrap">
+                    <div className="company-table-wrap" ref={tableWrapRef}>
                         <table className="company-financial-table company-financial-statement">
                             <colgroup>
                                 <col className="company-metric-column" />
                                 {periods.map((period) => (
                                     <col className="company-period-column" key={period.periodKey ?? period.periodEnd} />
                                 ))}
+                                <col className="company-trend-column" />
                             </colgroup>
-                            <thead><tr><th>Nyckeltal</th>{periods.map((period) => <th className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}</tr></thead>
+                            <thead><tr>
+                                <th>Nyckeltal</th>
+                                {periods.map((period) => <th className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>{periodLabel(period)}</th>)}
+                                <th className="company-trend-cell">{trendPeriods.length > periods.length ? `${trendPeriods.length} perioder` : "Trend"}</th>
+                            </tr></thead>
                             <tbody>
                                 {financialGroups.map(([groupLabel, rows]) => (
                                     <Fragment key={groupLabel}>
-                                        <tr className="company-row-group"><th colSpan={periods.length + 1}>{groupLabel}</th></tr>
-                                        {rows.map(([label, key, type]) => (
-                                            <tr key={key}><th>{label}</th>{periods.map((period) => (
-                                                <td className={period.estimate ? "company-estimate-cell" : ""} key={period.periodKey ?? period.periodEnd}>
-                                                    {financialCell(period, key, type)}
-                                                    {period.estimateAdjusted?.[key] && <small className="company-adjusted-mark"> just.</small>}
-                                                </td>
-                                            ))}</tr>
+                                        <tr className="company-row-group"><th colSpan={periods.length + 2}>{groupLabel}</th></tr>
+                                        {rows.map((item) => (
+                                            <Fragment key={item.key}>
+                                                {renderRow(item)}
+                                                {item.subs.map((subItem) => renderRow(subItem))}
+                                            </Fragment>
                                         ))}
                                     </Fragment>
                                 ))}

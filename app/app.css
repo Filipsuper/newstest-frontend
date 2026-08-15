@@ -1410,25 +1410,34 @@ body {
 
 .company-period-tabs { margin: 30px 0 18px; }
 
+/* No side padding: the header band and row backgrounds run edge to edge;
+   the first and last cells carry the breathing room instead. */
 .company-table-wrap {
   max-width: 100%;
-  padding: 8px 18px;
+  padding: 0 0 10px;
   border-radius: 10px;
   background: var(--company-panel);
   overflow-x: auto;
 }
 
+.company-financial-table th:first-child,
+.company-financial-table td:first-child { padding-left: 18px; }
+
+.company-financial-table th:last-child,
+.company-financial-table td:last-child { padding-right: 18px; }
+
 .company-financial-table {
   width: 100%;
   min-width: 760px;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  color: var(--color-text-article);
+  font-size: 0.79rem;
   font-variant-numeric: tabular-nums;
 }
 
 .company-financial-table th,
 .company-financial-table td {
-  padding: 14px 12px;
+  padding: 9px 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
   text-align: right;
 }
@@ -1444,12 +1453,29 @@ body {
   z-index: 2;
   background: var(--company-panel);
   text-align: left;
+  box-shadow: 13px 0 18px -18px var(--color-shadow);
+}
+
+/* The period row rides along when the page scrolls past it (a scroll handler
+   translates the thead — CSS sticky cannot escape the horizontal scroll wrap),
+   on a slightly lifted tint so it reads as chrome rather than data. */
+.company-financial-table thead {
+  position: relative;
+  z-index: 3;
+  will-change: transform;
 }
 
 .company-financial-table thead th {
   color: var(--color-text-muted);
-  font-weight: 550;
+  font-size: 0.7rem;
+  font-weight: 520;
   white-space: nowrap;
+  background: color-mix(in srgb, black 6%, var(--company-panel));
+}
+
+.company-financial-table thead th:first-child {
+  z-index: 4;
+  background: color-mix(in srgb, black 6%, var(--company-panel));
 }
 
 .company-financial-table tbody tr:not(.company-row-group) > th:first-child {
@@ -1466,20 +1492,76 @@ body {
 }
 
 .company-financial-table tbody th { color: var(--color-text-muted); font-weight: 500; }
-.company-financial-table td { color: var(--color-text); }
+.company-financial-table td { color: var(--color-text-article); }
 
 /* Statement-section rows: quiet dividers that read like an annual report's
    own headings, not extra chrome. */
 .company-financial-table tr.company-row-group th {
-  padding: 22px 12px 8px;
+  padding: 16px 12px 6px 18px;
   border-bottom: none;
   color: var(--color-text);
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 680;
   letter-spacing: 0.01em;
 }
 
 .company-financial-table tr.company-row-group:first-child th { padding-top: 8px; }
+
+/* Percent rows sit under the figure they qualify: smaller, italic, and in the
+   site's polarity colors — the relative numbers break up the absolute ones. */
+.company-financial-table tr.company-row-sub > th:first-child {
+  padding-left: 32px;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.company-financial-table tr.company-row-sub td {
+  padding-top: 4px;
+  padding-bottom: 7px;
+  font-size: 0.74rem;
+  font-style: italic;
+}
+
+.company-financial-table tr.company-row-sub th { padding-top: 4px; padding-bottom: 7px; }
+
+.company-financial-table td.company-fin-pos { color: var(--company-positive); }
+.company-financial-table td.company-fin-neg { color: var(--company-negative); }
+
+/* Following one metric across ten columns needs a guide line. */
+.company-financial-statement tbody tr:not(.company-row-group):hover > td,
+.company-financial-statement tbody tr:not(.company-row-group):hover > th {
+  background: color-mix(in srgb, var(--color-text) 4%, var(--company-panel));
+}
+
+.company-financial-statement .company-trend-column { width: 172px; }
+
+.company-financial-table .company-trend-cell {
+  text-align: right;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.company-trend { display: inline-block; vertical-align: middle; }
+
+/* Each bar's gradient is strongest at its tip and fades toward the row's
+   zero level; bars below zero wear the negative color instead. */
+.company-trend .company-trend-stop-strong { stop-color: var(--company-blue); stop-opacity: 0.78; }
+.company-trend .company-trend-stop-faint { stop-color: var(--company-blue); stop-opacity: 0.22; }
+.company-trend .company-trend-stop-neg-strong { stop-color: var(--company-negative); stop-opacity: 0.78; }
+.company-trend .company-trend-stop-neg-faint { stop-color: var(--company-negative); stop-opacity: 0.22; }
+
+.company-trend rect.company-trend-estimate { opacity: 0.45; }
+
+.company-trend .company-trend-zero {
+  stroke: color-mix(in srgb, var(--color-text-muted) 35%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.company-financial-table tr.company-row-sub .company-trend .company-trend-stop-strong,
+.company-financial-table tr.company-row-sub .company-trend .company-trend-stop-faint {
+  stop-color: var(--company-positive);
+}
 
 .company-financial-chart {
   width: 100%;
@@ -1555,7 +1637,8 @@ body {
 }
 
 .company-estimate-cell {
-  background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--color-text-muted) 8%, transparent) 8px 10px);
+  /* Image only, so the sticky header's own background-color survives underneath. */
+  background-image: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--color-text-muted) 8%, transparent) 8px 10px);
 }
 
 .company-adjusted-mark {
@@ -2405,7 +2488,7 @@ body {
     width: calc(100% + 28px);
     max-width: none;
     margin-inline: -14px;
-    padding: 8px 0;
+    padding: 0 0 8px;
     border-radius: 0;
   }
   .company-insider-layout,
@@ -2417,14 +2500,20 @@ body {
   .company-financial-statement .company-metric-column { width: 126px; }
   .company-financial-statement .company-period-column { width: 112px; }
   .company-financial-statement th,
-  .company-financial-statement td { padding: 12px 9px; }
+  .company-financial-statement td { padding: 8px 9px; }
   .company-financial-statement tbody tr:not(.company-row-group) > th:first-child {
     width: 126px;
     max-width: 126px;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     line-height: 1.3;
   }
-  .company-financial-statement tr.company-row-group th { padding-inline: 9px; }
+  .company-financial-statement tr.company-row-group th { padding-inline: 14px 9px; }
+  .company-financial-statement .company-trend-column { width: 148px; }
+  .company-financial-table th:first-child,
+  .company-financial-table td:first-child { padding-left: 14px; }
+  .company-financial-table th:last-child,
+  .company-financial-table td:last-child { padding-right: 14px; }
+  .company-financial-table tr.company-row-sub > th:first-child { padding-left: 22px; }
   .company-ceo-columns { grid-template-columns: 1fr; gap: 30px; }
   .company-ceo-keyfigures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .company-ceo-section { margin-inline: -14px; width: calc(100% + 28px); padding: 30px 14px; border-radius: 0; }
