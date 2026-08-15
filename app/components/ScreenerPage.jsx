@@ -5,29 +5,30 @@ import Link from "next/link";
 import {
     FiArrowDown,
     FiArrowUp,
-    FiChevronDown,
+    FiInfo,
     FiPlus,
     FiRefreshCw,
     FiX,
 } from "react-icons/fi";
 import { fetchScreener } from "../utils/api";
+import Dropdown from "./Dropdown";
 import PlusPaywall from "./PlusPaywall";
 
 const REFRESH_MS = 60_000;
 
 const METRICS = {
-    marketCap: { label: "Börsvärde", unit: "mdr kr", step: "1" },
-    revenueGrowthPct: { label: "Omsättningstillväxt", unit: "%", step: "1" },
-    ebitMarginPct: { label: "EBIT-marginal", unit: "%", step: "1" },
-    roePct: { label: "Avkastning på eget kapital", unit: "%", step: "1" },
-    pe: { label: "P/E", unit: "x", step: "1" },
-    ps: { label: "P/S", unit: "x", step: "0.1" },
-    evEbit: { label: "EV/EBIT", unit: "x", step: "1" },
-    netDebtToEbitda: { label: "Nettoskuld/EBITDA", unit: "x", step: "0.5" },
-    changePct: { label: "Dagens utveckling", unit: "%", step: "1" },
-    rvolAtTime: { label: "Relativ volym", unit: "x", step: "0.1" },
-    return15mPct: { label: "Utveckling 15 min", unit: "%", step: "0.5" },
-    gapPct: { label: "Öppningsgap", unit: "%", step: "0.5" },
+    marketCap: { label: "Börsvärde", unit: "mdr kr", step: "1", description: "Aktiekurs multiplicerad med senast rapporterat antal utestående aktier. Visas i miljarder kronor." },
+    revenueGrowthPct: { label: "Omsättningstillväxt", unit: "%", step: "1", description: "Förändringen i omsättning jämfört med föregående rapporterade helår." },
+    ebitMarginPct: { label: "EBIT-marginal", unit: "%", step: "1", description: "Rörelseresultat, EBIT, som andel av omsättningen för senast rapporterade helår." },
+    roePct: { label: "Avkastning på eget kapital", unit: "%", step: "1", description: "Årets nettoresultat dividerat med eget kapital för senast rapporterade helår." },
+    pe: { label: "P/E", unit: "x", step: "1", description: "Aktiekurs dividerad med rapporterad vinst per aktie. Negativ eller extremt hög P/E visas som Saknas." },
+    ps: { label: "P/S", unit: "x", step: "0.1", description: "Bolagets börsvärde dividerat med omsättningen för senast rapporterade helår." },
+    evEbit: { label: "EV/EBIT", unit: "x", step: "1", description: "Börsvärde plus nettoskuld dividerat med rapporterat EBIT. Negativt EBIT ger inget värde." },
+    netDebtToEbitda: { label: "Nettoskuld/EBITDA", unit: "x", step: "0.5", description: "Rapporterad nettoskuld dividerad med EBITDA för senaste helåret. Ett negativt värde kan indikera nettokassa." },
+    changePct: { label: "Dagens utveckling", unit: "%", step: "1", description: "Kursförändringen sedan föregående handelsdags stängning." },
+    rvolAtTime: { label: "Relativ volym", unit: "x", step: "0.1", description: "Dagens ackumulerade volym jämförd med normal volym vid samma tidpunkt under tidigare handelsdagar." },
+    return15mPct: { label: "Utveckling 15 min", unit: "%", step: "0.5", description: "Kursförändringen under de senaste 15 minuterna i OMXsums sparade marknadsflöde." },
+    gapPct: { label: "Öppningsgap", unit: "%", step: "0.5", description: "Skillnaden mellan dagens öppningskurs och föregående handelsdags stängningskurs." },
 };
 
 const FILTER_GROUPS = [
@@ -38,6 +39,23 @@ const FILTER_GROUPS = [
     { label: "Värdering", metrics: ["pe", "ps", "evEbit"] },
     { label: "Tekniskt", metrics: ["changePct", "rvolAtTime", "return15mPct", "gapPct"] },
 ];
+
+const METRIC_DROPDOWN_GROUPS = FILTER_GROUPS.map((group) => ({
+    label: group.label,
+    options: group.metrics.map((value) => ({ value, label: METRICS[value].label })),
+}));
+
+const OPERATOR_OPTIONS = [
+    { value: "gt", label: "Över" },
+    { value: "lt", label: "Under" },
+];
+
+const PILL_LABELS = {
+    roePct: "ROE",
+    pe: "PE",
+    ps: "PS",
+    return15mPct: "15 min",
+};
 
 const COLUMNS = [
     { key: "company", label: "Bolag", align: "left" },
@@ -85,9 +103,19 @@ function signedClass(value) {
     return number > 0 ? "text-emerald-500 dark:text-emerald-300" : "text-red-500 dark:text-red-400";
 }
 
-function activeFilterLabel(filter) {
+function activeFilterParts(filter) {
     const metric = METRICS[filter.metric];
-    return `${metric.label} ${filter.operator === "gte" ? "minst" : "högst"} ${svNumber.format(filter.value)}${metric.unit === "%" ? "%" : ` ${metric.unit}`}`;
+    const unit = metric.unit === "%"
+        ? "%"
+        : filter.metric === "marketCap"
+            ? " mdr kr"
+            : filter.metric === "netDebtToEbitda" || filter.metric === "rvolAtTime"
+                ? "x"
+                : "";
+    return {
+        label: PILL_LABELS[filter.metric] ?? metric.label,
+        condition: `${filter.operator === "gt" ? ">" : "<"} ${svNumber.format(filter.value)}${unit}`,
+    };
 }
 
 function EmptyState({ filtered }) {
@@ -111,7 +139,7 @@ function ScreenerTable() {
     const [filters, setFilters] = useState([]);
     const [filterOpen, setFilterOpen] = useState(false);
     const [draftMetric, setDraftMetric] = useState("revenueGrowthPct");
-    const [draftOperator, setDraftOperator] = useState("gte");
+    const [draftOperator, setDraftOperator] = useState("gt");
     const [draftValue, setDraftValue] = useState("10");
     const [sort, setSort] = useState({ key: "marketCap", direction: "desc" });
 
@@ -175,6 +203,14 @@ function ScreenerTable() {
 
     const segments = useMemo(() => [...new Set((items ?? []).map((row) => row.segment).filter(Boolean))].sort(), [items]);
     const sectors = useMemo(() => [...new Set((items ?? []).map((row) => row.sector).filter(Boolean))].sort(), [items]);
+    const segmentOptions = useMemo(() => [
+        { value: "all", label: "Alla listor" },
+        ...segments.map((value) => ({ value, label: value })),
+    ], [segments]);
+    const sectorOptions = useMemo(() => [
+        { value: "all", label: "Alla sektorer" },
+        ...sectors.map((value) => ({ value, label: value })),
+    ], [sectors]);
 
     const visibleItems = useMemo(() => {
         const result = (items ?? []).filter((row) => {
@@ -183,7 +219,7 @@ function ScreenerTable() {
             return filters.every((filter) => {
                 const value = valueFor(row, filter.metric);
                 if (value == null) return false;
-                return filter.operator === "gte" ? value >= filter.value : value <= filter.value;
+                return filter.operator === "gt" ? value > filter.value : value < filter.value;
             });
         });
 
@@ -232,6 +268,44 @@ function ScreenerTable() {
     return (
         <section className="font-sans" aria-label="Aktiescreener">
             <div className="screener-toolbar">
+                <h1 className="">Screener</h1>
+                {hasFilters && (
+                    <div className="screener-chips" aria-label="Aktiva filter">
+                        {segment !== "all" && (
+                            <button type="button" className="screener-chip is-active" onClick={() => setSegment("all")} aria-label={`Ta bort listfilter ${segment}`}>
+                                <span className="screener-chip-label">Lista</span>
+                                <span className="screener-chip-divider" aria-hidden="true" />
+                                <span className="screener-chip-condition">{segment}</span>
+                                <FiX aria-hidden="true" />
+                            </button>
+                        )}
+                        {sector !== "all" && (
+                            <button type="button" className="screener-chip is-active" onClick={() => setSector("all")} aria-label={`Ta bort sektorfilter ${sector}`}>
+                                <span className="screener-chip-label">Sektor</span>
+                                <span className="screener-chip-divider" aria-hidden="true" />
+                                <span className="screener-chip-condition">{sector}</span>
+                                <FiX aria-hidden="true" />
+                            </button>
+                        )}
+                        {filters.map((filter) => {
+                            const parts = activeFilterParts(filter);
+                            return (
+                                <button
+                                    type="button"
+                                    key={`${filter.metric}-${filter.operator}`}
+                                    className="screener-chip is-active"
+                                    onClick={() => setFilters((current) => current.filter((item) => item !== filter))}
+                                    aria-label={`Ta bort ${parts.label} ${parts.condition}`}
+                                >
+                                    <span className="screener-chip-label">{parts.label}</span>
+                                    <span className="screener-chip-divider" aria-hidden="true" />
+                                    <span className="screener-chip-condition">{parts.condition}</span>
+                                    <FiX aria-hidden="true" />
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
                 <div className="screener-toolbar-actions">
                     <button
                         type="button"
@@ -257,32 +331,6 @@ function ScreenerTable() {
                 </div>
             </div>
 
-            {hasFilters && (
-                <div className="screener-chips" aria-label="Aktiva filter">
-                    {segment !== "all" && (
-                        <button type="button" className="screener-chip is-active" onClick={() => setSegment("all")} aria-label={`Ta bort listfilter ${segment}`}>
-                            {segment} <FiX aria-hidden="true" />
-                        </button>
-                    )}
-                    {sector !== "all" && (
-                        <button type="button" className="screener-chip is-active" onClick={() => setSector("all")} aria-label={`Ta bort sektorfilter ${sector}`}>
-                            {sector} <FiX aria-hidden="true" />
-                        </button>
-                    )}
-                    {filters.map((filter) => (
-                        <button
-                            type="button"
-                            key={`${filter.metric}-${filter.operator}`}
-                            className="screener-chip is-active"
-                            onClick={() => setFilters((current) => current.filter((item) => item !== filter))}
-                            aria-label={`Ta bort ${activeFilterLabel(filter)}`}
-                        >
-                            {activeFilterLabel(filter)} <FiX aria-hidden="true" />
-                        </button>
-                    ))}
-                </div>
-            )}
-
             {filterOpen && (
                 <div className="screener-filter-backdrop" onMouseDown={() => setFilterOpen(false)}>
                     <div
@@ -295,7 +343,7 @@ function ScreenerTable() {
                         <div className="screener-filter-modal-heading">
                             <div>
                                 <h2 id="screener-filter-title">Filtrera bolag</h2>
-                                <p>Kombinera marknad, finansiella nyckeltal och tekniska signaler.</p>
+                                {/* <p>Kombinera marknad, finansiella nyckeltal och tekniska signaler.</p> */}
                             </div>
                             <button type="button" onClick={() => setFilterOpen(false)} aria-label="Stäng filter">
                                 <FiX aria-hidden="true" />
@@ -304,54 +352,31 @@ function ScreenerTable() {
 
                         <div className="screener-filter-modal-body">
                             <div className="screener-filter-market">
-                                <label>
+                                <div className="screener-filter-field">
                                     <span>Lista</span>
-                                    <div className="screener-filter-select">
-                                        <select value={segment} onChange={(event) => setSegment(event.target.value)}>
-                                            <option value="all">Alla listor</option>
-                                            {segments.map((value) => <option key={value} value={value}>{value}</option>)}
-                                        </select>
-                                        <FiChevronDown aria-hidden="true" />
-                                    </div>
-                                </label>
-                                <label>
+                                    <Dropdown value={segment} onChange={setSegment} options={segmentOptions} ariaLabel="Välj lista" />
+                                </div>
+                                <div className="screener-filter-field">
                                     <span>Sektor</span>
-                                    <div className="screener-filter-select">
-                                        <select value={sector} onChange={(event) => setSector(event.target.value)}>
-                                            <option value="all">Alla sektorer</option>
-                                            {sectors.map((value) => <option key={value} value={value}>{value}</option>)}
-                                        </select>
-                                        <FiChevronDown aria-hidden="true" />
-                                    </div>
-                                </label>
+                                    <Dropdown value={sector} onChange={setSector} options={sectorOptions} ariaLabel="Välj sektor" />
+                                </div>
                             </div>
 
                             <div className="screener-filter-divider" />
 
-                            <label className="screener-filter-field">
+                            <div className="screener-filter-field">
                                 <span>Nyckeltal</span>
-                                <div className="screener-filter-select">
-                                    <select value={draftMetric} onChange={(event) => setDraftMetric(event.target.value)}>
-                                        {FILTER_GROUPS.map((group) => (
-                                            <optgroup key={group.label} label={group.label}>
-                                                {group.metrics.map((key) => <option key={key} value={key}>{METRICS[key].label}</option>)}
-                                            </optgroup>
-                                        ))}
-                                    </select>
-                                    <FiChevronDown aria-hidden="true" />
-                                </div>
-                            </label>
+                                <Dropdown value={draftMetric} onChange={setDraftMetric} groups={METRIC_DROPDOWN_GROUPS} ariaLabel="Välj nyckeltal" />
+                            </div>
+                            <div className="screener-filter-info">
+                                <FiInfo aria-hidden="true" />
+                                <p>{METRICS[draftMetric].description}</p>
+                            </div>
                             <div className="screener-filter-rule">
-                                <label className="screener-filter-field">
+                                <div className="screener-filter-field">
                                     <span>Villkor</span>
-                                    <div className="screener-filter-select">
-                                        <select value={draftOperator} onChange={(event) => setDraftOperator(event.target.value)}>
-                                            <option value="gte">Minst</option>
-                                            <option value="lte">Högst</option>
-                                        </select>
-                                        <FiChevronDown aria-hidden="true" />
-                                    </div>
-                                </label>
+                                    <Dropdown value={draftOperator} onChange={setDraftOperator} options={OPERATOR_OPTIONS} ariaLabel="Välj villkor" />
+                                </div>
                                 <label className="screener-filter-field">
                                     <span>Värde ({METRICS[draftMetric].unit})</span>
                                     <input
@@ -365,13 +390,13 @@ function ScreenerTable() {
                                 </label>
                             </div>
                             <button type="button" className="screener-add-condition" onClick={addDraftFilter}>
-                                <FiPlus aria-hidden="true" /> Lägg till villkor
+                                <FiPlus aria-hidden="true" /> Lägg till
                             </button>
                         </div>
 
                         <div className="screener-filter-modal-footer">
-                            {hasFilters && <button type="button" className="screener-clear-filters" onClick={resetFilters}>Rensa alla</button>}
-                            <button type="button" className="screener-filter-done" onClick={() => setFilterOpen(false)}>Klar</button>
+                            {hasFilters && <button type="button" className="screener-clear-filters" onClick={resetFilters}>Rensa filter</button>}
+                            <button type="button" className="screener-filter-done" onClick={() => setFilterOpen(false)}>Stäng</button>
                         </div>
                     </div>
                 </div>
