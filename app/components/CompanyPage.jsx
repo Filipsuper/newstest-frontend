@@ -1478,6 +1478,8 @@ function InsidersTab({ symbol, companyName, marketCap }) {
     const summary90 = data?.summary?.last90Days;
     const summary365 = data?.summary?.last365Days;
     const ownership = data?.ownership?.available ? data.ownership : null;
+    const persons = insiderPersons(rows);
+    const hasOwners = Boolean(ownership?.largestOwners?.length);
     const holdings = new Map((data?.personHoldings ?? []).map((entry) => [entry.person, entry]));
     const holdingShare = (row) => {
         const holding = holdings.get(row.person);
@@ -1496,98 +1498,107 @@ function InsidersTab({ symbol, companyName, marketCap }) {
             {data && !rows.length && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>}
 
             {rows.length > 0 && (
-                <>
-                    {(summary365?.transactions ?? 0) > 0 && (
-                        <div className="company-insider-summary">
-                            <small className="company-insider-heading">Insynshandel senaste 12 mån</small>
-                            <strong className={`company-insider-net ${summary365.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}`}>
-                                {summary365.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary365.netValue))}
-                            </strong>
-                            <small className="company-insider-sub">
-                                {summary365.transactions} affärer · {summary365.buyers} köpare · {summary365.sellers} säljare
-                                {capSharePct(summary365.netValue, marketCap) != null && ` · ≈ ${number(capSharePct(summary365.netValue, marketCap), 3)} % av börsvärdet`}
-                            </small>
-                            <div className="company-insider-split">
-                                <div>
-                                    <span><i className="company-insider-dot company-insider-dot-buy" />Köp</span>
-                                    <strong>{sekFull(summary365.boughtValue)}</strong>
+                <div className={`company-insider-layout ${hasOwners ? "" : "company-insider-layout-single"}`}>
+                    <div className="company-insider-transactions">
+                        {(summary365?.transactions ?? 0) > 0 && (
+                            <div className="company-insider-summary">
+                                <small className="company-insider-heading">Insynshandel senaste 12 mån</small>
+                                <strong className={`company-insider-net ${summary365.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}`}>
+                                    {summary365.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary365.netValue))}
+                                </strong>
+                                <small className="company-insider-sub">
+                                    {summary365.transactions} affärer · {summary365.buyers} köpare · {summary365.sellers} säljare
+                                    {capSharePct(summary365.netValue, marketCap) != null && ` · ≈ ${number(capSharePct(summary365.netValue, marketCap), 3)} % av börsvärdet`}
+                                </small>
+                                <div className="company-insider-split">
+                                    <div>
+                                        <span><i className="company-insider-dot company-insider-dot-buy" />Köp</span>
+                                        <strong>{sekFull(summary365.boughtValue)}</strong>
+                                    </div>
+                                    <div>
+                                        <span><i className="company-insider-dot company-insider-dot-sell" />Sälj</span>
+                                        <strong>{sekFull(summary365.soldValue)}</strong>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span><i className="company-insider-dot company-insider-dot-sell" />Sälj</span>
-                                    <strong>{sekFull(summary365.soldValue)}</strong>
-                                </div>
+                                {(summary90?.transactions ?? 0) > 0 && summary90.transactions !== summary365.transactions && (
+                                    <small className="company-insider-sub">Senaste 3 mån: netto {summary90.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary90.netValue))} ({summary90.transactions} affärer)</small>
+                                )}
                             </div>
-                            {(summary90?.transactions ?? 0) > 0 && summary90.transactions !== summary365.transactions && (
-                                <small className="company-insider-sub">Senaste 3 mån: netto {summary90.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary90.netValue))} ({summary90.transactions} affärer)</small>
-                            )}
-                        </div>
-                    )}
+                        )}
 
-                    {ownership && ownership.largestOwners?.length > 0 && (
-                        <div className="company-insider-persons company-insider-owners">
-                            <small className="company-insider-heading">Största ägare{ownership.ownersAsOf ? ` · ${ownership.ownersAsOf}` : ""}</small>
-                            {ownership.largestOwners.slice(0, 8).map((owner) => (
-                                <div key={owner.name} className="company-insider-person-row">
-                                    <span className="company-insider-person-name">{owner.name}
-                                        {owner.shares != null && <small>{Math.round(owner.shares).toLocaleString("sv-SE")} aktier</small>}
-                                    </span>
-                                    <span className="company-insider-person-net">
-                                        <strong>{owner.capitalPct != null ? `${number(owner.capitalPct, 1)} %` : owner.votesPct != null ? `${number(owner.votesPct, 1)} %` : "–"}</strong>
-                                        <small>{owner.capitalPct != null ? "av kapitalet" : owner.votesPct != null ? "av rösterna" : ""}{owner.capitalPct != null && owner.votesPct != null ? ` · ${number(owner.votesPct, 1)} % av rösterna` : ""}</small>
-                                    </span>
-                                </div>
-                            ))}
-                            <p className="company-source">Ur {ownership.source?.issuer ? `${ownership.source.issuer}s` : "bolagets"} årsredovisning{ownership.fiscalYear ? ` ${ownership.fiscalYear - 1}` : ""}{ownership.source?.url ? <> · <a href={ownership.source.url} target="_blank" rel="noreferrer">källa</a></> : null}. Innehav per rapportdatum, inte dagens position.</p>
-                        </div>
-                    )}
-
-                    {insiderPersons(rows).length > 0 && (
-                        <div className="company-insider-persons">
-                            <small className="company-insider-heading">Störst nettohandel per person · 24 mån</small>
-                            {insiderPersons(rows).map((entry) => (
-                                <div key={entry.person} className="company-insider-person-row">
-                                    <span className="company-insider-person-name">{entry.person}
-                                        <small>{entry.position}</small>
-                                        {holdings.get(entry.person)?.shares != null && (
-                                            <small>Innehav {Math.round(holdings.get(entry.person).shares).toLocaleString("sv-SE")} aktier{holdings.get(entry.person).includesRelated ? " inkl. närstående" : ""} · ÅR {holdings.get(entry.person).fiscalYear}</small>
-                                        )}
-                                    </span>
-                                    <span className="company-insider-person-net">
-                                        <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
-                                            {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
-                                        </strong>
-                                        <small>{entry.count} affärer{capSharePct(entry.net, marketCap) != null ? ` · ≈ ${number(capSharePct(entry.net, marketCap), 3)} % av börsvärdet` : ""}</small>
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <p className="company-insider-depth">Historik finns 24 månader bakåt i tiden.</p>
-                    <div className="company-insider-list">
-                        {rows.slice(0, 60).map((row) => {
-                            const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
-                            const showInstrument = row.instrumentType && !/^(share|aktie)$/i.test(row.instrumentType);
-                            return (
-                                <a key={row.txId} className="company-insider-row" href={row.url} target="_blank" rel="noreferrer">
-                                    <small className={`company-insider-tag company-insider-${direction.tone}`}>
-                                        {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}{row.direction === "disposal" && holdingShare(row) != null && ` · ≈ ${number(holdingShare(row), 1)} % av innehavet (ÅR ${holdings.get(row.person).fiscalYear})`}</span>
-                                    </small>
-                                    <div className="company-insider-main">
-                                        <span className="company-insider-name">{row.person}</span>
-                                        <span className="company-insider-value">{row.value == null ? "–" : sekFull(row.value, row.currency ?? "SEK")}</span>
+                        {persons.length > 0 && (
+                            <section className="company-insider-persons" aria-labelledby="company-insider-persons-heading">
+                                <h3 id="company-insider-persons-heading" className="company-insider-section-title">Nettohandel per person</h3>
+                                <p className="company-insider-sub">De största nettobeloppen under de senaste 24 månaderna.</p>
+                                {persons.map((entry) => (
+                                    <div key={entry.person} className="company-insider-person-row">
+                                        <span className="company-insider-person-name">{entry.person}
+                                            <small>{entry.position}</small>
+                                            {holdings.get(entry.person)?.shares != null && (
+                                                <small>Innehav {Math.round(holdings.get(entry.person).shares).toLocaleString("sv-SE")} aktier{holdings.get(entry.person).includesRelated ? " inkl. närstående" : ""} · ÅR {holdings.get(entry.person).fiscalYear}</small>
+                                            )}
+                                        </span>
+                                        <span className="company-insider-person-net">
+                                            <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
+                                                {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
+                                            </strong>
+                                            <small>{entry.count} affärer{capSharePct(entry.net, marketCap) != null ? ` · ≈ ${number(capSharePct(entry.net, marketCap), 3)} % av börsvärdet` : ""}</small>
+                                        </span>
                                     </div>
-                                    <div className="company-insider-meta">
-                                        <span>{row.closelyAssociated ? "Närstående till " : ""}{row.position}{showInstrument ? ` · ${row.instrumentType}` : ""}</span>
-                                        <span>{row.volume == null ? "" : `${Math.round(row.volume).toLocaleString("sv-SE")} st`}{row.volume != null && row.price != null ? " · " : ""}{row.price == null ? "" : `${number(row.price, 2)} ${row.currency ?? "SEK"}`}</span>
-                                    </div>
-                                </a>
-                            );
-                        })}
+                                ))}
+                            </section>
+                        )}
+
+                        <div className="company-insider-list-heading">
+                            <h3 className="company-insider-section-title">Transaktioner</h3>
+                            <p className="company-insider-depth">Senaste 24 månaderna</p>
+                        </div>
+                        <div className="company-insider-list">
+                            {rows.slice(0, 60).map((row) => {
+                                const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
+                                const showInstrument = row.instrumentType && !/^(share|aktie)$/i.test(row.instrumentType);
+                                return (
+                                    <a key={row.txId} className="company-insider-row" href={row.url} target="_blank" rel="noreferrer">
+                                        <small className={`company-insider-tag company-insider-${direction.tone}`}>
+                                            {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}{row.direction === "disposal" && holdingShare(row) != null && ` · ≈ ${number(holdingShare(row), 1)} % av innehavet (ÅR ${holdings.get(row.person).fiscalYear})`}</span>
+                                        </small>
+                                        <div className="company-insider-main">
+                                            <span className="company-insider-name">{row.person}</span>
+                                            <span className="company-insider-value">{row.value == null ? "–" : sekFull(row.value, row.currency ?? "SEK")}</span>
+                                        </div>
+                                        <div className="company-insider-meta">
+                                            <span>{row.closelyAssociated ? "Närstående till " : ""}{row.position}{showInstrument ? ` · ${row.instrumentType}` : ""}</span>
+                                            <span>{row.volume == null ? "" : `${Math.round(row.volume).toLocaleString("sv-SE")} st`}{row.volume != null && row.price != null ? " · " : ""}{row.price == null ? "" : `${number(row.price, 2)} ${row.currency ?? "SEK"}`}</span>
+                                        </div>
+                                    </a>
+                                );
+                            })}
+                        </div>
+                        {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
+                        <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
                     </div>
-                    {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
-                    <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
-                </>
+
+                    {hasOwners && (
+                        <aside className="company-insider-owner-panel" aria-labelledby="company-insider-owners-heading">
+                            <h3 id="company-insider-owners-heading" className="company-insider-section-title">Största ägare</h3>
+                            {ownership.ownersAsOf && <p className="company-insider-sub">Ägarbild {ownership.ownersAsOf}</p>}
+                            <div className="company-insider-persons company-insider-owners">
+                                {ownership.largestOwners.slice(0, 8).map((owner) => (
+                                    <div key={owner.name} className="company-insider-person-row">
+                                        <span className="company-insider-person-name">{owner.name}
+                                            {owner.shares != null && <small>{Math.round(owner.shares).toLocaleString("sv-SE")} aktier</small>}
+                                        </span>
+                                        <span className="company-insider-person-net">
+                                            <strong>{owner.capitalPct != null ? `${number(owner.capitalPct, 1)} %` : owner.votesPct != null ? `${number(owner.votesPct, 1)} %` : "–"}</strong>
+                                            <small>{owner.capitalPct != null ? "av kapitalet" : owner.votesPct != null ? "av rösterna" : ""}{owner.capitalPct != null && owner.votesPct != null ? ` · ${number(owner.votesPct, 1)} % av rösterna` : ""}</small>
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="company-source">Ur {ownership.source?.issuer ? `${ownership.source.issuer}s` : "bolagets"} årsredovisning{ownership.fiscalYear ? ` ${ownership.fiscalYear - 1}` : ""}{ownership.source?.url ? <> · <a href={ownership.source.url} target="_blank" rel="noreferrer">källa</a></> : null}. Innehav per rapportdatum, inte dagens position.</p>
+                        </aside>
+                    )}
+                </div>
             )}
         </section>
     );
