@@ -71,6 +71,37 @@ body {
   @apply bg-background text-text;
 }
 
+.app-view-header {
+  display: flex;
+  width: min(1320px, calc(100% - 40px));
+  height: 48px;
+  align-items: center;
+  margin: 0 auto;
+  padding-top: env(safe-area-inset-top);
+  font-family: var(--font-sans);
+}
+.app-view-header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+.app-view-header button svg { width: 19px; height: 19px; }
+.app-view-header button:hover {
+  background: color-mix(in srgb, var(--color-border) 24%, transparent);
+  color: var(--color-text);
+}
+.app-view-header button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 65%, transparent);
+  outline-offset: 2px;
+}
+
 
 .spin {
   animation: spin 1s reverse linear infinite;
@@ -2412,10 +2443,10 @@ body {
 /* Research screener: public-site spacing and readable labels, with the table
    density reserved for the comparison itself. */
 .screener-page {
-  width: min(100% - 40px, 1480px);
+  width: min(1320px, calc(100% - 40px));
   min-height: 80vh;
   margin: 0 auto;
-  padding: 52px 0 80px;
+  padding: 18px 0 80px;
 }
 
 .screener-heading { max-width: 760px; margin-bottom: 42px; }
@@ -2878,7 +2909,9 @@ body {
 .screener-method p:last-child { flex: 0 0 auto; text-align: right; }
 
 @media (max-width: 760px) {
-  .screener-page { width: calc(100% - 28px); padding-top: 18px; }
+  .app-view-header,
+  .screener-page { width: min(calc(100% - 28px), 720px); }
+  .screener-page { padding-top: 18px; }
   .screener-heading { margin-bottom: 34px; }
   .screener-heading h1 { font-size: 2.65rem; }
   .screener-toolbar { justify-content: flex-end; }

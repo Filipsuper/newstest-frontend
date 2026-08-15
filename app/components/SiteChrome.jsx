@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FaTwitter, FaBars } from "react-icons/fa";
 import { FaBluesky, FaRegStar } from "react-icons/fa6";
 import { IoIosSettings } from "react-icons/io";
+import { FiChevronLeft } from "react-icons/fi";
 import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
 import LogInModal from "../modals/logInModal";
@@ -30,6 +31,7 @@ export default function SiteChrome({ children }) {
     const { openModal } = useModal();
     const { user, isGuestUser } = useAuthContext();
     const pathname = usePathname();
+    const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const appView = isAppRoute(pathname);
 
@@ -42,6 +44,11 @@ export default function SiteChrome({ children }) {
     };
 
     const navLink = "text-text-muted hover:text-text transition-colors";
+
+    const goBack = () => {
+        if (window.history.length > 1) router.back();
+        else router.push("/");
+    };
 
     return (
         <main className="min-h-screen relative overflow-x-hidden">
@@ -93,6 +100,18 @@ export default function SiteChrome({ children }) {
                     </nav>
                 </div>
             </header>}
+            {appView && (
+                <header className="app-view-header">
+                    <button
+                        type="button"
+                        onClick={goBack}
+                        aria-label="Gå tillbaka"
+                        title="Tillbaka"
+                    >
+                        <FiChevronLeft aria-hidden="true" />
+                    </button>
+                </header>
+            )}
             {children}
             <FloatingDock alwaysVisible={appView} />
             {!appView && <footer className="w-full mx-auto px-8 pt-12 pb-28 mt-16 flex flex-col md:flex-row items-center relative z-10">
