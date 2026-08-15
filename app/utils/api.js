@@ -150,6 +150,23 @@ export async function fetchValuation(symbol) {
     return body;
 }
 
+// Insider transactions are Plus-only and update on FI's daily cadence, so the
+// tab loads them on demand.
+export async function fetchInsiders(symbol) {
+    const response = await fetch(
+        `${API_URL}/feed/company/${encodeURIComponent(symbol)}/insiders`,
+        { cache: "no-store", credentials: "include" },
+    );
+    const body = await response.json();
+    if (!response.ok || body?.error) {
+        const expiredSession = body?.upgrade || /token/i.test(body?.error ?? "");
+        throw new Error(expiredSession
+            ? "Logga in igen för att se insynshandeln"
+            : body?.error || "Kunde inte hämta insynsdata");
+    }
+    return body;
+}
+
 export async function fetchCompanyMentions(symbol) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/mentions`,

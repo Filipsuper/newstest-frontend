@@ -2070,6 +2070,84 @@ body {
 
 .company-valuation-method summary:hover { color: var(--color-text); }
 
+/* Insider registry ---------------------------------------------------------- */
+
+.company-insider-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 46px;
+  margin: 26px 0 8px;
+  padding: 22px 26px;
+  border-radius: 12px;
+  background: var(--color-background);
+}
+
+.company-insider-window {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.company-insider-window > small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.company-insider-window > div {
+  display: flex;
+  gap: 16px;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+}
+
+.company-insider-window strong {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.company-insider-buy { color: var(--company-positive); }
+.company-insider-sell { color: var(--company-negative); }
+
+.company-insider-table td,
+.company-insider-table th { white-space: nowrap; }
+
+.company-insider-person a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.company-insider-person a:hover { text-decoration: underline; }
+
+.company-insider-person small {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.company-insider-type {
+  font-weight: 650;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.company-insider-type.company-insider-buy { color: var(--company-positive); }
+.company-insider-type.company-insider-sell { color: var(--company-negative); }
+.company-insider-type.company-insider-neutral { color: var(--color-text-muted); }
+
+.company-insider-instrument {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+}
+
 .company-valuation-method > p {
   margin: 14px 0 18px;
   color: var(--color-text-article);

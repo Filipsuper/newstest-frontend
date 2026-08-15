@@ -23,7 +23,7 @@ import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsModal from "./NewsModal";
-import { fetchCompanyIntraday, fetchValuation, toggleWatchlist } from "../utils/api";
+import { fetchCompanyIntraday, fetchInsiders, fetchValuation, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -33,6 +33,7 @@ const TABS = [
     { id: "financials", label: "Finansiellt" },
     { id: "estimates", label: "Estimat" },
     { id: "valuation", label: "Värdering" },
+    { id: "insiders", label: "Insyn" },
     { id: "news", label: "Nyheter & rapporter" },
     { id: "calendar", label: "Kalender" },
 ];
@@ -1420,6 +1421,105 @@ function ValuationNote({ title, label, children }) {
     );
 }
 
+// FI:s verbatim natures -> readable Swedish; the normalized direction decides
+// the sign and color, so an odd nature never masquerades as a trade.
+const INSIDER_DIRECTION = {
+    acquisition: { label: "Köp", tone: "buy" },
+    subscription: { label: "Teckning", tone: "buy" },
+    disposal: { label: "Sälj", tone: "sell" },
+    loan_in: { label: "Inlån", tone: "neutral" },
+    loan_out: { label: "Utlån", tone: "neutral" },
+    other: { label: "Övrigt", tone: "neutral" },
+};
+
+function InsidersTab({ symbol, companyName }) {
+    const [data, setData] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        setData(null);
+        setError(null);
+        fetchInsiders(symbol)
+            .then((body) => { if (active) setData(body); })
+            .catch((cause) => { if (active) setError(cause.message); });
+        return () => { active = false; };
+    }, [symbol]);
+
+    const rows = data?.transactions ?? [];
+    const summary90 = data?.summary?.last90Days;
+    const summary365 = data?.summary?.last365Days;
+
+    return (
+        <section className="company-tab-section">
+            <p className="company-eyebrow">FI:s insynsregister</p>
+            <h2>Insynshandel</h2>
+            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien — varje registrerad transaktion, utan beloppsgräns. Nyhetsflödet visar bara de stora affärerna; här är mönstret.</p>
+
+            {error && <p className="company-empty">{error}</p>}
+            {!data && !error && <p className="company-empty">Hämtar insynshandel …</p>}
+            {data && !rows.length && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>}
+
+            {rows.length > 0 && (
+                <>
+                    {(summary365?.transactions ?? 0) > 0 && <div className="company-insider-summary">
+                        {[["Senaste 3 mån", summary90], ["Senaste 12 mån", summary365]].map(([label, summary]) => summary && (
+                            <div key={label} className="company-insider-window">
+                                <small>{label}</small>
+                                <div>
+                                    <span className="company-insider-buy">Köpt {money(summary.boughtValue, "SEK")}</span>
+                                    <span className="company-insider-sell">Sålt {money(summary.soldValue, "SEK")}</span>
+                                </div>
+                                <strong className={summary.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}>
+                                    Netto {summary.netValue >= 0 ? "+" : "−"}{money(Math.abs(summary.netValue), "SEK")}
+                                </strong>
+                                <small>{summary.buyers} köpare · {summary.sellers} säljare · {summary.transactions} transaktioner</small>
+                            </div>
+                        ))}
+                    </div>}
+
+                    <div className="company-table-wrap">
+                        <table className="company-financial-table company-insider-table">
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Person</th>
+                                    <th>Typ</th>
+                                    <th>Instrument</th>
+                                    <th>Volym</th>
+                                    <th>Pris</th>
+                                    <th>Värde</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.slice(0, 60).map((row) => {
+                                    const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
+                                    return (
+                                        <tr key={row.txId}>
+                                            <th>{svDate(row.transactionDate ?? row.publishedAt)}</th>
+                                            <td className="company-insider-person">
+                                                <a href={row.url} target="_blank" rel="noreferrer">{row.person}</a>
+                                                <small>{row.closelyAssociated ? "Närstående till " : ""}{row.position}</small>
+                                            </td>
+                                            <td><span className={`company-insider-type company-insider-${direction.tone}`}>{direction.label}</span></td>
+                                            <td className="company-insider-instrument">{row.instrumentType}</td>
+                                            <td>{row.volume == null ? "–" : compactAmount.format(row.volume)}</td>
+                                            <td>{row.price == null ? "–" : `${number(row.price, 2)} ${row.currency ?? ""}`}</td>
+                                            <td>{row.value == null ? "–" : money(row.value, row.currency ?? "SEK")}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
+                    <p className="company-source">Källa: Finansinspektionens insynsregister. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
+                </>
+            )}
+        </section>
+    );
+}
+
 function ValuationTab({ symbol, companyName }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
@@ -1863,7 +1963,7 @@ function Performance({ returns }) {
 
 // Tabs that live behind Plus. Everything else — identity, chart, description,
 // news and calendar — stays open so the page works as a public landing page.
-const PLUS_TABS = new Set(["financials", "estimates", "valuation"]);
+const PLUS_TABS = new Set(["financials", "estimates", "valuation", "insiders"]);
 
 function PlusTabGate({ companyName }) {
     const { isGuestUser } = useAuthContext();
@@ -1952,6 +2052,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
+            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} />}
             {tab === "news" && <NewsTab data={initialData} />}
             {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
         </main>
