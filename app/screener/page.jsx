@@ -1,8 +1,8 @@
 import ScreenerPage from "../components/ScreenerPage";
 
 export const metadata = {
-    title: "Screener – Dagens rörelser med nyheter",
-    description: "Dagens vinnare och förlorare på Stockholmsbörsen, med nyheten som förklarar rörelsen.",
+    title: "Aktiescreener – finansiella och tekniska nyckeltal",
+    description: "Filtrera svenska börsbolag på tillväxt, lönsamhet, värdering och tekniska nyckeltal.",
 };
 
 export default function Page() {

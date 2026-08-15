@@ -1542,7 +1542,7 @@ function InsidersTab({ symbol, companyName, marketCap }) {
                                             <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
                                                 {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
                                             </strong>
-                                            <small>{entry.count} affärer{capSharePct(entry.net, marketCap) != null ? ` · ≈ ${number(capSharePct(entry.net, marketCap), 3)} % av börsvärdet` : ""}</small>
+                                            <small>{entry.count} affärer</small>
                                         </span>
                                     </div>
                                 ))}
