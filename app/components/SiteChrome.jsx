@@ -110,6 +110,14 @@ export default function SiteChrome({ children }) {
                     >
                         <FiChevronLeft aria-hidden="true" />
                     </button>
+                    {(pathname === "/aktie" || pathname.startsWith("/aktie/")) && (
+                        <div className="app-view-search">
+                            <StockSearch
+                                placeholder="Sök aktie…"
+                                fieldClassName="app-view-search-field"
+                            />
+                        </div>
+                    )}
                 </header>
             )}
             {children}

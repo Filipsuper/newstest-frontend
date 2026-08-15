@@ -74,13 +74,14 @@ body {
 .app-view-header {
   display: flex;
   width: min(1320px, calc(100% - 40px));
-  height: 48px;
+  height: 100px;
+  padding: 0 20px;
   align-items: center;
   margin: 0 auto;
   padding-top: env(safe-area-inset-top);
   font-family: var(--font-sans);
 }
-.app-view-header button {
+.app-view-header > button {
   display: grid;
   width: 32px;
   height: 32px;
@@ -92,14 +93,27 @@ body {
   cursor: pointer;
   transition: color 150ms ease, background 150ms ease;
 }
-.app-view-header button svg { width: 19px; height: 19px; }
-.app-view-header button:hover {
+.app-view-header > button svg { width: 19px; height: 19px; }
+.app-view-header > button:hover {
   background: color-mix(in srgb, var(--color-border) 24%, transparent);
   color: var(--color-text);
 }
-.app-view-header button:focus-visible {
+.app-view-header > button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 65%, transparent);
   outline-offset: 2px;
+}
+.app-view-search {
+  width: min(300px, calc(100% - 44px));
+  margin-left: 8px;
+}
+.app-view-search-field {
+  height: 32px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--color-border) 20%, var(--color-foreground));
+}
+.app-view-search-field input {
+  padding-block: 0;
+  font-size: 0.78rem;
 }
 
 
@@ -288,7 +302,7 @@ body {
   width: min(1320px, calc(100% - 40px));
   min-height: 78vh;
   margin: 0 auto;
-  padding: 18px 0 72px;
+  padding: 0 0 72px;
   font-family: var(--font-sans);
 }
 
