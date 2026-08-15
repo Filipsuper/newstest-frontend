@@ -56,9 +56,13 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
   och tillväxt, grupperat som en årsredovisning. Härlett centralt i API:et.
 - ✅ Rapportskrapning (aug 2026): tre grundorsaker till att hälften av alla
   rapport-PDF:er saknade VD-ord är fixade; lagrade missar omprocessas.
-- Nästa steg som data faktiskt räcker till: en insynsvy — FI:s insynsaffärer
-  kommer redan in som strukturerade wire-dokument och behöver bara en
-  API-resurs och en vy.
+- ✅ Insynsvy (aug 2026): ny Insyn-flik på bolagssidorna med varje
+  transaktion ur FI:s insynsregister — utan beloppsgräns, för mönstret är
+  signalen. Köpt/sålt/netto över 3 och 12 mån, varje rad länkad till FI:s
+  anmälan. 24 månader backfyllt, hålls aktuellt av wiren.
+- Idé senare: gör nyhetsflödets insynströskel relativ (andel av börsvärde
+  eller omsättning) i stället för absoluta 50 kSEK — 50k betyder olika saker
+  i Ericsson och i ett microcap.
 - Blockerat på täckning, inte på arbete: utfall mot historiskt konsensus,
   estimatrevideringar och rapportöverraskningar. Publika estimat finns för 58
   av 870 bolag, och det saknas arkiv över vad konsensus sa före tidigare
