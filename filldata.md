@@ -19,7 +19,39 @@ from stonks.report_documents import ReportDocumentStore
 print(json.dumps(ReportDocumentStore(get_db()).status(), indent=1))"'
 ```
 
-## 2026-08-15
+## 2026-08-15 (kväll)
+
+### Ledger (hela universumet, 870 bolag)
+
+| Dataset | Fill |
+|---|---:|
+| Dagliga kurser | 100% |
+| Livekurser | 99,9% |
+| Profiler | 99,0% |
+| Årsbokslut | 98,6% |
+| Kvartalsbokslut | 98,4% |
+| Rapportdokument upptäckta | **98,3%** (var 92,4% i går morse) |
+| VD-ord/ledningskommentar | **84,7%** (var 65,6% vid Phase 1-baseline) |
+| Kalender | 87,4% |
+| R12/TTM | 49,3% |
+| Nyhetshistorik | 32,1% |
+| Estimat | 6,7% |
+
+### Nya dataset denna vecka
+
+| Dataset | Omfattning |
+|---|---|
+| Insynstransaktioner (FI) | 4 397 rader, mars 2025 → idag, 460 bolag, ingen beloppsgräns |
+| Ägardata ur årsredovisningar | 48 extraherade: 39 bolag med största ägare-tabell, 31 med ledningens innehav per person; 0 felslag |
+| Valutakurser (FX) | EURSEK + USDSEK, 5 205 dagliga kurser, ~10 år |
+| VD-ord-sektioner | 2 439 totalt, 2 143 med AI-sammanfattning |
+| Spotlight-källan | 411 dokument, live-pollning var 60:e sekund |
+| Värderingsband | Hela universumet on-demand (P/E, P/S, EV/EBIT, EV/S) |
+
+Not: 1 153 insynsrader är olänkade (utländska emittenter, onoterade
+instrument, namnvarianter) — ärlig rest, syns inte på sajten.
+
+## 2026-08-15 (förmiddag)
 
 Spotlight-connector tillagd i wiren (`sources=...,spotlight,...`): Spotlight-
 listade bolag publicerar via börsens eget nyhetssystem, inte MFN eller
