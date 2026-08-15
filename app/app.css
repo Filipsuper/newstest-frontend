@@ -2106,7 +2106,7 @@ body {
     width: calc(100% + 28px);
     max-width: none;
     margin-inline: -14px;
-    padding: 8px 14px;
+    padding: 8px 0;
     border-radius: 0;
   }
   .company-financial-statement .company-metric-column { width: 126px; }
