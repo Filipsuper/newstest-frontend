@@ -1477,6 +1477,13 @@ function InsidersTab({ symbol, companyName, marketCap }) {
     const rows = data?.transactions ?? [];
     const summary90 = data?.summary?.last90Days;
     const summary365 = data?.summary?.last365Days;
+    const ownership = data?.ownership?.available ? data.ownership : null;
+    const holdings = new Map((data?.personHoldings ?? []).map((entry) => [entry.person, entry]));
+    const holdingShare = (row) => {
+        const holding = holdings.get(row.person);
+        if (!holding?.shares || row.unit !== "Quantity" || !row.volume) return null;
+        return (row.volume / holding.shares) * 100;
+    };
 
     return (
         <section className="company-tab-section">
@@ -1516,12 +1523,35 @@ function InsidersTab({ symbol, companyName, marketCap }) {
                         </div>
                     )}
 
+                    {ownership && ownership.largestOwners?.length > 0 && (
+                        <div className="company-insider-persons company-insider-owners">
+                            <small className="company-insider-heading">Största ägare{ownership.ownersAsOf ? ` · ${ownership.ownersAsOf}` : ""}</small>
+                            {ownership.largestOwners.slice(0, 8).map((owner) => (
+                                <div key={owner.name} className="company-insider-person-row">
+                                    <span className="company-insider-person-name">{owner.name}
+                                        {owner.shares != null && <small>{Math.round(owner.shares).toLocaleString("sv-SE")} aktier</small>}
+                                    </span>
+                                    <span className="company-insider-person-net">
+                                        <strong>{owner.capitalPct != null ? `${number(owner.capitalPct, 1)} %` : owner.votesPct != null ? `${number(owner.votesPct, 1)} %` : "–"}</strong>
+                                        <small>{owner.capitalPct != null ? "av kapitalet" : owner.votesPct != null ? "av rösterna" : ""}{owner.capitalPct != null && owner.votesPct != null ? ` · ${number(owner.votesPct, 1)} % av rösterna` : ""}</small>
+                                    </span>
+                                </div>
+                            ))}
+                            <p className="company-source">Ur {ownership.source?.issuer ? `${ownership.source.issuer}s` : "bolagets"} årsredovisning{ownership.fiscalYear ? ` ${ownership.fiscalYear - 1}` : ""}{ownership.source?.url ? <> · <a href={ownership.source.url} target="_blank" rel="noreferrer">källa</a></> : null}. Innehav per rapportdatum, inte dagens position.</p>
+                        </div>
+                    )}
+
                     {insiderPersons(rows).length > 0 && (
                         <div className="company-insider-persons">
                             <small className="company-insider-heading">Störst nettohandel per person · 24 mån</small>
                             {insiderPersons(rows).map((entry) => (
                                 <div key={entry.person} className="company-insider-person-row">
-                                    <span className="company-insider-person-name">{entry.person}<small>{entry.position}</small></span>
+                                    <span className="company-insider-person-name">{entry.person}
+                                        <small>{entry.position}</small>
+                                        {holdings.get(entry.person)?.shares != null && (
+                                            <small>Innehav {Math.round(holdings.get(entry.person).shares).toLocaleString("sv-SE")} aktier{holdings.get(entry.person).includesRelated ? " inkl. närstående" : ""} · ÅR {holdings.get(entry.person).fiscalYear}</small>
+                                        )}
+                                    </span>
                                     <span className="company-insider-person-net">
                                         <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
                                             {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
@@ -1541,7 +1571,7 @@ function InsidersTab({ symbol, companyName, marketCap }) {
                             return (
                                 <a key={row.txId} className="company-insider-row" href={row.url} target="_blank" rel="noreferrer">
                                     <small className={`company-insider-tag company-insider-${direction.tone}`}>
-                                        {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}</span>
+                                        {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}{row.direction === "disposal" && holdingShare(row) != null && ` · ≈ ${number(holdingShare(row), 1)} % av innehavet (ÅR ${holdings.get(row.person).fiscalYear})`}</span>
                                     </small>
                                     <div className="company-insider-main">
                                         <span className="company-insider-name">{row.person}</span>
