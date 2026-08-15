@@ -2074,78 +2074,139 @@ body {
 
 .company-insider-summary {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px 46px;
-  margin: 26px 0 8px;
-  padding: 22px 26px;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin: 30px auto 10px;
+  padding: 30px 26px;
+  max-width: 560px;
   border-radius: 12px;
   background: var(--color-background);
+  text-align: center;
 }
 
-.company-insider-window {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.company-insider-window > small {
+.company-insider-heading,
+.company-insider-sub,
+.company-insider-depth {
   color: var(--color-text-muted);
-  font-size: 0.76rem;
-  letter-spacing: 0.02em;
+  font-size: 0.8rem;
+}
+
+.company-insider-heading {
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.company-insider-window > div {
-  display: flex;
-  gap: 16px;
+.company-insider-net {
+  font-family: var(--font-serif);
+  font-size: clamp(1.9rem, 4.6vw, 2.7rem);
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  font-size: 0.92rem;
 }
 
-.company-insider-window strong {
-  font-family: var(--font-serif);
-  font-size: 1.45rem;
-  line-height: 1.1;
+.company-insider-split {
+  display: flex;
+  gap: 56px;
+  margin-top: 14px;
   font-variant-numeric: tabular-nums;
 }
+
+.company-insider-split > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.company-insider-split span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.company-insider-split strong { font-size: 1.02rem; }
+
+.company-insider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.company-insider-dot-buy { background: var(--company-positive); }
+.company-insider-dot-sell { background: var(--company-negative); }
 
 .company-insider-buy { color: var(--company-positive); }
 .company-insider-sell { color: var(--company-negative); }
+.company-insider-neutral { color: var(--color-text-muted); }
 
-.company-insider-table td,
-.company-insider-table th { white-space: nowrap; }
+.company-insider-depth { margin: 26px 0 2px; }
 
-.company-insider-person a {
-  color: var(--color-text);
+.company-insider-list {
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+}
+
+.company-insider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 13px 0 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+  color: inherit;
   text-decoration: none;
 }
 
-.company-insider-person a:hover { text-decoration: underline; }
+.company-insider-row:last-child { border-bottom: 0; }
 
-.company-insider-person small {
-  display: block;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
+.company-insider-tag {
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.company-insider-type {
-  font-weight: 650;
-  font-size: 0.82rem;
+.company-insider-tag > span {
+  color: var(--color-text-muted);
+  font-weight: 500;
   letter-spacing: 0.02em;
+  text-transform: none;
 }
 
-.company-insider-type.company-insider-buy { color: var(--company-positive); }
-.company-insider-type.company-insider-sell { color: var(--company-negative); }
-.company-insider-type.company-insider-neutral { color: var(--color-text-muted); }
+.company-insider-main,
+.company-insider-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
 
-.company-insider-instrument {
-  max-width: 140px;
+.company-insider-name { font-weight: 650; }
+
+.company-insider-row:hover .company-insider-name { text-decoration: underline; }
+
+.company-insider-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.company-insider-meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.company-insider-meta span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.company-insider-meta span:last-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .company-valuation-method > p {

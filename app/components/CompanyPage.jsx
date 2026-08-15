@@ -1423,6 +1423,11 @@ function ValuationNote({ title, label, children }) {
 
 // FI:s verbatim natures -> readable Swedish; the normalized direction decides
 // the sign and color, so an odd nature never masquerades as a trade.
+// Full digits like the registry itself: "209 262 150 SEK" carries more weight
+// than a compacted "209,3 M SEK" and stays honest to the öre.
+const sekFull = (value, currency = "SEK") =>
+    `${Math.round(value).toLocaleString("sv-SE")} ${currency}`;
+
 const INSIDER_DIRECTION = {
     acquisition: { label: "Köp", tone: "buy" },
     subscription: { label: "Teckning", tone: "buy" },
@@ -1462,55 +1467,50 @@ function InsidersTab({ symbol, companyName }) {
 
             {rows.length > 0 && (
                 <>
-                    {(summary365?.transactions ?? 0) > 0 && <div className="company-insider-summary">
-                        {[["Senaste 3 mån", summary90], ["Senaste 12 mån", summary365]].map(([label, summary]) => summary && (
-                            <div key={label} className="company-insider-window">
-                                <small>{label}</small>
+                    {(summary365?.transactions ?? 0) > 0 && (
+                        <div className="company-insider-summary">
+                            <small className="company-insider-heading">Insynshandel senaste 12 mån</small>
+                            <strong className={`company-insider-net ${summary365.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}`}>
+                                {summary365.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary365.netValue))}
+                            </strong>
+                            <small className="company-insider-sub">{summary365.transactions} affärer netto · {summary365.buyers} köpare · {summary365.sellers} säljare</small>
+                            <div className="company-insider-split">
                                 <div>
-                                    <span className="company-insider-buy">Köpt {money(summary.boughtValue, "SEK")}</span>
-                                    <span className="company-insider-sell">Sålt {money(summary.soldValue, "SEK")}</span>
+                                    <span><i className="company-insider-dot company-insider-dot-buy" />Köp</span>
+                                    <strong>{sekFull(summary365.boughtValue)}</strong>
                                 </div>
-                                <strong className={summary.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}>
-                                    Netto {summary.netValue >= 0 ? "+" : "−"}{money(Math.abs(summary.netValue), "SEK")}
-                                </strong>
-                                <small>{summary.buyers} köpare · {summary.sellers} säljare · {summary.transactions} transaktioner</small>
+                                <div>
+                                    <span><i className="company-insider-dot company-insider-dot-sell" />Sälj</span>
+                                    <strong>{sekFull(summary365.soldValue)}</strong>
+                                </div>
                             </div>
-                        ))}
-                    </div>}
+                            {(summary90?.transactions ?? 0) > 0 && summary90.transactions !== summary365.transactions && (
+                                <small className="company-insider-sub">Senaste 3 mån: netto {summary90.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary90.netValue))} ({summary90.transactions} affärer)</small>
+                            )}
+                        </div>
+                    )}
 
-                    <div className="company-table-wrap">
-                        <table className="company-financial-table company-insider-table">
-                            <thead>
-                                <tr>
-                                    <th>Datum</th>
-                                    <th>Person</th>
-                                    <th>Typ</th>
-                                    <th>Instrument</th>
-                                    <th>Volym</th>
-                                    <th>Pris</th>
-                                    <th>Värde</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows.slice(0, 60).map((row) => {
-                                    const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
-                                    return (
-                                        <tr key={row.txId}>
-                                            <th>{svDate(row.transactionDate ?? row.publishedAt)}</th>
-                                            <td className="company-insider-person">
-                                                <a href={row.url} target="_blank" rel="noreferrer">{row.person}</a>
-                                                <small>{row.closelyAssociated ? "Närstående till " : ""}{row.position}</small>
-                                            </td>
-                                            <td><span className={`company-insider-type company-insider-${direction.tone}`}>{direction.label}</span></td>
-                                            <td className="company-insider-instrument">{row.instrumentType}</td>
-                                            <td>{row.volume == null ? "–" : compactAmount.format(row.volume)}</td>
-                                            <td>{row.price == null ? "–" : `${number(row.price, 2)} ${row.currency ?? ""}`}</td>
-                                            <td>{row.value == null ? "–" : money(row.value, row.currency ?? "SEK")}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                    <p className="company-insider-depth">Historik finns 24 månader bakåt i tiden.</p>
+                    <div className="company-insider-list">
+                        {rows.slice(0, 60).map((row) => {
+                            const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
+                            const showInstrument = row.instrumentType && !/^(share|aktie)$/i.test(row.instrumentType);
+                            return (
+                                <a key={row.txId} className="company-insider-row" href={row.url} target="_blank" rel="noreferrer">
+                                    <small className={`company-insider-tag company-insider-${direction.tone}`}>
+                                        {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}</span>
+                                    </small>
+                                    <div className="company-insider-main">
+                                        <span className="company-insider-name">{row.person}</span>
+                                        <span className="company-insider-value">{row.value == null ? "–" : sekFull(row.value, row.currency ?? "SEK")}</span>
+                                    </div>
+                                    <div className="company-insider-meta">
+                                        <span>{row.closelyAssociated ? "Närstående till " : ""}{row.position}{showInstrument ? ` · ${row.instrumentType}` : ""}</span>
+                                        <span>{row.volume == null ? "" : `${Math.round(row.volume).toLocaleString("sv-SE")} st`}{row.volume != null && row.price != null ? " · " : ""}{row.price == null ? "" : `${number(row.price, 2)} ${row.currency ?? "SEK"}`}</span>
+                                    </div>
+                                </a>
+                            );
+                        })}
                     </div>
                     {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
                     <p className="company-source">Källa: Finansinspektionens insynsregister. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
