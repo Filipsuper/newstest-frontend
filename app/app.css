@@ -700,8 +700,9 @@ body {
 
 .company-mover-ai-summary {
   margin: 2px 0 0;
-  font-size: 0.98rem;
-  line-height: 1.55;
+  color: var(--color-text-article);
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .company-mover .company-eyebrow { margin-bottom: 0; }
