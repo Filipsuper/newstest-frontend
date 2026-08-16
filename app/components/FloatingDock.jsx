@@ -22,6 +22,20 @@ const USER_LINKS = [
     { href: "/settings", label: "Inställningar", icon: FiSettings },
 ];
 
+// Hover label above a dock item: the name plus its shortcut as a key cap.
+function DockTip({ label, shortcut }) {
+    return (
+        <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 z-10 inline-flex flex-row items-center gap-1.5 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] text-text shadow-[0_8px_24px_var(--color-shadow)] opacity-0 scale-95 transition-all duration-100 group-hover:opacity-100 group-hover:scale-100 group-focus-visible:opacity-100">
+            {label}
+            {shortcut && (
+                <kbd className="rounded border border-border bg-background px-1 py-px text-[10px] font-semibold text-text-muted">
+                    {shortcut}
+                </kbd>
+            )}
+        </span>
+    );
+}
+
 export default function FloatingDock({ alwaysVisible = false }) {
     const { user, isGuestUser } = useAuthContext();
     const pathname = usePathname();
@@ -30,6 +44,11 @@ export default function FloatingDock({ alwaysVisible = false }) {
     const [searchOpen, setSearchOpen] = useState(false);
     const dockRef = useRef(null);
     const loggedIn = Boolean(user) && !isGuestUser;
+    // ⌘ on Apple hardware, Ctrl elsewhere — resolved after mount to stay SSR-safe.
+    const [modKey, setModKey] = useState("⌘");
+    useEffect(() => {
+        if (!/Mac|iPhone|iPad/i.test(navigator.platform ?? "")) setModKey("Ctrl");
+    }, []);
 
     // Global keyboard shortcuts. Navigation keys are plain letters, so they
     // must never fire while the user is typing; search opens on "/" anywhere
@@ -125,11 +144,11 @@ export default function FloatingDock({ alwaysVisible = false }) {
                         <Link
                             key={href}
                             href={href}
-                            title={key ? `${label} · ${key.toUpperCase()}` : label}
                             aria-label={label}
                             aria-current={pathname === href ? "page" : undefined}
-                            className={`${item} ${pathname === href ? "text-text bg-background" : ""}`}
+                            className={`group ${item} ${pathname === href ? "text-text bg-background" : ""}`}
                         >
+                            <DockTip label={label} shortcut={key?.toUpperCase()} />
                             <Icon />
                             {plus && <span className="absolute top-0.5 right-1.5 text-secondary text-[10px] font-bold">+</span>}
                         </Link>
@@ -148,13 +167,22 @@ export default function FloatingDock({ alwaysVisible = false }) {
                                 fieldClassName="rounded-full bg-background px-3"
                             />
                         </div>
-                        <button className={item} title="Stäng sökning · Esc" aria-label="Stäng sökning" onClick={() => setSearchOpen(false)}>
+                        <button className={`group ${item}`} aria-label="Stäng sökning" onClick={() => setSearchOpen(false)}>
+                            <DockTip label="Stäng" shortcut="Esc" />
                             <FiX />
                         </button>
                     </div>
                 ) : (
-                    <button className={item} title="Sök aktie · / eller ⌘K" aria-label="Sök aktie" onClick={() => setSearchOpen(true)}>
+                    <button
+                        className="group relative flex flex-row items-center gap-2 h-9 pl-2.5 pr-2 rounded-full text-text-muted hover:text-text hover:bg-background transition-colors"
+                        aria-label="Sök aktie"
+                        onClick={() => setSearchOpen(true)}
+                    >
+                        <DockTip label="Sök aktie" shortcut="/" />
                         <FiSearch />
+                        <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+                            {modKey} K
+                        </kbd>
                     </button>
                 )}
             </nav>
