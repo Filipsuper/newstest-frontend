@@ -1579,23 +1579,19 @@ const INSIDER_DIRECTION = {
 };
 
 // Net per person over the stored window. FI's register does not publish
-// total holdings — unlike the US Form 4 — so the honest context we can give
-// is each person's own pattern within our 24 months, and the trade's scale
-// against the company's market value.
-function insiderPersons(rows) {
+// total holdings — unlike the US Form 4 — so each person's 24-month pattern
+// is joined onto their report-anchored holding in one list.
+function insiderNetTrades(rows) {
     const byPerson = new Map();
     for (const row of rows) {
         if (typeof row.value !== "number" || (row.currency && row.currency !== "SEK")) continue;
-        const entry = byPerson.get(row.person) ?? { person: row.person, position: row.position, count: 0, net: 0 };
+        const entry = byPerson.get(row.person) ?? { position: row.position, count: 0, net: 0 };
         entry.count += 1;
         if (row.direction === "acquisition" || row.direction === "subscription") entry.net += row.value;
         else if (row.direction === "disposal") entry.net -= row.value;
         byPerson.set(row.person, entry);
     }
-    return [...byPerson.values()]
-        .filter((entry) => entry.count >= 2)
-        .sort((left, right) => Math.abs(right.net) - Math.abs(left.net))
-        .slice(0, 5);
+    return byPerson;
 }
 
 const capSharePct = (value, marketCap) =>
@@ -1619,13 +1615,14 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
     const summary90 = data?.summary?.last90Days;
     const summary365 = data?.summary?.last365Days;
     const ownership = data?.ownership?.available ? data.ownership : null;
-    const persons = insiderPersons(rows);
     const hasOwners = Boolean(ownership?.largestOwners?.length);
     // computed below once holdings exist; aside shows for either section
     const holdings = new Map((data?.personHoldings ?? []).map((entry) => [entry.person, entry]));
-    // People in ledande ställning with a known or estimated position, valued
-    // at today's price. Positions are report-anchored and rolled forward with
-    // registry flows; roles come from the report or FI's own wording.
+    // One row per person i ledande ställning: the report-anchored holding
+    // (rolled forward with registry flows, valued at today's price) joined
+    // with the person's own net trading over the stored 24 months. A person
+    // appears with either side alone — a disclosed holding without filings,
+    // or filings without any disclosed holding.
     const insiderPeople = (() => {
         const roleByPerson = new Map();
         for (const row of rows) {
@@ -1650,9 +1647,32 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
                 estimated: false, includesRelated: lead.includesRelated,
             });
         }
+        for (const [person, trade] of insiderNetTrades(rows)) {
+            const entry = byName.get(person);
+            if (entry) {
+                entry.net = trade.net;
+                entry.tradeCount = trade.count;
+            } else {
+                byName.set(person, {
+                    name: person,
+                    role: roleByPerson.get(person) || trade.position || null,
+                    shares: null, estimated: false, includesRelated: false,
+                    net: trade.net, tradeCount: trade.count,
+                });
+            }
+        }
+        // Known holdings first (largest value on top); people with only
+        // trades follow, ordered by the size of their net.
         return [...byName.values()]
-            .map((person) => ({ ...person, value: price ? person.shares * price : null }))
-            .sort((left, right) => (right.value ?? right.shares) - (left.value ?? left.shares));
+            .map((person) => ({ ...person, value: price && person.shares != null ? person.shares * price : null }))
+            .sort((left, right) => {
+                const leftRank = left.value ?? left.shares;
+                const rightRank = right.value ?? right.shares;
+                if (leftRank != null && rightRank != null) return rightRank - leftRank;
+                if (leftRank != null) return -1;
+                if (rightRank != null) return 1;
+                return Math.abs(right.net ?? 0) - Math.abs(left.net ?? 0);
+            });
     })();
     const holdingShare = (row) => {
         const holding = holdings.get(row.person);
@@ -1666,7 +1686,7 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
 
     return (
         <section className="company-tab-section">
-            <p className="company-eyebrow">{hasOwnershipView ? "FI:s insynsregister · Bolagets årsredovisning" : "FI:s insynsregister"}</p>
+            <p className="company-eyebrow">{ownership ? "FI:s insynsregister · Bolagets årsredovisning" : "FI:s insynsregister"}</p>
             <h2>Insyn & ägare</h2>
             <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien{hasOwners ? ", och vilka de största ägarna är" : ""}</p>
 
@@ -1707,29 +1727,6 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
                             </div>
                         )}
 
-                        {persons.length > 0 && (
-                            <section className="company-insider-persons" aria-labelledby="company-insider-persons-heading">
-                                <h3 id="company-insider-persons-heading" className="company-insider-section-title">Nettohandel per person</h3>
-                                <p className="company-insider-sub">De största nettobeloppen under de senaste 24 månaderna.</p>
-                                {persons.map((entry) => (
-                                    <div key={entry.person} className="company-insider-person-row">
-                                        <span className="company-insider-person-name">{entry.person}
-                                            <small>{entry.position}</small>
-                                            {holdings.get(entry.person)?.shares != null && (
-                                                <small>Innehav {Math.round(holdings.get(entry.person).shares).toLocaleString("sv-SE")} aktier{holdings.get(entry.person).includesRelated ? " inkl. närstående" : ""} · ÅR {holdings.get(entry.person).fiscalYear}</small>
-                                            )}
-                                        </span>
-                                        <span className="company-insider-person-net">
-                                            <strong className={entry.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
-                                                {entry.net >= 0 ? "+" : "−"}{sekFull(Math.abs(entry.net))}
-                                            </strong>
-                                            <small>{entry.count} affärer</small>
-                                        </span>
-                                    </div>
-                                ))}
-                            </section>
-                        )}
-
                         <div className="company-insider-list-heading">
                             <h3 className="company-insider-section-title">Transaktioner</h3>
                             <p className="company-insider-depth">Senaste 24 månaderna</p>
@@ -1764,24 +1761,36 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
                         <aside className="company-insider-owner-panel" aria-labelledby="company-insider-owners-heading">
                             {insiderPeople.length > 0 && (
                                 <>
-                                    <h3 className="company-insider-section-title">Insynspersoners innehav</h3>
-                                    <p className="company-insider-sub">Ur bolagets rapporter{insiderPeople.some((person) => person.estimated) ? ", framrullat med registrerade affärer" : ""}; värderat till dagens kurs.</p>
+                                    <h3 className="company-insider-section-title">Insynspersoner</h3>
+                                    <p className="company-insider-sub">Innehav ur bolagets rapporter{insiderPeople.some((person) => person.estimated) ? ", framrullade med registrerade affärer" : ""}, värderade till dagens kurs.{rows.length > 0 ? " Netto avser personens registrerade affärer under de senaste 24 månaderna." : ""}</p>
                                     <div className="company-insider-persons">
-                                        {insiderPeople.slice(0, 10).map((person) => (
+                                        {insiderPeople.slice(0, 12).map((person) => (
                                             <div key={person.name} className="company-insider-person-row">
                                                 <span className="company-insider-person-name">{person.name}
                                                     <small>{person.role || "Person i ledande ställning"}</small>
                                                 </span>
                                                 <span className="company-insider-person-net">
-                                                    <strong>{person.value != null ? money(person.value, "SEK") : `${Math.round(person.shares).toLocaleString("sv-SE")} st`}</strong>
-                                                    <small>
-                                                        {Math.round(person.shares).toLocaleString("sv-SE")} aktier
-                                                        {sharesOutstanding ? ` · ${number((person.shares / sharesOutstanding) * 100, 2)} %` : ""}
-                                                        {person.estimated ? " · uppskattat" : ""}
-                                                    </small>
+                                                    {person.shares != null ? (
+                                                        <>
+                                                            <strong>{person.value != null ? money(person.value, "SEK") : `${Math.round(person.shares).toLocaleString("sv-SE")} st`}</strong>
+                                                            <small>
+                                                                {Math.round(person.shares).toLocaleString("sv-SE")} aktier
+                                                                {sharesOutstanding ? ` · ${number((person.shares / sharesOutstanding) * 100, 2)} %` : ""}
+                                                                {person.estimated ? " · uppskattat" : ""}
+                                                            </small>
+                                                        </>
+                                                    ) : (
+                                                        <small>Innehav ej känt</small>
+                                                    )}
+                                                    {(person.tradeCount ?? 0) > 0 && (
+                                                        <small className={person.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
+                                                            {person.net >= 0 ? "+" : "−"}{sekFull(Math.abs(person.net))} netto · {person.tradeCount} affärer
+                                                        </small>
+                                                    )}
                                                 </span>
                                             </div>
                                         ))}
+                                        {insiderPeople.length > 12 && <p className="company-insider-sub">Visar de 12 största av {insiderPeople.length} personer.</p>}
                                     </div>
                                 </>
                             )}

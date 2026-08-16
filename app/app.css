@@ -2292,6 +2292,10 @@ body {
 .company-insider-sell { color: var(--company-negative); }
 .company-insider-neutral { color: var(--color-text-muted); }
 
+/* The joined net-trading line keeps its sign color inside the muted small text. */
+.company-insider-person-net small.company-insider-buy { color: var(--company-positive); }
+.company-insider-person-net small.company-insider-sell { color: var(--company-negative); }
+
 .company-insider-depth { margin: 0; }
 
 .company-insider-list-heading {
