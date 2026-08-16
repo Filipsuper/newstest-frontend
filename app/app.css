@@ -116,7 +116,6 @@ body {
   font-size: 0.78rem;
 }
 
-
 .spin {
   animation: spin 1s reverse linear infinite;
 }
@@ -185,7 +184,6 @@ body {
 .body-text {
   @apply text-text-article text-sm font-sans;
 }
-
 
 @keyframes floatUp {
   0% {
@@ -347,7 +345,6 @@ body {
 .company-symbol-row small {
   text-transform: capitalize;
 }
-
 
 .company-title-row {
   display: flex;
@@ -691,33 +688,15 @@ body {
   background: var(--company-panel-raised);
 }
 
-/* The AI variant marks generated text: an amber hairline that fades along
-   the card, a labeled badge, and the source chips it was generated from. */
+/* The AI variant is borderless: a soft yellow glow inside the panel marks
+   generated text instead of an outline. */
 .company-mover-ai {
-  border: 1px solid transparent;
   background:
-    linear-gradient(var(--company-panel-raised), var(--company-panel-raised)) padding-box,
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--company-yellow) 55%, transparent),
-      color-mix(in srgb, var(--company-yellow) 10%, transparent) 40%,
-      color-mix(in srgb, var(--company-yellow) 32%, transparent)
-    ) border-box;
+    radial-gradient(130% 95% at 15% 0%,
+      color-mix(in srgb, var(--company-yellow) 11%, transparent),
+      transparent 58%),
+    var(--company-panel-raised);
 }
-
-.company-mover-ai-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--company-yellow);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.company-mover-ai-badge svg { font-size: 0.8rem; }
 
 .company-mover-ai-summary {
   margin: 2px 0 0;
@@ -725,92 +704,7 @@ body {
   line-height: 1.55;
 }
 
-.company-mover-ai-points {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 2px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.company-mover-ai-points li {
-  position: relative;
-  padding-left: 16px;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1.45;
-}
-
-.company-mover-ai-points li::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 0.55em;
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--company-yellow);
-}
-
-.company-mover-ai-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.company-mover-ai-sources button {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  max-width: 100%;
-  padding: 5px 12px;
-  border: 1px solid var(--company-grid-line);
-  border-radius: 999px;
-  background: none;
-  color: var(--color-text);
-  font-size: 0.78rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.company-mover-ai-sources button:hover {
-  border-color: color-mix(in srgb, var(--company-yellow) 60%, transparent);
-}
-
-.company-mover-ai-sources time {
-  flex: 0 0 auto;
-  color: var(--color-text-muted);
-}
-
-.company-mover-ai-sources span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.company-mover-ai-note {
-  margin: 4px 0 0;
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-}
-
-.company-mover-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.company-mover-head .company-eyebrow { margin-bottom: 0; }
-
-.company-mover-head time {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+.company-mover .company-eyebrow { margin-bottom: 0; }
 
 .company-mover-headline {
   color: var(--color-text);
@@ -831,18 +725,6 @@ body {
 
 .company-mover-headline button:hover { text-decoration: underline; }
 
-.company-mover-tag {
-  align-self: flex-start;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--company-surface);
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  font-weight: 640;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
 .company-mover-summary {
   color: var(--color-text-article);
   font-size: 0.86rem;
@@ -857,85 +739,6 @@ body {
 }
 
 .company-mover .company-readmore:hover { color: var(--color-text); }
-
-.company-mover-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 26px;
-  margin-top: 2px;
-  padding-top: 12px;
-  border-top: 1px solid var(--company-grid-line);
-}
-
-.company-mover-metrics div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.company-mover-metrics span {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-}
-
-.company-mover-metrics strong {
-  color: var(--color-text);
-  font-size: 1.02rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.company-mover-source {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-}
-
-.company-mover-source button {
-  color: var(--color-text-muted);
-  font-size: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.company-mover-source button:hover {
-  color: var(--color-text);
-  text-decoration: underline;
-}
-
-.company-mover-more {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding-top: 12px;
-  border-top: 1px solid var(--company-grid-line);
-}
-
-.company-mover-more .company-eyebrow {
-  margin-bottom: 1px;
-  font-size: 0.68rem;
-}
-
-.company-mover-more button {
-  display: flex;
-  gap: 8px;
-  color: var(--color-text-article);
-  font-size: 0.79rem;
-  line-height: 1.35;
-  text-align: start;
-  cursor: pointer;
-}
-
-.company-mover-more button:hover { color: var(--color-text); }
-
-.company-mover-more time {
-  flex: 0 0 auto;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 
 @property --company-chart-reveal {
   syntax: "<percentage>";

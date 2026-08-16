@@ -18,7 +18,7 @@ import {
     YAxis,
 } from "recharts";
 import { FiChevronLeft, FiChevronRight, FiExternalLink, FiInfo, FiShare2, FiSliders } from "react-icons/fi";
-import { FaLock, FaRegStar, FaScaleBalanced, FaStar, FaWandMagicSparkles } from "react-icons/fa6";
+import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
@@ -254,110 +254,30 @@ function selectMoveDrivers(news, bars) {
         .slice(0, MAX_DRIVERS);
 }
 
-// The index across the same days, so a broad market move is not read as company
-// news. Benchmark history is daily, so on the day a story breaks there is no
-// index bar to compare against yet and the number is left out instead of
-// approximated from a different window.
-function benchmarkMoveSince(dayKey, bars) {
-    const start = (bars ?? []).findLast((bar) => bar.date <= dayKey);
-    const end = (bars ?? []).at(-1);
-    if (!start || !end || start.date >= end.date) return null;
-    if (!Number.isFinite(start.close) || !Number.isFinite(end.close) || !start.close) return null;
-    return ((end.close / start.close) - 1) * 100;
-}
-
-function MoveDrivers({ drivers, benchmarkBars, aiSummary }) {
+function MoveDrivers({ drivers, aiSummary }) {
     const { openModal } = useModal();
-    const [lead, ...rest] = drivers;
-    const benchmarkPct = benchmarkMoveSince(eventDayKey(lead.publishedAt), benchmarkBars);
-    const reactionPct = Number(lead.reaction?.pct);
-    const tag = (lead.tags ?? []).find((item) => DRIVER_TAGS.has(item));
+    const [lead] = drivers;
     const openStory = (story) => openModal(<NewsModal story={story} />);
 
-    // The generated summary replaces the single-story layout only when the
-    // platform has one for the current driver set; the sources stay beside
-    // the text, and the text is labeled as generated — it summarizes the
-    // wire's stories, it is never a source itself.
+    // The generated summary replaces the single-story layout when the platform
+    // has one for the current driver set. Title and text only — the numbers
+    // and the underlying stories live in the chart and news tab.
     if (aiSummary?.summary) {
         return (
             <aside className="company-mover company-mover-ai" aria-labelledby="company-mover-heading">
-                <div className="company-mover-head">
-                    <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
-                    <span className="company-mover-ai-badge"><FaWandMagicSparkles aria-hidden="true" /> AI-sammanfattning</span>
-                </div>
+                <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
                 <p className="company-mover-ai-summary">{aiSummary.summary}</p>
-                {(aiSummary.points ?? []).length > 0 && (
-                    <ul className="company-mover-ai-points">
-                        {aiSummary.points.map((point) => <li key={point}>{point}</li>)}
-                    </ul>
-                )}
-                <div className="company-mover-metrics">
-                    {Number.isFinite(reactionPct) && (
-                        <div title="Kursreaktion sedan den senaste nyheten publicerades">
-                            <span>Sedan nyheten</span>
-                            <strong className={reactionPct >= 0 ? "positive" : "negative"}>{pct(reactionPct)}</strong>
-                        </div>
-                    )}
-                    {benchmarkPct != null && (
-                        <div title="OMX Stockholm All-Share, stängning före nyheten till senaste stängning">
-                            <span>OMXSPI</span>
-                            <strong>{pct(benchmarkPct)}</strong>
-                        </div>
-                    )}
-                </div>
-                <div className="company-mover-ai-sources">
-                    {drivers.map((story) => (
-                        <button key={story.id ?? story.storyId ?? story.headline} type="button" onClick={() => openStory(story)}>
-                            <time dateTime={story.publishedAt}>{svDate(story.publishedAt, true)}</time>
-                            <span>{story.headline}</span>
-                        </button>
-                    ))}
-                </div>
-                <p className="company-mover-ai-note">AI-genererad ur nyheterna ovan — kan innehålla fel. Ingen rekommendation.</p>
             </aside>
         );
     }
 
     return (
         <aside className="company-mover" aria-labelledby="company-mover-heading">
-            <div className="company-mover-head">
-                <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
-                <time dateTime={lead.publishedAt}>{svDateTime(lead.publishedAt)}</time>
-            </div>
+            <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
             <h3 className="company-mover-headline">
                 <button type="button" onClick={() => openStory(lead)}>{lead.headline}</button>
             </h3>
-            {tag && <span className="company-mover-tag">{tagLabel(tag)}</span>}
             {lead.summary && <ExpandableText className="company-mover-summary" text={lead.summary} lines={4} />}
-            <div className="company-mover-metrics">
-                {Number.isFinite(reactionPct) && (
-                    <div title="Kursreaktion sedan nyheten publicerades">
-                        <span>Sedan nyheten</span>
-                        <strong className={reactionPct >= 0 ? "positive" : "negative"}>{pct(reactionPct)}</strong>
-                    </div>
-                )}
-                {benchmarkPct != null && (
-                    <div title="OMX Stockholm All-Share, stängning före nyheten till senaste stängning">
-                        <span>OMXSPI</span>
-                        <strong>{pct(benchmarkPct)}</strong>
-                    </div>
-                )}
-            </div>
-            <p className="company-mover-source">
-                <span>Källa: {lead.primarySource?.publisher ?? lead.primarySource?.name ?? "Okänd"}</span>
-                <button type="button" onClick={() => openStory(lead)}>Läs nyheten</button>
-            </p>
-            {rest.length > 0 && (
-                <div className="company-mover-more">
-                    <p className="company-eyebrow">Även i perioden</p>
-                    {rest.map((story) => (
-                        <button key={story.id} type="button" onClick={() => openStory(story)}>
-                            <time>{svDate(story.publishedAt, true)}</time>
-                            <span>{story.headline}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
         </aside>
     );
 }
@@ -994,7 +914,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
             </div>
             </div>
                 {drivers.length > 0 && (
-                    <MoveDrivers drivers={drivers} benchmarkBars={chart?.benchmark?.bars} aiSummary={moveSummary} />
+                    <MoveDrivers drivers={drivers} aiSummary={moveSummary} />
                 )}
             </div>
         </section>
