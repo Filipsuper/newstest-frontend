@@ -2,26 +2,61 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { FiHome, FiInfo, FiMoon, FiSearch, FiSettings, FiStar, FiSunrise, FiTerminal, FiX, FiZap } from "react-icons/fi";
+import { usePathname, useRouter } from "next/navigation";
+import { FiActivity, FiBarChart2, FiHome, FiMoon, FiSearch, FiSettings, FiStar, FiSunrise, FiTerminal, FiX } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
 import StockSearch from "./StockSearch";
 
+// Shortcut keys fire only outside inputs; they appear in each button's tooltip.
 const LINKS = [
-    { href: "/", label: "Start", icon: FiHome },
-    { href: "/morgonbrevet", label: "Morgonbrevet", icon: FiSunrise },
-    { href: "/kvallsbrevet", label: "Kvällsbrevet", icon: FiMoon },
-    { href: "/terminal", label: "Terminal", icon: FiTerminal, plus: true },
-    // { href: "/pro", label: "Pro", icon: FiZap },
-    // { href: "/om-oss", label: "Om oss", icon: FiInfo },
+    { href: "/", label: "Start", icon: FiHome, key: "h" },
+    { href: "/marknadsnyheter", label: "Marknadsnyheter", icon: FiActivity, key: "n", plus: true },
+    { href: "/screener", label: "Screener", icon: FiBarChart2, key: "s", plus: true },
+    { href: "/morgonbrevet", label: "Morgonbrevet", icon: FiSunrise, key: "m" },
+    { href: "/kvallsbrevet", label: "Kvällsbrevet", icon: FiMoon, key: "k" },
+    { href: "/terminal", label: "Terminal", icon: FiTerminal, key: "t", plus: true },
+];
+
+const USER_LINKS = [
+    { href: "/mina-aktier", label: "Mina aktier", icon: FiStar, key: "a" },
+    { href: "/settings", label: "Inställningar", icon: FiSettings },
 ];
 
 export default function FloatingDock({ alwaysVisible = false }) {
     const { user, isGuestUser } = useAuthContext();
     const pathname = usePathname();
+    const router = useRouter();
     const [visible, setVisible] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const dockRef = useRef(null);
+    const loggedIn = Boolean(user) && !isGuestUser;
+
+    // Global keyboard shortcuts. Navigation keys are plain letters, so they
+    // must never fire while the user is typing; search opens on "/" anywhere
+    // outside a field and on Cmd/Ctrl+K even inside one.
+    useEffect(() => {
+        const onKey = (event) => {
+            const target = event.target;
+            const typing = target instanceof HTMLElement
+                && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                setSearchOpen(true);
+                return;
+            }
+            if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key === "/") {
+                event.preventDefault();
+                setSearchOpen(true);
+                return;
+            }
+            const links = loggedIn ? [...LINKS, ...USER_LINKS] : LINKS;
+            const match = links.find((link) => link.key === event.key.toLowerCase());
+            if (match) router.push(match.href);
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [router, loggedIn]);
 
     useEffect(() => {
         if (alwaysVisible) {
@@ -44,11 +79,18 @@ export default function FloatingDock({ alwaysVisible = false }) {
         };
     }, [alwaysVisible]);
 
-    const dockVisible = alwaysVisible || visible;
+    // An open search keeps the dock on screen even before the scroll threshold
+    // — "/" from the top of a page must land somewhere visible.
+    const dockVisible = alwaysVisible || visible || searchOpen;
 
     useEffect(() => {
         if (!dockVisible) setSearchOpen(false);
     }, [dockVisible]);
+
+    // Landing on a new page closes the search field.
+    useEffect(() => {
+        setSearchOpen(false);
+    }, [pathname]);
 
     useEffect(() => {
         if (!searchOpen) return;
@@ -79,11 +121,11 @@ export default function FloatingDock({ alwaysVisible = false }) {
                 className="flex flex-row items-center gap-1 rounded-full bg-foreground p-1.5 shadow-[0_18px_45px_var(--color-shadow)]"
             >
                 <div className={`${searchOpen ? "hidden sm:flex" : "flex"} flex-row items-center gap-1`}>
-                    {LINKS.map(({ href, label, icon: Icon, plus }) => (
+                    {[...LINKS, ...(loggedIn ? USER_LINKS : [])].map(({ href, label, icon: Icon, plus, key }) => (
                         <Link
                             key={href}
                             href={href}
-                            title={label}
+                            title={key ? `${label} · ${key.toUpperCase()}` : label}
                             aria-label={label}
                             aria-current={pathname === href ? "page" : undefined}
                             className={`${item} ${pathname === href ? "text-text bg-background" : ""}`}
@@ -92,20 +134,6 @@ export default function FloatingDock({ alwaysVisible = false }) {
                             {plus && <span className="absolute top-0.5 right-1.5 text-secondary text-[10px] font-bold">+</span>}
                         </Link>
                     ))}
-
-                    {user && !isGuestUser && (
-                        <>
-                            <Link
-                                href="/mina-aktier"
-                                title="Mina aktier"
-                                aria-label="Mina aktier"
-                                className={`${item} ${pathname === "/mina-aktier" ? "text-text bg-background" : ""}`}
-                            >
-                                <FiStar />
-                            </Link>
-                            <Link href="/settings" title="Profile" aria-label="Inställningar" className={item}><FiSettings /></Link>
-                        </>
-                    )}
 
                     <span className="w-px h-6 mx-1 bg-border shrink-0" />
                 </div>
@@ -120,12 +148,12 @@ export default function FloatingDock({ alwaysVisible = false }) {
                                 fieldClassName="rounded-full bg-background px-3"
                             />
                         </div>
-                        <button className={item} title="Stäng sökning" aria-label="Stäng sökning" onClick={() => setSearchOpen(false)}>
+                        <button className={item} title="Stäng sökning · Esc" aria-label="Stäng sökning" onClick={() => setSearchOpen(false)}>
                             <FiX />
                         </button>
                     </div>
                 ) : (
-                    <button className={item} title="Sök aktie" aria-label="Sök aktie" onClick={() => setSearchOpen(true)}>
+                    <button className={item} title="Sök aktie · / eller ⌘K" aria-label="Sök aktie" onClick={() => setSearchOpen(true)}>
                         <FiSearch />
                     </button>
                 )}
