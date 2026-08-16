@@ -39,7 +39,7 @@ export default function PersonalPreview() {
 
     return (
         <div className="bg-border/20 rounded-2xl p-5 font-sans">
-            <p className="text-sm font-semibold text-text mb-1">📌 Min sammanfattning</p>
+            <p className="text-sm font-semibold text-text mb-1">Min sammanfattning</p>
             <p className="text-xs text-text-muted mb-4">
                 {isPlusUser
                     ? "Så här ser din egen sektion ut i morgonbrevet, byggd på dina val just nu."

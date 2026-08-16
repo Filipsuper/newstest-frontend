@@ -299,9 +299,16 @@ export default function NewsModal({ item, story }) {
                     </span>
                     {/* Fixed windows are final numbers — they only render once the
                         window has closed, so they never tick. */}
-                    {[["+1h", data.reaction?.h1Pct], ["+1 dag", data.reaction?.d1Pct]].map(([label, value]) =>
+                    {[
+                        ["Första avslut", data.reaction?.tickPct],
+                        ["+1 min", data.reaction?.m1Pct],
+                        ["+5 min", data.reaction?.m5Pct],
+                        ["+15 min", data.reaction?.m15Pct],
+                        ["+1h", data.reaction?.h1Pct],
+                        ["+1 dag", data.reaction?.d1Pct],
+                    ].map(([label, value]) =>
                         Number.isFinite(value) ? (
-                            <span key={label} title={`Kursreaktion ${label} efter publicering`}>
+                            <span key={label} title={`Kursreaktion ${label === "Första avslut" ? "vid första avslutet" : label} efter publicering`}>
                                 <span className="text-text-muted">{label}: </span>
                                 <span className={`font-semibold tabular-nums ${value >= 0 ? "text-primary" : "text-secondary"}`}>
                                     {value >= 0 ? "+" : ""}{value.toFixed(2)}%
