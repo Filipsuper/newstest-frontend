@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { FiExternalLink } from "react-icons/fi";
 import { tagLabel, tagColor } from "../utils/newsTags";
@@ -238,6 +238,134 @@ function InsiderTransactions({ facts }) {
     );
 }
 
+// The reaction as a picture: percent vs the pre-publication baseline, minute
+// by minute from half an hour before the news to four hours after. The zero
+// line is the baseline, the dashed marker is the publication moment, and the
+// area flips to the negative color below zero. Plain SVG on the site's tokens.
+function ReactionChart({ series, publishedAt }) {
+    const id = useId().replace(/[^a-z0-9]/gi, "");
+    const [hover, setHover] = useState(null);
+    const points = series?.points ?? [];
+
+    const geometry = useMemo(() => {
+        if (points.length < 3) return null;
+        const width = 620;
+        const height = 130;
+        const pad = { left: 44, right: 10, top: 12, bottom: 20 };
+        const publishTs = Date.parse(publishedAt);
+        const t0 = Math.min(points[0].t, publishTs);
+        const t1 = points[points.length - 1].t;
+        if (!(t1 > t0)) return null;
+        const values = points.map((point) => point.pct);
+        const top = Math.max(0, ...values);
+        const bottom = Math.min(0, ...values);
+        const span = (top - bottom) || 1;
+        const x = (t) => pad.left + ((t - t0) / (t1 - t0)) * (width - pad.left - pad.right);
+        const y = (pct) => pad.top + ((top - pct) / span) * (height - pad.top - pad.bottom);
+        return { width, height, pad, publishTs, t0, t1, top, bottom, x, y, zero: y(0) };
+    }, [points, publishedAt]);
+
+    if (!geometry) return null;
+    const { width, height, pad, publishTs, top, bottom, x, y, zero } = geometry;
+
+    const line = points.map((point, index) => `${index ? "L" : "M"}${x(point.t).toFixed(1)},${y(point.pct).toFixed(1)}`).join(" ");
+    const area = `M${x(points[0].t).toFixed(1)},${zero.toFixed(1)} ${points.map((point) => `L${x(point.t).toFixed(1)},${y(point.pct).toFixed(1)}`).join(" ")} L${x(points[points.length - 1].t).toFixed(1)},${zero.toFixed(1)} Z`;
+    const svTime = (t) => new Date(t).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm" });
+    const pctLabel = (value) => `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+
+    const onMove = (event) => {
+        const svg = event.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const t = geometry.t0 + ((event.clientX - rect.left) / rect.width * width - pad.left) / (width - pad.left - pad.right) * (geometry.t1 - geometry.t0);
+        let nearest = points[0];
+        for (const point of points) {
+            if (Math.abs(point.t - t) < Math.abs(nearest.t - t)) nearest = point;
+        }
+        setHover(nearest);
+    };
+
+    const toneClipped = (tone) => (
+        <g clipPath={`url(#reaction-clip-${tone}-${id})`}>
+            <path d={area} fill={`url(#reaction-fill-${tone}-${id})`} />
+            <path
+                d={line}
+                fill="none"
+                stroke={tone === "neg" ? "var(--company-negative)" : "var(--company-blue)"}
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+            />
+        </g>
+    );
+
+    return (
+        <div className="mb-5">
+            <svg
+                viewBox={`0 0 ${width} ${height}`}
+                className="w-full h-auto"
+                role="img"
+                aria-label="Kursreaktion i procent mot baslinjen, minut för minut kring publiceringen"
+                onMouseMove={onMove}
+                onMouseLeave={() => setHover(null)}
+            >
+                <defs>
+                    <linearGradient id={`reaction-fill-pos-${id}`} gradientUnits="userSpaceOnUse" x1="0" y1={pad.top} x2="0" y2={zero}>
+                        <stop offset="0" stopColor="var(--company-blue)" stopOpacity="0.32" />
+                        <stop offset="1" stopColor="var(--company-blue)" stopOpacity="0.03" />
+                    </linearGradient>
+                    <linearGradient id={`reaction-fill-neg-${id}`} gradientUnits="userSpaceOnUse" x1="0" y1={zero} x2="0" y2={height - pad.bottom}>
+                        <stop offset="0" stopColor="var(--company-negative)" stopOpacity="0.03" />
+                        <stop offset="1" stopColor="var(--company-negative)" stopOpacity="0.32" />
+                    </linearGradient>
+                    <clipPath id={`reaction-clip-pos-${id}`}><rect x="0" y="0" width={width} height={zero} /></clipPath>
+                    <clipPath id={`reaction-clip-neg-${id}`}><rect x="0" y={zero} width={width} height={height - zero} /></clipPath>
+                </defs>
+
+                {/* baseline (0 %) and extremes */}
+                <line x1={pad.left} x2={width - pad.right} y1={zero} y2={zero} stroke="var(--company-grid-line)" strokeWidth="1" />
+                {[top, bottom].filter((value) => value !== 0).map((value) => (
+                    <text key={value} x={pad.left - 6} y={y(value) + 3} textAnchor="end" fontSize="10" fill="var(--color-text-muted)">{pctLabel(value)}</text>
+                ))}
+                <text x={pad.left - 6} y={zero + 3} textAnchor="end" fontSize="10" fill="var(--color-text-muted)">0%</text>
+
+                {/* publication marker */}
+                {publishTs >= geometry.t0 && publishTs <= geometry.t1 && (
+                    <>
+                        <line x1={x(publishTs)} x2={x(publishTs)} y1={pad.top} y2={height - pad.bottom} stroke="var(--color-text-muted)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+                        <text x={x(publishTs) + 4} y={pad.top + 8} fontSize="10" fill="var(--color-text-muted)">Publicering {svTime(publishTs)}</text>
+                    </>
+                )}
+
+                {toneClipped("pos")}
+                {bottom < 0 && toneClipped("neg")}
+
+                {/* time axis: start and end */}
+                <text x={pad.left} y={height - 6} fontSize="10" fill="var(--color-text-muted)">{svTime(geometry.t0)}</text>
+                <text x={width - pad.right} y={height - 6} textAnchor="end" fontSize="10" fill="var(--color-text-muted)">{svTime(geometry.t1)}</text>
+
+                {hover && (
+                    <>
+                        <circle cx={x(hover.t)} cy={y(hover.pct)} r="3" fill={hover.pct < 0 ? "var(--company-negative)" : "var(--company-blue)"} />
+                        <text
+                            x={Math.min(Math.max(x(hover.t), pad.left + 30), width - pad.right - 30)}
+                            y={y(hover.pct) - 8}
+                            textAnchor="middle"
+                            fontSize="10.5"
+                            fontWeight="600"
+                            fill="var(--color-text)"
+                        >
+                            {svTime(hover.t)} · {pctLabel(hover.pct)}
+                        </text>
+                    </>
+                )}
+            </svg>
+            <p className="text-[11px] text-text-muted mt-1">
+                Kursutveckling i procent mot senaste avslut före publiceringen, 30 min före till 4 h efter nyheten.
+            </p>
+        </div>
+    );
+}
+
 export default function NewsModal({ item, story }) {
     const { closeModal } = useModal();
     const data = normalizeStory(story ?? item ?? {});
@@ -247,6 +375,7 @@ export default function NewsModal({ item, story }) {
     // The story opens instantly from what the page already holds; the release
     // it was built from is fetched alongside and fills in underneath.
     const [release, setRelease] = useState(null);
+    const [reactionSeries, setReactionSeries] = useState(null);
     const [loadingRelease, setLoadingRelease] = useState(Boolean(data.id));
     const [expanded, setExpanded] = useState(false);
 
@@ -254,10 +383,15 @@ export default function NewsModal({ item, story }) {
         if (!data.id) return undefined;
         let active = true;
         setRelease(null);
+        setReactionSeries(null);
         setExpanded(false);
         setLoadingRelease(true);
         fetchStory(data.id)
-            .then((detail) => { if (active) setRelease(detail?.document ?? null); })
+            .then((detail) => {
+                if (!active) return;
+                setRelease(detail?.document ?? null);
+                setReactionSeries(detail?.reactionSeries ?? null);
+            })
             .catch(() => { /* the summary and source link still stand on their own */ })
             .finally(() => { if (active) setLoadingRelease(false); });
         return () => { active = false; };
@@ -318,6 +452,8 @@ export default function NewsModal({ item, story }) {
                     )}
                 </p>
             )}
+
+            <ReactionChart series={reactionSeries} publishedAt={data.publishedAt} />
 
             {data.summary && <p className="text-sm text-text-article leading-relaxed">{data.summary}</p>}
 
