@@ -691,6 +691,111 @@ body {
   background: var(--company-panel-raised);
 }
 
+/* The AI variant marks generated text: an amber hairline that fades along
+   the card, a labeled badge, and the source chips it was generated from. */
+.company-mover-ai {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--company-panel-raised), var(--company-panel-raised)) padding-box,
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--company-yellow) 55%, transparent),
+      color-mix(in srgb, var(--company-yellow) 10%, transparent) 40%,
+      color-mix(in srgb, var(--company-yellow) 32%, transparent)
+    ) border-box;
+}
+
+.company-mover-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--company-yellow);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.company-mover-ai-badge svg { font-size: 0.8rem; }
+
+.company-mover-ai-summary {
+  margin: 2px 0 0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.company-mover-ai-points {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.company-mover-ai-points li {
+  position: relative;
+  padding-left: 16px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.company-mover-ai-points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--company-yellow);
+}
+
+.company-mover-ai-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.company-mover-ai-sources button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 12px;
+  border: 1px solid var(--company-grid-line);
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.company-mover-ai-sources button:hover {
+  border-color: color-mix(in srgb, var(--company-yellow) 60%, transparent);
+}
+
+.company-mover-ai-sources time {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+}
+
+.company-mover-ai-sources span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-mover-ai-note {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
 .company-mover-head {
   display: flex;
   align-items: baseline;

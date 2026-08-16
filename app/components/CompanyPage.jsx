@@ -18,7 +18,7 @@ import {
     YAxis,
 } from "recharts";
 import { FiChevronLeft, FiChevronRight, FiExternalLink, FiInfo, FiShare2, FiSliders } from "react-icons/fi";
-import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
+import { FaLock, FaRegStar, FaScaleBalanced, FaStar, FaWandMagicSparkles } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
@@ -266,13 +266,57 @@ function benchmarkMoveSince(dayKey, bars) {
     return ((end.close / start.close) - 1) * 100;
 }
 
-function MoveDrivers({ drivers, benchmarkBars }) {
+function MoveDrivers({ drivers, benchmarkBars, aiSummary }) {
     const { openModal } = useModal();
     const [lead, ...rest] = drivers;
     const benchmarkPct = benchmarkMoveSince(eventDayKey(lead.publishedAt), benchmarkBars);
     const reactionPct = Number(lead.reaction?.pct);
     const tag = (lead.tags ?? []).find((item) => DRIVER_TAGS.has(item));
     const openStory = (story) => openModal(<NewsModal story={story} />);
+
+    // The generated summary replaces the single-story layout only when the
+    // platform has one for the current driver set; the sources stay beside
+    // the text, and the text is labeled as generated — it summarizes the
+    // wire's stories, it is never a source itself.
+    if (aiSummary?.summary) {
+        return (
+            <aside className="company-mover company-mover-ai" aria-labelledby="company-mover-heading">
+                <div className="company-mover-head">
+                    <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
+                    <span className="company-mover-ai-badge"><FaWandMagicSparkles aria-hidden="true" /> AI-sammanfattning</span>
+                </div>
+                <p className="company-mover-ai-summary">{aiSummary.summary}</p>
+                {(aiSummary.points ?? []).length > 0 && (
+                    <ul className="company-mover-ai-points">
+                        {aiSummary.points.map((point) => <li key={point}>{point}</li>)}
+                    </ul>
+                )}
+                <div className="company-mover-metrics">
+                    {Number.isFinite(reactionPct) && (
+                        <div title="Kursreaktion sedan den senaste nyheten publicerades">
+                            <span>Sedan nyheten</span>
+                            <strong className={reactionPct >= 0 ? "positive" : "negative"}>{pct(reactionPct)}</strong>
+                        </div>
+                    )}
+                    {benchmarkPct != null && (
+                        <div title="OMX Stockholm All-Share, stängning före nyheten till senaste stängning">
+                            <span>OMXSPI</span>
+                            <strong>{pct(benchmarkPct)}</strong>
+                        </div>
+                    )}
+                </div>
+                <div className="company-mover-ai-sources">
+                    {drivers.map((story) => (
+                        <button key={story.id ?? story.storyId ?? story.headline} type="button" onClick={() => openStory(story)}>
+                            <time dateTime={story.publishedAt}>{svDate(story.publishedAt, true)}</time>
+                            <span>{story.headline}</span>
+                        </button>
+                    ))}
+                </div>
+                <p className="company-mover-ai-note">AI-genererad ur nyheterna ovan — kan innehålla fel. Ingen rekommendation.</p>
+            </aside>
+        );
+    }
 
     return (
         <aside className="company-mover" aria-labelledby="company-mover-heading">
@@ -525,7 +569,7 @@ function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, moveSummary }) {
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
     );
@@ -950,7 +994,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
             </div>
             </div>
                 {drivers.length > 0 && (
-                    <MoveDrivers drivers={drivers} benchmarkBars={chart?.benchmark?.bars} />
+                    <MoveDrivers drivers={drivers} benchmarkBars={chart?.benchmark?.bars} aiSummary={moveSummary} />
                 )}
             </div>
         </section>
@@ -2552,6 +2596,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 initialRange={initialRange}
                 initialMovingAverages={initialMovingAverages}
                 companyName={initialData.summary.profile.name ?? initialData.summary.symbol}
+                moveSummary={initialData.moveSummary}
             />
 
             <nav className="company-tabs" aria-label="Bolagsnavigation">
