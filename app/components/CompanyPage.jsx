@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+    Area,
     Bar,
     CartesianGrid,
     Cell,
@@ -23,7 +24,7 @@ import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsModal from "./NewsModal";
-import { fetchCompanyIntraday, fetchInsiders, fetchValuation, toggleWatchlist } from "../utils/api";
+import { fetchCompanyIntraday, fetchInsiders, fetchShorts, fetchValuation, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -34,6 +35,7 @@ const TABS = [
     { id: "estimates", label: "Estimat" },
     { id: "valuation", label: "Värdering" },
     { id: "insiders", label: "Insyn & ägare" },
+    { id: "shorts", label: "Blankning" },
     { id: "news", label: "Nyheter & rapporter" },
     { id: "calendar", label: "Kalender" },
 ];
@@ -1820,6 +1822,190 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
     );
 }
 
+function ShortsTab({ symbol, companyName, bars }) {
+    const [data, setData] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        setData(null);
+        setError(null);
+        fetchShorts(symbol)
+            .then((body) => { if (active) setData(body); })
+            .catch((cause) => { if (active) setError(cause.message); });
+        return () => { active = false; };
+    }, [symbol]);
+
+    const series = data?.series ?? [];
+    const positions = data?.positions ?? [];
+    const aggregate = data?.aggregate ?? null;
+
+    // Daily closes joined with the disclosed short level in effect that day.
+    // The disclosed sum is a step function: a position holds its reported
+    // size until its next change, so the join carries the latest point
+    // forward instead of interpolating.
+    const chartData = useMemo(() => {
+        if (!series.length || !bars?.length) return [];
+        const firstShort = series[0].date;
+        const firstIndex = bars.findIndex((bar) => bar.date >= firstShort);
+        const start = Math.max(0, (firstIndex === -1 ? bars.length : firstIndex) - 60);
+        let cursor = -1;
+        return bars.slice(start).map((bar) => {
+            while (cursor + 1 < series.length && series[cursor + 1].date <= bar.date) cursor += 1;
+            return {
+                time: new Date(bar.date).getTime(),
+                date: bar.date,
+                close: bar.close,
+                shortPct: cursor >= 0 ? series[cursor].pct : null,
+            };
+        });
+    }, [series, bars]);
+
+    const yearTicks = useMemo(() => {
+        if (!chartData.length) return [];
+        const first = new Date(chartData[0].date).getFullYear() + 1;
+        const last = new Date(chartData[chartData.length - 1].date).getFullYear();
+        const ticks = [];
+        for (let year = first; year <= last; year += 1) ticks.push(new Date(`${year}-01-01`).getTime());
+        return ticks;
+    }, [chartData]);
+
+    const maxShort = chartData.reduce((most, point) => Math.max(most, point.shortPct ?? 0), 0);
+    const ceiling = Math.max(1, Math.ceil(maxShort * 1.25));
+    const visibleSum = positions.reduce((sum, position) => sum + (position.pct ?? 0), 0);
+    const belowBar = aggregate ? Math.max(0, Math.round((aggregate.pct - visibleSum) * 100) / 100) : null;
+    const available = Boolean(data?.available);
+
+    return (
+        <section className="company-tab-section">
+            <p className="company-eyebrow">FI:s blankningsregister</p>
+            <h2>Blankning</h2>
+            <p className="company-intro">Hur stor andel av {companyName} som är blankad, och vilka som står bakom de största positionerna</p>
+
+            {error && <p className="company-empty">{error}</p>}
+            {!data && !error && <p className="company-empty">Hämtar blankningsdata …</p>}
+            {data && !available && <p className="company-empty">Inga blankningspositioner över tröskelvärdena är anmälda för bolaget. Det utesluter inte mindre positioner — enskilda innehav syns först vid 0,5 % och aggregatet vid 0,1 % av kapitalet.</p>}
+
+            {available && (
+                <>
+                    <div className="company-metric-grid company-metric-grid-small">
+                        <Metric
+                            label="Total blankning"
+                            value={aggregate ? `${number(aggregate.pct, 2)} %` : "Saknas"}
+                            detail={aggregate ? `Alla positioner över 0,1 % · ${svDate(aggregate.positionDate)}` : "Inget aggregat i registret"}
+                        />
+                        <Metric
+                            label="Namngivna positioner"
+                            value={`${number(visibleSum, 2)} %`}
+                            detail={`${positions.length} innehavare på minst 0,5 %`}
+                        />
+                        <Metric
+                            label="Under 0,5 %-tröskeln"
+                            value={belowBar == null ? "Saknas" : `${number(belowBar, 2)} %`}
+                            detail="Skillnaden mot aggregatet, utan namn"
+                        />
+                    </div>
+
+                    {chartData.length > 0 && (
+                        <div className="company-shorts-chart" role="img" aria-label={`Blankning i ${companyName} över tid mot aktiekursen`}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={chartData} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+                                    <defs>
+                                        <linearGradient id="company-short-fill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--company-yellow)" stopOpacity={0.32} />
+                                            <stop offset="100%" stopColor="var(--company-yellow)" stopOpacity={0.02} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid stroke="var(--company-grid-line)" vertical={false} />
+                                    <XAxis
+                                        dataKey="time"
+                                        type="number"
+                                        scale="time"
+                                        domain={["dataMin", "dataMax"]}
+                                        axisLine={{ stroke: "var(--company-grid-line)" }}
+                                        tickLine={false}
+                                        ticks={yearTicks}
+                                        tickFormatter={(value) => new Date(value).getFullYear()}
+                                    />
+                                    <YAxis
+                                        yAxisId="short"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        width={52}
+                                        domain={[0, ceiling]}
+                                        tickFormatter={(value) => `${number(value, 1)} %`}
+                                    />
+                                    <YAxis yAxisId="price" hide domain={["auto", "auto"]} />
+                                    <Tooltip
+                                        cursor={{ stroke: "var(--company-grid-line)" }}
+                                        content={({ active: hovered, payload }) => {
+                                            if (!hovered || !payload?.length) return null;
+                                            const point = payload[0].payload;
+                                            return (
+                                                <div className="company-tooltip">
+                                                    <strong>{svDate(point.date)}</strong>
+                                                    <span>Blankning {point.shortPct == null ? "–" : `${number(point.shortPct, 2)} %`}</span>
+                                                    <span>Kurs {number(point.close, 2)}</span>
+                                                    <span className="company-tooltip-note">Summan av namngivna positioner ≥ 0,5 %</span>
+                                                </div>
+                                            );
+                                        }}
+                                    />
+                                    <Line
+                                        yAxisId="price"
+                                        type="monotone"
+                                        dataKey="close"
+                                        stroke="var(--company-muted-line)"
+                                        strokeWidth={1.5}
+                                        strokeDasharray="4 4"
+                                        dot={false}
+                                        isAnimationActive={false}
+                                    />
+                                    <Area
+                                        yAxisId="short"
+                                        type="stepAfter"
+                                        dataKey="shortPct"
+                                        stroke="var(--company-yellow)"
+                                        strokeWidth={2}
+                                        fill="url(#company-short-fill)"
+                                        dot={false}
+                                        connectNulls={false}
+                                        isAnimationActive={false}
+                                    />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+
+                    <h3 className="company-insider-section-title">Största blankare</h3>
+                    {positions.length > 0 ? (
+                        <>
+                            <p className="company-insider-sub">Namngivna nettopositioner på minst 0,5 % av kapitalet, per position i FI:s register.</p>
+                            <div className="company-insider-persons">
+                                {positions.map((position) => (
+                                    <div key={position.holder} className="company-insider-person-row">
+                                        <span className="company-insider-person-name">{position.holder}
+                                            <small>per {svDate(position.positionDate)}</small>
+                                        </span>
+                                        <span className="company-insider-person-net">
+                                            <strong>{number(position.pct, 2)} %</strong>
+                                            <small>av kapitalet</small>
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <p className="company-insider-sub">Inga enskilda positioner når 0,5 % just nu — hela blankningen ligger i mindre, icke namngivna positioner.</p>
+                    )}
+
+                    <p className="company-source">Källa: Finansinspektionens blankningsregister. Enskilda positioner offentliggörs först vid 0,5 % av aktiekapitalet; aggregatet summerar alla positioner över 0,1 % och kan därför överstiga de namngivna tillsammans. Den gula linjen visar summan av namngivna positioner över tid, med varje position kvar på sin senast anmälda nivå tills nästa ändring; den streckade linjen är stängningskursen. Att data saknas betyder att inget anmälts över tröskelvärdena — inte att ingen blankning finns. Ingen rekommendation.</p>
+                </>
+            )}
+        </section>
+    );
+}
+
 function ValuationTab({ symbol, companyName }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
@@ -2263,7 +2449,7 @@ function Performance({ returns }) {
 
 // Tabs that live behind Plus. Everything else — identity, chart, description,
 // news and calendar — stays open so the page works as a public landing page.
-const PLUS_TABS = new Set(["financials", "estimates", "valuation", "insiders"]);
+const PLUS_TABS = new Set(["financials", "estimates", "valuation", "insiders", "shorts"]);
 
 function PlusTabGate({ companyName }) {
     const { isGuestUser } = useAuthContext();
@@ -2352,6 +2538,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
+            {hasPlus && tab === "shorts" && <ShortsTab symbol={symbol} companyName={profile.name ?? symbol} bars={initialData.chart?.bars ?? []} />}
             {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} price={summary.quote?.price ?? null} sharesOutstanding={(() => {
                 for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
                     for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
