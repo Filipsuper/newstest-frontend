@@ -30,8 +30,8 @@ desktop density or abbreviated interaction model.
 
 - The company name is the page title. Ticker, market, segment, quote status,
   and source timestamps remain supporting information.
-- Navigation stays stable: Översikt, Finansiellt, Estimat, Värdering, Insyn,
-  Nyheter & rapporter, Kalender.
+- Navigation stays stable: Översikt, Finansiellt, Estimat, Värdering,
+  Insyn & ägare, Nyheter & rapporter, Kalender.
 - The URL always retains the selected company and selected tab.
 - Overview answers questions in reading order: how has the stock performed,
   what does the company do, what does it earn, what happens next, and what is

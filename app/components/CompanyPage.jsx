@@ -33,7 +33,7 @@ const TABS = [
     { id: "financials", label: "Finansiellt" },
     { id: "estimates", label: "Estimat" },
     { id: "valuation", label: "Värdering" },
-    { id: "insiders", label: "Insyn" },
+    { id: "insiders", label: "Insyn & ägare" },
     { id: "news", label: "Nyheter & rapporter" },
     { id: "calendar", label: "Kalender" },
 ];
@@ -1659,19 +1659,27 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
         if (!holding?.shares || row.unit !== "Quantity" || !row.volume) return null;
         return (row.volume / holding.shares) * 100;
     };
+    // The registry and the annual report are independent sources: a small cap
+    // with a disclosed owner table but no filed transactions still has an
+    // ownership picture worth showing.
+    const hasOwnershipView = hasOwners || insiderPeople.length > 0;
 
     return (
         <section className="company-tab-section">
-            <p className="company-eyebrow">FI:s insynsregister</p>
-            <h2>Insynshandel</h2>
-            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien</p>
+            <p className="company-eyebrow">{hasOwnershipView ? "FI:s insynsregister · Bolagets årsredovisning" : "FI:s insynsregister"}</p>
+            <h2>Insyn & ägare</h2>
+            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien{hasOwners ? ", och vilka de största ägarna är" : ""}</p>
 
             {error && <p className="company-empty">{error}</p>}
-            {!data && !error && <p className="company-empty">Hämtar insynshandel …</p>}
-            {data && !rows.length && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>}
+            {!data && !error && <p className="company-empty">Hämtar insyn och ägarbild …</p>}
+            {data && !rows.length && !hasOwnershipView && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren, och ingen ägarförteckning har ännu hämtats ur bolagets rapporter.</p>}
 
-            {rows.length > 0 && (
-                <div className={`company-insider-layout ${hasOwners || insiderPeople.length ? "" : "company-insider-layout-single"}`}>
+            {(rows.length > 0 || hasOwnershipView) && (
+                <div className={`company-insider-layout ${rows.length > 0 && hasOwnershipView ? "" : "company-insider-layout-single"}`}>
+                    {!rows.length && (
+                        <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>
+                    )}
+                    {rows.length > 0 && (
                     <div className="company-insider-transactions">
                         {(summary365?.transactions ?? 0) > 0 && (
                             <div className="company-insider-summary">
@@ -1750,8 +1758,9 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
                         {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
                         <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
                     </div>
+                    )}
 
-                    {(hasOwners || insiderPeople.length > 0) && (
+                    {hasOwnershipView && (
                         <aside className="company-insider-owner-panel" aria-labelledby="company-insider-owners-heading">
                             {insiderPeople.length > 0 && (
                                 <>
@@ -1780,7 +1789,7 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
                             <h3 id="company-insider-owners-heading" className="company-insider-section-title">Största ägare</h3>
                             {ownership.ownersAsOf && <p className="company-insider-sub">Ägarbild {ownership.ownersAsOf}</p>}
                             <div className="company-insider-persons company-insider-owners">
-                                {ownership.largestOwners.slice(0, 8).map((owner) => (
+                                {ownership.largestOwners.slice(0, 25).map((owner) => (
                                     <div key={owner.name} className="company-insider-person-row">
                                         <span className="company-insider-person-name">{owner.name}
                                             {owner.shares != null && <small>{Math.round(owner.shares).toLocaleString("sv-SE")} aktier</small>}
