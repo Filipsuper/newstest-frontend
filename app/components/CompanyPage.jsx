@@ -1822,9 +1822,16 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
     );
 }
 
+const SHORT_RANGES = [
+    { id: "3m", label: "3 mån", sessions: 63 },
+    { id: "12m", label: "12 mån", sessions: 252 },
+    { id: "full", label: "Max", sessions: null },
+];
+
 function ShortsTab({ symbol, companyName, bars }) {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
+    const [range, setRange] = useState("full");
 
     useEffect(() => {
         let active = true;
@@ -1861,16 +1868,35 @@ function ShortsTab({ symbol, companyName, bars }) {
         });
     }, [series, bars]);
 
-    const yearTicks = useMemo(() => {
-        if (!chartData.length) return [];
-        const first = new Date(chartData[0].date).getFullYear() + 1;
-        const last = new Date(chartData[chartData.length - 1].date).getFullYear();
-        const ticks = [];
-        for (let year = first; year <= last; year += 1) ticks.push(new Date(`${year}-01-01`).getTime());
-        return ticks;
-    }, [chartData]);
+    const sessions = SHORT_RANGES.find((option) => option.id === range)?.sessions ?? null;
+    const visible = sessions ? chartData.slice(-sessions) : chartData;
 
-    const maxShort = chartData.reduce((most, point) => Math.max(most, point.shortPct ?? 0), 0);
+    // Year marks over long windows, month marks inside one; the formatter
+    // follows the same split.
+    const spanDays = visible.length > 1
+        ? (visible[visible.length - 1].time - visible[0].time) / 86400000
+        : 0;
+    const ticks = useMemo(() => {
+        if (visible.length < 2) return [];
+        const first = new Date(visible[0].date);
+        const last = new Date(visible[visible.length - 1].date);
+        const marks = [];
+        if (spanDays > 730) {
+            for (let year = first.getFullYear() + 1; year <= last.getFullYear(); year += 1) {
+                marks.push(new Date(`${year}-01-01`).getTime());
+            }
+        } else {
+            const cursor = new Date(first.getFullYear(), first.getMonth() + 1, 1);
+            const stepMonths = spanDays > 200 ? 2 : 1;
+            while (cursor <= last) {
+                marks.push(cursor.getTime());
+                cursor.setMonth(cursor.getMonth() + stepMonths);
+            }
+        }
+        return marks;
+    }, [visible, spanDays]);
+
+    const maxShort = visible.reduce((most, point) => Math.max(most, point.shortPct ?? 0), 0);
     const ceiling = Math.max(1, Math.ceil(maxShort * 1.25));
     const visibleSum = positions.reduce((sum, position) => sum + (position.pct ?? 0), 0);
     const belowBar = aggregate ? Math.max(0, Math.round((aggregate.pct - visibleSum) * 100) / 100) : null;
@@ -1889,27 +1915,29 @@ function ShortsTab({ symbol, companyName, bars }) {
             {available && (
                 <>
                     <div className="company-metric-grid company-metric-grid-small">
-                        <Metric
-                            label="Total blankning"
-                            value={aggregate ? `${number(aggregate.pct, 2)} %` : "Saknas"}
-                            detail={aggregate ? `Alla positioner över 0,1 % · ${svDate(aggregate.positionDate)}` : "Inget aggregat i registret"}
-                        />
-                        <Metric
-                            label="Namngivna positioner"
-                            value={`${number(visibleSum, 2)} %`}
-                            detail={`${positions.length} innehavare på minst 0,5 %`}
-                        />
-                        <Metric
-                            label="Under 0,5 %-tröskeln"
-                            value={belowBar == null ? "Saknas" : `${number(belowBar, 2)} %`}
-                            detail="Skillnaden mot aggregatet, utan namn"
-                        />
+                        <Metric label="Total blankning" value={aggregate ? `${number(aggregate.pct, 2)} %` : "Saknas"} />
+                        <Metric label="Namngivna positioner" value={`${number(visibleSum, 2)} %`} />
+                        <Metric label="Under 0,5 %-tröskeln" value={belowBar == null ? "Saknas" : `${number(belowBar, 2)} %`} />
                     </div>
 
                     {chartData.length > 0 && (
+                        <div className="company-period-tabs">
+                            {SHORT_RANGES.map((option) => (
+                                <button
+                                    key={option.id}
+                                    className={range === option.id ? "active" : ""}
+                                    onClick={() => setRange(option.id)}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {visible.length > 0 && (
                         <div className="company-shorts-chart" role="img" aria-label={`Blankning i ${companyName} över tid mot aktiekursen`}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={chartData} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+                                <ComposedChart data={visible} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                                     <defs>
                                         <linearGradient id="company-short-fill" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="var(--company-yellow)" stopOpacity={0.32} />
@@ -1924,8 +1952,10 @@ function ShortsTab({ symbol, companyName, bars }) {
                                         domain={["dataMin", "dataMax"]}
                                         axisLine={{ stroke: "var(--company-grid-line)" }}
                                         tickLine={false}
-                                        ticks={yearTicks}
-                                        tickFormatter={(value) => new Date(value).getFullYear()}
+                                        ticks={ticks}
+                                        tickFormatter={(value) => spanDays > 730
+                                            ? new Date(value).getFullYear()
+                                            : new Date(value).toLocaleDateString("sv-SE", { month: "short" })}
                                     />
                                     <YAxis
                                         yAxisId="short"
