@@ -78,6 +78,10 @@ desktop density or abbreviated interaction model.
   than the visible area. Do not truncate useful rows merely to avoid a panel
   scrollbar. On smaller screens, switch between primary regions with tabs
   instead of stacking the full dashboard into a long page.
+- On phones, do not force the complete workspace into one viewport. Give the
+  active news or mover list enough height to show several useful rows, allow
+  the page to grow, and keep compact market-summary widgets readable through
+  horizontal scrolling rather than squeezing their labels.
 - Density comes from 8–16px internal spacing, short labels, aligned values, and
   compact rows. Page titles remain modest; data values carry the strongest
   typographic emphasis.

@@ -7027,6 +7027,67 @@ body {
 
 }
 
+@media (max-width: 600px) {
+  .site-content--market {
+    height: auto;
+    min-height: calc(100dvh - 112px);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
+
+  .market-digest {
+    width: min(calc(100% - 20px), 620px);
+    height: auto;
+    min-height: 0;
+    grid-template-rows: 38px 64px 32px clamp(440px, 68dvh, 620px) 40px;
+    gap: 6px;
+    padding-block: 8px 0;
+    overflow: visible;
+  }
+
+  .market-pulse {
+    grid-template-columns: repeat(4, minmax(116px, 1fr));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .market-pulse::-webkit-scrollbar {
+    display: none;
+  }
+
+  .market-pulse__item {
+    min-width: 116px;
+    padding: 7px 10px;
+    scroll-snap-align: start;
+  }
+
+  .market-pulse__item > span,
+  .market-pulse__item > small {
+    font-size: 0.57rem;
+  }
+
+  .market-pulse__item > strong,
+  .market-pulse__item--tone > strong {
+    font-size: 0.88rem;
+  }
+
+  .market-digest__panel {
+    padding-inline: 12px;
+  }
+
+  .market-digest__panel-heading {
+    min-height: 44px;
+  }
+
+  .market-digest__stories,
+  .market-digest__movers {
+    padding-right: 4px;
+    overscroll-behavior-y: auto;
+  }
+}
+
 /* Stock discovery --------------------------------------------------------- */
 .stock-catalog {
   width: min(calc(100% - 40px), 1320px);
