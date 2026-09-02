@@ -1,7 +1,7 @@
 "use client";
 
 // app/providers/AuthProvider.jsx
-import React, { createContext, useContext, useEffect, useState, useMemo, use } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { getUser } from '../utils/api';
 
 const AuthContext = createContext();
@@ -10,18 +10,26 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
 
     const refreshUser = async () => {
+        try {
+            const fetchedUser = await getUser();
 
-        const fetchedUser = await getUser();
-
-        if (fetchedUser.error || fetchedUser === null) {
+            if (!fetchedUser || fetchedUser.error) {
+                setUser({
+                    email: null,
+                    verified: false,
+                    plan: "free"
+                })
+            } else {
+                setUser(fetchedUser);
+            }
+        } catch {
+            // Navigation and the public overview must remain usable when the
+            // account endpoint is temporarily unavailable.
             setUser({
                 email: null,
                 verified: false,
                 plan: "free"
             })
-        } else {
-            setUser(fetchedUser);
-
         }
     }
 

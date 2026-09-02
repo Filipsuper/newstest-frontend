@@ -36,7 +36,7 @@ function WatchlistPage() {
     // pitch the feature and offer login that returns here
     if (isGuestUser) {
         return (
-            <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
+            <main className="public-page public-page--account min-h-[80vh] mx-auto max-w-4xl px-4 py-10">
                 <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
                 <p className="body-text text-text-muted mb-8 max-w-2xl">
                     Stjärnmärk bolag och välj ämnen du vill följa – så får ditt
@@ -129,7 +129,7 @@ function WatchlistPage() {
     );
 
     return (
-        <main className="min-h-[80vh] mx-auto max-w-4xl px-4 py-12">
+        <main className="public-page public-page--account min-h-[80vh] mx-auto max-w-4xl px-4 py-10">
             <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
             <p className="body-text text-text-muted mb-12 max-w-2xl">
                 Här samlas bolagen du stjärnmärkt och ämnena du följer. De styr fliken
@@ -154,7 +154,7 @@ function WatchlistPage() {
                             : `${watchlist.length} av ${WATCHLIST_CAPS[user.plan] ?? WATCHLIST_CAPS.free}`}
                     </span>
                 </div>
-                {error && <p className="text-red-500 font-sans text-sm mb-4">{error}</p>}
+                {error && <p className="market-negative font-sans text-sm mb-4">{error}</p>}
                 {watchlist.length === 0 ? (
                     <p className="body-text text-text-muted">
                         Du bevakar inga bolag ännu. Sök ovan eller stjärnmärk bolag på deras aktiesidor.
@@ -201,7 +201,7 @@ function WatchlistPage() {
                         Välj ämnen du är intresserad av, så matchar vi nyheter mot dem —
                         utöver dina bevakade bolag.
                     </p>
-                    {topicsError && <p className="text-red-500 font-sans text-sm mb-4">{topicsError}</p>}
+                    {topicsError && <p className="market-negative font-sans text-sm mb-4">{topicsError}</p>}
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col gap-3">
                             <span className="text-base font-bold font-serif">Börslista</span>

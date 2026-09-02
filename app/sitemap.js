@@ -7,6 +7,9 @@ const parseTitleForUrl = (title = "") => title.replaceAll("-", "_").replaceAll("
 export default async function sitemap() {
     const staticPages = [
         { url: "https://omxsum.com", changeFrequency: "daily", priority: 1 },
+        { url: "https://omxsum.com/marknaden", changeFrequency: "daily", priority: 0.95 },
+        { url: "https://omxsum.com/aktier", changeFrequency: "weekly", priority: 0.9 },
+        { url: "https://omxsum.com/nyhetsbrev", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/borsnyheter", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/morgonbrevet", changeFrequency: "daily", priority: 0.9 },
         { url: "https://omxsum.com/kvallsbrevet", changeFrequency: "daily", priority: 0.9 },

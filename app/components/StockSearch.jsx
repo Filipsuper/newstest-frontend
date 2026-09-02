@@ -1,52 +1,79 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiSearch } from "react-icons/fi";
+import { FiArrowRight, FiSearch } from "react-icons/fi";
 import { getCompanies } from "../utils/companies";
+
+const POPULAR_SYMBOLS = [
+    "INVE-B.ST",
+    "VOLV-B.ST",
+    "SAAB-B.ST",
+    "ATCO-A.ST",
+    "ERIC-B.ST",
+];
 
 const normalize = (value = "") => value.toLowerCase().trim();
 
 export default function StockSearch({
     placeholder = "Sök aktie…",
+    label = "Sök efter bolag eller ticker",
     onSelect,
     dropUp = false,
     autoFocus = false,
+    showSuggestions = false,
+    prominent = false,
+    initialCompanies,
+    className = "",
     fieldClassName = "border border-border px-3",
 }) {
     const [query, setQuery] = useState("");
-    const [companies, setCompanies] = useState([]);
+    const [companies, setCompanies] = useState(() => initialCompanies ?? []);
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
     const wrapperRef = useRef(null);
     const router = useRouter();
+    const id = useId().replaceAll(":", "");
+    const listId = `stock-search-${id}`;
 
     useEffect(() => {
+        if (initialCompanies?.length) {
+            setCompanies(initialCompanies);
+            return;
+        }
         getCompanies().then(setCompanies);
-    }, []);
+    }, [initialCompanies]);
 
     useEffect(() => {
-        const handleClick = (e) => {
-            if (!wrapperRef.current?.contains(e.target)) setOpen(false);
+        const handleClick = (event) => {
+            if (!wrapperRef.current?.contains(event.target)) setOpen(false);
         };
         document.addEventListener("mousedown", handleClick);
         return () => document.removeEventListener("mousedown", handleClick);
     }, []);
 
     const q = normalize(query);
-    const results = q.length < 1 ? [] : companies
-        .filter((row) =>
-            normalize(row.name).includes(q) ||
-            normalize(row.nativeSymbol).startsWith(q) ||
-            normalize(row.symbol).startsWith(q)
-        )
-        .sort((a, b) => {
-            // prefix matches on the name first
-            const aPrefix = normalize(a.name).startsWith(q) ? 0 : 1;
-            const bPrefix = normalize(b.name).startsWith(q) ? 0 : 1;
-            return aPrefix - bPrefix || a.name.localeCompare(b.name);
-        })
-        .slice(0, 8);
+    const results = useMemo(() => {
+        if (q.length < 1) {
+            if (!showSuggestions) return [];
+            const companyBySymbol = new Map(companies.map((row) => [row.symbol, row]));
+            return POPULAR_SYMBOLS.map((symbol) => companyBySymbol.get(symbol)).filter(Boolean);
+        }
+
+        return companies
+            .filter((row) =>
+                normalize(row.name).includes(q) ||
+                normalize(row.nativeSymbol).startsWith(q) ||
+                normalize(row.symbol).startsWith(q)
+            )
+            .sort((left, right) => {
+                const leftNamePrefix = normalize(left.name).startsWith(q) ? 0 : 1;
+                const rightNamePrefix = normalize(right.name).startsWith(q) ? 0 : 1;
+                return leftNamePrefix - rightNamePrefix || left.name.localeCompare(right.name, "sv");
+            })
+            .slice(0, 8);
+    }, [companies, q, showSuggestions]);
 
     const select = (row) => {
         setQuery("");
@@ -55,53 +82,93 @@ export default function StockSearch({
         else router.push(`/aktie/${encodeURIComponent(row.symbol)}`);
     };
 
-    const handleKeyDown = (e) => {
-        if (results.length === 0) return;
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setActiveIndex((i) => Math.min(i + 1, results.length - 1));
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setActiveIndex((i) => Math.max(i - 1, 0));
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            select(results[activeIndex] ?? results[0]);
-        } else if (e.key === "Escape") {
+    const handleKeyDown = (event) => {
+        if (event.key === "Escape") {
             setOpen(false);
+            return;
+        }
+        if (results.length === 0) return;
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setOpen(true);
+            setActiveIndex((index) => Math.min(index + 1, results.length - 1));
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setActiveIndex((index) => Math.max(index - 1, 0));
+        } else if (event.key === "Enter") {
+            event.preventDefault();
+            select(results[activeIndex] ?? results[0]);
         }
     };
 
+    const showPanel = open && (results.length > 0 || q.length > 0);
+
     return (
-        <div ref={wrapperRef} className="relative w-full max-w-md font-sans">
-            <div className={`flex flex-row items-center gap-2 rounded-full ${fieldClassName}`}>
+        <div
+            ref={wrapperRef}
+            className={`stock-search ${prominent ? "stock-search--prominent" : ""} ${className}`}
+        >
+            {prominent && <label htmlFor={`${listId}-input`}>{label}</label>}
+            <div className={`stock-search__field ${fieldClassName}`}>
+                <FiSearch aria-hidden="true" />
                 <input
+                    id={`${listId}-input`}
                     value={query}
                     autoFocus={autoFocus}
-                    onChange={(e) => {
-                        setQuery(e.target.value);
+                    autoComplete="off"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={showPanel}
+                    aria-controls={listId}
+                    aria-activedescendant={showPanel && results[activeIndex]
+                        ? `${listId}-${results[activeIndex].symbol}`
+                        : undefined}
+                    aria-label={prominent ? undefined : label}
+                    onChange={(event) => {
+                        setQuery(event.target.value);
                         setOpen(true);
                         setActiveIndex(0);
                     }}
                     onFocus={() => setOpen(true)}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
-                    className="w-full py-2 bg-transparent text-sm text-text outline-none placeholder:text-text-muted"
                 />
-                <FiSearch className="text-text-muted shrink-0" />
+                <span className="stock-search__hint" aria-hidden="true">Sök</span>
             </div>
-            {open && results.length > 0 && (
-                <div className={`absolute left-0 right-0 z-50 bg-foreground shadow-xl ${dropUp ? "bottom-full mb-2 rounded-xl border border-border overflow-hidden" : "top-full rounded-b-xl"}`}>
-                    {results.map((row, idx) => (
-                        <button
-                            key={row.symbol}
-                            onClick={() => select(row)}
-                            onMouseEnter={() => setActiveIndex(idx)}
-                            className={`w-full flex flex-row justify-between items-center px-3 py-2 text-left cursor-pointer ${idx === activeIndex ? "bg-background" : ""}`}
-                        >
-                            <span className="text-sm text-text">{row.name}</span>
-                            <span className="text-xs text-text-muted">{row.nativeSymbol ?? row.symbol}</span>
-                        </button>
-                    ))}
+
+            {showPanel && (
+                <div className={`stock-search__results ${dropUp ? "stock-search__results--up" : ""}`}>
+                    <div id={listId} role="listbox" aria-label={q ? "Sökresultat" : "Populära aktier"}>
+                        {!q && results.length > 0 && (
+                            <p className="stock-search__results-title">Populära aktier</p>
+                        )}
+                        {results.map((row, index) => (
+                            <button
+                                id={`${listId}-${row.symbol}`}
+                                key={row.symbol}
+                                type="button"
+                                role="option"
+                                aria-selected={index === activeIndex}
+                                onClick={() => select(row)}
+                                onMouseEnter={() => setActiveIndex(index)}
+                                className={index === activeIndex ? "is-active" : ""}
+                            >
+                                <span>
+                                    <strong>{row.name}</strong>
+                                    <small>{row.nativeSymbol ?? row.symbol}</small>
+                                </span>
+                                <FiArrowRight aria-hidden="true" />
+                            </button>
+                        ))}
+                        {q && results.length === 0 && (
+                            <p className="stock-search__empty">Ingen aktie matchar “{query.trim()}”.</p>
+                        )}
+                    </div>
+                    {showSuggestions && (
+                        <Link href="/aktier" onClick={() => setOpen(false)} className="stock-search__all-link">
+                            Bläddra bland alla aktier <FiArrowRight aria-hidden="true" />
+                        </Link>
+                    )}
                 </div>
             )}
         </div>

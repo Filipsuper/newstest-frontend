@@ -38,12 +38,12 @@ export const tagLabel = (tag = "") =>
 
 // Tag category -> chip colors
 const TAG_COLORS = [
-    [["INSIDER"], "text-secondary border-secondary/40"],
-    [["ACQUISITION", "DISPOSAL", "DIVESTMENT", "M&A", "MA", "MERGER"], "text-primary border-primary/40"],
-    [["EARNINGS", "GUIDANCE"], "text-emerald-400 border-emerald-400/40"],
-    [["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "LISTING"], "text-sky-400 border-sky-400/40"],
-    [["CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND"], "text-violet-400 border-violet-400/40"],
-    [["REGULATORY", "HALT", "LEGAL", "DELISTING", "OBSERVATION"], "text-rose-400 border-rose-400/40"],
+    [["INSIDER"], "news-tag--amber"],
+    [["ACQUISITION", "DISPOSAL", "DIVESTMENT", "M&A", "MA", "MERGER"], "news-tag--blue"],
+    [["EARNINGS", "GUIDANCE"], "news-tag--neutral"],
+    [["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "LISTING"], "news-tag--blue"],
+    [["CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND"], "news-tag--amber"],
+    [["REGULATORY", "HALT", "LEGAL", "DELISTING", "OBSERVATION"], "news-tag--negative"],
 ];
 
 export const tagColor = (tag = "") => {
@@ -56,17 +56,17 @@ export const tagColor = (tag = "") => {
 // Same categories as hex values, for SVG chart markers. First matching
 // category (in priority order) decides the dot color.
 const CATEGORY_HEX = [
-    [["INSIDER"], "#fbbf24"],
-    [["ACQUISITION", "DISPOSAL", "DIVESTMENT", "M&A", "MA", "MERGER"], "#668CF4"],
-    [["EARNINGS", "GUIDANCE"], "#34d399"],
-    [["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "LISTING"], "#38bdf8"],
-    [["CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND"], "#a78bfa"],
-    [["REGULATORY", "HALT", "LEGAL", "DELISTING", "OBSERVATION"], "#fb7185"],
+    [["INSIDER"], "var(--color-secondary)"],
+    [["ACQUISITION", "DISPOSAL", "DIVESTMENT", "M&A", "MA", "MERGER"], "var(--color-primary)"],
+    [["EARNINGS", "GUIDANCE"], "var(--color-text-muted)"],
+    [["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "LISTING"], "var(--color-primary)"],
+    [["CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND"], "var(--color-secondary)"],
+    [["REGULATORY", "HALT", "LEGAL", "DELISTING", "OBSERVATION"], "var(--market-negative)"],
 ];
 
 export const tagHex = (tags = []) => {
     for (const [group, hex] of CATEGORY_HEX) {
         if (tags.some((tag) => group.includes(tag))) return hex;
     }
-    return "#9ca3af";
+    return "var(--color-text-muted)";
 };

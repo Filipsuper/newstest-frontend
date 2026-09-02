@@ -14,7 +14,7 @@ export default function NewsFeedItem({ item, showSymbol = true, highlighted = fa
     return (
         <article
             id={`news-${item.id}`}
-            className={`py-5 transition-colors duration-700 ${highlighted ? "bg-bullet" : ""}`}
+            className={`news-feed-item py-4 transition-colors duration-700 ${highlighted ? "bg-bullet" : ""}`}
         >
             <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mb-2 font-sans text-xs">
                 <span className="text-text-muted font-semibold">
@@ -36,7 +36,7 @@ export default function NewsFeedItem({ item, showSymbol = true, highlighted = fa
                 {Number.isFinite(item.reaction?.pct) && (
                     <span
                         title="Kursreaktion sedan nyheten publicerades"
-                        className={`font-semibold ${item.reaction.pct >= 0 ? "text-primary" : "text-secondary"}`}
+                        className={`font-semibold ${item.reaction.pct >= 0 ? "market-positive" : "market-negative"}`}
                     >
                         {item.reaction.pct >= 0 ? "+" : ""}{item.reaction.pct.toFixed(2)}%
                     </span>

@@ -47,7 +47,7 @@ export default function AccountCallToAction() {
 
                                 return (
                                     <div className="inline-flex gap-2 items-center" key={idx}>
-                                        <span className="inline-flex items-center  w-3 h-3 text-primary "><FaCheck /></span>
+                                        <span className="inline-flex items-center w-3 h-3 market-positive"><FaCheck /></span>
                                         <p className="text-text-muted italic font-sans" >
                                             {item}
                                         </p>
@@ -80,7 +80,7 @@ export default function AccountCallToAction() {
                                 if (idx === 2) {
                                     return (
                                         <div className="inline-flex gap-2 items-center" key={idx}>
-                                            <span className="inline-flex items-center  w-3 h-3 text-secondary "><FaXmark /></span>
+                                            <span className="inline-flex items-center w-3 h-3 market-negative"><FaXmark /></span>
                                             <p className="text-text-muted italic font-sans" >
                                                 {item}
                                             </p>
@@ -89,7 +89,7 @@ export default function AccountCallToAction() {
                                 } else {
                                     return (
                                         <div className="inline-flex gap-2 items-center" key={idx}>
-                                            <span className="inline-flex items-center  w-3 h-3 text-primary "><FaCheck /></span>
+                                            <span className="inline-flex items-center w-3 h-3 market-positive"><FaCheck /></span>
                                             <p className="text-text-muted italic font-sans" >
                                                 {item}
                                             </p>

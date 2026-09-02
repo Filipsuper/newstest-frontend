@@ -98,7 +98,7 @@ export default function ProPage() {
     };
 
     return (
-        <main className="min-h-[80vh] mx-auto max-w-5xl px-4 py-12 font-sans">
+        <main className="public-page public-page--plans min-h-[80vh] mx-auto max-w-5xl px-4 py-10 font-sans">
             <div className="text-center mb-12">
                 <h1 className="text-4xl md:text-5xl font-serif font-bold text-text mb-3">
                     Mer marknad. <span className="italic">I realtid.</span>
@@ -129,7 +129,7 @@ export default function ProPage() {
                         <ul className="flex flex-col gap-2 mb-6 flex-grow">
                             {tier.features.map((feature, idx) => (
                                 <li key={idx} className="flex flex-row gap-2 items-start text-sm text-text-article">
-                                    <FaCheck className="text-primary shrink-0 mt-1" />
+                                    <FaCheck className="text-accent shrink-0 mt-1" />
                                     {feature}
                                 </li>
                             ))}
@@ -149,7 +149,7 @@ export default function ProPage() {
                 ))}
             </div>
 
-            {error && <p className="text-center text-red-500 mb-4">{error}</p>}
+            {error && <p className="text-center market-negative mb-4">{error}</p>}
 
             <p className="text-center text-xs text-text-muted">
                 Betalning via Stripe. Avsluta när du vill i inställningarna – prenumerationen gäller månadsvis.

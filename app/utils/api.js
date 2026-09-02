@@ -15,6 +15,20 @@ export async function fetchAllArticles() {
     }
 }
 
+// A deliberately small public snapshot for the everyday overview. The
+// backend keeps the Market API credential private and limits this response to
+// two indices, market breadth, five gainers/losers and selected headlines.
+export async function fetchMarketOverview() {
+    const response = await fetch(`${API_URL}/feed/market-overview`, {
+        next: { revalidate: 30 },
+    });
+    const body = await response.json();
+    if (!response.ok || body?.error) {
+        throw new Error(body?.error || "Kunde inte hämta marknadsöversikten");
+    }
+    return body;
+}
+
 
 export async function fetchArticle() {
     try {
@@ -207,6 +221,36 @@ export async function fetchCompanyList() {
     }
 }
 
+export async function fetchCompanyDirectory() {
+    try {
+        const response = await fetch(`${API_URL}/feed/company-directory`, {
+            next: { revalidate: 60 },
+        });
+        if (!response.ok) return null;
+        const rows = await response.json();
+        return Array.isArray(rows) ? rows : null;
+    } catch {
+        return null;
+    }
+}
+
+export async function fetchCompanyProfiles(symbols = []) {
+    const requested = [...new Set(symbols)].filter(Boolean).slice(0, 12);
+    if (requested.length === 0) return { items: [], missing: [] };
+    try {
+        const params = new URLSearchParams({ symbols: requested.join(",") });
+        const response = await fetch(`${API_URL}/feed/company-profiles?${params}`);
+        if (!response.ok) return { items: [], missing: requested };
+        const body = await response.json();
+        return {
+            items: Array.isArray(body?.items) ? body.items : [],
+            missing: Array.isArray(body?.missing) ? body.missing : [],
+        };
+    } catch {
+        return { items: [], missing: requested };
+    }
+}
+
 export async function fetchCompanyIdentity(symbol) {
     const rows = await fetchCompanyList();
     return rows?.find((row) => row.symbol === symbol) ?? null;
@@ -369,7 +413,7 @@ export async function generateSummary(onProgress) {
 
 export async function getGraphData() {
     try {
-        const response = await fetch(`${API_URL}/data/graph`);
+        const response = await fetch(`${API_URL}/data/graph`, { next: { revalidate: 300 } });
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);

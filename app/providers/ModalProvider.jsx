@@ -60,7 +60,7 @@ export const ModalProvider = ({ children }) => {
                         onClick={handleBackdropClick}
                     >
                         <div
-                            className="bg-background py-5 px-5 md:py-6 md:px-7 mx-4 max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto shadow-xl rounded-2xl flex justify-center items-center relative transition-transform"
+                            className="public-modal bg-foreground py-5 px-5 md:py-6 md:px-7 mx-4 max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto shadow-xl rounded-xl flex justify-center items-center relative transition-transform"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button

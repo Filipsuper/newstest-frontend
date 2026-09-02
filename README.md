@@ -44,6 +44,24 @@ continues to use Resend.
   (e.g. `http://localhost:8000/api` or `http://172.17.0.1:8000/api` from inside
   Docker) so SSR doesn't round-trip through nginx.
 
+## Public-site information architecture
+
+- `/` remains the editorial landing page for OMXsum and its daily letters.
+- `/marknaden` is the compact daily overview: index history, market breadth,
+  movers, selected headlines and a direct link into the latest letter.
+- `/aktier` is the searchable and browsable company directory; `/aktie/<SYMBOL>`
+  remains the canonical company research page.
+- `/nyhetsbrev` is the combined home for Morgonbrevet and Kvällsbrevet. The two
+  existing letter routes remain available, and `/alla-nyhetsbrev` redirects to
+  the new hub.
+- `/terminal` remains the separate, denser product for active monitoring.
+
+The market overview reads the public, cached `/feed/market-overview` backend resource.
+That deliberately limited response keeps the upstream Market API key on the
+server while the full live news feed, movers tools and screener remain gated.
+The legacy `/data/graph` OMXS30 series is retained as a temporary index fallback
+when the aggregate endpoint is unavailable.
+
 ## SEO and indexing policy
 
 Company pages are the largest crawlable surface on the site, so the rules for

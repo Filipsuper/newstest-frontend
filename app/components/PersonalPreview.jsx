@@ -38,7 +38,7 @@ export default function PersonalPreview() {
     const stories = preview?.stories ?? [];
 
     return (
-        <div className="bg-border/20 rounded-2xl p-5 font-sans">
+        <div className="personal-preview rounded-xl p-5 font-sans">
             <p className="text-sm font-semibold text-text mb-1">Min sammanfattning</p>
             <p className="text-xs text-text-muted mb-4">
                 {isPlusUser
@@ -67,7 +67,7 @@ export default function PersonalPreview() {
                     {stories.map((story, index) => (
                         <div key={index} className="flex flex-row items-start gap-2.5">
                             {story.reactionPct != null ? (
-                                <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 text-[11px] font-semibold rounded ${story.reactionPct >= 0 ? "bg-green-500/15 text-green-600 dark:text-green-400" : "bg-red-500/15 text-red-600 dark:text-red-400"}`}>
+                                <span className={`signed-chip shrink-0 mt-0.5 px-1.5 py-0.5 text-[11px] font-semibold rounded ${story.reactionPct >= 0 ? "signed-chip--positive" : "signed-chip--negative"}`}>
                                     {story.reactionPct >= 0 ? "+" : ""}{story.reactionPct.toLocaleString("sv-SE", { maximumFractionDigits: 1 })}%
                                 </span>
                             ) : (

@@ -4,6 +4,7 @@ const OFFICIAL_SOURCES = new Set(["fi", "nasdaq", "riksbank"]);
 
 export function storyToItem(story) {
     const company = story.companies?.[0] ?? null;
+    const companies = (story.companies ?? []).filter((item) => item?.symbol);
     const source = story.primarySource?.name ?? story.sources?.[0]?.name ?? "wire";
 
     return {
@@ -14,6 +15,8 @@ export function storyToItem(story) {
         title: story.headline,
         company: company?.name ?? null,
         symbol: company?.symbol ?? null,
+        companies,
+        symbols: companies.map((item) => item.symbol),
         url: story.primarySource?.url ?? story.sources?.[0]?.url ?? null,
         regulatory: (story.tags ?? []).includes("REGULATORY") || OFFICIAL_SOURCES.has(source),
         labels: story.tags ?? [],

@@ -6,8 +6,8 @@ import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, Cart
 import { getGraphData } from '../utils/api';
 import dayjs from "dayjs";
 
-const UP_COLOR = "#668CF4";   // site convention: positive = primary blue
-const DOWN_COLOR = "#fbbf24"; // negative = amber
+const UP_COLOR = "var(--market-positive)";
+const DOWN_COLOR = "var(--market-negative)";
 
 const formatPrice = (value) =>
     Number(value).toLocaleString("sv-SE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -26,7 +26,7 @@ function ChartTooltip({ active, payload }) {
                 <span>Lägsta</span><span className="text-right text-text">{formatPrice(bar.l)}</span>
                 <span>Stängning</span><span className="text-right text-text">{formatPrice(bar.c)}</span>
             </div>
-            <p className={`mt-1 font-semibold ${up ? "text-primary" : "text-secondary"}`}>
+            <p className={`mt-1 font-semibold ${up ? "market-positive" : "market-negative"}`}>
                 {up ? "+" : ""}{change.toFixed(2).replace(".", ",")}% under dagen
             </p>
         </div>
@@ -89,7 +89,7 @@ function IndexGraph() {
                 <span className="font-bold text-text">OMXS30 <span className="font-normal text-text-muted">· 30 dagar</span></span>
                 <div className="space-x-2">
                     <span className="text-text font-semibold">{formatPrice(lastPrice)}</span>
-                    <span className={`font-semibold ${up ? "text-primary" : "text-secondary"}`}>
+                    <span className={`font-semibold ${up ? "market-positive" : "market-negative"}`}>
                         {up ? "+" : ""}{percentageChange.toFixed(2).replace(".", ",")}%
                     </span>
                 </div>

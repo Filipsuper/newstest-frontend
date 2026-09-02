@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import Link from "next/link";
 import PreviousArticle from "./PreviousArticle";
 import EmailInput from "./EmailInput";
 import Testimonials from "./Testimonials";
 import { DemoNewsFeed } from "./LandingDemos";
 import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
-
-dayjs.extend(utc);
 
 const formatLetterDate = (date) =>
   new Intl.DateTimeFormat("sv-SE", {
@@ -19,6 +15,25 @@ const formatLetterDate = (date) =>
     year: "numeric",
     timeZone: "Europe/Stockholm",
   }).format(new Date(date));
+
+const stockholmDateKey = (value) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Europe/Stockholm",
+  }).formatToParts(new Date(value));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
+const stockholmTime = () => new Intl.DateTimeFormat("sv-SE", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: "Europe/Stockholm",
+}).format(new Date());
 
 const getLetterExcerpt = (article) => {
   const firstBullet = article?.bulletPoints
@@ -58,21 +73,28 @@ const testimonials = [
 ];
 
 export default function HomePage({ articles }) {
-  const [currentTime, setCurrentTime] = useState("00:00:00")
+  const [currentTime, setCurrentTime] = useState("--:--:--")
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(dayjs.utc().add(2, "hour").format("HH:mm:ss"))
-    }, 500)
+    const update = () => setCurrentTime(stockholmTime());
+    update();
+    const timer = setInterval(update, 1000)
 
     return () => clearInterval(timer)
   }, [])
 
   if (!articles || articles.length === 0) {
-    return <div className="text-text">Loading...</div>;
+    return (
+      <main className="newsletter-unavailable">
+        <p className="market-kicker">OMXsums nyhetsbrev</p>
+        <h1>Morgonbrevet och Kvällsbrevet</h1>
+        <p>Arkivet kunde inte hämtas just nu. Du kan fortfarande anmäla dig till nästa kostnadsfria utskick.</p>
+        <EmailInput />
+      </main>
+    );
   }
 
-  const isTodaysArticle = dayjs(articles[0].createdAt).day() === dayjs.utc().day()
+  const isTodaysArticle = stockholmDateKey(articles[0].createdAt) === stockholmDateKey(new Date())
   const latestArticle = articles[0];
   const previousArticles = isTodaysArticle ? articles.slice(1) : articles;
   const latestLetterHref = latestArticle.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet";
@@ -193,11 +215,11 @@ export default function HomePage({ articles }) {
               </div>
               <div className="flex flex-col gap-3 font-sans">
                 <div>
-                  <p className="text-xs font-bold text-text">PowerCell Sweden <span className="text-primary">+5,4%</span></p>
+                  <p className="text-xs font-bold text-text">PowerCell Sweden <span className="market-positive">+5,4%</span></p>
                   <p className="text-sm font-serif italic text-text-article">PowerCell får order värd SEK 21 million</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-text">Epiroc A <span className="text-primary">+2,6%</span></p>
+                  <p className="text-xs font-bold text-text">Epiroc A <span className="market-positive">+2,6%</span></p>
                   <p className="text-sm font-serif italic text-text-article">Epiroc slutför förvärv i Sydafrika</p>
                 </div>
                 <p className="text-xs text-text-muted pt-1">+ 3 fler nyheter som matchar dina val</p>

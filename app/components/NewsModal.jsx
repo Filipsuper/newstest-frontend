@@ -35,7 +35,9 @@ function normalizeStory(input = {}) {
         summary: input.summary,
         reaction: input.reaction,
         facts: input.facts,
-        companies: input.symbol ? [{ symbol: input.symbol, name: input.company }] : [],
+        companies: input.companies?.length
+            ? input.companies
+            : input.symbol ? [{ symbol: input.symbol, name: input.company }] : [],
         sources: input.url ? [{ name: input.source, url: input.url }] : [],
         regulatory: input.regulatory,
     };
@@ -69,8 +71,8 @@ const METRIC_LABELS = {
 const metricLabel = (metric) => METRIC_LABELS[metric.key] ?? metric.label ?? metric.key;
 
 const VERDICTS = {
-    beat: ["Över förväntan", "text-primary"],
-    miss: ["Under förväntan", "text-secondary"],
+    beat: ["Över förväntan", "market-positive"],
+    miss: ["Under förväntan", "market-negative"],
     inline: ["I linje", "text-text-muted"],
 };
 
@@ -427,7 +429,7 @@ export default function NewsModal({ item, story }) {
                 <p className="text-sm mb-4 flex flex-row flex-wrap gap-x-4 gap-y-1">
                     <span>
                         <span className="text-text-muted">Kursreaktion sedan publicering: </span>
-                        <span className={`font-semibold tabular-nums ${reactionPct >= 0 ? "text-primary" : "text-secondary"}`}>
+                        <span className={`font-semibold tabular-nums ${reactionPct >= 0 ? "market-positive" : "market-negative"}`}>
                             {reactionPct >= 0 ? "+" : ""}{reactionPct.toFixed(2)}%
                         </span>
                     </span>
@@ -444,7 +446,7 @@ export default function NewsModal({ item, story }) {
                         Number.isFinite(value) ? (
                             <span key={label} title={`Kursreaktion ${label === "Första avslut" ? "vid första avslutet" : label} efter publicering`}>
                                 <span className="text-text-muted">{label}: </span>
-                                <span className={`font-semibold tabular-nums ${value >= 0 ? "text-primary" : "text-secondary"}`}>
+                                <span className={`font-semibold tabular-nums ${value >= 0 ? "market-positive" : "market-negative"}`}>
                                     {value >= 0 ? "+" : ""}{value.toFixed(2)}%
                                 </span>
                             </span>

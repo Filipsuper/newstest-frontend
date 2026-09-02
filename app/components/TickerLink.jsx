@@ -35,7 +35,7 @@ function MiniChart({ points, news = [] }) {
     ];
     const coords = points.map((_, idx) => xy(idx).map((v) => v.toFixed(1)).join(","));
     const up = values[values.length - 1] >= values[0];
-    const color = up ? "#668CF4" : "#fbbf24";
+    const color = up ? "var(--market-positive)" : "var(--market-negative)";
 
     // News markers snapped to the nearest chart point
     const markerIdx = [...new Set(news.map((ts) => {
@@ -62,7 +62,7 @@ function MiniChart({ points, news = [] }) {
             />
             {markerIdx.map((idx) => {
                 const [cx, cy] = xy(idx);
-                return <circle key={idx} cx={cx} cy={cy} r="2.5" fill="#fbbf24" stroke="var(--color-background)" strokeWidth="1" />;
+                return <circle key={idx} cx={cx} cy={cy} r="2.5" fill="var(--color-secondary)" stroke="var(--color-background)" strokeWidth="1" />;
             })}
         </svg>
     );
@@ -103,7 +103,7 @@ export default function TickerLink({ symbol, children }) {
                         <>
                             <span className="flex flex-row justify-between items-baseline mb-2">
                                 <span className="text-xs font-semibold text-text">{label}</span>
-                                <span className={`text-xs font-semibold ${up ? "text-primary" : "text-secondary"}`}>
+                                <span className={`text-xs font-semibold ${up ? "market-positive" : "market-negative"}`}>
                                     {up ? "+" : ""}{spark.changePct.toFixed(1)}%
                                 </span>
                             </span>

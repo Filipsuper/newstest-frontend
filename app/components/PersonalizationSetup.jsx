@@ -62,8 +62,8 @@ export default function PersonalizationSetup() {
     const hasPrefs = watchlist.length > 0 || topics.length > 0;
 
     return (
-        <div className="flex flex-col gap-6">
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+        <div className="personalization-setup flex flex-col gap-6">
+            {error && <p className="market-negative text-sm">{error}</p>}
 
             <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-text">Bevaka bolag</span>

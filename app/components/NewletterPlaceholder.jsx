@@ -6,7 +6,7 @@ export default function NewletterPlaceholder({ title, body, isTodaysArticle, isW
 
 
     return (
-        <div className="w-full flex flex-col items-center justify-center  text-center h-fit relative mb-4">
+        <header className="newsletter-placeholder w-full flex flex-col items-center justify-center text-center h-fit relative mb-4">
             <div className={"absolute -top-10 -right-10 h-16 w-96  blur-[200px] " + (title === "Morgonbrevet" ? "bg-secondary" : "bg-primary")}></div>
             <h1 className="text-4xl font-bold ">{title}</h1>
             <p className="text-text-article font-sans text-sm">{body}</p>
@@ -35,6 +35,6 @@ export default function NewletterPlaceholder({ title, body, isTodaysArticle, isW
                     )}
                 </div>
             ))}
-        </div>
+        </header>
     )
 }

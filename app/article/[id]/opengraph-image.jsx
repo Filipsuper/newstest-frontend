@@ -31,8 +31,8 @@ export default async function Image({ params }) {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    backgroundColor: "#030712",
-                    color: "#e5e7eb",
+                    backgroundColor: "#151616",
+                    color: "#f3f3ef",
                     padding: "60px 70px",
                     fontFamily: "serif",
                 }}
@@ -45,8 +45,8 @@ export default async function Image({ params }) {
                         style={{
                             display: "flex",
                             fontSize: 26,
-                            color: article?.isEveningLetter ? "#fbbf24" : "#668CF4",
-                            border: `2px solid ${article?.isEveningLetter ? "#fbbf24" : "#668CF4"}`,
+                            color: article?.isEveningLetter ? "#e5bd5c" : "#86a5ef",
+                            border: `2px solid ${article?.isEveningLetter ? "#e5bd5c" : "#86a5ef"}`,
                             padding: "6px 18px",
                         }}
                     >
@@ -67,18 +67,18 @@ export default async function Image({ params }) {
                     >
                         {title.length > 90 ? title.slice(0, 89) + "…" : title}
                     </div>
-                    <div style={{ display: "flex", fontSize: 28, color: "#9ca3af", lineHeight: 1.4 }}>
+                    <div style={{ display: "flex", fontSize: 28, color: "#989b97", lineHeight: 1.4 }}>
                         {excerpt}
                     </div>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", fontSize: 26, color: "#9ca3af" }}>omxsum.com</div>
+                    <div style={{ display: "flex", fontSize: 26, color: "#989b97" }}>omxsum.com</div>
                     {omxPrice ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 30 }}>
-                            <span style={{ color: "#9ca3af" }}>OMXS30</span>
+                            <span style={{ color: "#989b97" }}>OMXS30</span>
                             <span style={{ fontWeight: 700 }}>{omxPrice}</span>
-                            <span style={{ color: isNegative ? "#fbbf24" : "#668CF4" }}>
+                            <span style={{ color: isNegative ? "#ef716a" : "#62ca88" }}>
                                 {omxChangePercentage}
                             </span>
                         </div>

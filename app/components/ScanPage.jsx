@@ -42,9 +42,9 @@ const GeneratedArticleComponent = ({ scanSummary }) => {
           } else if (part.startsWith('##') && part.endsWith('##')) {
             return <h2 key={i} className="text-xl font-semibold">{part.slice(2, -2)}</h2>;
           } else if (part.startsWith('/red/') && part.endsWith('/red/')) {
-            return <span key={i} className="text-amber-400">{part.slice(5, -5)}</span>;
+            return <span key={i} className="market-negative">{part.slice(5, -5)}</span>;
           } else if (part.startsWith('/green/') && part.endsWith('/green/')) {
-            return <span key={i} className="text-primary">{part.slice(7, -7)}</span>;
+            return <span key={i} className="market-positive">{part.slice(7, -7)}</span>;
           }
           return part;
         })}
@@ -112,12 +112,12 @@ export default function Scan() {
   );
 
   return (
-    <div className="container mx-auto max-w-4xl min-h-[80vh] px-4 py-8 bg-background text-text">
+    <main className="public-page public-page--scan container mx-auto max-w-4xl min-h-[80vh] px-4 py-8 text-text">
       <h1 className="text-4xl font-bold text-text">Marknadslägesskanner</h1>
       <p className="text-text-article mb-8">Få en snabb och omfattande överblick över det nuvarande marknadsläget.</p>
 
       {isFreeUser ? (
-        <div className="bg-foreground rounded-2xl p-6 mb-8">
+        <section className="scan-panel bg-foreground rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               <h2 className="text-2xl font-semibold mb-2">Generera marknadsöversikt</h2>
@@ -169,10 +169,10 @@ export default function Scan() {
             <GeneratedArticleComponent scanSummary={scanSummary} />
           )}
 
-          {message && <span className="text-red-500 mt-4 block">{message}</span>}
-        </div>
+          {message && <span className="market-negative mt-4 block">{message}</span>}
+        </section>
       ) : (
-        <div className="bg-foreground rounded-2xl p-8 text-center">
+        <section className="scan-panel bg-foreground rounded-xl p-8 text-center">
           <h2 className="text-3xl font-bold text-text mb-4"><span role="img" aria-label="locked">🔒</span> Låst</h2>
           <p className="text-text-muted mb-2">Få en snabb marknadsöversikt på ett knapptryck</p>
           <p className="text-text-muted mb-4">Logga in för att få tillgång till denna funktion.</p>
@@ -182,8 +182,8 @@ export default function Scan() {
           >
             Skapa konto / logga in
           </button>
-        </div>
+        </section>
       )}
-    </div>
+    </main>
   );
 }

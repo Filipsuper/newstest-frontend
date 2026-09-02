@@ -39,7 +39,7 @@ export default function ConfirmSubscriptionPage() {
 
     if (status === "loading") {
         return (
-            <main className="min-h-[60vh] flex items-center justify-center text-text-muted font-sans">
+            <main className="public-page public-page--status min-h-[60vh] flex items-center justify-center text-text-muted font-sans">
                 Bekräftar din prenumeration…
             </main>
         );
@@ -47,7 +47,7 @@ export default function ConfirmSubscriptionPage() {
 
     if (status === "error") {
         return (
-            <main className="min-h-[60vh] mx-auto max-w-xl px-4 py-16 text-center font-sans">
+            <main className="public-page public-page--status min-h-[60vh] mx-auto max-w-xl px-4 py-16 text-center font-sans">
                 <h1 className="text-3xl font-serif font-bold text-text mb-4">Länken är ogiltig</h1>
                 <p className="text-text-muted mb-8">
                     Länken kan redan vara använd eller ha gått ut. Skriv in din mail igen på startsidan så skickar vi en ny.
@@ -58,7 +58,7 @@ export default function ConfirmSubscriptionPage() {
     }
 
     return (
-        <main className="min-h-[70vh] mx-auto max-w-2xl px-4 py-12 font-sans">
+        <main className="public-page public-page--onboarding min-h-[70vh] mx-auto max-w-2xl px-4 py-10 font-sans">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-serif font-bold text-text mb-3">Du är med! 🎉</h1>
                 <p className="text-text-muted">

@@ -6,17 +6,17 @@ import SiteChrome from "./components/SiteChrome";
 export const metadata = {
   metadataBase: new URL("https://omxsum.com"),
   title: {
-    default: "OMXsum - Dagliga marknadssummeringar",
+    default: "OMXsum – Svenska börsnyheter och marknadsbrev",
     template: "%s | OMXsum",
   },
   description:
-    "Dagliga marknadssummeringar och viktiga pressmeddelanden från morgonens nyheter – genererade av AI varje dag kl. 08:00. Få en snabb överblick av den svenska börsens nyheter på OMXsum.com.",
+    "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
   icons: {
     icon: "/favicon-32x32.png",
   },
   openGraph: {
-    title: "Omxsum",
-    description: "Marknadssummeringar varje morgon 8.00 och kväll 17.30",
+    title: "OMXsum – Svenska börsnyheter och marknadsbrev",
+    description: "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
     url: "https://omxsum.com",
     siteName: "Omxsum",
     type: "website",
@@ -24,8 +24,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Omxsum",
-    description: "Marknadssummeringar varje morgon 8.00 och kväll 17.30",
+    title: "OMXsum – Svenska börsnyheter och marknadsbrev",
+    description: "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
     images: ["/omxsum_og.jpg"],
   },
 };
@@ -36,6 +36,9 @@ try {
   var theme = localStorage.getItem('theme');
   if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.classList.add(theme);
+  if (!window.location.pathname.match(/^\\/terminal(?:\\/|$)/)) {
+    document.documentElement.classList.add('public-palette');
+  }
 } catch (e) {}
 `;
 

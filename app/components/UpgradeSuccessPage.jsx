@@ -16,7 +16,7 @@ export default function UpgradeSuccessPage() {
     const planName = user?.plan === "premium" ? "Pro" : user?.plan === "plus" ? "Plus" : null;
 
     return (
-        <main className="min-h-[70vh] mx-auto max-w-xl px-4 py-16 text-center font-sans">
+        <main className="public-page public-page--status min-h-[70vh] mx-auto max-w-xl px-4 py-16 text-center font-sans">
             <h1 className="text-4xl font-serif font-bold text-text mb-4">
                 {planName ? `Välkommen till ${planName}! 🎉` : "Tack för ditt köp! 🎉"}
             </h1>

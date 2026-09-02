@@ -67,12 +67,12 @@ export default function ArticleComponent({ article, index }) {
 
         const getChangeColor = (change) => {
             const num = parseFloat(change.replace('%', '').replace(',', '.'));
-            if (isNaN(num)) return "text-gray-500";
-            return num > 0 ? "text-primary" : "text-secondary"
+            if (isNaN(num) || num === 0) return "text-text-muted";
+            return num > 0 ? "market-positive" : "market-negative"
         };
 
         return (
-            <div className="flex flex-col md:flex-row justify-between gap-6 py-3 mb-6 w-full bg-background px-2 rounded-xl">
+            <div className="article-dashboard flex flex-col md:flex-row justify-between gap-6 py-3 mb-6 w-full bg-foreground px-3 rounded-xl">
 
 
                 {bulletPoints && (
@@ -121,7 +121,7 @@ export default function ArticleComponent({ article, index }) {
     };
 
     return (
-        <article className="max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8" >
+        <article className="public-article max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8" >
             <Link href="/" className="inline-flex flex-row items-center gap-1 text-text-muted hover:text-text transition-colors mb-8 group">
                 <FaChevronLeft className="text-xs transition-transform group-hover:-translate-x-0.5" />
                 <span className="text-sm font-sans">Tillbaka</span>

@@ -15,7 +15,7 @@ export default function PreviousArticle({ article, idx }) {
 
     return (
         <Link href={`/article/${urlTitle}`} rel={(idx === 0 ? "canonical" : "")} className="group">
-            <article className=" mx-auto relative z-10 mb-8 ">
+            <article className="previous-article mx-auto relative z-10 mb-3">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
                         <span className={"text-white text-xs font-medium rounded-full px-2 py-0.5 " + (isEveningLetter ? "bg-secondary " : "bg-primary ")}>

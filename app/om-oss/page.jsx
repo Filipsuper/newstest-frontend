@@ -19,7 +19,7 @@ export const metadata = {
 
 export default function About() {
   return (
-    <main className="min-h-[80vh] mx-auto max-w-3xl px-4 py-16 md:py-24">
+    <main className="public-page public-page--editorial min-h-[80vh] mx-auto max-w-3xl px-4 py-10 md:py-14">
       <header className="mb-16">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-text mb-6">
           Om OMXsum

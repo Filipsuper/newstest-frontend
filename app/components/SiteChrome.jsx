@@ -1,138 +1,172 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { FaTwitter, FaBars } from "react-icons/fa";
-import { FaBluesky, FaRegStar } from "react-icons/fa6";
-import { IoIosSettings } from "react-icons/io";
-import { FiChevronLeft } from "react-icons/fi";
+import { usePathname } from "next/navigation";
+import { FiChevronDown, FiExternalLink, FiMenu, FiSettings, FiStar, FiX } from "react-icons/fi";
+import { FaTwitter } from "react-icons/fa";
+import { FaBluesky } from "react-icons/fa6";
 import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
 import LogInModal from "../modals/logInModal";
 import StockSearch from "./StockSearch";
 import FloatingDock from "./FloatingDock";
 
-const APP_ROUTE_PREFIXES = [
-    "/aktie",
-    "/screener",
-    "/marknadsnyheter",
-    "/mina-aktier",
-    "/skanna",
-    "/settings",
-    "/terminal",
+const PRIMARY_LINKS = [
+    { href: "/", label: "Start", exact: true },
+    { href: "/marknaden", label: "Marknaden" },
+    { href: "/aktier", label: "Aktier" },
+    { href: "/marknadsnyheter", label: "Nyheter" },
+    { href: "/screener", label: "Screener" },
+    { href: "/nyhetsbrev", label: "Breven" },
 ];
 
-const isAppRoute = (pathname) => APP_ROUTE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-);
+const SECONDARY_LINKS = [
+    { href: "/morgonbrevet", label: "Morgonbrevet" },
+    { href: "/kvallsbrevet", label: "Kvällsbrevet" },
+    { href: "/pro", label: "Plus & Pro" },
+    { href: "/om-oss", label: "Om OMXsum" },
+];
+
+const isActive = (pathname, link) => {
+    if (link.exact) return pathname === link.href;
+    if (link.href === "/aktier" && pathname.startsWith("/aktie/")) return true;
+    if (link.href === "/nyhetsbrev" && ["/morgonbrevet", "/kvallsbrevet", "/article/"].some(
+        (route) => pathname === route || pathname.startsWith(route),
+    )) return true;
+    return pathname === link.href || pathname.startsWith(`${link.href}/`);
+};
 
 export default function SiteChrome({ children }) {
     const { openModal } = useModal();
     const { user, isGuestUser } = useAuthContext();
     const pathname = usePathname();
-    const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const appView = isAppRoute(pathname);
+    const loggedIn = Boolean(user) && !isGuestUser;
+    const isMarketPage = pathname === "/marknaden";
+    const isTerminalPage = pathname === "/terminal" || pathname.startsWith("/terminal/");
 
-    const handleOpenModal = () => {
-        openModal(<LogInModal />);
-    };
+    useEffect(() => {
+        setIsMenuOpen(false);
+        document.documentElement.classList.toggle("public-palette", !isTerminalPage);
+    }, [isTerminalPage, pathname]);
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
-
-    const navLink = "text-text-muted hover:text-text transition-colors";
-
-    const goBack = () => {
-        if (window.history.length > 1) router.back();
-        else router.push("/");
-    };
+    const handleLogIn = () => openModal(<LogInModal redirectTo={pathname} />);
 
     return (
-        <main className="min-h-screen relative overflow-x-hidden">
-            {!appView && <header className="w-full px-4 pt-4 mb-8 relative z-10">
-                <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row font-sans md:items-center gap-x-5 relative z-10">
-                    <div className="flex flex-row justify-between w-full md:w-fit items-center">
-                        <Link href="/" className="flex flex-row items-center gap-3 pr-2">
-                            <span className="w-4 h-4 rounded-full bg-secondary shrink-0"></span>
-                            <span className="text-xl text-text font-serif font-black italic inline">Omxsum</span>
-                        </Link>
-                        <button className="md:hidden text-text-article" onClick={toggleMenu}>
-                            <FaBars />
-                        </button>
-                    </div>
-                    <div className="hidden xl:block w-56 shrink-0">
-                        <StockSearch placeholder="Sök aktie…" />
-                    </div>
-                    <nav className={`${isMenuOpen ? 'flex mt-4' : 'hidden mt-0'} md:flex flex-col md:flex-row text-sm space-y-4 md:space-y-0 md:space-x-5 w-full md:items-center pb-2 md:pb-0`}>
-                        <div className="md:hidden w-full">
-                            <StockSearch placeholder="Sök aktie…" />
-                        </div>
-                        <Link href="/morgonbrevet" className={navLink}>Morgonbrevet</Link>
-                        <Link href="/kvallsbrevet" className={navLink}>Kvällsbrevet</Link>
-                        <Link href="/terminal" className={`relative ${navLink}`}>
-                            <span>Terminal</span>
-                            <span className="absolute font-bold -top-1 -right-3 px-1 text-secondary text-xs">+</span>
-                        </Link>
-                        <Link href="/om-oss" className={navLink}>Om oss</Link>
-                        <Link href="/pro" className={navLink}>Pro</Link>
-                        <div className="hidden md:flex flex-grow"></div>
-                        {!user ? null : isGuestUser ? (
-                            <button
-                                className="bg-secondary text-white font-bold rounded-full px-5 py-2 cursor-pointer hover:brightness-110 transition-all w-fit"
-                                onClick={handleOpenModal}
+        <div className={`site-shell ${isMarketPage ? "site-shell--market" : ""}`}>
+            <header className={`site-header ${isMarketPage ? "site-header--market" : ""}`}>
+                <div className="site-header__bar">
+                    <Link href="/" className="site-logo" aria-label="OMXsum – startsida">
+                        <span aria-hidden="true" />
+                        <strong>Omxsum</strong>
+                    </Link>
+
+                    <nav className="site-header__primary" aria-label="Huvudmeny">
+                        {PRIMARY_LINKS.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                aria-current={isActive(pathname, link) ? "page" : undefined}
+                                className={isActive(pathname, link) ? "is-active" : ""}
                             >
+                                {link.label}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    <div className="site-header__search">
+                        <StockSearch placeholder="Sök aktie eller ticker" showSuggestions />
+                    </div>
+
+                    <div className="site-header__account">
+                        <Link href="/terminal" className="site-header__terminal">
+                            Terminal <FiExternalLink aria-hidden="true" />
+                        </Link>
+                        {!user ? (
+                            <span className="site-header__account-placeholder" aria-hidden="true" />
+                        ) : loggedIn ? (
+                            <>
+                                <Link href="/settings" className="site-header__settings" aria-label="Inställningar">
+                                    <FiSettings aria-hidden="true" />
+                                </Link>
+                                <Link href="/mina-aktier" className="site-header__watchlist">
+                                    <FiStar aria-hidden="true" /> Mina aktier
+                                </Link>
+                            </>
+                        ) : (
+                            <button type="button" onClick={handleLogIn} className="site-header__login">
                                 Logga in
                             </button>
-                        ) : (
-                            <div className="flex flex-row items-center gap-4">
-                                <Link href="/settings" title="Inställningar" className="text-xl text-text-muted hover:text-text transition-colors cursor-pointer"><IoIosSettings /></Link>
-                                <Link
-                                    href="/mina-aktier"
-                                    className="bg-secondary text-white font-bold rounded-full px-5 py-2 hover:brightness-110 transition-all inline-flex items-center gap-2 w-fit"
-                                >
-                                    <FaRegStar /> Mina aktier
-                                </Link>
-                            </div>
                         )}
-                    </nav>
+                        <button
+                            type="button"
+                            className="site-header__menu-button"
+                            onClick={() => setIsMenuOpen((open) => !open)}
+                            aria-expanded={isMenuOpen}
+                            aria-controls="site-menu"
+                            aria-label={isMenuOpen ? "Stäng meny" : "Öppna meny"}
+                        >
+                            {isMenuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
+                        </button>
+                    </div>
+
+                    <div className="site-header__mobile-search">
+                        <StockSearch placeholder="Sök aktie eller ticker" showSuggestions />
+                    </div>
                 </div>
-            </header>}
-            {appView && (
-                <header className="app-view-header">
-                    <button
-                        type="button"
-                        onClick={goBack}
-                        aria-label="Gå tillbaka"
-                        title="Tillbaka"
-                    >
-                        <FiChevronLeft aria-hidden="true" />
-                    </button>
-                    {(pathname === "/aktie" || pathname.startsWith("/aktie/")) && (
-                        <div className="app-view-search">
-                            <StockSearch
-                                placeholder="Sök aktie…"
-                                fieldClassName="app-view-search-field"
-                            />
-                        </div>
-                    )}
-                </header>
-            )}
-            {children}
-            <FloatingDock alwaysVisible={appView} />
-            {!appView && <footer className="w-full mx-auto px-8 pt-12 pb-28 mt-16 flex flex-col md:flex-row items-center relative z-10">
-                <div className="flex flex-row flex-wrap items-center justify-center gap-4 mb-2 md:mb-0">
-                    <p className="text-text-muted text-sm">© 2025 Omxsum</p>
-                    <p className="text-text-muted text-sm">Socialt:</p>
-                    <a href="https://x.com/omxtamer" className="text-text-muted"><FaTwitter /></a>
-                    <a href="https://bsky.app/profile/karlbergg.bsky.social" className="text-text-muted"><FaBluesky /></a>
-                    <a href="https://blog.omxsum.com" className="text-text-muted underline">Blogg</a>
-                    <Link href="/borsnyheter" className="text-text-muted underline">Börsnyheter</Link>
-                    <a href="https://x.com/omxsumcom" className="text-text-muted underline">Följ oss gärna på twitter!</a>
+
+                {isMenuOpen && (
+                    <div id="site-menu" className="site-menu">
+                        <nav aria-label="Mobilmeny">
+                            <div className="site-menu__primary">
+                                {PRIMARY_LINKS.map((link) => (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        aria-current={isActive(pathname, link) ? "page" : undefined}
+                                        className={isActive(pathname, link) ? "is-active" : ""}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </div>
+                            <p><FiChevronDown aria-hidden="true" /> Mer på OMXsum</p>
+                            <div className="site-menu__secondary">
+                                {SECONDARY_LINKS.map((link) => (
+                                    <Link key={link.href} href={link.href}>{link.label}</Link>
+                                ))}
+                                <Link href="/terminal">Terminal <FiExternalLink aria-hidden="true" /></Link>
+                            </div>
+                        </nav>
+                    </div>
+                )}
+            </header>
+
+            <div className={`site-content ${isMarketPage ? "site-content--market" : ""}`}>{children}</div>
+            <FloatingDock />
+
+            {!isMarketPage && <footer className="site-footer">
+                <div>
+                    <Link href="/" className="site-logo" aria-label="OMXsum">
+                        <span aria-hidden="true" />
+                        <strong>Omxsum</strong>
+                    </Link>
+                    <p>En enklare väg in i den svenska börsen.</p>
+                </div>
+                <nav aria-label="Sidfot">
+                    <Link href="/nyhetsbrev">Nyhetsbreven</Link>
+                    <Link href="/borsnyheter">Börsnyheter</Link>
+                    <Link href="/om-oss">Om oss</Link>
+                    <Link href="/pro">Plus & Pro</Link>
+                    <a href="https://blog.omxsum.com">Blogg</a>
+                </nav>
+                <div className="site-footer__social">
+                    <a href="https://x.com/omxsumcom" aria-label="OMXsum på X"><FaTwitter aria-hidden="true" /></a>
+                    <a href="https://bsky.app/profile/karlbergg.bsky.social" aria-label="OMXsum på Bluesky"><FaBluesky aria-hidden="true" /></a>
+                    <small>© {new Date().getFullYear()} OMXsum</small>
                 </div>
             </footer>}
-        </main>
-    )
+        </div>
+    );
 }

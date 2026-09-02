@@ -8,9 +8,9 @@ export const tickerToSymbol = (ticker = "") => {
 
 export const pnlColor = (value) => {
     if (value > 0) {
-        return "text-primary";
+        return "market-positive";
     } else if (value < 0) {
-        return "text-secondary";
+        return "market-negative";
     } else {
         return "text-text-muted";
     }
@@ -18,16 +18,16 @@ export const pnlColor = (value) => {
 
 export const importanceColor = (importance) => {
     if (importance > 9) {
-        return "text-red-500";
+        return "market-negative";
     } else if (importance > 7) {
-        return "text-yellow-500";
+        return "text-secondary";
     } else if (importance > 5) {
-        return "text-green-500";
+        return "market-positive";
     } else if (importance > 3) {
-        return "text-blue-500";
+        return "text-primary";
     } else if (importance > 1) {
-        return "text-purple-500";
+        return "text-text-article";
     } else {
-        return "text-gray-500";
+        return "text-text-muted";
     }
 };

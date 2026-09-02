@@ -100,7 +100,7 @@ function formatValue(value, format) {
 function signedClass(value) {
     const number = finite(value);
     if (number == null || number === 0) return "text-text-article";
-    return number > 0 ? "text-emerald-500 dark:text-emerald-300" : "text-red-500 dark:text-red-400";
+    return number > 0 ? "market-positive" : "market-negative";
 }
 
 function activeFilterParts(filter) {

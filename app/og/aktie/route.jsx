@@ -23,18 +23,18 @@ const SIZE = { width: 1200, height: 630 };
 const CHART = { width: 1096, height: 330, axis: 62, xAxis: 30 };
 
 // The dark theme's chart tokens — this card always renders dark.
-const YELLOW = "#ffc43d";
-const YELLOW_BRIGHT = "#fff3d0";
-const BLUE = "#4d69dc";
-const BLUE_BRIGHT = "#e2e8ff";
-const MUTED_LINE = "#7f8795";
-const MUTED_LINE_BRIGHT = "#cfd4dd";
+const YELLOW = "#e5bd5c";
+const YELLOW_BRIGHT = "#f3d98d";
+const BLUE = "#86a5ef";
+const BLUE_BRIGHT = "#bdcbf3";
+const MUTED_LINE = "#858985";
+const MUTED_LINE_BRIGHT = "#c4c8c4";
 const VOLUME = "rgba(255, 196, 61, 0.11)";
 const MUTED_VOLUME = "rgba(127, 135, 149, 0.08)";
 const GRID = "rgba(199, 205, 218, 0.105)";
-const MUTED = "#9297a3";
-const POSITIVE = "#71ff86";
-const NEGATIVE = "#ff6b66";
+const MUTED = "#989b97";
+const POSITIVE = "#62ca88";
+const NEGATIVE = "#ef716a";
 
 const svDecimal = (value, digits = 1) =>
     Number(value).toLocaleString("sv-SE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -316,18 +316,18 @@ export async function GET(request) {
                         justifyContent: "center",
                         alignItems: "center",
                         gap: 18,
-                        backgroundColor: "#101217",
-                        color: "#f2f3f5",
+                        backgroundColor: "#202121",
+                        color: "#f3f3ef",
                         fontFamily: "sans-serif",
                     }}
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-                        <div style={{ display: "flex", width: 30, height: 30, borderRadius: 15, backgroundColor: "#ffc43d" }} />
+                        <div style={{ display: "flex", width: 30, height: 30, borderRadius: 15, backgroundColor: YELLOW }} />
                         <div style={{ display: "flex", fontSize: 64, fontWeight: 900, fontStyle: "italic", fontFamily: "serif" }}>
                             Omxsum
                         </div>
                     </div>
-                    <div style={{ display: "flex", fontSize: 34, color: "#9297a3" }}>
+                    <div style={{ display: "flex", fontSize: 34, color: MUTED }}>
                         Aktieöversikter för 870+ svenska aktier
                     </div>
                 </div>
@@ -347,8 +347,8 @@ export async function GET(request) {
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    backgroundColor: "#0e1015",
-                    color: "#f2f3f5",
+                    backgroundColor: "#151616",
+                    color: "#f3f3ef",
                     padding: "38px 52px 28px",
                     fontFamily: "sans-serif",
                 }}
@@ -374,7 +374,7 @@ export async function GET(request) {
                         </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <div style={{ display: "flex", width: 18, height: 18, borderRadius: 9, backgroundColor: "#ffc43d" }} />
+                        <div style={{ display: "flex", width: 18, height: 18, borderRadius: 9, backgroundColor: YELLOW }} />
                         <div style={{ display: "flex", fontSize: 30, fontWeight: 900, fontStyle: "italic", fontFamily: "serif" }}>
                             Omxsum
                         </div>
