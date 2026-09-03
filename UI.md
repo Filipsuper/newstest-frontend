@@ -63,9 +63,11 @@ desktop density or abbreviated interaction model.
 - The dominant panel ranks material stories by importance and measured market
   reaction. A chronological feed remains available as a secondary view.
 - Price language describes sequence, not automatic causality: use `sedan
-  publicering`, and label unmatched movers `Ingen tydlig nyhet`.
-- Movers pair the daily move with a relevant headline when one exists. Raw
-  gainers and losers without context do not become the page's main hierarchy.
+  publicering` and avoid claiming that a matched headline caused the move.
+- `Rörelser med förklaring` follows the Terminal's `News movers` definition:
+  require company news for the same trading session, require at least 1%
+  absolute daily movement, and rank by absolute movement. Never backfill this
+  panel with unmatched gainers or losers; show an honest empty state instead.
 - News and mover rows reuse the same visual grammar: a signed reaction badge,
   clear company identity, and an inline headline or narrative. Their section
   headers sit directly on the page canvas; each row is its own raised panel.

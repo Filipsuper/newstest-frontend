@@ -472,14 +472,10 @@ function MoverItem({ item, story, onOpen }) {
                 <strong>{price ? `${price} kr` : "Saknas"}</strong>
             </div>
             <div className="explained-mover__narrative">
-                <span>{story ? `Nyhet ${formatNewsTime(story.ts)}` : "Narrativ"}</span>
-                {story ? (
-                    <button type="button" onClick={() => onOpen(story)} title={story.title}>
-                        {story.title}
-                    </button>
-                ) : (
-                    <p>Ingen tydlig nyhet i dagens urval</p>
-                )}
+                <span>Nyhet {formatNewsTime(story.ts)}</span>
+                <button type="button" onClick={() => onOpen(story)} title={story.title}>
+                    {story.title}
+                </button>
             </div>
         </li>
     );
@@ -495,23 +491,27 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
         }
         return result;
     }, [stories]);
+    const explainedItems = useMemo(() => items.flatMap((item) => {
+        const story = storyBySymbol.get(normalizedSymbol(item.symbol));
+        return story ? [{ item, story }] : [];
+    }), [items, storyBySymbol]);
 
     return (
         <section className={`market-digest__panel market-digest__panel--movers ${active ? "is-active" : ""}`}>
             <header className="market-digest__panel-heading">
                 <div>
                     <h2>Rörelser med förklaring</h2>
-                    <span>{watchlistView ? "Bland dina aktier" : "Störst först"}</span>
+                    <span>{watchlistView ? "Nyhetsdrivet i dina aktier" : "Nyhet + minst 1 % idag"}</span>
                 </div>
                 <Link href="/aktier">Alla aktier <FiArrowRight aria-hidden="true" /></Link>
             </header>
-            {items.length ? (
+            {explainedItems.length ? (
                 <ol className="market-digest__movers">
-                    {items.slice(0, 8).map((item) => (
+                    {explainedItems.slice(0, 8).map(({ item, story }) => (
                         <MoverItem
                             key={item.symbol}
                             item={item}
-                            story={storyBySymbol.get(normalizedSymbol(item.symbol))}
+                            story={story}
                             onOpen={onOpen}
                         />
                     ))}
@@ -519,8 +519,8 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
             ) : (
                 <div className="market-empty-state">
                     {watchlistView
-                        ? "Ingen av dina aktier finns bland dagens största rörelser."
-                        : "Rörelsedata saknas just nu."}
+                        ? "Ingen av dina aktier har både en bolagsnyhet och minst 1 % rörelse idag."
+                        : "Inga aktier med både bolagsnyhet och minst 1 % rörelse just nu."}
                 </div>
             )}
         </section>
@@ -589,12 +589,26 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
         [watchlistNews, marketNews, watchlistSet],
     );
     const shownNews = view === "watchlist" ? personalNews : marketNews;
+    const moverStories = useMemo(() => {
+        const hasDedicatedMoverNews = Array.isArray(overview.moverNews);
+        const rawMoverNews = hasDedicatedMoverNews ? overview.moverNews : [];
+        const mappedMoverNews = rawMoverNews
+            .filter((story) => story?.id && story?.headline)
+            .map(storyToItem);
+        return rankNews(uniqueNews(hasDedicatedMoverNews ? mappedMoverNews : marketNews));
+    }, [overview.moverNews, marketNews]);
 
     const allMovers = useMemo(() => {
         const bySymbol = new Map();
-        for (const item of [...(overview.movers?.gainers ?? []), ...(overview.movers?.losers ?? [])]) {
+        const candidates = Array.isArray(overview.movers?.items)
+            ? overview.movers.items
+            : [...(overview.movers?.gainers ?? []), ...(overview.movers?.losers ?? [])];
+        for (const item of candidates) {
             const symbol = normalizedSymbol(item.symbol);
-            if (symbol && !bySymbol.has(symbol)) bySymbol.set(symbol, item);
+            const change = finite(item.changePct);
+            if (symbol && change !== null && Math.abs(change) >= 1 && !bySymbol.has(symbol)) {
+                bySymbol.set(symbol, item);
+            }
         }
         return [...bySymbol.values()].sort((left, right) =>
             Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0));
@@ -756,7 +770,7 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
 
                 <MoversPanel
                     items={shownMovers}
-                    stories={view === "watchlist" ? personalNews : marketNews}
+                    stories={moverStories}
                     watchlistView={view === "watchlist"}
                     active={activePanel === "movers"}
                     onOpen={openStory}

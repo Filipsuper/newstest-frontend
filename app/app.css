@@ -6775,8 +6775,7 @@ body {
   white-space: nowrap;
 }
 
-.explained-mover__narrative > button,
-.explained-mover__narrative > p {
+.explained-mover__narrative > button {
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
