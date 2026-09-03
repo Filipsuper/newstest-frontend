@@ -6751,13 +6751,14 @@ body {
 }
 
 .explained-mover__company > a small,
-.explained-mover__price > span,
-.explained-mover__narrative > span {
+.explained-mover__trading > span,
+.explained-mover__trading > small,
+.explained-mover__narrative-meta {
   color: var(--color-text-muted);
   font-size: 0.58rem;
 }
 
-.explained-mover__price,
+.explained-mover__trading,
 .explained-mover__narrative {
   display: flex;
   min-width: 0;
@@ -6765,14 +6766,40 @@ body {
   gap: 5px;
 }
 
-.explained-mover__price > strong {
-  overflow: hidden;
+.explained-mover__trading > strong {
   color: var(--color-text);
-  font-size: 0.75rem;
+  font-size: 0.67rem;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.explained-mover__trading > small {
+  line-height: 1.2;
+}
+
+.explained-mover__narrative-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
+}
+
+.explained-mover__narrative-meta span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-weight: 650;
+  text-overflow: ellipsis;
+}
+
+.explained-mover__narrative-meta span.is-likely {
+  color: var(--color-text-article);
+}
+
+.explained-mover__narrative-meta time {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .explained-mover__narrative > button {
@@ -6791,11 +6818,6 @@ body {
 
 .explained-mover__narrative > button {
   cursor: pointer;
-}
-
-.explained-mover__narrative > span {
-  color: var(--color-secondary);
-  font-weight: 620;
 }
 
 .explained-mover__narrative > button:hover,
@@ -7216,15 +7238,44 @@ body {
     width: min(calc(100% - 20px), 620px);
     height: auto;
     min-height: 0;
-    grid-template-rows: 38px 252px 32px clamp(590px, 84dvh, 800px);
+    grid-template-rows: 38px 196px 32px clamp(590px, 84dvh, 800px);
     gap: 6px;
     padding-block: 8px 0;
     overflow: visible;
   }
 
   .market-digest__summary {
-    grid-template-rows: 120px 126px;
+    grid-template-rows: 74px 116px;
     gap: 6px;
+  }
+
+  .market-pulse {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .market-pulse::-webkit-scrollbar {
+    display: none;
+  }
+
+  .market-pulse__item,
+  .market-pulse__item--index {
+    min-width: 140px;
+    flex: 0 0 140px;
+    border-right: 1px solid var(--market-workbench-line);
+    border-bottom: 0;
+    scroll-snap-align: start;
+  }
+
+  .market-pulse__item:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .market-pulse__item:last-child {
+    border-right: 0;
   }
 
   .market-pulse__item {
@@ -7242,7 +7293,7 @@ body {
   }
 
   .market-pulse__item--index .market-mini-chart {
-    height: 34px;
+    height: 28px;
   }
 
   .market-digest__panel {
@@ -7258,6 +7309,10 @@ body {
     padding-right: 4px;
     overscroll-behavior-y: auto;
   }
+
+  .impact-story__sources {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -7266,8 +7321,9 @@ body {
     gap: 9px 12px;
   }
 
-  .explained-mover__price {
+  .explained-mover__trading {
     align-items: flex-end;
+    text-align: right;
   }
 
   .explained-mover__narrative {

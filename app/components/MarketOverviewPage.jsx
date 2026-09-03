@@ -14,10 +14,18 @@ import { fetchLiveFeed, toggleWatchlist } from "../utils/api";
 import { tagColor, tagLabel } from "../utils/newsTags";
 import { storyToItem } from "../utils/storyToItem";
 import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
+import {
+    curateMarketNews,
+    normalizedSymbol,
+    rankNews,
+    storyReaction,
+    storySymbols,
+    uniqueNews,
+} from "../utils/marketNewsRanking";
 
 const MOBILE_PANELS = [
     { id: "drivers", label: "Drivkrafter" },
-    { id: "movers", label: "Rörelser" },
+    { id: "movers", label: "Reaktioner" },
 ];
 
 const INDEX_COPY = {
@@ -112,6 +120,28 @@ const formatPrice = (value) => finite(value) === null
     ? null
     : Number(value).toLocaleString("sv-SE", { maximumFractionDigits: 2 });
 
+const formatMultiple = (value) => finite(value) === null
+    ? null
+    : `${Number(value).toLocaleString("sv-SE", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    })}× normal handel`;
+
+const formatTurnover = (value) => {
+    const amount = finite(value);
+    if (amount === null) return null;
+    if (amount >= 1_000_000_000) {
+        return `${(amount / 1_000_000_000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} mdkr`;
+    }
+    if (amount >= 1_000_000) {
+        return `${(amount / 1_000_000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} mkr`;
+    }
+    if (amount >= 1_000) {
+        return `${Math.round(amount / 1_000).toLocaleString("sv-SE")} tkr`;
+    }
+    return `${Math.round(amount).toLocaleString("sv-SE")} kr`;
+};
+
 const letterExcerpt = (article) => {
     const firstBullet = article?.bulletPoints
         ?.split("\n")
@@ -149,97 +179,8 @@ const benchmarkChart = (benchmark, referenceTime) => {
     };
 };
 
-const storyReaction = (item) => finite(item?.reaction?.pct);
-
-const normalizedSymbol = (value) => String(value ?? "").trim().toUpperCase();
-
-const INSIDER_TAG = "INSIDER";
-const MATERIAL_INSIDER_VALUE = 25_000_000;
-const EXCEPTIONAL_INSIDER_VALUE = 100_000_000;
-const MATERIAL_INSIDER_REACTION = 1.25;
-const EXCEPTIONAL_INSIDER_REACTION = 2.5;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-const isInsiderStory = (item) => (item?.labels ?? []).includes(INSIDER_TAG);
-
-const insiderMateriality = (item) => {
-    if (!isInsiderStory(item)) return null;
-    const grossValue = finite(item?.facts?.grossValue) ?? 0;
-    const reaction = Math.abs(storyReaction(item) ?? 0);
-    if (grossValue >= EXCEPTIONAL_INSIDER_VALUE || reaction >= EXCEPTIONAL_INSIDER_REACTION) {
-        return "exceptional";
-    }
-    if (grossValue >= MATERIAL_INSIDER_VALUE || reaction >= MATERIAL_INSIDER_REACTION) {
-        return "material";
-    }
-    return "routine";
-};
-
-const storySymbols = (item) => {
-    const symbols = item?.symbols?.length ? item.symbols : [item?.symbol];
-    return symbols.map(normalizedSymbol).filter(Boolean);
-};
-
 const matchesWatchlist = (item, watchlistSet) =>
     storySymbols(item).some((symbol) => watchlistSet.has(symbol));
-
-const impactScore = (item, { personalized = false, referenceTs = null } = {}) => {
-    const importance = finite(item.importance) ?? 0;
-    const reaction = Math.abs(storyReaction(item) ?? 0);
-    const reactionBoost = Math.min(reaction * 8, 40);
-    const publishedAt = finite(item.ts);
-    const ageDays = publishedAt !== null && referenceTs !== null
-        ? Math.max(referenceTs - publishedAt, 0) / DAY_MS
-        : 0;
-    const freshnessPenalty = Math.min(ageDays * 10, 32);
-    const insiderLevel = insiderMateriality(item);
-    const insiderPenalty = insiderLevel === "exceptional"
-        ? personalized ? 0 : 10
-        : insiderLevel === "material"
-            ? personalized ? 8 : 22
-            : insiderLevel === "routine"
-                ? personalized ? 18 : 45
-                : 0;
-    return importance + reactionBoost - insiderPenalty - freshnessPenalty;
-};
-
-const rankNews = (items, options = {}) => {
-    const timestamps = items.map((item) => finite(item.ts)).filter((value) => value !== null);
-    const referenceTs = finite(options.referenceTs)
-        ?? (timestamps.length ? Math.max(...timestamps) : null);
-    const scoringOptions = { ...options, referenceTs };
-    return [...items].sort((left, right) =>
-        impactScore(right, scoringOptions) - impactScore(left, scoringOptions)
-        || (finite(right.ts) ?? 0) - (finite(left.ts) ?? 0));
-};
-
-// The overview is an editorial digest, not the complete wire. Routine insider
-// trades remain available in the full feed, but cannot crowd out reports,
-// guidance and other market-moving events here. Repeated insider filings for
-// the same company are represented by the strongest one.
-const curateMarketNews = (items) => {
-    const seenInsiderSymbols = new Set();
-    let routineInsiders = 0;
-    return rankNews(items).filter((item) => {
-        const level = insiderMateriality(item);
-        if (!level) return true;
-        const symbol = storySymbols(item)[0];
-        if (symbol && seenInsiderSymbols.has(symbol)) return false;
-        if (level === "routine" && routineInsiders >= 2) return false;
-        if (symbol) seenInsiderSymbols.add(symbol);
-        if (level === "routine") routineInsiders += 1;
-        return true;
-    });
-};
-
-const uniqueNews = (items) => {
-    const seen = new Set();
-    return items.filter((item) => {
-        if (!item?.id || seen.has(item.id)) return false;
-        seen.add(item.id);
-        return true;
-    });
-};
 
 const marketTone = (breadth, news) => {
     const rising = finite(breadth.rising) ?? 0;
@@ -341,6 +282,9 @@ function ImpactStory({ item, personalized = false, onOpen }) {
                     {personalized && <span>Din aktie</span>}
                     {reaction !== null && <span>Sedan publicering</span>}
                     <time dateTime={isoTime}>{formatNewsTime(item.ts)}</time>
+                    {(item.sourceCount ?? 0) > 1 && (
+                        <span className="impact-story__sources">{item.sourceCount} källor</span>
+                    )}
                     {primaryTag && (
                         <span className={`impact-story__tag ${tagColor(primaryTag)}`}>
                             {tagLabel(primaryTag)}
@@ -475,21 +419,42 @@ function DriversPanel({
 function MoverItem({ item, story, onOpen }) {
     const change = finite(item.changePct);
     const price = formatPrice(item.price);
+    const relativeVolume = finite(item.explanation?.relativeVolume ?? item.metrics?.rvolAtTime);
+    const turnover = finite(item.explanation?.turnover ?? item.metrics?.turnover);
+    const lowTurnover = item.explanation?.lowTurnover
+        ?? (turnover !== null && turnover < 1_000_000);
+    const confidence = item.explanation?.confidence === "likely" ? "likely" : "possible";
+    const confidenceLabel = confidence === "likely" ? "Trolig nyhetsreaktion" : "Möjlig koppling";
+    const volumeLabel = formatMultiple(relativeVolume);
+    const turnoverLabel = formatTurnover(turnover);
     return (
         <li className="explained-mover">
             <div className="explained-mover__company">
                 <MoveBadge value={change} fallback="–" title="Dagens kursförändring" />
                 <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
                     <strong>{item.name ?? item.nativeSymbol ?? item.symbol}</strong>
-                    <small>{item.nativeSymbol ?? item.symbol} · idag</small>
+                    <small>
+                        {item.nativeSymbol ?? item.symbol}
+                        {price ? ` · ${price} kr` : ""}
+                    </small>
                 </Link>
             </div>
-            <div className="explained-mover__price">
-                <span>Kurs</span>
-                <strong>{price ? `${price} kr` : "Saknas"}</strong>
+            <div className="explained-mover__trading">
+                <span>Handel</span>
+                <strong title="Dagens volym jämfört med normalt vid samma tidpunkt">
+                    {volumeLabel ?? "Volym saknas"}
+                </strong>
+                {turnoverLabel && (
+                    <small>{lowTurnover ? "Låg omsättning" : "Omsättning"} · {turnoverLabel}</small>
+                )}
             </div>
             <div className="explained-mover__narrative">
-                <span>Nyhet {formatNewsTime(story.ts)}</span>
+                <div className="explained-mover__narrative-meta">
+                    <span className={`is-${confidence}`}>{confidenceLabel}</span>
+                    <time dateTime={Number.isFinite(story.ts) ? new Date(story.ts).toISOString() : undefined}>
+                        {formatNewsTime(story.ts)}
+                    </time>
+                </div>
                 <button type="button" onClick={() => onOpen(story)} title={story.title}>
                     {story.title}
                 </button>
@@ -517,8 +482,8 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
         <section className={`market-digest__panel market-digest__panel--movers ${active ? "is-active" : ""}`}>
             <header className="market-digest__panel-heading">
                 <div>
-                    <h2>Rörelser med förklaring</h2>
-                    <span>{watchlistView ? "Nyhetsdrivet i dina aktier" : "Nyhet + minst 1 % idag"}</span>
+                    <h2>Nyhetsreaktioner</h2>
+                    <span>{watchlistView ? "Nyhetskoppling i dina aktier" : "Trolig koppling först"}</span>
                 </div>
                 <Link href="/aktier">Alla aktier <FiArrowRight aria-hidden="true" /></Link>
             </header>
@@ -536,8 +501,8 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
             ) : (
                 <div className="market-empty-state">
                     {watchlistView
-                        ? "Ingen av dina aktier har både en bolagsnyhet och minst 1 % rörelse idag."
-                        : "Inga aktier med både bolagsnyhet och minst 1 % rörelse just nu."}
+                        ? "Ingen av dina aktier har en tillräckligt stark nyhetskoppling just nu."
+                        : "Inga rörelser med tillräckligt stark nyhetskoppling just nu."}
                 </div>
             )}
         </section>
@@ -627,8 +592,12 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
                 bySymbol.set(symbol, item);
             }
         }
-        return [...bySymbol.values()].sort((left, right) =>
-            Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0));
+        return [...bySymbol.values()].sort((left, right) => {
+            const confidence = (right.explanation?.confidence === "likely" ? 1 : 0)
+                - (left.explanation?.confidence === "likely" ? 1 : 0);
+            return confidence
+                || Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0);
+        });
     }, [overview.movers]);
     const shownMovers = view === "watchlist"
         ? allMovers.filter((item) => watchlistSet.has(normalizedSymbol(item.symbol)))

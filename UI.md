@@ -65,10 +65,17 @@ desktop density or abbreviated interaction model.
   reaction. A chronological feed remains available as a secondary view.
 - Price language describes sequence, not automatic causality: use `sedan
   publicering` and avoid claiming that a matched headline caused the move.
-- `Rörelser med förklaring` follows the Terminal's `News movers` definition:
-  require company news for the same trading session, require at least 1%
-  absolute daily movement, and rank by absolute movement. Never backfill this
-  panel with unmatched gainers or losers; show an honest empty state instead.
+- `Nyhetsreaktioner` starts with the Terminal's `News movers` definition, then
+  applies a stricter evidence check: require company news published before the
+  measured move, at least 1% absolute daily movement, and credible support from
+  event materiality, source quality, relative volume, or turnover. Label the
+  result as a likely reaction or possible connection; never state mechanical
+  causality. Never backfill the panel with unmatched movers.
+- Rank likely news reactions ahead of possible connections. Show relative
+  volume and turnover as the trading evidence; absolute share price may remain
+  secondary beside the ticker but does not deserve its own mover column. Flag
+  low turnover instead of letting an illiquid percentage move look equivalent
+  to a broadly traded reaction.
 - News and mover rows reuse the same visual grammar: a signed reaction badge,
   clear company identity, and an inline headline or narrative. Their section
   headers sit directly on the page canvas; each row is its own raised panel.
@@ -83,9 +90,13 @@ desktop density or abbreviated interaction model.
   the window, mark the story time only when it falls inside that window, and
   never present the trace as proof that the story caused the move.
 - Routine insider transactions are supporting news, not default market
-  drivers. De-prioritize them, avoid repeated filings for the same company in
-  the overview, and let only exceptional size or a clear measured reaction
-  restore prominence. Keep the complete set in the chronological news feed.
+  drivers. Their materiality comes from transaction facts and size, never from
+  an unrelated daily share-price move. Exclude routine filings from the market
+  driver ranking, avoid repeated filings for the same company, and keep the
+  complete set in the chronological or personalized feed.
+- Cluster duplicate language versions and source copies of the same company
+  event before ranking. Prefer the clearest Swedish item and retain the number
+  of distinct sources as quiet provenance.
 - `Marknaden` and `Mina aktier` reuse the same information architecture. The
   watchlist is a relevance filter over news and movers, not a separate
   portfolio dashboard.
