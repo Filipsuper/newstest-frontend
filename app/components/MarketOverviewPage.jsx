@@ -41,6 +41,23 @@ const marketDateKey = (value, timeZone = "Europe/Stockholm") => {
 
 const stockholmDateKey = (value) => marketDateKey(value, "Europe/Stockholm");
 
+const stockholmMinutes = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+        timeZone: "Europe/Stockholm",
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const hours = Number(values.hour);
+    const minutes = Number(values.minute);
+    return Number.isFinite(hours) && Number.isFinite(minutes)
+        ? (hours * 60) + minutes
+        : null;
+};
+
 const formatMarketDate = (value) => {
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value))
         ? new Date(`${value}T12:00:00Z`)
@@ -527,7 +544,7 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
     );
 }
 
-export default function MarketOverviewPage({ overview = {}, articles = [] }) {
+export default function MarketOverviewPage({ overview = {}, articles = [], referenceTime = null }) {
     const { openModal } = useModal();
     const { user, isGuestUser, isPlusUser, refreshUser } = useAuthContext();
     const [view, setView] = useState("market");
@@ -617,16 +634,29 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
         ? allMovers.filter((item) => watchlistSet.has(normalizedSymbol(item.symbol)))
         : allMovers;
 
+    const marketReferenceTime = referenceTime ?? overview.generatedAt ?? overview.dataAsOf ?? null;
     const latestMorningArticle = articles.find((article) => !article?.isEveningLetter) ?? null;
-    const morningLetterHref = latestMorningArticle ? "/morgonbrevet" : "/nyhetsbrev";
-    const morningLetterExcerpt = letterExcerpt(latestMorningArticle);
-    const morningLetterDate = latestMorningArticle?.createdAt
-        ? formatMarketDate(latestMorningArticle.createdAt)
+    const stockholmToday = stockholmDateKey(marketReferenceTime);
+    const eveningReleasePassed = (stockholmMinutes(marketReferenceTime) ?? -1) >= (17 * 60) + 30;
+    const todaysEveningArticle = articles.find((article) =>
+        article?.isEveningLetter
+        && stockholmDateKey(article.createdAt) === stockholmToday) ?? null;
+    const featuredLetter = eveningReleasePassed && todaysEveningArticle
+        ? todaysEveningArticle
+        : latestMorningArticle;
+    const featuredLetterIsEvening = Boolean(featuredLetter?.isEveningLetter);
+    const featuredLetterName = featuredLetterIsEvening ? "Kvällsbrevet" : "Morgonbrevet";
+    const featuredLetterHref = featuredLetter
+        ? featuredLetterIsEvening ? "/kvallsbrevet" : "/morgonbrevet"
+        : "/nyhetsbrev";
+    const featuredLetterExcerpt = letterExcerpt(featuredLetter);
+    const featuredLetterDate = featuredLetter?.createdAt
+        ? formatMarketDate(featuredLetter.createdAt)
         : null;
     const sessionDate = overview.sessionDate
         ?? benchmarks.flatMap((benchmark) => benchmark.bars ?? []).at(-1)?.date
         ?? null;
-    const currentSession = sessionDate === stockholmDateKey(new Date());
+    const currentSession = sessionDate === stockholmToday;
     const toneNews = sessionDate
         ? marketNews.filter((item) => stockholmDateKey(item.ts) === sessionDate)
         : marketNews;
@@ -700,37 +730,41 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                 </div>
             </header>
 
-            <section className="market-digest__summary" aria-label="Marknadsöversikt och morgonbrev">
+            <section
+                className="market-digest__summary"
+                aria-label={`Marknadsöversikt och ${featuredLetterName.toLocaleLowerCase("sv-SE")}`}
+            >
                 <MarketPulse
                     benchmarks={benchmarks}
                     breadth={breadth}
                     news={toneNews}
-                    referenceTime={overview.generatedAt ?? overview.dataAsOf ?? 0}
+                    referenceTime={marketReferenceTime ?? 0}
                 />
 
                 <aside className="market-digest__letter" aria-labelledby="market-letter-title">
                     <div className="market-digest__letter-copy">
                         <p className="market-digest__letter-kicker">
-                            <span>Morgonbrevet</span>
-                            {morningLetterDate && (
-                                <time dateTime={latestMorningArticle.createdAt}>
-                                    Senaste · {morningLetterDate}
+                            <span>{featuredLetterName}</span>
+                            {featuredLetterDate && (
+                                <time dateTime={featuredLetter.createdAt}>
+                                    Senaste · {featuredLetterDate}
                                 </time>
                             )}
                         </p>
-                        <Link className="market-digest__letter-preview" href={morningLetterHref}>
+                        <Link className="market-digest__letter-preview" href={featuredLetterHref}>
                             <h2 id="market-letter-title">
-                                {latestMorningArticle?.title ?? "Morgonens viktigaste marknadshändelser"}
+                                {featuredLetter?.title ?? "Morgonens viktigaste marknadshändelser"}
                             </h2>
                             <p>
-                                {morningLetterExcerpt
-                                    || "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen."}
+                                {featuredLetterExcerpt || (featuredLetterIsEvening
+                                    ? "Nyheterna, bolagen och rörelserna som summerar börsdagen."
+                                    : "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen.")}
                             </p>
                         </Link>
                     </div>
-                    <nav aria-label="Morgonbrevet">
-                        <Link className="market-digest__letter-primary" href={morningLetterHref}>
-                            Läs morgonbrevet <FiArrowRight aria-hidden="true" />
+                    <nav aria-label={featuredLetterName}>
+                        <Link className="market-digest__letter-primary" href={featuredLetterHref}>
+                            Läs {featuredLetterName.toLocaleLowerCase("sv-SE")} <FiArrowRight aria-hidden="true" />
                         </Link>
                         <Link href="/nyhetsbrev">Få det i mejlen</Link>
                     </nav>

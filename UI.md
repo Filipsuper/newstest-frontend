@@ -57,7 +57,8 @@ desktop density or abbreviated interaction model.
   session sparklines. If an exchange has not opened, label and preserve its
   latest completed session; historical index charts never occupy the primary
   workspace by default.
-- The top data row pairs a four-cell KPI block with the latest morning letter.
+- The top data row pairs a four-cell KPI block with the current editorial
+  letter.
   Arrange `Marknadston` and the three indices as a 2×2 grid; market breadth is
   evidence inside `Marknadston`, never a duplicate standalone KPI.
 - The dominant panel ranks material stories by importance and measured market
@@ -88,9 +89,12 @@ desktop density or abbreviated interaction model.
 - `Marknaden` and `Mina aktier` reuse the same information architecture. The
   watchlist is a relevance filter over news and movers, not a separate
   portfolio dashboard.
-- The latest morning letter is an editorial preview within the workspace, with
-  its real title and a short excerpt. Do not reduce it to a thin link strip or
-  let it replace the ranked news as the primary region.
+- The editorial letter is a preview within the workspace, with its real title
+  and a short excerpt. Show the morning letter before 17:30 Stockholm time. At
+  or after 17:30, switch to today's evening letter once it exists; if it has not
+  been published, keep the morning letter instead of substituting an older
+  evening edition. Do not reduce the preview to a thin link strip or let it
+  replace the ranked news as the primary region.
 - `Marknadston` is a plain-language summary supported by visible breadth and
   news-reaction evidence. Do not expose an unexplained numeric sentiment score.
 - Use an asymmetric dashboard composition: the compact KPI block and editorial
