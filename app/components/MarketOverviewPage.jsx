@@ -5,6 +5,8 @@ import Link from "next/link";
 import { FiArrowRight, FiClock, FiStar } from "react-icons/fi";
 import NewsModal from "./NewsModal";
 import StockSearch from "./StockSearch";
+import MarketStorySparkline from "./MarketStorySparkline";
+import MiniPriceChart from "./MiniPriceChart";
 import LogInModal from "../modals/logInModal";
 import { useModal } from "../providers/ModalProvider";
 import { useAuthContext } from "../providers/AuthProvider";
@@ -18,18 +20,26 @@ const MOBILE_PANELS = [
     { id: "movers", label: "Rörelser" },
 ];
 
-const stockholmDateKey = (value) => {
+const INDEX_COPY = {
+    omxspi: "OMXSPI",
+    omxs30: "OMXS30",
+    sp500: "S&P 500",
+};
+
+const marketDateKey = (value, timeZone = "Europe/Stockholm") => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return null;
     const parts = new Intl.DateTimeFormat("en-CA", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-        timeZone: "Europe/Stockholm",
+        timeZone,
     }).formatToParts(date);
     const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
     return `${values.year}-${values.month}-${values.day}`;
 };
+
+const stockholmDateKey = (value) => marketDateKey(value, "Europe/Stockholm");
 
 const formatMarketDate = (value) => {
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value))
@@ -98,9 +108,28 @@ const letterExcerpt = (article) => {
 };
 
 const benchmarkChange = (benchmark) => {
+    const sessionChange = finite(benchmark?.session?.changePct);
+    if (sessionChange !== null) return sessionChange;
     const closes = (benchmark?.bars ?? []).map((bar) => finite(bar.close)).filter((value) => value !== null);
     if (closes.length < 2 || closes.at(-2) === 0) return null;
     return ((closes.at(-1) - closes.at(-2)) / closes.at(-2)) * 100;
+};
+
+const benchmarkChart = (benchmark, referenceTime) => {
+    const sessionPoints = (benchmark?.session?.points ?? [])
+        .filter((point) => Array.isArray(point) && finite(point[0]) !== null && finite(point[1]) !== null);
+    if (sessionPoints.length >= 2) {
+        const timeZone = benchmark.session.timeZone ?? "Europe/Stockholm";
+        const currentSession = benchmark.session.date === marketDateKey(referenceTime, timeZone);
+        return {
+            points: sessionPoints,
+            label: currentSession ? "Idag" : "Senaste session",
+        };
+    }
+    return {
+        points: (benchmark?.bars ?? []).slice(-6).map((bar) => [bar.time, bar.close]),
+        label: "Senaste veckan",
+    };
 };
 
 const storyReaction = (item) => finite(item?.reaction?.pct);
@@ -227,7 +256,7 @@ const marketTone = (breadth, news) => {
     };
 };
 
-function MarketPulse({ benchmarks, breadth, news }) {
+function MarketPulse({ benchmarks, breadth, news, referenceTime }) {
     const tone = marketTone(breadth, news);
     const byId = new Map(benchmarks.map((benchmark) => [benchmark.id, benchmark]));
     const total = finite(breadth.total) ?? 0;
@@ -241,16 +270,24 @@ function MarketPulse({ benchmarks, breadth, news }) {
                 <strong className={tone.className}>{tone.label}</strong>
                 <small>{tone.detail}</small>
             </div>
-            {["omxspi", "omxs30"].map((id) => {
+            {["omxspi", "omxs30", "sp500"].map((id) => {
                 const benchmark = byId.get(id);
                 const change = benchmarkChange(benchmark);
+                const chart = benchmarkChart(benchmark, referenceTime);
                 return (
-                    <div className="market-pulse__item" key={id}>
-                        <span>{id.toUpperCase()}</span>
+                    <div className="market-pulse__item market-pulse__item--index" key={id}>
+                        <div className="market-pulse__index-heading">
+                            <span>{INDEX_COPY[id]}</span>
+                            <small>{chart.label}</small>
+                        </div>
                         <strong className={change === null ? "" : change >= 0 ? "market-positive" : "market-negative"}>
                             {change === null ? "Saknas" : formatPercent(change)}
                         </strong>
-                        <small>idag</small>
+                        <MiniPriceChart
+                            points={chart.points}
+                            change={change}
+                            label={`${INDEX_COPY[id]}, ${chart.label.toLowerCase()}`}
+                        />
                     </div>
                 );
             })}
@@ -307,6 +344,13 @@ function ImpactStory({ item, personalized = false, onOpen }) {
                     )}
                 </div>
             </div>
+            {item.symbol && (
+                <MarketStorySparkline
+                    symbol={item.symbol}
+                    company={company}
+                    publishedAt={item.ts}
+                />
+            )}
         </li>
     );
 }
@@ -650,7 +694,12 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                 </div>
             </header>
 
-            <MarketPulse benchmarks={benchmarks} breadth={breadth} news={toneNews} />
+            <MarketPulse
+                benchmarks={benchmarks}
+                breadth={breadth}
+                news={toneNews}
+                referenceTime={overview.generatedAt ?? overview.dataAsOf ?? 0}
+            />
 
             <nav className="market-digest__mobile-tabs" aria-label="Innehåll" role="tablist">
                 {MOBILE_PANELS.map((panel) => (

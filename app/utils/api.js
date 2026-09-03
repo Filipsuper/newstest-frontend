@@ -17,7 +17,7 @@ export async function fetchAllArticles() {
 
 // A deliberately small public snapshot for the everyday overview. The
 // backend keeps the Market API credential private and limits this response to
-// two indices, market breadth, five gainers/losers and selected headlines.
+// three reference indices, market breadth, five gainers/losers and selected headlines.
 export async function fetchMarketOverview() {
     const response = await fetch(`${API_URL}/feed/market-overview`, {
         next: { revalidate: 30 },
@@ -131,6 +131,16 @@ export async function fetchCompanyIntraday(symbol) {
     );
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "Kunde inte hämta intradagsdata");
+    return body;
+}
+
+export async function fetchStockSpark(symbol) {
+    const response = await fetch(
+        `${API_URL}/feed/spark/${encodeURIComponent(symbol)}`,
+        { cache: "force-cache" },
+    );
+    const body = await response.json();
+    if (!response.ok || body?.error) throw new Error("Kunde inte hämta kurshistorik");
     return body;
 }
 

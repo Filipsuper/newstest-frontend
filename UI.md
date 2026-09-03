@@ -53,8 +53,10 @@ desktop density or abbreviated interaction model.
   marketing copy.
 - News events are the primary objects on `/marknaden`; price, volume, breadth,
   and index direction are evidence attached to those events.
-- Indexes appear as small daily-change widgets. Historical index charts never
-  occupy the primary workspace by default.
+- OMXSPI, OMXS30, and S&P 500 appear as small daily-change widgets with compact
+  session sparklines. If an exchange has not opened, label and preserve its
+  latest completed session; historical index charts never occupy the primary
+  workspace by default.
 - The dominant panel ranks material stories by importance and measured market
   reaction. A chronological feed remains available as a secondary view.
 - Price language describes sequence, not automatic causality: use `sedan
@@ -69,6 +71,11 @@ desktop density or abbreviated interaction model.
 - Keep ranked news rows scannable. The company and headline are primary;
   category and time are supporting metadata, while summary paragraphs stay in
   the news detail view.
+- A company news row may carry a compact price trace as evidence. Before the
+  Stockholm session it shows the latest trading week; during the session it
+  shows today's path so far; after close it preserves the completed day. Label
+  the window, mark the story time only when it falls inside that window, and
+  never present the trace as proof that the story caused the move.
 - Routine insider transactions are supporting news, not default market
   drivers. De-prioritize them, avoid repeated filings for the same company in
   the overview, and let only exceptional size or a clear measured reaction
