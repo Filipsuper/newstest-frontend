@@ -75,6 +75,11 @@ const formatPercent = (value) => `${value >= 0 ? "+" : ""}${Number(value).toLoca
     maximumFractionDigits: 2,
 })}%`;
 
+const formatCompactPercent = (value) => `${value >= 0 ? "+" : ""}${Number(value).toLocaleString("sv-SE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+})}%`;
+
 const formatPrice = (value) => finite(value) === null
     ? null
     : Number(value).toLocaleString("sv-SE", { maximumFractionDigits: 2 });
@@ -245,39 +250,50 @@ function MarketPulse({ benchmarks, breadth, news }) {
     );
 }
 
-function ImpactStory({ item, lead = false, onOpen }) {
+function MoveBadge({ value, fallback = "Nyhet", title }) {
+    const movement = finite(value);
+    const tone = movement === null || movement === 0
+        ? "is-neutral"
+        : movement > 0 ? "is-positive" : "is-negative";
+    return (
+        <span className={`market-move-badge ${tone}`} title={movement === null ? undefined : title}>
+            {movement === null ? fallback : formatCompactPercent(movement)}
+        </span>
+    );
+}
+
+function ImpactStory({ item, personalized = false, onOpen }) {
     const reaction = storyReaction(item);
     const primaryTag = (item.labels ?? []).find((tag) => tag !== "REGULATORY")
         ?? ((item.labels ?? []).includes("REGULATORY") ? "REGULATORY" : null);
     const isoTime = Number.isFinite(item.ts) ? new Date(item.ts).toISOString() : undefined;
+    const company = item.company ?? item.symbol ?? null;
 
     return (
-        <li className={`impact-story ${lead ? "impact-story--lead" : ""}`}>
-            <div className="impact-story__meta">
-                <time dateTime={isoTime}>{formatNewsTime(item.ts)}</time>
-                {primaryTag && (
-                    <span className={`impact-story__tag ${tagColor(primaryTag)}`}>
-                        {tagLabel(primaryTag)}
-                    </span>
-                )}
-                {item.symbol && (
-                    <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
-                        {item.company ?? item.symbol}
-                    </Link>
-                )}
-                {reaction !== null && (
-                    <span className="impact-story__reaction" title="Kursreaktion sedan nyheten publicerades">
-                        <b className={reaction >= 0 ? "market-positive" : "market-negative"}>
-                            {formatPercent(reaction)}
-                        </b>
-                        <small>sedan publicering</small>
-                    </span>
-                )}
+        <li className="impact-story">
+            <MoveBadge value={reaction} title="Kursreaktion sedan publicering" />
+            <div className="impact-story__content">
+                <button type="button" className="impact-story__headline" onClick={() => onOpen(item)}>
+                    {company && <strong>{company}</strong>}
+                    {company && <span aria-hidden="true"> — </span>}
+                    <span>{item.title}</span>
+                </button>
+                <div className="impact-story__meta">
+                    {personalized && <span>Din aktie</span>}
+                    {reaction !== null && <span>Sedan publicering</span>}
+                    <time dateTime={isoTime}>{formatNewsTime(item.ts)}</time>
+                    {primaryTag && (
+                        <span className={`impact-story__tag ${tagColor(primaryTag)}`}>
+                            {tagLabel(primaryTag)}
+                        </span>
+                    )}
+                    {item.symbol && (
+                        <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
+                            {item.symbol.replace(".ST", "")}
+                        </Link>
+                    )}
+                </div>
             </div>
-            <button type="button" onClick={() => onOpen(item)}>
-                {item.title}
-            </button>
-            {item.summary && <p>{item.summary}</p>}
         </li>
     );
 }
@@ -363,8 +379,13 @@ function DriversPanel({
 
             {items.length ? (
                 <ol className="market-digest__stories">
-                    {items.map((item, index) => (
-                        <ImpactStory key={item.id} item={item} lead={index === 0} onOpen={onOpen} />
+                    {items.map((item) => (
+                        <ImpactStory
+                            key={item.id}
+                            item={item}
+                            personalized={watchlistView}
+                            onOpen={onOpen}
+                        />
                     ))}
                 </ol>
             ) : watchlistView ? (
@@ -390,24 +411,27 @@ function MoverItem({ item, story, onOpen }) {
     const price = formatPrice(item.price);
     return (
         <li className="explained-mover">
-            <div className="explained-mover__quote">
+            <div className="explained-mover__company">
+                <MoveBadge value={change} fallback="–" title="Dagens kursförändring" />
                 <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
                     <strong>{item.name ?? item.nativeSymbol ?? item.symbol}</strong>
-                    <small>{item.nativeSymbol ?? item.symbol}{price ? ` · ${price}` : ""}</small>
+                    <small>{item.nativeSymbol ?? item.symbol} · idag</small>
                 </Link>
-                <b className={change === null ? "" : change >= 0 ? "market-positive" : "market-negative"}>
-                    {change === null ? "–" : formatPercent(change)}
-                    <small>idag</small>
-                </b>
             </div>
-            {story ? (
-                <button type="button" onClick={() => onOpen(story)} title={story.title}>
-                    <span>Nyhet {formatNewsTime(story.ts)}</span>
-                    <strong>{story.title}</strong>
-                </button>
-            ) : (
-                <p>Ingen tydlig nyhet i dagens urval</p>
-            )}
+            <div className="explained-mover__price">
+                <span>Kurs</span>
+                <strong>{price ? `${price} kr` : "Saknas"}</strong>
+            </div>
+            <div className="explained-mover__narrative">
+                <span>{story ? `Nyhet ${formatNewsTime(story.ts)}` : "Narrativ"}</span>
+                {story ? (
+                    <button type="button" onClick={() => onOpen(story)} title={story.title}>
+                        {story.title}
+                    </button>
+                ) : (
+                    <p>Ingen tydlig nyhet i dagens urval</p>
+                )}
+            </div>
         </li>
     );
 }

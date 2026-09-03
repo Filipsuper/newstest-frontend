@@ -61,6 +61,12 @@ desktop density or abbreviated interaction model.
   publicering`, and label unmatched movers `Ingen tydlig nyhet`.
 - Movers pair the daily move with a relevant headline when one exists. Raw
   gainers and losers without context do not become the page's main hierarchy.
+- News and mover rows reuse the same visual grammar: a signed reaction badge,
+  clear company identity, and an inline headline or narrative. Use separated
+  inset rows with gaps instead of a table-like stack of divider lines.
+- Keep ranked news rows scannable. The company and headline are primary;
+  category and time are supporting metadata, while summary paragraphs stay in
+  the news detail view.
 - Routine insider transactions are supporting news, not default market
   drivers. De-prioritize them, avoid repeated filings for the same company in
   the overview, and let only exceptional size or a clear measured reaction
@@ -85,6 +91,9 @@ desktop density or abbreviated interaction model.
 - Density comes from 8–16px internal spacing, short labels, aligned values, and
   compact rows. Page titles remain modest; data values carry the strongest
   typographic emphasis.
+- Dense product views use the sans-serif family for headings and rows. Reserve
+  the serif family for editorial reading rather than repeatedly styling data
+  panels with it.
 - Give data workspaces stronger tonal contrast than editorial pages. In dark
   mode use a near-black canvas, raised charcoal panels, and deeper inset
   controls. In light mode use the equivalent cool-grey canvas, white panels,
