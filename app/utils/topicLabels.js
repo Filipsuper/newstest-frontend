@@ -17,4 +17,13 @@ export const TOPIC_LABELS = {
     "Technology": "Teknik",
     "Telecommunications": "Telekom",
     "Utilities": "Kraftförsörjning",
+    EARNINGS: "Rapporter",
+    GUIDANCE: "Prognoser & vinstvarningar",
+    ORDER: "Order & avtal",
+    M_AND_A: "Förvärv & avyttringar",
+    CAPITAL_RAISE: "Emissioner & finansiering",
+    DIVIDEND: "Utdelningar & återköp",
+    MANAGEMENT: "Ledningsförändringar",
+    INSIDER: "Insynshandel",
+    MACRO: "Makro & räntor",
 };

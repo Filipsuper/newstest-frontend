@@ -2,59 +2,48 @@
 
 import Link from "next/link";
 import dayjs from "dayjs";
-import { tagLabel, tagColor } from "../utils/newsTags";
+import { tagLabel } from "../utils/newsTags";
 import { useModal } from "../providers/ModalProvider";
 import NewsModal from "./NewsModal";
 
-export default function NewsFeedItem({ item, showSymbol = true, highlighted = false }) {
+const reactionLabel = (value) => `${value >= 0 ? "+" : ""}${Number(value).toLocaleString("sv-SE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+})}%`;
+
+export default function NewsFeedItem({ item, showSymbol = true, highlighted = false, reason = null }) {
     const { openModal } = useModal();
     const time = dayjs(item.ts);
-    const isToday = time.isSame(dayjs(), "day");
+    const hasTime = time.isValid();
+    const isToday = hasTime && time.isSame(dayjs(), "day");
+    const reaction = Number.isFinite(item.reaction?.pct) ? item.reaction.pct : null;
+    const mainTag = (item.labels ?? []).find((tag) => tag !== "REGULATORY") ?? item.labels?.[0];
 
     return (
-        <article
-            id={`news-${item.id}`}
-            className={`news-feed-item py-4 transition-colors duration-700 ${highlighted ? "bg-bullet" : ""}`}
-        >
-            <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mb-2 font-sans text-xs">
-                <span className="text-text-muted font-semibold">
-                    {isToday ? time.format("HH:mm") : time.format("D MMM HH:mm")}
-                </span>
-                {(item.labels ?? []).slice(0, 3).map((tag) => (
-                    <span key={tag} className={`border px-1.5 py-0.5 uppercase tracking-wide text-[10px] ${tagColor(tag)}`}>
-                        {tagLabel(tag)}
-                    </span>
-                ))}
-                {showSymbol && item.symbol && (
-                    <Link
-                        href={`/aktie/${encodeURIComponent(item.symbol)}`}
-                        className="text-primary border border-border px-1.5 py-0.5 hover:bg-primary hover:text-background transition-colors"
-                    >
-                        {item.company ?? item.symbol}
-                    </Link>
-                )}
-                {Number.isFinite(item.reaction?.pct) && (
-                    <span
-                        title="Kursreaktion sedan nyheten publicerades"
-                        className={`font-semibold ${item.reaction.pct >= 0 ? "market-positive" : "market-negative"}`}
-                    >
-                        {item.reaction.pct >= 0 ? "+" : ""}{item.reaction.pct.toFixed(2)}%
-                    </span>
-                )}
+        <article id={`news-${item.id}`} className={`news-stream-row ${highlighted ? "is-highlighted" : ""}`}>
+            <span className={`market-move-badge ${reaction == null ? "is-neutral" : reaction >= 0 ? "is-positive" : "is-negative"}`}>
+                {reaction == null ? "Nyhet" : reactionLabel(reaction)}
+            </span>
+            <div className="news-stream-row__body">
+                <button type="button" onClick={() => openModal(<NewsModal item={item} />)}>
+                    {showSymbol && (item.company || item.symbol) && <strong>{item.company ?? item.symbol}</strong>}
+                    {showSymbol && (item.company || item.symbol) && <span aria-hidden="true"> — </span>}
+                    <span>{item.title}</span>
+                </button>
+                <div className="news-stream-row__meta">
+                    <time dateTime={Number.isFinite(item.ts) ? new Date(item.ts).toISOString() : undefined}>
+                        {hasTime ? (isToday ? time.format("HH:mm") : time.format("D MMM HH:mm")) : "Tid saknas"}
+                    </time>
+                    {mainTag && <span>{tagLabel(mainTag)}</span>}
+                    {reason && <span className="news-stream-row__reason">{reason}</span>}
+                    {(item.sourceCount ?? 0) > 1 && <span>{item.sourceCount} källor</span>}
+                    {showSymbol && item.symbol && (
+                        <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
+                            {item.symbol.replace(".ST", "")}
+                        </Link>
+                    )}
+                </div>
             </div>
-            <button
-                onClick={() => openModal(<NewsModal item={item} />)}
-                className="text-left cursor-pointer group"
-            >
-                <h3 className="text-lg font-serif font-bold italic text-text group-hover:underline mb-1">
-                    {item.title}
-                </h3>
-            </button>
-            {item.summary && (
-                <p className="text-sm font-sans text-text-muted leading-relaxed line-clamp-3">
-                    {item.summary}
-                </p>
-            )}
         </article>
     );
 }

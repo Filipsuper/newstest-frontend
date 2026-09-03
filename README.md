@@ -47,10 +47,12 @@ continues to use Resend.
 ## Public-site information architecture
 
 - `/` remains the editorial landing page for OMXsum and its daily letters.
-- `/marknaden` is the compact daily overview: index history, market breadth,
-  movers, selected headlines and a direct link into the latest letter.
-- `/aktier` is the searchable and browsable company directory; `/aktie/<SYMBOL>`
-  remains the canonical company research page.
+- `/marknaden` is the compact daily overview; `/marknaden/nyheter` is its
+  complete chronological news view.
+- `/bevakning` is the signed-in reader's matched news feed, with companies,
+  topics and keywords managed at `/bevakning/hantera`.
+- `/aktier` is the searchable company directory and `/aktier/screener` its
+  discovery tool; `/aktie/<SYMBOL>` remains the canonical company page.
 - `/nyhetsbrev` is the combined home for Morgonbrevet and Kvällsbrevet. The two
   existing letter routes remain available, and `/alla-nyhetsbrev` redirects to
   the new hub.
@@ -86,7 +88,7 @@ them are explicit:
   change by the minute and are deliberately never emitted as structured facts.
 - **Sitemap** lists exactly the tracked companies, so it cannot disagree with the
   per-page directive.
-- **Out of the index entirely:** `/settings`, `/mina-aktier`, `/bekrafta` and
+- **Out of the index entirely:** `/settings`, `/bevakning`, `/bekrafta` and
   `/pro/klart` — personal, token-bearing or post-checkout pages.
 
 ## Production (VPS)

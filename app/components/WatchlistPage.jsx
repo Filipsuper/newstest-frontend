@@ -1,225 +1,239 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { FiArrowLeft, FiPlus, FiX } from "react-icons/fi";
 import { FaStar } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
-import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
-import { getCompanies } from '../utils/companies';
-import StockSearch from './StockSearch';
-import PersonalPreview from './PersonalPreview';
-import { TOPIC_LABELS } from '../utils/topicLabels';
+import { fetchTopics, saveKeywords, saveTopics, toggleWatchlist } from "../utils/api";
+import { getCompanies } from "../utils/companies";
+import { TOPIC_LABELS } from "../utils/topicLabels";
+import StockSearch from "./StockSearch";
+import { WatchWorkspaceNav } from "./WorkspaceNav";
 
-const WATCHLIST_CAPS = { free: 5, plus: 10, premium: 100 }; // keep in sync with backend routes/user.js
+const WATCHLIST_CAPS = { free: 5, plus: 10, premium: 100 };
 const TOPICS_CAP = 10;
+const KEYWORDS_CAP = 10;
 
-function WatchlistPage() {
+export default function WatchlistPage() {
     const { user, isGuestUser, refreshUser } = useAuthContext();
-    const [companies, setCompanies] = useState([]);
-    const [busySymbol, setBusySymbol] = useState(null);
-    const [error, setError] = useState(null);
-    const [vocabulary, setVocabulary] = useState(null);
-    const [topicsBusy, setTopicsBusy] = useState(false);
-    const [topicsError, setTopicsError] = useState(null);
     const { openModal } = useModal();
+    const [companies, setCompanies] = useState([]);
+    const [vocabulary, setVocabulary] = useState(null);
+    const [busySymbol, setBusySymbol] = useState(null);
+    const [topicsBusy, setTopicsBusy] = useState(false);
+    const [keywordsBusy, setKeywordsBusy] = useState(false);
+    const [keywordInput, setKeywordInput] = useState("");
+    const [error, setError] = useState("");
 
     useEffect(() => {
         getCompanies().then(setCompanies);
         fetchTopics().then(setVocabulary).catch(() => setVocabulary(null));
     }, []);
 
-    if (!user) return null
+    const companyBySymbol = useMemo(
+        () => new Map(companies.map((row) => [row.symbol, row])),
+        [companies],
+    );
 
-    // Logged out (e.g. arriving from the welcome email in another browser):
-    // pitch the feature and offer login that returns here
+    if (!user) return null;
+
     if (isGuestUser) {
         return (
-            <main className="public-page public-page--account min-h-[80vh] mx-auto max-w-4xl px-4 py-10">
-                <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
-                <p className="body-text text-text-muted mb-8 max-w-2xl">
-                    Stjärnmärk bolag och välj ämnen du vill följa – så får ditt
-                    morgonbrev en egen sektion, <span className="text-text font-semibold">Min
-                    sammanfattning</span>, med nyheterna som matchar dina val och hur
-                    aktierna reagerade. Dina val styr också fliken "Mina aktier" i{" "}
-                    <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>.
-                </p>
-                <section className="max-w-4xl mx-auto mb-16">
-                    <h2 className="text-xl font-serif font-bold text-text mb-4">Logga in för att välja</h2>
-                    <p className="body-text text-text-muted mb-6">
-                        Logga in med din mailadress – samma som du prenumererar med – så
-                        kan du välja dina aktier och ämnen direkt.
-                    </p>
-                    <button
-                        className="primary-btn extra-padding cursor-pointer"
-                        onClick={() => openModal(<LogInModal redirectTo="/mina-aktier" />)}
-                    >
-                        Logga in
-                    </button>
-                    <p className="body-text text-text-muted mt-6">
-                        Prenumererar du inte på morgonbrevet ännu?{" "}
-                        <Link href="/" className="text-primary underline">Börja här – det är gratis</Link>.
-                    </p>
+            <main className="watch-workspace watch-manage">
+                <WatchWorkspaceNav />
+                <section className="watch-empty">
+                    <FaStar aria-hidden="true" />
+                    <h1>Hantera bevakning</h1>
+                    <p>Logga in för att välja bolag, ämnen och nyckelord.</p>
+                    <button type="button" className="primary-btn" onClick={() => openModal(<LogInModal redirectTo="/bevakning/hantera" />)}>Logga in</button>
                 </section>
             </main>
         );
     }
 
     const watchlist = user.watchlist ?? [];
-    const companyBySymbol = new Map(companies.map((row) => [row.symbol, row]));
+    const topics = user.topics ?? [];
+    const keywords = user.keywords ?? [];
 
-    const handleRemove = async (symbol) => {
+    const updateWatchlist = async (symbol) => {
         if (busySymbol) return;
         setBusySymbol(symbol);
-        setError(null);
+        setError("");
         try {
-            const res = await toggleWatchlist(symbol);
-            if (res?.error) setError(res.error);
+            const response = await toggleWatchlist(symbol);
+            if (response?.error) setError(response.error);
             else await refreshUser();
         } catch {
-            setError("Något gick fel, försök igen.");
+            setError("Bevakningen kunde inte uppdateras.");
         } finally {
             setBusySymbol(null);
         }
     };
 
-    const handleAdd = async (row) => {
+    const addCompany = async (row) => {
         if (watchlist.includes(row.symbol)) {
-            setError(`${row.name} finns redan i din bevakningslista.`);
+            setError(`${row.name} bevakas redan.`);
             return;
         }
-        await handleRemove(row.symbol); // toggle = add when not present
+        await updateWatchlist(row.symbol);
     };
 
-    const topics = user.topics ?? [];
-
-    const handleTopicToggle = async (topic) => {
+    const toggleTopic = async (topic) => {
         if (topicsBusy) return;
         const next = topics.includes(topic)
             ? topics.filter((item) => item !== topic)
             : [...topics, topic];
         if (next.length > TOPICS_CAP) {
-            setTopicsError(`Max ${TOPICS_CAP} ämnen.`);
+            setError(`Du kan följa högst ${TOPICS_CAP} ämnen.`);
             return;
         }
         setTopicsBusy(true);
-        setTopicsError(null);
+        setError("");
         try {
-            const res = await saveTopics(next);
-            if (res?.error) setTopicsError(res.error);
+            const response = await saveTopics(next);
+            if (response?.error) setError(response.error);
             else await refreshUser();
         } catch {
-            setTopicsError("Något gick fel, försök igen.");
+            setError("Ämnena kunde inte uppdateras.");
         } finally {
             setTopicsBusy(false);
         }
     };
 
-    const topicChip = (topic) => (
-        <button
-            key={topic}
-            onClick={() => handleTopicToggle(topic)}
-            className={`px-3 py-1 font-sans text-sm rounded-full cursor-pointer transition-colors ${topics.includes(topic)
-                ? "bg-secondary text-background font-semibold"
-                : "bg-border/40 text-text-muted hover:text-text"} ${topicsBusy ? "opacity-50" : ""}`}
-        >
-            {TOPIC_LABELS[topic] ?? topic}
-        </button>
+    const updateKeywords = async (next) => {
+        setKeywordsBusy(true);
+        setError("");
+        try {
+            const response = await saveKeywords(next);
+            if (response?.error) setError(response.error);
+            else await refreshUser();
+        } catch {
+            setError("Nyckelorden kunde inte uppdateras.");
+        } finally {
+            setKeywordsBusy(false);
+        }
+    };
+
+    const addKeyword = async (event) => {
+        event.preventDefault();
+        const keyword = keywordInput.replace(/\s+/g, " ").trim();
+        if (keyword.length < 2) {
+            setError("Skriv minst två tecken.");
+            return;
+        }
+        if (keywords.some((item) => item.toLocaleLowerCase("sv-SE") === keyword.toLocaleLowerCase("sv-SE"))) {
+            setError(`Du följer redan “${keyword}”.`);
+            return;
+        }
+        if (keywords.length >= KEYWORDS_CAP) {
+            setError(`Du kan följa högst ${KEYWORDS_CAP} nyckelord.`);
+            return;
+        }
+        await updateKeywords([...keywords, keyword]);
+        setKeywordInput("");
+    };
+
+    const topicGroup = (title, items) => Array.isArray(items) && items.length > 0 && (
+        <div className="watch-topic-group">
+            <h3>{title}</h3>
+            <div>
+                {items.map((topic) => (
+                    <button
+                        type="button"
+                        key={topic}
+                        className={topics.includes(topic) ? "is-active" : ""}
+                        disabled={topicsBusy}
+                        onClick={() => toggleTopic(topic)}
+                    >
+                        {TOPIC_LABELS[topic] ?? topic}
+                    </button>
+                ))}
+            </div>
+        </div>
     );
 
     return (
-        <main className="public-page public-page--account min-h-[80vh] mx-auto max-w-4xl px-4 py-10">
-            <h1 className="text-4xl font-serif font-bold text-text mb-4">Mina aktier</h1>
-            <p className="body-text text-text-muted mb-12 max-w-2xl">
-                Här samlas bolagen du stjärnmärkt och ämnena du följer. De styr fliken
-                "Mina aktier" i <Link href="/marknadsnyheter" className="text-primary underline">Marknadsnyheter</Link>{" "}
-                och den personliga sektionen i morgonbrevet.
-            </p>
-
-            <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-serif font-bold text-text mb-4">Lägg till bolag</h2>
-                <p className="body-text text-text-muted mb-4">
-                    Sök nedan, eller stjärnmärk direkt på en aktiesida.
-                </p>
-                <StockSearch placeholder="Sök bolag att bevaka…" onSelect={handleAdd} />
-            </section>
-
-            <section className="max-w-4xl mx-auto mb-16">
-                <div className="flex flex-row justify-between items-baseline mb-4">
-                    <h2 className="text-xl font-serif font-bold text-text">Bevakade bolag</h2>
-                    <span className="font-sans text-xs text-text-muted">
-                        {user.plan === "premium"
-                            ? `${watchlist.length} bolag`
-                            : `${watchlist.length} av ${WATCHLIST_CAPS[user.plan] ?? WATCHLIST_CAPS.free}`}
-                    </span>
+        <main className="watch-workspace watch-manage">
+            <WatchWorkspaceNav />
+            <header className="watch-heading">
+                <div>
+                    <h1>Hantera bevakning</h1>
+                    <span>Välj vad som ska forma ditt personliga nyhetsflöde</span>
                 </div>
-                {error && <p className="market-negative font-sans text-sm mb-4">{error}</p>}
-                {watchlist.length === 0 ? (
-                    <p className="body-text text-text-muted">
-                        Du bevakar inga bolag ännu. Sök ovan eller stjärnmärk bolag på deras aktiesidor.
-                    </p>
-                ) : (
-                    <div className="flex flex-col">
-                        {watchlist.map((symbol) => {
-                            const row = companyBySymbol.get(symbol);
-                            return (
-                                <div key={symbol} className="flex flex-row items-center justify-between py-3">
-                                    <Link href={`/aktie/${encodeURIComponent(symbol)}`} className="flex flex-col hover:underline">
-                                        <span className="text-sm font-sans font-semibold text-text">{row?.name ?? symbol}</span>
-                                        <span className="text-xs font-sans text-text-muted">{row?.nativeSymbol ?? symbol}</span>
-                                    </Link>
-                                    <button
-                                        onClick={() => handleRemove(symbol)}
-                                        aria-label="Ta bort från bevakningslistan"
-                                        title="Ta bort från Mina aktier"
-                                        className={`text-xl cursor-pointer text-secondary hover:text-text-muted transition-colors ${busySymbol === symbol ? "opacity-50" : ""}`}
-                                    >
-                                        <FaStar />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
+                <Link href="/bevakning"><FiArrowLeft aria-hidden="true" /> Till flödet</Link>
+            </header>
 
-            {(watchlist.length > 0 || topics.length > 0) && (
-                <section className="max-w-4xl mx-auto mb-16">
-                    <h2 className="text-xl font-serif font-bold text-text mb-4">Din sektion i morgonbrevet</h2>
-                    <PersonalPreview />
+            {error && <p className="watch-error market-negative" role="alert">{error}</p>}
+
+            <div className="watch-preferences-grid">
+                <section className="watch-preference-section watch-preference-section--companies">
+                    <header>
+                        <div><span>1</span><h2>Bolag</h2></div>
+                        <small>{user.plan === "premium" ? `${watchlist.length}` : `${watchlist.length}/${WATCHLIST_CAPS[user.plan] ?? WATCHLIST_CAPS.free}`}</small>
+                    </header>
+                    <StockSearch placeholder="Sök bolag att bevaka" onSelect={addCompany} showSuggestions />
+                    {watchlist.length ? (
+                        <div className="watch-company-list">
+                            {watchlist.map((symbol) => {
+                                const company = companyBySymbol.get(symbol);
+                                return (
+                                    <div key={symbol}>
+                                        <Link href={`/aktie/${encodeURIComponent(symbol)}`}>
+                                            <strong>{company?.name ?? symbol}</strong>
+                                            <span>{company?.nativeSymbol ?? symbol.replace(".ST", "")}</span>
+                                        </Link>
+                                        <button type="button" onClick={() => updateWatchlist(symbol)} disabled={busySymbol === symbol} aria-label={`Sluta bevaka ${company?.name ?? symbol}`}>
+                                            <FaStar aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : <p className="watch-preference-empty">Inga bolag valda ännu.</p>}
                 </section>
-            )}
 
-            {vocabulary && (
-                <section className="max-w-4xl mx-auto mb-16">
-                    <div className="flex flex-row justify-between items-baseline mb-4">
-                        <h2 className="text-xl font-serif font-bold text-text">Ämnen</h2>
-                        <span className="font-sans text-xs text-text-muted">{topics.length} av {TOPICS_CAP}</span>
-                    </div>
-                    <p className="body-text text-text-muted mb-6">
-                        Välj ämnen du är intresserad av, så matchar vi nyheter mot dem —
-                        utöver dina bevakade bolag.
-                    </p>
-                    {topicsError && <p className="market-negative font-sans text-sm mb-4">{topicsError}</p>}
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col gap-3">
-                            <span className="text-base font-bold font-serif">Börslista</span>
-                            <div className="flex flex-row flex-wrap gap-2">
-                                {vocabulary.segments?.map(topicChip)}
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <span className="text-base font-bold font-serif">Sektorer</span>
-                            <div className="flex flex-row flex-wrap gap-2">
-                                {vocabulary.sectors?.map(topicChip)}
-                            </div>
-                        </div>
+                <section className="watch-preference-section">
+                    <header>
+                        <div><span>2</span><h2>Ämnen</h2></div>
+                        <small>{topics.length}/{TOPICS_CAP}</small>
+                    </header>
+                    <div className="watch-topic-groups">
+                        {topicGroup("Händelser", vocabulary?.events)}
+                        {topicGroup("Sektorer", vocabulary?.sectors)}
+                        {topicGroup("Börslistor", vocabulary?.segments)}
                     </div>
                 </section>
-            )}
+
+                <section className="watch-preference-section watch-preference-section--keywords">
+                    <header>
+                        <div><span>3</span><h2>Nyckelord</h2></div>
+                        <small>{keywords.length}/{KEYWORDS_CAP}</small>
+                    </header>
+                    <form className="watch-keyword-form" onSubmit={addKeyword}>
+                        <input
+                            value={keywordInput}
+                            onChange={(event) => setKeywordInput(event.target.value)}
+                            maxLength={40}
+                            placeholder="Exempel: försvar eller vinstvarning"
+                            aria-label="Nytt nyckelord"
+                        />
+                        <button type="submit" disabled={keywordsBusy || !keywordInput.trim()}><FiPlus aria-hidden="true" /> Lägg till</button>
+                    </form>
+                    {keywords.length ? (
+                        <div className="watch-keywords">
+                            {keywords.map((keyword) => (
+                                <span key={keyword}>
+                                    {keyword}
+                                    <button type="button" onClick={() => updateKeywords(keywords.filter((item) => item !== keyword))} disabled={keywordsBusy} aria-label={`Ta bort nyckelordet ${keyword}`}><FiX aria-hidden="true" /></button>
+                                </span>
+                            ))}
+                        </div>
+                    ) : <p className="watch-preference-empty">Nyckelord matchas mot rubrik och sammanfattning.</p>}
+                </section>
+            </div>
         </main>
-    )
+    );
 }
-
-export default WatchlistPage;

@@ -307,15 +307,30 @@ export async function toggleWatchlist(symbol) {
 
 // Live preview of "Min sammanfattning": real matched stories for the
 // logged-in user, same matching as the letter composer.
-export async function fetchPersonalPreview() {
+export async function fetchPersonalPreview({ limit = 5 } = {}) {
     try {
-        const res = await fetch(`${API_URL}/user/personal-preview`, {
+        const params = new URLSearchParams({ limit: String(limit) });
+        const res = await fetch(`${API_URL}/user/personal-preview?${params}`, {
             credentials: "include",
         });
         if (!res.ok) return null;
         return res.json();
     } catch (error) {
         console.error('Error fetching data:', error);
+        return null;
+    }
+}
+
+export async function fetchPersonalFeed({ limit = 40 } = {}) {
+    try {
+        const params = new URLSearchParams({ limit: String(limit) });
+        const res = await fetch(`${API_URL}/user/personal-feed?${params}`, {
+            credentials: "include",
+        });
+        if (!res.ok) return null;
+        return res.json();
+    } catch (error) {
+        console.error("Error fetching data:", error);
         return null;
     }
 }
@@ -353,6 +368,21 @@ export async function saveTopics(topics) {
         return res.json();
     } catch (error) {
         console.error('Error fetching data:', error);
+        throw error;
+    }
+}
+
+export async function saveKeywords(keywords) {
+    try {
+        const res = await fetch(`${API_URL}/user/keywords`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ keywords }),
+        });
+        return res.json();
+    } catch (error) {
+        console.error("Error fetching data:", error);
         throw error;
     }
 }

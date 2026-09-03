@@ -57,7 +57,7 @@ export default function OnboardingModal({ email }) {
                     <div className="flex flex-col gap-3 w-full text-left bg-border/20 rounded-2xl p-4 mb-4">
                         <div className="flex flex-row gap-3 items-center">
                             <FaStar className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article"><span className="font-semibold">Mina aktier & ämnen</span> – stjärnmärk bolag och följ t.ex. Small Cap eller Hälsovård</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Bevakning</span> – följ bolag, marknadshändelser och egna nyckelord</p>
                         </div>
                         <div className="flex flex-row gap-3 items-center">
                             <FaEnvelopeOpenText className="text-secondary shrink-0" />
@@ -65,7 +65,7 @@ export default function OnboardingModal({ email }) {
                         </div>
                         <div className="flex flex-row gap-3 items-center">
                             <FaNewspaper className="text-secondary shrink-0" />
-                            <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – liveflöde med <FaChartLine className="inline text-secondary" /> kursreaktion på varje nyhet</p>
+                            <p className="text-sm text-text-article"><span className="font-semibold">Nyhetsflödet</span> – marknadsnyheter med <FaChartLine className="inline text-secondary" /> kursreaktion där den kan mätas</p>
                         </div>
                     </div>
                     <p className="text-xs text-text-muted mb-6">

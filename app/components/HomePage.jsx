@@ -186,7 +186,7 @@ export default function HomePage({ articles }) {
               rört sig sedan varje nyhet</span>. Det är den bevakningen som skriver dina brev.
             </p>
             <p className="text-text-muted font-sans leading-relaxed">
-              Vill du se flödet live? <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link>{" "}
+              Vill du se flödet live? <Link href="/marknaden/nyheter" className="text-primary hover:underline">Nyhetsflödet</Link>{" "}
               visar allt i realtid – med{" "}
               <Link href="/aktie/VOLV-B.ST" className="text-primary hover:underline">aktieöversikter</Link> för
               870+ svenska aktier.
@@ -264,7 +264,7 @@ export default function HomePage({ articles }) {
               aria-label="Utforska OMXsum"
               className="grid grid-cols-1 gap-x-10 gap-y-7 sm:grid-cols-2"
             >
-              <Link href="/marknadsnyheter" className="group">
+              <Link href="/marknaden/nyheter" className="group">
                 <span className="block font-serif text-xl font-bold text-text group-hover:underline">
                   Marknadsnyheter
                 </span>
@@ -280,7 +280,7 @@ export default function HomePage({ articles }) {
                   Börsdagens viktigaste händelser sammanfattade före och efter handeln.
                 </span>
               </Link>
-              <Link href="/screener" className="group">
+              <Link href="/aktier/screener" className="group">
                 <span className="block font-serif text-xl font-bold text-text group-hover:underline">
                   Aktiescreener
                 </span>

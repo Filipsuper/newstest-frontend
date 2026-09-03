@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FiArrowRight, FiClock, FiStar } from "react-icons/fi";
+import { FiArrowRight, FiClock } from "react-icons/fi";
 import NewsModal from "./NewsModal";
-import StockSearch from "./StockSearch";
 import MarketStorySparkline from "./MarketStorySparkline";
 import MiniPriceChart from "./MiniPriceChart";
-import LogInModal from "../modals/logInModal";
 import { useModal } from "../providers/ModalProvider";
-import { useAuthContext } from "../providers/AuthProvider";
-import { fetchLiveFeed, toggleWatchlist } from "../utils/api";
 import { tagColor, tagLabel } from "../utils/newsTags";
 import { storyToItem } from "../utils/storyToItem";
 import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
+import { MarketWorkspaceNav } from "./WorkspaceNav";
 import {
     curateMarketNews,
     normalizedSymbol,
@@ -179,9 +176,6 @@ const benchmarkChart = (benchmark, referenceTime) => {
     };
 };
 
-const matchesWatchlist = (item, watchlistSet) =>
-    storySymbols(item).some((symbol) => watchlistSet.has(symbol));
-
 const marketTone = (breadth, news) => {
     const rising = finite(breadth.rising) ?? 0;
     const falling = finite(breadth.falling) ?? 0;
@@ -308,82 +302,18 @@ function ImpactStory({ item, personalized = false, onOpen }) {
     );
 }
 
-function WatchlistEmpty({ user, isGuestUser, watchlist, loading, busy, message, onAdd, onLogin }) {
-    if (!user || loading) {
-        return <div className="market-empty-state">Hämtar nyheter för dina aktier…</div>;
-    }
-
-    if (isGuestUser) {
-        return (
-            <div className="market-empty-state">
-                <FiStar aria-hidden="true" />
-                <h3>Följ det som är viktigt för dig</h3>
-                <p>Logga in för att samla nyheter och rörelser för dina egna aktier här.</p>
-                <button type="button" className="primary-btn" onClick={onLogin}>Logga in</button>
-            </div>
-        );
-    }
-
-    if (watchlist.length === 0) {
-        return (
-            <div className="market-empty-state market-empty-state--search">
-                <FiStar aria-hidden="true" />
-                <h3>Lägg till din första aktie</h3>
-                <p>Sök efter ett bolag så börjar den personliga marknadsvyn fyllas.</p>
-                <StockSearch
-                    placeholder={busy ? "Lägger till…" : "Sök bolag att följa"}
-                    showSuggestions
-                    onSelect={onAdd}
-                    className={busy ? "is-busy" : ""}
-                />
-                {message && <small className="market-negative">{message}</small>}
-            </div>
-        );
-    }
-
-    return (
-        <div className="market-empty-state">
-            <FiStar aria-hidden="true" />
-            <h3>Inga viktiga nyheter i dagens urval</h3>
-            <p>Dina aktier är fortfarande bevakade. Vi visar dem här när en relevant händelse dyker upp.</p>
-            <div className="market-empty-state__symbols">
-                {watchlist.slice(0, 6).map((symbol) => (
-                    <Link key={symbol} href={`/aktie/${encodeURIComponent(symbol)}`}>
-                        {symbol.replace(".ST", "").replaceAll("-", " ")}
-                    </Link>
-                ))}
-            </div>
-            <Link href="/mina-aktier" className="market-text-link">Hantera mina aktier <FiArrowRight /></Link>
-        </div>
-    );
-}
-
-function DriversPanel({
-    items,
-    view,
-    user,
-    isGuestUser,
-    watchlist,
-    loading,
-    busy,
-    message,
-    onAdd,
-    onLogin,
-    onOpen,
-    active,
-}) {
-    const watchlistView = view === "watchlist";
+function DriversPanel({ items, onOpen, active }) {
     return (
         <section className={`market-digest__panel market-digest__panel--drivers ${active ? "is-active" : ""}`}>
             <header className="market-digest__panel-heading">
                 <div>
-                    <h2>{watchlistView ? "Viktigast för dina aktier" : "Det som driver marknaden"}</h2>
+                    <h2>Det som driver marknaden</h2>
                     <span>
                         {items.length} {items.length === 1 ? "händelse" : "händelser"} · viktigast först
                     </span>
                 </div>
-                <Link href={watchlistView ? "/mina-aktier" : "/marknadsnyheter"}>
-                    {watchlistView ? "Hantera" : "Hela flödet"} <FiArrowRight aria-hidden="true" />
+                <Link href="/marknaden/nyheter">
+                    Hela flödet <FiArrowRight aria-hidden="true" />
                 </Link>
             </header>
 
@@ -393,22 +323,10 @@ function DriversPanel({
                         <ImpactStory
                             key={item.id}
                             item={item}
-                            personalized={watchlistView}
                             onOpen={onOpen}
                         />
                     ))}
                 </ol>
-            ) : watchlistView ? (
-                <WatchlistEmpty
-                    user={user}
-                    isGuestUser={isGuestUser}
-                    watchlist={watchlist}
-                    loading={loading}
-                    busy={busy}
-                    message={message}
-                    onAdd={onAdd}
-                    onLogin={onLogin}
-                />
             ) : (
                 <div className="market-empty-state">Inga viktiga marknadsnyheter just nu.</div>
             )}
@@ -463,7 +381,7 @@ function MoverItem({ item, story, onOpen }) {
     );
 }
 
-function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
+function MoversPanel({ items, stories, active, onOpen }) {
     const storyBySymbol = useMemo(() => {
         const result = new Map();
         for (const story of stories) {
@@ -483,7 +401,7 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
             <header className="market-digest__panel-heading">
                 <div>
                     <h2>Nyhetsreaktioner</h2>
-                    <span>{watchlistView ? "Nyhetskoppling i dina aktier" : "Trolig koppling först"}</span>
+                    <span>Trolig koppling först</span>
                 </div>
                 <Link href="/aktier">Alla aktier <FiArrowRight aria-hidden="true" /></Link>
             </header>
@@ -500,9 +418,7 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
                 </ol>
             ) : (
                 <div className="market-empty-state">
-                    {watchlistView
-                        ? "Ingen av dina aktier har en tillräckligt stark nyhetskoppling just nu."
-                        : "Inga rörelser med tillräckligt stark nyhetskoppling just nu."}
+                    Inga rörelser med tillräckligt stark nyhetskoppling just nu.
                 </div>
             )}
         </section>
@@ -511,26 +427,10 @@ function MoversPanel({ items, stories, watchlistView, active, onOpen }) {
 
 export default function MarketOverviewPage({ overview = {}, articles = [], referenceTime = null }) {
     const { openModal } = useModal();
-    const { user, isGuestUser, isPlusUser, refreshUser } = useAuthContext();
-    const [view, setView] = useState("market");
     const [activePanel, setActivePanel] = useState("drivers");
-    const [watchlistNews, setWatchlistNews] = useState([]);
-    const [watchlistLoading, setWatchlistLoading] = useState(false);
-    const [watchlistBusy, setWatchlistBusy] = useState(false);
-    const [watchlistMessage, setWatchlistMessage] = useState("");
 
     const benchmarks = overview.benchmarks ?? [];
     const breadth = overview.breadth ?? {};
-    const watchlist = user?.watchlist ?? [];
-    const watchlistKey = watchlist.join("|");
-    const watchlistSymbols = useMemo(
-        () => watchlistKey ? watchlistKey.split("|") : [],
-        [watchlistKey],
-    );
-    const watchlistSet = useMemo(
-        () => new Set(watchlistSymbols.map(normalizedSymbol)),
-        [watchlistSymbols],
-    );
     const rawNews = Array.isArray(overview.news) ? overview.news : overview.news?.items ?? [];
     const marketNews = useMemo(
         () => curateMarketNews(
@@ -539,38 +439,6 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
         [rawNews],
     );
 
-    useEffect(() => {
-        if (view !== "watchlist" || !isPlusUser || watchlistSymbols.length === 0) {
-            setWatchlistLoading(false);
-            setWatchlistNews([]);
-            return undefined;
-        }
-
-        let active = true;
-        setWatchlistLoading(true);
-        fetchLiveFeed({ symbols: watchlistSymbols, limit: 60 })
-            .then((response) => {
-                if (!active) return;
-                const items = Array.isArray(response?.items)
-                    ? response.items.filter((story) => story?.id && story?.headline).map(storyToItem)
-                    : [];
-                setWatchlistNews(items);
-            })
-            .catch(() => { if (active) setWatchlistNews([]); })
-            .finally(() => { if (active) setWatchlistLoading(false); });
-
-        return () => { active = false; };
-    }, [view, isPlusUser, watchlistSymbols]);
-
-    const personalNews = useMemo(
-        () => rankNews(
-            uniqueNews([...watchlistNews, ...marketNews])
-                .filter((item) => matchesWatchlist(item, watchlistSet)),
-            { personalized: true },
-        ),
-        [watchlistNews, marketNews, watchlistSet],
-    );
-    const shownNews = view === "watchlist" ? personalNews : marketNews;
     const moverStories = useMemo(() => {
         const hasDedicatedMoverNews = Array.isArray(overview.moverNews);
         const rawMoverNews = hasDedicatedMoverNews ? overview.moverNews : [];
@@ -599,10 +467,6 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
                 || Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0);
         });
     }, [overview.movers]);
-    const shownMovers = view === "watchlist"
-        ? allMovers.filter((item) => watchlistSet.has(normalizedSymbol(item.symbol)))
-        : allMovers;
-
     const marketReferenceTime = referenceTime ?? overview.generatedAt ?? overview.dataAsOf ?? null;
     const latestMorningArticle = articles.find((article) => !article?.isEveningLetter) ?? null;
     const stockholmToday = stockholmDateKey(marketReferenceTime);
@@ -634,58 +498,15 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
         : "Senaste data";
     const asOf = formatTime(overview.dataAsOf);
 
-    const changeView = (nextView) => {
-        setView(nextView);
-        setActivePanel("drivers");
-        setWatchlistMessage("");
-    };
-
-    const handleWatchlistAdd = async (row) => {
-        if (!user || isGuestUser) {
-            openModal(<LogInModal redirectTo="/marknaden" />);
-            return;
-        }
-        if (watchlistBusy) return;
-        setWatchlistBusy(true);
-        setWatchlistMessage("");
-        try {
-            const response = await toggleWatchlist(row.symbol);
-            if (response?.error) setWatchlistMessage(response.error);
-            else await refreshUser();
-        } catch {
-            setWatchlistMessage("Kunde inte lägga till aktien just nu.");
-        } finally {
-            setWatchlistBusy(false);
-        }
-    };
-
     const openStory = (item) => openModal(<NewsModal item={item} />);
 
     return (
         <main className="market-digest">
+            <MarketWorkspaceNav />
             <header className="market-digest__toolbar">
                 <div className="market-digest__title">
                     <h1>Marknaden idag</h1>
                     <span>{sessionLabel}</span>
-                </div>
-
-                <div className="market-digest__view-switch" role="group" aria-label="Välj marknadsvy">
-                    <button
-                        type="button"
-                        className={view === "market" ? "is-active" : ""}
-                        aria-pressed={view === "market"}
-                        onClick={() => changeView("market")}
-                    >
-                        Marknaden
-                    </button>
-                    <button
-                        type="button"
-                        className={view === "watchlist" ? "is-active" : ""}
-                        aria-pressed={view === "watchlist"}
-                        onClick={() => changeView("watchlist")}
-                    >
-                        <FiStar aria-hidden="true" /> Mina aktier
-                    </button>
                 </div>
 
                 <div className="market-digest__toolbar-actions">
@@ -695,7 +516,7 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
                             {overview.verifiedRealtime ? `Live ${asOf}` : `Uppdaterad ${asOf}`}
                         </span>
                     )}
-                    <Link href="/marknadsnyheter">Hela nyhetsflödet <FiArrowRight aria-hidden="true" /></Link>
+                    <Link href="/marknaden/nyheter">Hela nyhetsflödet <FiArrowRight aria-hidden="true" /></Link>
                 </div>
             </header>
 
@@ -757,24 +578,14 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
 
             <div className="market-digest__grid">
                 <DriversPanel
-                    items={shownNews}
-                    view={view}
-                    user={user}
-                    isGuestUser={isGuestUser}
-                    watchlist={watchlist}
-                    loading={watchlistLoading}
-                    busy={watchlistBusy}
-                    message={watchlistMessage}
-                    onAdd={handleWatchlistAdd}
-                    onLogin={() => openModal(<LogInModal redirectTo="/marknaden" />)}
+                    items={marketNews}
                     onOpen={openStory}
                     active={activePanel === "drivers"}
                 />
 
                 <MoversPanel
-                    items={shownMovers}
+                    items={allMovers}
                     stories={moverStories}
-                    watchlistView={view === "watchlist"}
                     active={activePanel === "movers"}
                     onOpen={openStory}
                 />

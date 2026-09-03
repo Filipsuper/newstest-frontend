@@ -1,52 +1,51 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import dayjs from "dayjs";
-import { FiSearch } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { FiSearch, FiX } from "react-icons/fi";
 import { fetchLiveFeed } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
-import { useAuthContext } from "../providers/AuthProvider";
 import PlusPaywall from "./PlusPaywall";
 import NewsFeedItem from "./NewsFeedItem";
+import { MarketWorkspaceNav } from "./WorkspaceNav";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_ITEMS = 100;
 
-// Insert or replace by story id, newest first. Retracted stories drop out.
+const FEED_FILTERS = [
+    { id: "all", label: "Alla", tags: null },
+    { id: "reports", label: "Rapporter", tags: new Set(["EARNINGS", "GUIDANCE"]) },
+    { id: "company", label: "Bolagsnytt", tags: new Set(["ORDER", "AGREEMENT", "PARTNERSHIP", "PRODUCT", "M&A", "MA", "M_AND_A", "ACQUISITION", "DISPOSAL", "DIVESTMENT", "MERGER", "CAPITAL_RAISE", "RIGHTS_ISSUE", "BUYBACK", "DIVIDEND", "MANAGEMENT", "PERSONNEL"]) },
+    { id: "macro", label: "Makro", tags: new Set(["MACRO", "RATES", "MONETARY_POLICY"]) },
+    { id: "insider", label: "Insyn", tags: new Set(["INSIDER"]) },
+];
+
 const upsertItem = (items, item) => {
     const without = items.filter((existing) => existing.id !== item.id);
-    if (item.status && item.status !== "flash" && item.status !== "update") {
-        return without;
-    }
+    if (item.status && item.status !== "flash" && item.status !== "update") return without;
     return [...without, item].sort((a, b) => b.ts - a.ts).slice(0, MAX_ITEMS);
 };
 
+const matchesFilter = (item, filter) => {
+    if (!filter?.tags) return true;
+    return (item.labels ?? []).some((tag) => filter.tags.has(tag));
+};
+
 function LiveFeed() {
-    const { user } = useAuthContext();
     const [items, setItems] = useState(null);
     const [searchItems, setSearchItems] = useState(null);
     const [query, setQuery] = useState("");
     const [activeQuery, setActiveQuery] = useState("");
-    const [live, setLive] = useState(false);
-    const [updatedAt, setUpdatedAt] = useState(null);
+    const [activeFilter, setActiveFilter] = useState("all");
     const [error, setError] = useState("");
-    const [onlyWatchlist, setOnlyWatchlist] = useState(false);
     const [sortByImpact, setSortByImpact] = useState(false);
-    const sourceRef = useRef(null);
 
-    const watchlist = user?.watchlist ?? [];
-
-    // Initial backlog over REST, then live updates over SSE
     useEffect(() => {
         let active = true;
-
-        fetchLiveFeed({})
+        fetchLiveFeed({ limit: MAX_ITEMS })
             .then((res) => {
                 if (!active) return;
                 if (res.items) {
                     setItems(res.items.map(storyToItem));
-                    setUpdatedAt(dayjs());
                 } else {
                     setError(res.error || "Kunde inte hämta nyheterna");
                 }
@@ -54,50 +53,37 @@ function LiveFeed() {
             .catch(() => active && setError("Kunde inte hämta nyheterna"));
 
         const source = new EventSource(`${API_URL}/feed/stream`, { withCredentials: true });
-        sourceRef.current = source;
-
         source.addEventListener("ready", () => {
             if (!active) return;
-            setLive(true);
             setError("");
         });
-
         source.addEventListener("story", (event) => {
             if (!active) return;
             try {
-                const item = storyToItem(JSON.parse(event.data));
-                setItems((current) => upsertItem(current ?? [], item));
-                setUpdatedAt(dayjs());
+                setItems((current) => upsertItem(current ?? [], storyToItem(JSON.parse(event.data))));
             } catch {
-                // ignore malformed frames
+                // Ignore malformed stream frames and keep the last good feed.
             }
         });
-
-        source.onerror = () => {
-            if (!active) return;
-            setLive(false); // EventSource reconnects on its own
-        };
-
+        source.onerror = () => {};
         return () => {
             active = false;
             source.close();
         };
     }, []);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        const q = query.trim();
-        setActiveQuery(q);
-
-        if (!q) {
+    const handleSearch = async (event) => {
+        event.preventDefault();
+        const nextQuery = query.trim();
+        setActiveQuery(nextQuery);
+        if (!nextQuery) {
             setSearchItems(null);
             return;
         }
-
-        setSearchItems(undefined); // loading
+        setSearchItems(undefined);
         try {
-            const res = await fetchLiveFeed({ q });
-            setSearchItems(res.items ? res.items.map(storyToItem) : []);
+            const response = await fetchLiveFeed({ q: nextQuery, limit: MAX_ITEMS });
+            setSearchItems(response.items ? response.items.map(storyToItem) : []);
         } catch {
             setSearchItems([]);
         }
@@ -109,110 +95,71 @@ function LiveFeed() {
         setSearchItems(null);
     };
 
-    const filtered = activeQuery
-        ? searchItems
-        : onlyWatchlist
-            ? (items ?? []).filter((item) => item.symbol && watchlist.includes(item.symbol))
-            : items;
-
-    // "Dagens mest marknadspåverkande nyheter": biggest |reaction| first
-    const shown = sortByImpact && Array.isArray(filtered)
-        ? [...filtered].sort(
-            (a, b) => Math.abs(b.reaction?.pct ?? 0) - Math.abs(a.reaction?.pct ?? 0)
-        )
-        : filtered;
+    const filter = FEED_FILTERS.find((item) => item.id === activeFilter) ?? FEED_FILTERS[0];
+    const sourceItems = activeQuery ? searchItems : items;
+    const shown = useMemo(() => {
+        if (!Array.isArray(sourceItems)) return sourceItems;
+        const filtered = sourceItems.filter((item) => matchesFilter(item, filter));
+        return sortByImpact
+            ? [...filtered].sort((left, right) => Math.abs(right.reaction?.pct ?? 0) - Math.abs(left.reaction?.pct ?? 0))
+            : filtered;
+    }, [sourceItems, filter, sortByImpact]);
 
     return (
-        <section className="live-feed-panel">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <form onSubmit={handleSearch} className="flex flex-row items-center gap-2 font-sans w-full md:w-96">
+        <section className="market-news-feed" aria-label="Marknadsnyheter">
+            <div className="market-news-controls">
+                <form onSubmit={handleSearch} className="market-news-search">
+                    <FiSearch aria-hidden="true" />
                     <input
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Sök bolag eller nyckelord…"
-                        className="public-field border border-border text-text outline-none w-full px-4 py-2 text-sm placeholder:text-text-muted"
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Sök bolag eller nyckelord"
+                        aria-label="Sök i nyhetsflödet"
                     />
-                    <button type="submit" className="secondary-btn py-2 cursor-pointer" aria-label="Sök">
-                        <FiSearch />
-                    </button>
+                    {query && (
+                        <button type="button" onClick={clearSearch} aria-label="Rensa sökning">
+                            <FiX aria-hidden="true" />
+                        </button>
+                    )}
                 </form>
-                <div className="flex flex-row items-center gap-2 font-sans text-xs text-text-muted">
-                    <span className={`w-2 h-2 rounded-full ${live ? "bg-accent animate-pulse" : "bg-border"}`}></span>
-                    <span>{live ? "LIVE" : "ANSLUTER…"}</span>
-                    {updatedAt && <span>• senaste händelse {updatedAt.format("HH:mm:ss")}</span>}
+
+                <div className="market-news-sort" role="group" aria-label="Sortera nyheter">
+                    <button type="button" className={!sortByImpact ? "is-active" : ""} onClick={() => setSortByImpact(false)}>Senaste</button>
+                    <button type="button" className={sortByImpact ? "is-active" : ""} onClick={() => setSortByImpact(true)}>Viktigast</button>
                 </div>
             </div>
 
-            {!activeQuery && (
-                <div className="flex flex-row justify-between items-center mb-6 font-sans text-xs">
-                    <div className="flex flex-row gap-1">
-                        {watchlist.length > 0 && (
-                            <>
-                                <button
-                                    onClick={() => setOnlyWatchlist(false)}
-                                    className={`px-2 py-1 cursor-pointer transition-colors ${!onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                                >
-                                    Alla nyheter
-                                </button>
-                                <button
-                                    onClick={() => setOnlyWatchlist(true)}
-                                    className={`px-2 py-1 cursor-pointer transition-colors ${onlyWatchlist ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                                >
-                                    Mina aktier ({watchlist.length})
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    <div className="flex flex-row gap-1">
-                        <button
-                            onClick={() => setSortByImpact(false)}
-                            className={`px-2 py-1 cursor-pointer transition-colors ${!sortByImpact ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                        >
-                            Senaste
-                        </button>
-                        <button
-                            onClick={() => setSortByImpact(true)}
-                            title="Dagens mest marknadspåverkande nyheter"
-                            className={`px-2 py-1 cursor-pointer transition-colors ${sortByImpact ? "text-text border-b-2 border-secondary" : "text-text-muted hover:text-text"}`}
-                        >
-                            Störst reaktion
-                        </button>
-                    </div>
-                </div>
-            )}
+            <div className="market-news-filters" role="group" aria-label="Filtrera nyheter">
+                {FEED_FILTERS.map((item) => (
+                    <button
+                        type="button"
+                        key={item.id}
+                        className={activeFilter === item.id ? "is-active" : ""}
+                        onClick={() => setActiveFilter(item.id)}
+                    >
+                        {item.label}
+                    </button>
+                ))}
+            </div>
 
             {activeQuery && (
-                <div className="flex flex-row items-center gap-3 mb-4 font-sans text-sm">
-                    <span className="text-text-muted">Sökresultat för "{activeQuery}"</span>
-                    <button onClick={clearSearch} className="text-primary underline cursor-pointer">
-                        Tillbaka till liveflödet
-                    </button>
+                <div className="market-news-query">
+                    <span>Träffar för “{activeQuery}”</span>
+                    <button type="button" onClick={clearSearch}>Visa liveflödet</button>
                 </div>
             )}
 
-            {error && <p className="market-negative font-sans text-sm mb-4">{error}</p>}
+            {error && <p className="market-negative market-news-error">{error}</p>}
 
             {shown == null ? (
-                <div className="flex flex-col gap-6 py-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="animate-pulse flex flex-col gap-2">
-                            <div className="h-3 bg-border w-1/4"></div>
-                            <div className="h-5 bg-border w-3/4"></div>
-                            <div className="h-4 bg-border w-1/2"></div>
-                        </div>
-                    ))}
+                <div className="market-news-loading" aria-hidden="true">
+                    {[...Array(6)].map((_, index) => <div key={index} />)}
                 </div>
             ) : shown.length === 0 ? (
-                <p className="text-text-muted font-sans py-8">
-                    {onlyWatchlist && !activeQuery
-                        ? <>Inga nyheter om dina aktier ännu. <Link href="/mina-aktier" className="text-primary underline">Hantera din bevakningslista</Link> eller stjärnmärk fler bolag från deras aktiesidor.</>
-                        : "Inga nyheter hittades."}
-                </p>
+                <div className="market-empty-state">Inga nyheter matchar det här urvalet.</div>
             ) : (
-                <div className="flex flex-col">
-                    {shown.map((item) => (
-                        <NewsFeedItem key={item.id} item={item} />
-                    ))}
+                <div className="market-news-list">
+                    {shown.map((item) => <NewsFeedItem key={item.id} item={item} />)}
                 </div>
             )}
         </section>
@@ -221,14 +168,16 @@ function LiveFeed() {
 
 export default function MarketNewsPage() {
     return (
-        <main className="public-page public-page--feed min-h-[80vh] mx-auto max-w-3xl px-4 py-10">
-            <div className="public-page__heading mb-6">
-                <h1 className="text-4xl font-serif font-bold text-text mb-2">Marknadsnyheter</h1>
-                <p className="text-text-muted font-sans">
-                    Pressmeddelanden, insynshandel och marknadshändelser från Stockholmsbörsen – i realtid.
-                </p>
-            </div>
-            <PlusPaywall redirectTo="/marknadsnyheter">
+        <main className="market-news-workspace">
+            <MarketWorkspaceNav />
+            <header className="market-news-heading">
+                <div>
+                    <h1>Nyhetsflöde</h1>
+                    <span>Alla marknadshändelser på ett ställe</span>
+                </div>
+                <span className="market-news-live"><i /> Realtidsflöde</span>
+            </header>
+            <PlusPaywall redirectTo="/marknaden/nyheter">
                 <LiveFeed />
             </PlusPaywall>
         </main>

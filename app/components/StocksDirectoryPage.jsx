@@ -5,17 +5,10 @@ import Link from "next/link";
 import { FiArrowRight, FiSearch, FiX } from "react-icons/fi";
 import { fetchCompanyProfiles } from "../utils/api";
 import { getCompanies } from "../utils/companies";
+import CompanyProfileRadar from "./CompanyProfileRadar";
+import { StockWorkspaceNav } from "./WorkspaceNav";
 
 const PAGE_SIZE = 12;
-
-const PROFILE_AXES = [
-    { key: "value", label: "Värde" },
-    { key: "growth", label: "Tillväxt" },
-    { key: "past", label: "Historik" },
-    { key: "health", label: "Hälsa" },
-    { key: "insiders", label: "Insyn" },
-    { key: "dividend", label: "Utdelning" },
-];
 
 const SEGMENT_FILTERS = [
     { value: "all", label: "Alla" },
@@ -81,148 +74,6 @@ const formatChange = (value) => {
     return `${sign}${change.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
 };
 
-const polarPoint = (index, radius, center = 95) => {
-    const angle = ((index * 60) - 90) * (Math.PI / 180);
-    return {
-        x: center + (Math.cos(angle) * radius),
-        y: center + (Math.sin(angle) * radius),
-    };
-};
-
-const smoothClosedPath = (points, tension = 0.72) => {
-    if (points.length < 3) return "";
-    const control = tension / 6;
-    let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-
-    points.forEach((current, index) => {
-        const previous = points[(index - 1 + points.length) % points.length];
-        const next = points[(index + 1) % points.length];
-        const after = points[(index + 2) % points.length];
-        const cp1 = {
-            x: current.x + ((next.x - previous.x) * control),
-            y: current.y + ((next.y - previous.y) * control),
-        };
-        const cp2 = {
-            x: next.x - ((after.x - current.x) * control),
-            y: next.y - ((after.y - current.y) * control),
-        };
-        path += ` C ${cp1.x.toFixed(2)} ${cp1.y.toFixed(2)}, ${cp2.x.toFixed(2)} ${cp2.y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
-    });
-
-    return `${path} Z`;
-};
-
-function CompanyProfile({ companyName, loading, profile }) {
-    const radius = 53;
-    const profileByKey = new Map(
-        (Array.isArray(profile?.axes) ? profile.axes : []).map((axis) => [axis.key, axis]),
-    );
-    const axes = PROFILE_AXES.map((axis) => {
-        const score = finite(profileByKey.get(axis.key)?.score);
-        return { ...axis, score: score === null ? null : Math.max(0, Math.min(5, score)) };
-    });
-    const points = axes.map((axis, index) => ({
-        ...polarPoint(index, radius * (0.14 + (((axis.score ?? 0) / 5) * 0.86))),
-        missing: axis.score === null,
-    }));
-    const labels = PROFILE_AXES.map((axis, index) => {
-        const position = polarPoint(index, 76);
-        const direction = position.x - 95;
-        return {
-            ...axis,
-            ...position,
-            anchor: direction > 12 ? "start" : direction < -12 ? "end" : "middle",
-        };
-    });
-    const availableScores = axes.filter((axis) => axis.score !== null).length;
-    const hasProfile = Boolean(profile) && availableScores > 0;
-    const completeProfile = availableScores === PROFILE_AXES.length;
-    const stateClass = loading ? " is-loading" : hasProfile ? "" : " is-empty";
-    const description = loading
-        ? `Bolagsprofil för ${companyName} laddas`
-        : hasProfile
-            ? `${companyName}: ${axes.map((axis) => `${axis.label} ${axis.score ?? "saknas"} av 5`).join(", ")}`
-            : `Bolagsprofil saknas för ${companyName}`;
-
-    return (
-        <svg
-            className={`stock-profile${stateClass}`}
-            viewBox="0 0 190 190"
-            role="img"
-            aria-label={description}
-        >
-            <title>{description}</title>
-            {[1, 2, 3].map((ring) => (
-                <circle
-                    key={ring}
-                    className="stock-profile__ring"
-                    cx="95"
-                    cy="95"
-                    r={(radius * ring) / 3}
-                />
-            ))}
-            {PROFILE_AXES.map((axis, index) => {
-                const endpoint = polarPoint(index, radius);
-                return (
-                    <line
-                        key={axis.key}
-                        className="stock-profile__spoke"
-                        x1="95"
-                        y1="95"
-                        x2={endpoint.x}
-                        y2={endpoint.y}
-                    />
-                );
-            })}
-
-            {loading && <circle className="stock-profile__placeholder" cx="95" cy="95" r="28" />}
-            {completeProfile && (
-                <>
-                    <path className="stock-profile__shape" d={smoothClosedPath(points)} />
-                </>
-            )}
-            {hasProfile && !completeProfile && points.map((point, index) => (
-                point.missing ? null : (
-                    <line
-                        key={`measure-${PROFILE_AXES[index].key}`}
-                        className="stock-profile__measure"
-                        x1="95"
-                        y1="95"
-                        x2={point.x}
-                        y2={point.y}
-                    />
-                )
-            ))}
-            {hasProfile && points.map((point, index) => (
-                point.missing ? null : (
-                    <circle
-                        key={PROFILE_AXES[index].key}
-                        className="stock-profile__point"
-                        cx={point.x}
-                        cy={point.y}
-                        r="2.1"
-                    />
-                )
-            ))}
-
-            {labels.map((label, index) => (
-                <text
-                    key={label.key}
-                    className="stock-profile__label"
-                    x={label.x}
-                    y={label.y - 3}
-                    textAnchor={label.anchor}
-                >
-                    <tspan x={label.x}>{label.label}</tspan>
-                    <tspan className="stock-profile__score" x={label.x} dy="10">
-                        {loading ? "·" : axes[index].score ?? "–"}
-                    </tspan>
-                </text>
-            ))}
-        </svg>
-    );
-}
-
 function CompanyCard({ company, profile }) {
     const symbol = company.nativeSymbol ?? company.symbol?.replace(/\.ST$/i, "") ?? company.symbol;
     const change = finite(company.changePct);
@@ -245,7 +96,7 @@ function CompanyCard({ company, profile }) {
             </header>
 
             <div className="stock-card__body">
-                <CompanyProfile
+                <CompanyProfileRadar
                     companyName={company.name}
                     loading={profileLoading}
                     profile={profileAvailable ? profile : null}
@@ -410,6 +261,7 @@ export default function StocksDirectoryPage({ companies = [] }) {
 
     return (
         <main className="stock-catalog">
+            <StockWorkspaceNav />
             <header className="stock-catalog__header">
                 <div>
                     <p className="market-kicker">Aktier</p>

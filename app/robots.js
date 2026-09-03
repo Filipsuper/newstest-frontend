@@ -7,7 +7,7 @@ export default function robots() {
         rules: {
             userAgent: "*",
             allow: "/",
-            disallow: ["/settings", "/mina-aktier", "/bekrafta", "/pro/klart"],
+            disallow: ["/settings", "/mina-aktier", "/bevakning", "/bekrafta", "/pro/klart"],
         },
         sitemap: "https://omxsum.com/sitemap.xml",
     };

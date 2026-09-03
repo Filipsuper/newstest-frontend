@@ -107,7 +107,7 @@ export default function ConfirmSubscriptionPage() {
                 <div className="flex flex-col gap-3 mb-4">
                     <div className="flex flex-row gap-3 items-center">
                         <FaNewspaper className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article"><span className="font-semibold">Marknadsnyheter</span> – pressmeddelanden och insynshandel live</p>
+                        <p className="text-sm text-text-article"><span className="font-semibold">Nyhetsflödet</span> – pressmeddelanden och marknadshändelser live</p>
                     </div>
                     <div className="flex flex-row gap-3 items-center">
                         <FaChartLine className="text-secondary shrink-0" />
@@ -118,8 +118,8 @@ export default function ConfirmSubscriptionPage() {
                     Liveflödet ingår i Plus från 49 kr/mån. För proffsen finns även{" "}
                     <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="underline">Terminalen</a> i Pro.
                 </p>
-                <Link href="/marknadsnyheter" className="primary-btn extra-padding inline-block">
-                    Utforska Marknadsnyheter →
+                <Link href="/marknaden/nyheter" className="primary-btn extra-padding inline-block">
+                    Öppna nyhetsflödet →
                 </Link>
             </div>
 

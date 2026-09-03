@@ -197,7 +197,7 @@ export default function ArticleComponent({ article, index }) {
                         <a href="https://tally.so/r/nGyKJe">Saknar du något på sidan? <span className="underline text-primary">Kom gärna med feedback / förslag!</span> </a>
                     </div> */}
                     {/* <div className="flex flex-col items-start pb-4 font-sans text-sm">
-                        <Link href="/marknadsnyheter" className="primary-btn extra-padding">
+                        <Link href="/marknaden/nyheter" className="primary-btn extra-padding">
                             Se alla nyheter →
                         </Link>
                     </div> */}

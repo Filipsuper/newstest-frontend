@@ -3,20 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiActivity, FiBarChart2, FiHome, FiSearch, FiStar, FiX } from "react-icons/fi";
+import { FiBarChart2, FiBookOpen, FiList, FiSearch, FiStar, FiX } from "react-icons/fi";
 import StockSearch from "./StockSearch";
 
 const LINKS = [
-    { href: "/", label: "Start", icon: FiHome, exact: true },
     { href: "/marknaden", label: "Marknad", icon: FiBarChart2 },
-    { href: "/marknadsnyheter", label: "Nyheter", icon: FiActivity },
-    { href: "/mina-aktier", label: "Mina", icon: FiStar },
+    { href: "/bevakning", label: "Bevakning", icon: FiStar },
+    { href: "/aktier", label: "Aktier", icon: FiList, companyRoute: true },
+    { href: "/nyhetsbrev", label: "Breven", icon: FiBookOpen, relatedRoutes: ["/morgonbrevet", "/kvallsbrevet", "/article/"] },
 ];
 
 const activeLink = (pathname, link) => link.exact
     ? pathname === link.href
     : pathname === link.href || pathname.startsWith(`${link.href}/`)
-        || (link.companyRoute && pathname.startsWith("/aktie/"));
+        || (link.companyRoute && pathname.startsWith("/aktie/"))
+        || link.relatedRoutes?.some((route) => pathname === route || pathname.startsWith(route));
 
 export default function FloatingDock() {
     const pathname = usePathname();

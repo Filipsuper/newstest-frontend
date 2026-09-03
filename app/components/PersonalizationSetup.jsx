@@ -11,7 +11,7 @@ import StockSearch from './StockSearch';
 import PersonalPreview from './PersonalPreview';
 
 // Compact stock + topics picker used in onboarding (/bekrafta). The full
-// management UI lives on /mina-aktier.
+// management UI lives on /bevakning/hantera.
 export default function PersonalizationSetup() {
     const { user, isGuestUser, isPlusUser, refreshUser } = useAuthContext();
     const [companies, setCompanies] = useState([]);
@@ -90,7 +90,7 @@ export default function PersonalizationSetup() {
                 <div className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-text">Följ ämnen</span>
                     <div className="flex flex-row flex-wrap gap-2">
-                        {[...(vocabulary.segments ?? []), ...(vocabulary.sectors ?? [])].map((topic) => (
+                        {[...(vocabulary.events ?? []), ...(vocabulary.sectors ?? [])].map((topic) => (
                             <button
                                 key={topic}
                                 onClick={() => handleTopicToggle(topic)}
@@ -109,7 +109,7 @@ export default function PersonalizationSetup() {
 
             <p className="text-xs text-text-muted">
                 Du kan alltid ändra dina val på{" "}
-                <Link href="/mina-aktier" className="text-primary underline">Mina aktier</Link>.
+                <Link href="/bevakning/hantera" className="text-primary underline">Hantera bevakning</Link>.
             </p>
         </div>
     );

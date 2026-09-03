@@ -46,7 +46,7 @@ export default function About() {
             På bolagssidorna går det att följa kurser, finansiella nyckeltal,
             estimat, värdering, nyheter och kommande händelser. För den som vill
             arbeta mer aktivt finns också en {" "}
-            <Link href="/screener" className="text-primary hover:underline">
+            <Link href="/aktier/screener" className="text-primary hover:underline">
               aktiescreener
             </Link>{" "}
             och en {" "}
@@ -99,7 +99,7 @@ export default function About() {
               filipkarlberg1@gmail.com
             </a>
             . Du kan också börja med dagens {" "}
-            <Link href="/marknadsnyheter" className="text-primary hover:underline">
+            <Link href="/marknaden/nyheter" className="text-primary hover:underline">
               marknadsnyheter
             </Link>
             .

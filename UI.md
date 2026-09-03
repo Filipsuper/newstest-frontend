@@ -4,6 +4,23 @@ The public OMXsum site is a calm Swedish research product for understanding
 one company at a time. The terminal shares its brand and data, but not its
 desktop density or abbreviated interaction model.
 
+## Product navigation
+
+- Organize the public product around four jobs: `Marknaden` explains what
+  matters today, `Bevakning` explains what matters to the reader, `Aktier`
+  supports discovery and research, and `Breven` contains editorial reading.
+- The logo is the route back to the landing page; do not spend a primary-nav
+  position on a duplicate `Start` link.
+- The complete chronological news feed is a URL-backed view inside
+  `Marknaden`, while the screener is a URL-backed view inside `Aktier`.
+  Preserve legacy route redirects, but do not expose duplicate top-level
+  destinations.
+- `Bevakning` covers companies, topics and keywords. It opens on useful matched
+  news, with preference management as a secondary view. Account settings do
+  not own personalization.
+- Desktop and mobile use the same conceptual destinations. Company pages are
+  contextual destinations beneath `Aktier`, not another top-level product.
+
 ## Visual hierarchy
 
 - Separate ordinary content with space, alignment, typography, and changes in
@@ -97,9 +114,14 @@ desktop density or abbreviated interaction model.
 - Cluster duplicate language versions and source copies of the same company
   event before ranking. Prefer the clearest Swedish item and retain the number
   of distinct sources as quiet provenance.
-- `Marknaden` and `Mina aktier` reuse the same information architecture. The
+- `Marknaden` and `Bevakning` reuse the same information architecture. The
   watchlist is a relevance filter over news and movers, not a separate
   portfolio dashboard.
+- Full-feed, market-overview and personalized rows share one visual event
+  grammar. Context changes their ordering or filtering, not their identity.
+- Every personalized result says why it was shown. Following controls and
+  notification delivery remain separate so following a topic never silently
+  creates noisy alerts.
 - The editorial letter is a preview within the workspace, with its real title
   and a short excerpt. Show the morning letter before 17:30 Stockholm time. At
   or after 17:30, switch to today's evening letter once it exists; if it has not
@@ -152,6 +174,9 @@ desktop density or abbreviated interaction model.
 - The public company profile uses the Terminal's underlying axis scores but a
   softer, rounded outline suited to browsing. It is a research fingerprint,
   not a recommendation or an unexplained buy/sell verdict.
+- The profile is one shared component across the stock directory, screener
+  discovery and company overview. Do not use it in news rows, and remove it
+  rather than allowing it to become a decorative one-route motif.
 - Missing profile axes remain visibly missing and never collapse to zero.
   Show profile coverage tersely so sparse source data is not mistaken for a
   complete assessment.

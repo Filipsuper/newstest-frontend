@@ -24,8 +24,9 @@ import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsModal from "./NewsModal";
-import { fetchCompanyIntraday, fetchInsiders, fetchShorts, fetchValuation, toggleWatchlist } from "../utils/api";
+import { fetchCompanyIntraday, fetchCompanyProfiles, fetchInsiders, fetchShorts, fetchValuation, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
+import CompanyProfileRadar from "./CompanyProfileRadar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -433,13 +434,18 @@ function ChartTooltip({ active, payload, label, compare, intraday }) {
 
 function WatchlistButton({ symbol }) {
     const { user, isGuestUser, refreshUser } = useAuthContext();
+    const { openModal } = useModal();
     const [busy, setBusy] = useState(false);
 
-    if (!user || isGuestUser) return null;
+    if (!user) return null;
 
-    const starred = (user.watchlist ?? []).includes(symbol);
+    const starred = !isGuestUser && (user.watchlist ?? []).includes(symbol);
 
     const handleToggle = async () => {
+        if (isGuestUser) {
+            openModal(<LogInModal redirectTo={`/aktie/${encodeURIComponent(symbol)}`} />);
+            return;
+        }
         if (busy) return;
         setBusy(true);
         try {
@@ -457,9 +463,10 @@ function WatchlistButton({ symbol }) {
             onClick={handleToggle}
             disabled={busy}
             aria-label={starred ? "Ta bort från bevakningslistan" : "Lägg till i bevakningslistan"}
-            title={starred ? "Ta bort från Mina aktier" : "Lägg till i Mina aktier"}
+            title={starred ? "Sluta bevaka" : "Bevaka bolaget"}
         >
             {starred ? <FaStar /> : <FaRegStar />}
+            <span>{starred ? "Bevakar" : "Bevaka"}</span>
         </button>
     );
 }
@@ -1048,7 +1055,7 @@ function ExpandableText({ text, className = "", lines = 6 }) {
     );
 }
 
-function OverviewTab({ data, mentions = [], onSelectTab }) {
+function OverviewTab({ data, mentions = [], onSelectTab, researchProfile }) {
     const { summary, chart, news } = data;
     return (
         <>
@@ -1069,6 +1076,25 @@ function OverviewTab({ data, mentions = [], onSelectTab }) {
                     <FinancialSnapshot highlights={summary.financialHighlights} onSelectTab={onSelectTab} />
                 </div>
                 <aside className="company-context-column">
+                    <section className="company-context-section company-profile-panel" aria-labelledby="company-profile-heading">
+                        <div className="company-profile-panel__heading">
+                            <div>
+                                <p className="company-eyebrow">Bolagsprofil</p>
+                                <h2 id="company-profile-heading">Sex perspektiv</h2>
+                            </div>
+                            {researchProfile?.coveragePct != null && <span>{Math.round(researchProfile.coveragePct)}% underlag</span>}
+                        </div>
+                        <CompanyProfileRadar
+                            companyName={summary.profile.name ?? summary.symbol}
+                            loading={researchProfile === undefined}
+                            profile={researchProfile || null}
+                        />
+                        <div className="company-profile-panel__links">
+                            <button type="button" onClick={() => onSelectTab("valuation")}>Värdering</button>
+                            <button type="button" onClick={() => onSelectTab("financials")}>Finansiellt</button>
+                            <button type="button" onClick={() => onSelectTab("insiders")}>Insyn</button>
+                        </div>
+                    </section>
                     <CalendarPreview calendar={summary.calendar} onSelectTab={onSelectTab} />
                     <section className="company-context-section" aria-labelledby="news-preview-heading">
                         <div className="company-section-heading">
@@ -2470,10 +2496,20 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
     const { isPlusUser } = useAuthContext();
     const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
     const [tab, setTab] = useState(allowedTab);
+    const [researchProfile, setResearchProfile] = useState(undefined);
 
     useEffect(() => {
         setTab(allowedTab);
     }, [allowedTab]);
+
+    useEffect(() => {
+        let active = true;
+        setResearchProfile(undefined);
+        fetchCompanyProfiles([symbol]).then((response) => {
+            if (active) setResearchProfile(response.items?.[0] ?? false);
+        });
+        return () => { active = false; };
+    }, [symbol]);
 
     if (!initialData?.summary) {
         return (
@@ -2528,7 +2564,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 ))}
             </nav>
 
-            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} onSelectTab={selectTab} />}
+            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} onSelectTab={selectTab} researchProfile={researchProfile} />}
             {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
             {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
             {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}

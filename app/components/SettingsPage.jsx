@@ -112,27 +112,6 @@ function SettingsPage() {
                 </div>
             </section>
 
-            <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-serif font-bold text-text mb-4">Mina aktier</h2>
-                <div className="flex flex-col body-text gap-4">
-                    <div className="flex flex-col">
-                        <span className="text-base font-bold font-serif mb-2">Bevakningslista</span>
-                        <span className="text-text-muted">
-                            {(user.watchlist ?? []).length > 0
-                                ? `Du bevakar ${user.watchlist.length} bolag: ${user.watchlist.slice(0, 5).map(s => s.replace(".ST", "")).join(", ")}${user.watchlist.length > 5 ? "…" : ""}`
-                                : "Du bevakar inga bolag ännu."}
-                        </span>
-                    </div>
-                    <p className="text-text-muted">
-                        Stjärnmärkta bolag styr fliken "Mina aktier" i Marknadsnyheter
-                        och kommer framöver att styra den personliga sektionen i morgonbrevet.
-                    </p>
-                    <Link href="/mina-aktier" className="text-primary underline">
-                        Hantera mina aktier →
-                    </Link>
-                </div>
-            </section>
-
             <section className="max-w-4xl mx-auto rounded-lg mb-12">
                 <div className="flex flex-col mb-8">
                     <h2 className="text-xl font-serif font-bold text-text">Nyhetsbrevstyper</h2>

@@ -99,7 +99,7 @@ export default async function Page() {
             <section>
                 <h2 className="text-2xl font-serif font-bold text-text mb-3">Mer än sammanfattningar</h2>
                 <p className="font-sans text-text-article leading-relaxed">
-                    Vill du följa börsnyheterna live? <Link href="/marknadsnyheter" className="text-primary hover:underline">Marknadsnyheter</Link>{" "}
+                    Vill du följa börsnyheterna live? <Link href="/marknaden/nyheter" className="text-primary hover:underline">Nyhetsflödet</Link>{" "}
                     visar pressmeddelanden och insynshandel i realtid med kursreaktioner, och varje
                     aktie har en egen översikt med kurs, analys och nyheter.
                 </p>

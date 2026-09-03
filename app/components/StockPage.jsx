@@ -489,7 +489,7 @@ function WatchlistStar({ symbol }) {
         <button
             onClick={handleToggle}
             aria-label={starred ? "Ta bort från bevakningslistan" : "Lägg till i bevakningslistan"}
-            title={starred ? "Ta bort från Mina aktier" : "Lägg till i Mina aktier"}
+            title={starred ? "Sluta bevaka" : "Bevaka bolaget"}
             className={`text-xl cursor-pointer transition-colors align-middle ${starred ? "text-secondary" : "text-text-muted hover:text-secondary"} ${busy ? "opacity-50" : ""}`}
         >
             {starred ? <FaStar /> : <FaRegStar />}
@@ -574,7 +574,7 @@ function StockContent({ symbol }) {
         return (
             <div className="py-16 text-center font-sans">
                 <p className="text-text-muted mb-4">{error}</p>
-                <Link href="/marknadsnyheter" className="text-primary underline">Till marknadsnyheterna</Link>
+                <Link href="/marknaden/nyheter" className="text-primary underline">Till nyhetsflödet</Link>
             </div>
         );
     }

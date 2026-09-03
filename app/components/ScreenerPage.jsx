@@ -10,9 +10,11 @@ import {
     FiRefreshCw,
     FiX,
 } from "react-icons/fi";
-import { fetchScreener } from "../utils/api";
+import { fetchCompanyProfiles, fetchScreener } from "../utils/api";
 import Dropdown from "./Dropdown";
+import CompanyProfileRadar from "./CompanyProfileRadar";
 import PlusPaywall from "./PlusPaywall";
+import { StockWorkspaceNav } from "./WorkspaceNav";
 
 const REFRESH_MS = 60_000;
 
@@ -48,6 +50,42 @@ const METRIC_DROPDOWN_GROUPS = FILTER_GROUPS.map((group) => ({
 const OPERATOR_OPTIONS = [
     { value: "gt", label: "Över" },
     { value: "lt", label: "Under" },
+];
+
+const PRESETS = [
+    {
+        id: "unusual-volume",
+        label: "Ovanligt hög handel",
+        filters: [{ metric: "rvolAtTime", operator: "gt", value: 1.5 }],
+        sort: { key: "rvolAtTime", direction: "desc" },
+    },
+    {
+        id: "rising-volume",
+        label: "Stiger med volym",
+        filters: [
+            { metric: "changePct", operator: "gt", value: 2 },
+            { metric: "rvolAtTime", operator: "gt", value: 1.3 },
+        ],
+        sort: { key: "changePct", direction: "desc" },
+    },
+    {
+        id: "profitable-growth",
+        label: "Lönsam tillväxt",
+        filters: [
+            { metric: "revenueGrowthPct", operator: "gt", value: 10 },
+            { metric: "ebitMarginPct", operator: "gt", value: 10 },
+        ],
+        sort: { key: "revenueGrowthPct", direction: "desc" },
+    },
+    {
+        id: "low-pe",
+        label: "Lägre P/E",
+        filters: [
+            { metric: "pe", operator: "gt", value: 0 },
+            { metric: "pe", operator: "lt", value: 15 },
+        ],
+        sort: { key: "pe", direction: "asc" },
+    },
 ];
 
 const PILL_LABELS = {
@@ -137,11 +175,14 @@ function ScreenerTable() {
     const [segment, setSegment] = useState("all");
     const [sector, setSector] = useState("all");
     const [filters, setFilters] = useState([]);
+    const [activePreset, setActivePreset] = useState(null);
     const [filterOpen, setFilterOpen] = useState(false);
     const [draftMetric, setDraftMetric] = useState("revenueGrowthPct");
     const [draftOperator, setDraftOperator] = useState("gt");
     const [draftValue, setDraftValue] = useState("10");
     const [sort, setSort] = useState({ key: "marketCap", direction: "desc" });
+    const [resultLimit, setResultLimit] = useState(50);
+    const [profiles, setProfiles] = useState({});
 
     const load = async ({ silent = false } = {}) => {
         if (silent) setRefreshing(true);
@@ -235,6 +276,42 @@ function ScreenerTable() {
         return result;
     }, [items, segment, sector, filters, sort]);
 
+    useEffect(() => {
+        setResultLimit(50);
+    }, [segment, sector, filters]);
+
+    const shownItems = visibleItems.slice(0, resultLimit);
+    const shownSymbolsKey = shownItems.map((row) => row.symbol).join("|");
+
+    useEffect(() => {
+        const symbols = shownSymbolsKey.split("|").filter(Boolean);
+        const requested = symbols.filter((symbol) => !Object.prototype.hasOwnProperty.call(profiles, symbol));
+        if (!requested.length) return undefined;
+        setProfiles((current) => {
+            const next = { ...current };
+            requested.forEach((symbol) => { next[symbol] = null; });
+            return next;
+        });
+        let active = true;
+        const loadProfiles = async () => {
+            for (let start = 0; active && start < requested.length; start += 12) {
+                const batch = requested.slice(start, start + 12);
+                const response = await fetchCompanyProfiles(batch);
+                if (!active) return;
+                const bySymbol = new Map(response.items.map((item) => [item.symbol, item]));
+                setProfiles((current) => {
+                    const next = { ...current };
+                    batch.forEach((symbol) => { next[symbol] = bySymbol.get(symbol) ?? false; });
+                    return next;
+                });
+            }
+        };
+        loadProfiles();
+        return () => { active = false; };
+        // The key captures the exact visible result page; cached profiles stay in state.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shownSymbolsKey]);
+
     const addFilter = (filter) => {
         if (!METRICS[filter.metric] || String(filter.value).trim() === "" || !Number.isFinite(Number(filter.value))) return;
         const normalized = { ...filter, value: Number(filter.value) };
@@ -242,6 +319,7 @@ function ScreenerTable() {
             ...current.filter((item) => !(item.metric === normalized.metric && item.operator === normalized.operator)),
             normalized,
         ]);
+        setActivePreset(null);
     };
 
     const addDraftFilter = () => {
@@ -252,6 +330,19 @@ function ScreenerTable() {
         setSegment("all");
         setSector("all");
         setFilters([]);
+        setActivePreset(null);
+    };
+
+    const applyPreset = (preset) => {
+        if (activePreset === preset.id) {
+            resetFilters();
+            return;
+        }
+        setSegment("all");
+        setSector("all");
+        setFilters(preset.filters);
+        setSort(preset.sort);
+        setActivePreset(preset.id);
     };
 
     const hasFilters = Boolean(segment !== "all" || sector !== "all" || filters.length);
@@ -267,8 +358,26 @@ function ScreenerTable() {
 
     return (
         <section className="font-sans" aria-label="Aktiescreener">
+            <div className="screener-intro">
+                <div>
+                    <h1>Hitta bolag</h1>
+                    <span>Börja med ett färdigt urval eller bygg ett eget.</span>
+                </div>
+                <div className="screener-presets" role="group" aria-label="Färdiga urval">
+                    {PRESETS.map((preset) => (
+                        <button
+                            type="button"
+                            key={preset.id}
+                            className={activePreset === preset.id ? "is-active" : ""}
+                            onClick={() => applyPreset(preset)}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
             <div className="screener-toolbar">
-                <h1 className="">Screener</h1>
+                <h2>Urval</h2>
                 {hasFilters && (
                     <div className="screener-chips" aria-label="Aktiva filter">
                         {segment !== "all" && (
@@ -442,12 +551,20 @@ function ScreenerTable() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {visibleItems.map((row) => (
+                                {shownItems.map((row) => (
                                     <tr key={row.symbol}>
                                         <td className="screener-company-column">
-                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`}>
-                                                <strong>{row.name ?? row.symbol}</strong>
-                                                <span>{row.nativeSymbol ?? row.symbol}{row.segment ? ` · ${row.segment}` : ""}</span>
+                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`} className="screener-company-link">
+                                                <CompanyProfileRadar
+                                                    compact
+                                                    companyName={row.name ?? row.symbol}
+                                                    loading={profiles[row.symbol] === undefined || profiles[row.symbol] === null}
+                                                    profile={profiles[row.symbol] || null}
+                                                />
+                                                <span className="screener-company-copy">
+                                                    <strong>{row.name ?? row.symbol}</strong>
+                                                    <span>{row.nativeSymbol ?? row.symbol}{row.segment ? ` · ${row.segment}` : ""}</span>
+                                                </span>
                                             </Link>
                                         </td>
                                         {COLUMNS.slice(1).map((column) => {
@@ -469,6 +586,12 @@ function ScreenerTable() {
                 </div>
             )}
 
+            {shownItems.length < visibleItems.length && (
+                <button type="button" className="screener-more" onClick={() => setResultLimit((value) => value + 50)}>
+                    Visa fler bolag
+                </button>
+            )}
+
             <div className="screener-method">
                 <p>
                     Finansiella nyckeltal bygger på senast rapporterade helår. Värderingsmultiplar visas bara när kurs, antal aktier och jämförbar rapporteringsvaluta finns. Tekniska mått bygger på OMXsums sparade marknadsflöde.
@@ -482,10 +605,11 @@ function ScreenerTable() {
 export default function ScreenerPage() {
     return (
         <main className="screener-page">
+            <StockWorkspaceNav />
             {/* <header className="screener-heading">
                 <h1>Aktiescreener</h1>
             </header> */}
-            <PlusPaywall redirectTo="/screener">
+            <PlusPaywall redirectTo="/aktier/screener">
                 <ScreenerTable />
             </PlusPaywall>
         </main>

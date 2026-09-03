@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiChevronDown, FiExternalLink, FiMenu, FiSettings, FiStar, FiX } from "react-icons/fi";
+import { FiChevronDown, FiExternalLink, FiMenu, FiSettings, FiX } from "react-icons/fi";
 import { FaTwitter } from "react-icons/fa";
 import { FaBluesky } from "react-icons/fa6";
 import { useModal } from "../providers/ModalProvider";
@@ -13,11 +13,9 @@ import StockSearch from "./StockSearch";
 import FloatingDock from "./FloatingDock";
 
 const PRIMARY_LINKS = [
-    { href: "/", label: "Start", exact: true },
     { href: "/marknaden", label: "Marknaden" },
+    { href: "/bevakning", label: "Bevakning" },
     { href: "/aktier", label: "Aktier" },
-    { href: "/marknadsnyheter", label: "Nyheter" },
-    { href: "/screener", label: "Screener" },
     { href: "/nyhetsbrev", label: "Breven" },
 ];
 
@@ -30,7 +28,9 @@ const SECONDARY_LINKS = [
 
 const isActive = (pathname, link) => {
     if (link.exact) return pathname === link.href;
-    if (link.href === "/aktier" && pathname.startsWith("/aktie/")) return true;
+    if (link.href === "/aktier" && (pathname.startsWith("/aktie/") || pathname.startsWith("/screener"))) return true;
+    if (link.href === "/marknaden" && pathname.startsWith("/marknadsnyheter")) return true;
+    if (link.href === "/bevakning" && pathname.startsWith("/mina-aktier")) return true;
     if (link.href === "/nyhetsbrev" && ["/morgonbrevet", "/kvallsbrevet", "/article/"].some(
         (route) => pathname === route || pathname.startsWith(route),
     )) return true;
@@ -43,7 +43,13 @@ export default function SiteChrome({ children }) {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const loggedIn = Boolean(user) && !isGuestUser;
-    const isMarketPage = pathname === "/marknaden";
+    const preferenceCount = loggedIn
+        ? (user.watchlist?.length ?? 0) + (user.topics?.length ?? 0) + (user.keywords?.length ?? 0)
+        : 0;
+    const isMarketPage = pathname === "/marknaden"
+        || pathname.startsWith("/marknaden/")
+        || pathname === "/bevakning"
+        || pathname.startsWith("/bevakning/");
     const isTerminalPage = pathname === "/terminal" || pathname.startsWith("/terminal/");
 
     useEffect(() => {
@@ -71,6 +77,9 @@ export default function SiteChrome({ children }) {
                                 className={isActive(pathname, link) ? "is-active" : ""}
                             >
                                 {link.label}
+                                {link.href === "/bevakning" && preferenceCount > 0 && (
+                                    <span className="site-header__preference-count">{preferenceCount}</span>
+                                )}
                             </Link>
                         ))}
                     </nav>
@@ -86,14 +95,9 @@ export default function SiteChrome({ children }) {
                         {!user ? (
                             <span className="site-header__account-placeholder" aria-hidden="true" />
                         ) : loggedIn ? (
-                            <>
-                                <Link href="/settings" className="site-header__settings" aria-label="Inställningar">
-                                    <FiSettings aria-hidden="true" />
-                                </Link>
-                                <Link href="/mina-aktier" className="site-header__watchlist">
-                                    <FiStar aria-hidden="true" /> Mina aktier
-                                </Link>
-                            </>
+                            <Link href="/settings" className="site-header__settings" aria-label="Inställningar">
+                                <FiSettings aria-hidden="true" />
+                            </Link>
                         ) : (
                             <button type="button" onClick={handleLogIn} className="site-header__login">
                                 Logga in
@@ -110,10 +114,6 @@ export default function SiteChrome({ children }) {
                             {isMenuOpen ? <FiX aria-hidden="true" /> : <FiMenu aria-hidden="true" />}
                         </button>
                     </div>
-
-                    <div className="site-header__mobile-search">
-                        <StockSearch placeholder="Sök aktie eller ticker" showSuggestions />
-                    </div>
                 </div>
 
                 {isMenuOpen && (
@@ -128,6 +128,9 @@ export default function SiteChrome({ children }) {
                                         className={isActive(pathname, link) ? "is-active" : ""}
                                     >
                                         {link.label}
+                                        {link.href === "/bevakning" && preferenceCount > 0 && (
+                                            <span className="site-header__preference-count">{preferenceCount}</span>
+                                        )}
                                     </Link>
                                 ))}
                             </div>

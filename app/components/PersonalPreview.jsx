@@ -18,10 +18,15 @@ export default function PersonalPreview() {
 
     const watchlist = user?.watchlist ?? [];
     const topics = user?.topics ?? [];
-    const prefsKey = [...watchlist, ...topics].join("|");
+    const keywords = user?.keywords ?? [];
+    const prefsKey = [...watchlist, ...topics, ...keywords].join("|");
 
     useEffect(() => {
-        if (!user || isGuestUser || !prefsKey) return;
+        if (!user || isGuestUser || !prefsKey) {
+            setPreview(null);
+            setLoading(false);
+            return undefined;
+        }
         let cancelled = false;
         setLoading(true);
         fetchPersonalPreview().then((data) => {
@@ -83,11 +88,13 @@ export default function PersonalPreview() {
                                     {(story.company || story.symbol) ? " — " : ""}{story.headline}
                                 </p>
                                 <p className="text-[11px] text-text-muted mt-0.5">
-                                    {story.viaWatchlist
+                                    {story.matchedKeyword
+                                        ? `Matchar nyckelordet “${story.matchedKeyword}”`
+                                        : story.viaWatchlist
                                         ? "Din aktie"
                                         : story.viaIndustry
                                             ? `Inom din bransch${story.industry ? `: ${TOPIC_LABELS[story.industry] ?? story.industry}` : ""}`
-                                            : "Matchar dina ämnen"}
+                                            : `Matchar ${TOPIC_LABELS[story.matchedTopic] ?? "dina ämnen"}`}
                                 </p>
                             </div>
                         </div>
