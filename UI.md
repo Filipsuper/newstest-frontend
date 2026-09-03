@@ -179,7 +179,13 @@ desktop density or abbreviated interaction model.
   rather than allowing it to become a decorative one-route motif.
 - Missing profile axes remain visibly missing and never collapse to zero.
   Show profile coverage tersely so sparse source data is not mistaken for a
-  complete assessment.
+  complete assessment. Partial profiles retain a filled silhouette; use the
+  known-axis average only to bridge the missing point geometrically, and mark
+  that point as hollow while its visible score remains `–`.
+- Color the profile from its average available axis score: red for a weak
+  match, OMXsum yellow for a mixed profile, and green only for a strong match.
+  The axis values and silhouette remain the primary explanation; color is a
+  reinforcement, never a buy or sell verdict.
 - Load profiles only for the currently visible page of cards and reveal more
   companies in small batches. Filtering the directory must stay immediate.
 - Prefer borderless tonal cards, inset fact groups, tight typography, and a

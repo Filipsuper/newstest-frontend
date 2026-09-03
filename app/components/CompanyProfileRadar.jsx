@@ -53,8 +53,14 @@ export default function CompanyProfileRadar({ companyName, loading = false, prof
         const score = finite(profileByKey.get(axis.key)?.score);
         return { ...axis, score: score === null ? null : Math.max(0, Math.min(5, score)) };
     });
+    const knownScores = axes.map((axis) => axis.score).filter((score) => score !== null);
+    const averageScore = knownScores.length
+        ? knownScores.reduce((sum, score) => sum + score, 0) / knownScores.length
+        : null;
+    // Missing axes borrow the profile average only to close the visual area.
+    // Their label stays “–” and their point is hollow, so no score is invented.
     const points = axes.map((axis, index) => ({
-        ...polarPoint(index, radius * (0.14 + (((axis.score ?? 0) / 5) * 0.86))),
+        ...polarPoint(index, radius * (0.14 + (((axis.score ?? averageScore ?? 0) / 5) * 0.86))),
         missing: axis.score === null,
     }));
     const labelRadius = compact ? 68 : 76;
@@ -67,14 +73,21 @@ export default function CompanyProfileRadar({ companyName, loading = false, prof
             anchor: direction > 12 ? "start" : direction < -12 ? "end" : "middle",
         };
     });
-    const availableScores = axes.filter((axis) => axis.score !== null).length;
+    const availableScores = knownScores.length;
     const hasProfile = Boolean(profile) && availableScores > 0;
-    const completeProfile = availableScores === COMPANY_PROFILE_AXES.length;
-    const stateClass = loading ? " is-loading" : hasProfile ? "" : " is-empty";
+    const tone = !hasProfile
+        ? "neutral"
+        : averageScore >= 3.25
+            ? "high"
+            : averageScore < 1.75
+                ? "low"
+                : "mixed";
+    const toneLabel = tone === "high" ? "stark" : tone === "low" ? "svag" : "blandad";
+    const stateClass = loading ? " is-loading" : hasProfile ? ` stock-profile--${tone}` : " is-empty";
     const description = loading
         ? `Bolagsprofil för ${companyName} laddas`
         : hasProfile
-            ? `${companyName}: ${axes.map((axis) => `${axis.label} ${axis.score ?? "saknas"} av 5`).join(", ")}`
+            ? `${companyName}: ${toneLabel} profil. ${axes.map((axis) => `${axis.label} ${axis.score ?? "saknas"} av 5`).join(", ")}`
             : `Bolagsprofil saknas för ${companyName}`;
 
     return (
@@ -88,12 +101,15 @@ export default function CompanyProfileRadar({ companyName, loading = false, prof
                 return <line key={axis.key} className="stock-profile__spoke" x1="95" y1="95" x2={endpoint.x} y2={endpoint.y} />;
             })}
             {loading && <circle className="stock-profile__placeholder" cx="95" cy="95" r="28" />}
-            {completeProfile && <path className="stock-profile__shape" d={smoothClosedPath(points)} />}
-            {hasProfile && !completeProfile && points.map((point, index) => point.missing ? null : (
-                <line key={`measure-${COMPANY_PROFILE_AXES[index].key}`} className="stock-profile__measure" x1="95" y1="95" x2={point.x} y2={point.y} />
-            ))}
-            {hasProfile && points.map((point, index) => point.missing ? null : (
-                <circle key={COMPANY_PROFILE_AXES[index].key} className="stock-profile__point" cx={point.x} cy={point.y} r="2.1" />
+            {hasProfile && <path className="stock-profile__shape" d={smoothClosedPath(points)} />}
+            {hasProfile && points.map((point, index) => (
+                <circle
+                    key={COMPANY_PROFILE_AXES[index].key}
+                    className={point.missing ? "stock-profile__missing-point" : "stock-profile__point"}
+                    cx={point.x}
+                    cy={point.y}
+                    r={point.missing ? "2.8" : "2.1"}
+                />
             ))}
             {!compact && labels.map((label, index) => (
                 <text key={label.key} className="stock-profile__label" x={label.x} y={label.y - 3} textAnchor={label.anchor}>
