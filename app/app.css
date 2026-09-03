@@ -8442,3 +8442,150 @@ body {
   .screener-presets { flex-wrap: nowrap; width: 100%; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .screener-presets button { flex: 0 0 auto; }
 }
+
+/* Market workspaces use the page scroll on smaller screens. Nested vertical
+   feeds make touch scrolling unreliable and force the letter into fixed rows. */
+@media (max-width: 900px) {
+  .site-content--market {
+    height: auto;
+    min-height: calc(100dvh - 73px);
+    overflow: visible;
+  }
+
+  .market-digest {
+    display: flex;
+    width: min(calc(100% - 28px), 720px);
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    gap: 8px;
+    padding-block: 8px 12px;
+    overflow: visible;
+  }
+
+  .market-digest__toolbar {
+    min-height: 42px;
+    flex: 0 0 auto;
+  }
+
+  .market-digest__summary {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
+
+  .market-pulse {
+    min-height: 120px;
+  }
+
+  .market-digest__letter {
+    min-height: 132px;
+    overflow: visible;
+  }
+
+  .market-digest__mobile-tabs {
+    min-height: 48px;
+    flex: 0 0 auto;
+    padding: 4px;
+  }
+
+  .market-digest__mobile-tabs button {
+    min-height: 40px;
+    font-size: 0.74rem;
+    font-weight: 650;
+  }
+
+  .market-digest__grid {
+    display: block;
+    overflow: visible;
+  }
+
+  .market-digest__panel {
+    display: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .market-digest__panel.is-active {
+    display: flex;
+  }
+
+  .market-digest__stories,
+  .market-digest__movers {
+    min-height: 0;
+    flex: 0 0 auto;
+    padding: 8px 0 0;
+    overflow: visible;
+    overscroll-behavior: auto;
+    scrollbar-gutter: auto;
+  }
+
+  .market-news-workspace,
+  .watch-workspace {
+    height: auto;
+    min-height: calc(100dvh - 73px);
+    overflow: visible;
+  }
+
+  .market-news-feed {
+    min-height: 0;
+  }
+
+  .market-news-list,
+  .watch-feed__list {
+    padding-block: 4px 12px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 760px) {
+  .site-content--market {
+    min-height: calc(100dvh - 112px);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 600px) {
+  .market-digest {
+    width: min(calc(100% - 20px), 620px);
+    padding-bottom: 8px;
+  }
+
+  .market-pulse {
+    min-height: 78px;
+  }
+
+  .market-digest__letter {
+    min-height: 142px;
+    padding: 12px 14px;
+  }
+
+  .market-digest__letter-preview p {
+    -webkit-line-clamp: 2;
+  }
+
+  .market-digest__mobile-tabs {
+    min-height: 50px;
+  }
+
+  .market-digest__mobile-tabs button {
+    min-height: 42px;
+  }
+
+  .market-digest__panel-heading {
+    min-height: 48px;
+  }
+
+  .impact-story {
+    min-height: 78px;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .impact-story__spark {
+    display: none;
+  }
+
+  .market-news-list {
+    padding-top: 6px;
+  }
+}

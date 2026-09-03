@@ -228,6 +228,12 @@ desktop density or abbreviated interaction model.
   tables may scroll within their own region and keep metric names visible.
 - Tabs may scroll horizontally. Controls remain touch-sized and do not depend
   on hover.
+- Market and news workspaces use one continuous page scroll on phones and
+  tablets. Story lists must not create a second vertical scroll region.
+- Hide per-story sparklines on phones; preserve the reaction badge, headline,
+  company, and timing that explain why the story matters.
+- Market view switches use a minimum 40px touch target, and editorial previews
+  size to their content instead of being clipped into fixed-height rows.
 
 ## Avoid
 
