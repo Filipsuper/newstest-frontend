@@ -62,8 +62,10 @@ desktop density or abbreviated interaction model.
 - Movers pair the daily move with a relevant headline when one exists. Raw
   gainers and losers without context do not become the page's main hierarchy.
 - News and mover rows reuse the same visual grammar: a signed reaction badge,
-  clear company identity, and an inline headline or narrative. Use separated
-  inset rows with gaps instead of a table-like stack of divider lines.
+  clear company identity, and an inline headline or narrative. Their section
+  headers sit directly on the page canvas; each row is its own raised panel.
+  Never nest darker rows inside another panel. Separate rows with gaps instead
+  of divider lines.
 - Keep ranked news rows scannable. The company and headline are primary;
   category and time are supporting metadata, while summary paragraphs stay in
   the news detail view.
@@ -74,6 +76,9 @@ desktop density or abbreviated interaction model.
 - `Marknaden` and `Mina aktier` reuse the same information architecture. The
   watchlist is a relevance filter over news and movers, not a separate
   portfolio dashboard.
+- The latest morning letter is an editorial preview within the workspace, with
+  its real title and a short excerpt. Do not reduce it to a thin link strip or
+  let it replace the ranked news as the primary region.
 - `Marknadston` is a plain-language summary supported by visible breadth and
   news-reaction evidence. Do not expose an unexplained numeric sentiment score.
 - Use an asymmetric dashboard composition: one dominant analytical panel, one

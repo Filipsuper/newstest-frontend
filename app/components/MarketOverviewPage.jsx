@@ -11,6 +11,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { fetchLiveFeed, toggleWatchlist } from "../utils/api";
 import { tagColor, tagLabel } from "../utils/newsTags";
 import { storyToItem } from "../utils/storyToItem";
+import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
 
 const MOBILE_PANELS = [
     { id: "drivers", label: "Drivkrafter" },
@@ -83,6 +84,18 @@ const formatCompactPercent = (value) => `${value >= 0 ? "+" : ""}${Number(value)
 const formatPrice = (value) => finite(value) === null
     ? null
     : Number(value).toLocaleString("sv-SE", { maximumFractionDigits: 2 });
+
+const letterExcerpt = (article) => {
+    const firstBullet = article?.bulletPoints
+        ?.split("\n")
+        .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+        .find(Boolean);
+    const excerpt = stripSummaryMarkup(
+        article?.introText?.trim() || firstBullet || article?.summary || "",
+    );
+    if (excerpt.length <= 240) return excerpt;
+    return `${excerpt.slice(0, 237).trimEnd()}…`;
+};
 
 const benchmarkChange = (benchmark) => {
     const closes = (benchmark?.bars ?? []).map((bar) => finite(bar.close)).filter((value) => value !== null);
@@ -554,8 +567,12 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
         ? allMovers.filter((item) => watchlistSet.has(normalizedSymbol(item.symbol)))
         : allMovers;
 
-    const latestArticle = articles[0] ?? null;
-    const latestLetterHref = latestArticle?.isEveningLetter ? "/kvallsbrevet" : "/morgonbrevet";
+    const latestMorningArticle = articles.find((article) => !article?.isEveningLetter) ?? null;
+    const morningLetterHref = latestMorningArticle ? "/morgonbrevet" : "/nyhetsbrev";
+    const morningLetterExcerpt = letterExcerpt(latestMorningArticle);
+    const morningLetterDate = latestMorningArticle?.createdAt
+        ? formatMarketDate(latestMorningArticle.createdAt)
+        : null;
     const sessionDate = overview.sessionDate
         ?? benchmarks.flatMap((benchmark) => benchmark.bars ?? []).at(-1)?.date
         ?? null;
@@ -665,6 +682,35 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                     onOpen={openStory}
                     active={activePanel === "drivers"}
                 />
+
+                <aside className="market-digest__letter" aria-labelledby="market-letter-title">
+                    <div className="market-digest__letter-copy">
+                        <p className="market-digest__letter-kicker">
+                            <span>Morgonbrevet</span>
+                            {morningLetterDate && (
+                                <time dateTime={latestMorningArticle.createdAt}>
+                                    Senaste · {morningLetterDate}
+                                </time>
+                            )}
+                        </p>
+                        <Link className="market-digest__letter-preview" href={morningLetterHref}>
+                            <h2 id="market-letter-title">
+                                {latestMorningArticle?.title ?? "Morgonens viktigaste marknadshändelser"}
+                            </h2>
+                            <p>
+                                {morningLetterExcerpt
+                                    || "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen."}
+                            </p>
+                        </Link>
+                    </div>
+                    <nav aria-label="Morgonbrevet">
+                        <Link className="market-digest__letter-primary" href={morningLetterHref}>
+                            Läs morgonbrevet <FiArrowRight aria-hidden="true" />
+                        </Link>
+                        <Link href="/nyhetsbrev">Få det i mejlen</Link>
+                    </nav>
+                </aside>
+
                 <MoversPanel
                     items={shownMovers}
                     stories={view === "watchlist" ? personalNews : marketNews}
@@ -673,20 +719,6 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                     onOpen={openStory}
                 />
             </div>
-
-            <aside className="market-digest__letter">
-                <div>
-                    <span>Dagens sammanfattning</span>
-                    <Link href={latestArticle ? latestLetterHref : "/nyhetsbrev"}>
-                        {latestArticle?.title ?? "Morgon- och kvällsbrevet"}
-                        <FiArrowRight aria-hidden="true" />
-                    </Link>
-                </div>
-                <nav aria-label="Nyhetsbrev">
-                    <Link href={latestArticle ? latestLetterHref : "/nyhetsbrev"}>Läs brevet</Link>
-                    <Link href="/nyhetsbrev">Få det i mail</Link>
-                </nav>
-            </aside>
         </main>
     );
 }
