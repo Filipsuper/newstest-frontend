@@ -57,6 +57,9 @@ desktop density or abbreviated interaction model.
   session sparklines. If an exchange has not opened, label and preserve its
   latest completed session; historical index charts never occupy the primary
   workspace by default.
+- The top data row pairs a four-cell KPI block with the latest morning letter.
+  Arrange `Marknadston` and the three indices as a 2×2 grid; market breadth is
+  evidence inside `Marknadston`, never a duplicate standalone KPI.
 - The dominant panel ranks material stories by importance and measured market
   reaction. A chronological feed remains available as a secondary view.
 - Price language describes sequence, not automatic causality: use `sedan
@@ -88,9 +91,9 @@ desktop density or abbreviated interaction model.
   let it replace the ranked news as the primary region.
 - `Marknadston` is a plain-language summary supported by visible breadth and
   news-reaction evidence. Do not expose an unexplained numeric sentiment score.
-- Use an asymmetric dashboard composition: one dominant analytical panel, one
-  narrower companion panel, and a shallow supporting row. Avoid loose columns
-  of equally weighted cards.
+- Use an asymmetric dashboard composition: the compact KPI block and editorial
+  preview share the top row, followed by one dominant analytical panel and one
+  narrower companion panel. Avoid loose columns of equally weighted cards.
 - Desktop should fit the useful overview within one viewport, with internal
   scrolling in ranked news and mover panels when the candidate set is larger
   than the visible area. Do not truncate useful rows merely to avoid a panel

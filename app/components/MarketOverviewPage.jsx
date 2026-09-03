@@ -259,9 +259,6 @@ const marketTone = (breadth, news) => {
 function MarketPulse({ benchmarks, breadth, news, referenceTime }) {
     const tone = marketTone(breadth, news);
     const byId = new Map(benchmarks.map((benchmark) => [benchmark.id, benchmark]));
-    const total = finite(breadth.total) ?? 0;
-    const rising = finite(breadth.rising) ?? 0;
-    const falling = finite(breadth.falling) ?? 0;
 
     return (
         <section className="market-pulse" aria-label="Dagens marknadston">
@@ -291,11 +288,6 @@ function MarketPulse({ benchmarks, breadth, news, referenceTime }) {
                     </div>
                 );
             })}
-            <div className="market-pulse__item">
-                <span>Marknadsbredd</span>
-                <strong>{total ? `${rising} / ${falling}` : "Saknas"}</strong>
-                <small>stiger / faller</small>
-            </div>
         </section>
     );
 }
@@ -694,12 +686,42 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                 </div>
             </header>
 
-            <MarketPulse
-                benchmarks={benchmarks}
-                breadth={breadth}
-                news={toneNews}
-                referenceTime={overview.generatedAt ?? overview.dataAsOf ?? 0}
-            />
+            <section className="market-digest__summary" aria-label="Marknadsöversikt och morgonbrev">
+                <MarketPulse
+                    benchmarks={benchmarks}
+                    breadth={breadth}
+                    news={toneNews}
+                    referenceTime={overview.generatedAt ?? overview.dataAsOf ?? 0}
+                />
+
+                <aside className="market-digest__letter" aria-labelledby="market-letter-title">
+                    <div className="market-digest__letter-copy">
+                        <p className="market-digest__letter-kicker">
+                            <span>Morgonbrevet</span>
+                            {morningLetterDate && (
+                                <time dateTime={latestMorningArticle.createdAt}>
+                                    Senaste · {morningLetterDate}
+                                </time>
+                            )}
+                        </p>
+                        <Link className="market-digest__letter-preview" href={morningLetterHref}>
+                            <h2 id="market-letter-title">
+                                {latestMorningArticle?.title ?? "Morgonens viktigaste marknadshändelser"}
+                            </h2>
+                            <p>
+                                {morningLetterExcerpt
+                                    || "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen."}
+                            </p>
+                        </Link>
+                    </div>
+                    <nav aria-label="Morgonbrevet">
+                        <Link className="market-digest__letter-primary" href={morningLetterHref}>
+                            Läs morgonbrevet <FiArrowRight aria-hidden="true" />
+                        </Link>
+                        <Link href="/nyhetsbrev">Få det i mejlen</Link>
+                    </nav>
+                </aside>
+            </section>
 
             <nav className="market-digest__mobile-tabs" aria-label="Innehåll" role="tablist">
                 {MOBILE_PANELS.map((panel) => (
@@ -731,34 +753,6 @@ export default function MarketOverviewPage({ overview = {}, articles = [] }) {
                     onOpen={openStory}
                     active={activePanel === "drivers"}
                 />
-
-                <aside className="market-digest__letter" aria-labelledby="market-letter-title">
-                    <div className="market-digest__letter-copy">
-                        <p className="market-digest__letter-kicker">
-                            <span>Morgonbrevet</span>
-                            {morningLetterDate && (
-                                <time dateTime={latestMorningArticle.createdAt}>
-                                    Senaste · {morningLetterDate}
-                                </time>
-                            )}
-                        </p>
-                        <Link className="market-digest__letter-preview" href={morningLetterHref}>
-                            <h2 id="market-letter-title">
-                                {latestMorningArticle?.title ?? "Morgonens viktigaste marknadshändelser"}
-                            </h2>
-                            <p>
-                                {morningLetterExcerpt
-                                    || "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen."}
-                            </p>
-                        </Link>
-                    </div>
-                    <nav aria-label="Morgonbrevet">
-                        <Link className="market-digest__letter-primary" href={morningLetterHref}>
-                            Läs morgonbrevet <FiArrowRight aria-hidden="true" />
-                        </Link>
-                        <Link href="/nyhetsbrev">Få det i mejlen</Link>
-                    </nav>
-                </aside>
 
                 <MoversPanel
                     items={shownMovers}
