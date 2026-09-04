@@ -20,7 +20,9 @@ export async function fetchAllArticles() {
 // three reference indices, market breadth, five gainers/losers and selected headlines.
 export async function fetchMarketOverview() {
     const response = await fetch(`${API_URL}/feed/market-overview`, {
-        next: { revalidate: 30 },
+        ...(typeof window === "undefined"
+            ? { next: { revalidate: 30 } }
+            : { cache: "no-store" }),
     });
     const body = await response.json();
     if (!response.ok || body?.error) {

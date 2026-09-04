@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { FiArrowRight, FiClock } from "react-icons/fi";
 import NewsModal from "./NewsModal";
@@ -10,6 +10,7 @@ import { useModal } from "../providers/ModalProvider";
 import { tagColor, tagLabel } from "../utils/newsTags";
 import { storyToItem } from "../utils/storyToItem";
 import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
+import { fetchMarketOverview } from "../utils/api";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
 import {
     curateMarketNews,
@@ -24,6 +25,8 @@ const MOBILE_PANELS = [
     { id: "drivers", label: "Drivkrafter" },
     { id: "movers", label: "Reaktioner" },
 ];
+
+const MARKET_OVERVIEW_REFRESH_MS = 30_000;
 
 const INDEX_COPY = {
     omxspi: "OMXSPI",
@@ -428,10 +431,43 @@ function MoversPanel({ items, stories, active, onOpen }) {
 export default function MarketOverviewPage({ overview = {}, articles = [], referenceTime = null }) {
     const { openModal } = useModal();
     const [activePanel, setActivePanel] = useState("drivers");
+    const [currentOverview, setCurrentOverview] = useState(overview);
 
-    const benchmarks = overview.benchmarks ?? [];
-    const breadth = overview.breadth ?? {};
-    const rawNews = Array.isArray(overview.news) ? overview.news : overview.news?.items ?? [];
+    useEffect(() => {
+        let active = true;
+        let refreshing = false;
+
+        const refresh = async () => {
+            if (!active || refreshing || document.visibilityState === "hidden") return;
+            refreshing = true;
+            try {
+                const nextOverview = await fetchMarketOverview();
+                if (active && nextOverview) setCurrentOverview(nextOverview);
+            } catch {
+                // Keep the last good overview during a temporary feed failure.
+            } finally {
+                refreshing = false;
+            }
+        };
+
+        const interval = window.setInterval(refresh, MARKET_OVERVIEW_REFRESH_MS);
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") refresh();
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+
+        return () => {
+            active = false;
+            window.clearInterval(interval);
+            document.removeEventListener("visibilitychange", handleVisibility);
+        };
+    }, []);
+
+    const benchmarks = currentOverview.benchmarks ?? [];
+    const breadth = currentOverview.breadth ?? {};
+    const rawNews = Array.isArray(currentOverview.news)
+        ? currentOverview.news
+        : currentOverview.news?.items ?? [];
     const marketNews = useMemo(
         () => curateMarketNews(
             rawNews.filter((story) => story?.id && story?.headline).map(storyToItem),
@@ -440,19 +476,22 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
     );
 
     const moverStories = useMemo(() => {
-        const hasDedicatedMoverNews = Array.isArray(overview.moverNews);
-        const rawMoverNews = hasDedicatedMoverNews ? overview.moverNews : [];
+        const hasDedicatedMoverNews = Array.isArray(currentOverview.moverNews);
+        const rawMoverNews = hasDedicatedMoverNews ? currentOverview.moverNews : [];
         const mappedMoverNews = rawMoverNews
             .filter((story) => story?.id && story?.headline)
             .map(storyToItem);
         return rankNews(uniqueNews(hasDedicatedMoverNews ? mappedMoverNews : marketNews));
-    }, [overview.moverNews, marketNews]);
+    }, [currentOverview.moverNews, marketNews]);
 
     const allMovers = useMemo(() => {
         const bySymbol = new Map();
-        const candidates = Array.isArray(overview.movers?.items)
-            ? overview.movers.items
-            : [...(overview.movers?.gainers ?? []), ...(overview.movers?.losers ?? [])];
+        const candidates = Array.isArray(currentOverview.movers?.items)
+            ? currentOverview.movers.items
+            : [
+                ...(currentOverview.movers?.gainers ?? []),
+                ...(currentOverview.movers?.losers ?? []),
+            ];
         for (const item of candidates) {
             const symbol = normalizedSymbol(item.symbol);
             const change = finite(item.changePct);
@@ -466,8 +505,11 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
             return confidence
                 || Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0);
         });
-    }, [overview.movers]);
-    const marketReferenceTime = referenceTime ?? overview.generatedAt ?? overview.dataAsOf ?? null;
+    }, [currentOverview.movers]);
+    const marketReferenceTime = currentOverview.generatedAt
+        ?? referenceTime
+        ?? currentOverview.dataAsOf
+        ?? null;
     const latestMorningArticle = articles.find((article) => !article?.isEveningLetter) ?? null;
     const stockholmToday = stockholmDateKey(marketReferenceTime);
     const eveningReleasePassed = (stockholmMinutes(marketReferenceTime) ?? -1) >= (17 * 60) + 30;
@@ -486,7 +528,7 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
     const featuredLetterDate = featuredLetter?.createdAt
         ? formatMarketDate(featuredLetter.createdAt)
         : null;
-    const sessionDate = overview.sessionDate
+    const sessionDate = currentOverview.sessionDate
         ?? benchmarks.flatMap((benchmark) => benchmark.bars ?? []).at(-1)?.date
         ?? null;
     const currentSession = sessionDate === stockholmToday;
@@ -496,7 +538,7 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
     const sessionLabel = sessionDate
         ? currentSession ? "Idag" : formatMarketDate(sessionDate)
         : "Senaste data";
-    const asOf = formatTime(overview.dataAsOf);
+    const asOf = formatTime(currentOverview.dataAsOf);
 
     const openStory = (item) => openModal(<NewsModal item={item} />);
 
@@ -511,9 +553,9 @@ export default function MarketOverviewPage({ overview = {}, articles = [], refer
 
                 <div className="market-digest__toolbar-actions">
                     {asOf && (
-                        <span className={overview.verifiedRealtime ? "is-live" : ""}>
+                        <span className={currentOverview.verifiedRealtime ? "is-live" : ""}>
                             <FiClock aria-hidden="true" />
-                            {overview.verifiedRealtime ? `Live ${asOf}` : `Uppdaterad ${asOf}`}
+                            {currentOverview.verifiedRealtime ? `Live ${asOf}` : `Uppdaterad ${asOf}`}
                         </span>
                     )}
                     <Link href="/marknaden/nyheter">Hela nyhetsflödet <FiArrowRight aria-hidden="true" /></Link>
