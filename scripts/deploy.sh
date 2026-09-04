@@ -123,6 +123,14 @@ service_remote_dir() {
         *)      printf '%s/%s' "$REMOTE_DIR" "$1" ;;
     esac
 }
+# The stonks repository keeps its deployable Next.js app one level below the
+# checkout, while its compose file remains at the repository root.
+service_remote_build_dir() {
+    case "$1" in
+        stonks) printf '%s/web' "$STONKS_REMOTE_DIR" ;;
+        *)      service_remote_dir "$1" ;;
+    esac
+}
 # Where `docker compose` runs for this service.
 service_compose_dir() {
     case "$1" in
@@ -317,7 +325,7 @@ build_and_ship() {
 build_remote() {
     local target="$1" image remote_dir
     image="$(service_image "$target")"
-    remote_dir="$(service_remote_dir "$target")"
+    remote_dir="$(service_remote_build_dir "$target")"
 
     # Capped so a build can never take the machine down again: one core, bounded
     # memory, and a hard timeout. The classic builder is used because it is the
