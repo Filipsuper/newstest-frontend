@@ -11,6 +11,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import LogInModal from "../modals/logInModal";
 import StockSearch from "./StockSearch";
 import FloatingDock from "./FloatingDock";
+import PublicShell from "./PublicShell";
 
 const PRIMARY_LINKS = [
     { href: "/marknaden", label: "Marknaden" },
@@ -58,6 +59,11 @@ export default function SiteChrome({ children }) {
     }, [isTerminalPage, pathname]);
 
     const handleLogIn = () => openModal(<LogInModal redirectTo={pathname} />);
+
+    // The component workbench previews the next public foundation independently
+    // of the legacy shell. It is not a replacement for the landing page.
+    if (pathname === "/designsystem") return children;
+    if (!isTerminalPage) return <PublicShell>{children}</PublicShell>;
 
     return (
         <div className={`site-shell ${isMarketPage ? "site-shell--market" : ""}`}>

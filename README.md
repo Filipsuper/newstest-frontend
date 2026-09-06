@@ -5,6 +5,8 @@ Repository of the webapp for https://omxsum.com
 Next.js (App Router) frontend. Server-side rendered so shared links get proper
 previews: every article page gets its own `<title>`, meta description, OG/Twitter
 tags and a dynamically generated OG image (`/article/<slug>/opengraph-image`).
+Newswire events now have the same shareability at `/nyhet/<id>` and
+`/nyhet/<id>/opengraph-image`, with an intercepted in-app reader dialog.
 
 ## Development
 
@@ -34,6 +36,14 @@ also printed in the backend log. To test actual email delivery, set
 `DEV_SEND_EMAIL=1` and `RESEND_API_KEY` in the backend `.env`. Production
 continues to use Resend.
 
+## Verification
+
+Run `npm test` for unit tests and `npm run build` for a production build.
+`npm run test:ui` starts an isolated preview on port 3111 and a fictional API
+on 8100, runs browser/accessibility tests, and stops both services. It does not
+write to production accounts. See `docs/news-first-workspace.md` for production
+preview and backend test commands.
+
 ## Environment variables
 
 - `NEXT_PUBLIC_API_URL` — API base URL used by the browser. Baked into the
@@ -47,13 +57,16 @@ continues to use Resend.
 ## Public-site information architecture
 
 - `/` remains the editorial landing page for OMXsum and its daily letters.
-- `/marknaden` is the compact daily overview; `/marknaden/nyheter` is its
-  complete chronological news view.
+- `/marknaden` is the news-first daily workspace: selected important events,
+  compact market context, a briefing and watchlist preview, and latest news.
+  `/marknaden/nyheter` is its Plus/Pro chronological news view with URL filters.
+- `/nyhet/<id>` is the public, shareable event reader. Client navigation opens
+  a Base UI dialog; direct visits/reloads render a standalone reading page.
 - `/bevakning` is the signed-in reader's matched news feed, with companies,
   topics and keywords managed at `/bevakning/hantera`.
 - `/aktier` is the searchable company directory and `/aktier/screener` its
   discovery tool; `/aktie/<SYMBOL>` remains the canonical company page.
-- `/nyhetsbrev` is the combined home for Morgonbrevet and Kvällsbrevet. The two
+- `/nyhetsbrev` is the reading library for Morgonbrevet and Kvällsbrevet. The two
   existing letter routes remain available, and `/alla-nyhetsbrev` redirects to
   the new hub.
 - `/terminal` remains the separate, denser product for active monitoring.
@@ -61,8 +74,12 @@ continues to use Resend.
 The market overview reads the public, cached `/feed/market-overview` backend resource.
 That deliberately limited response keeps the upstream Market API key on the
 server while the full live news feed, movers tools and screener remain gated.
-The legacy `/data/graph` OMXS30 series is retained as a temporary index fallback
-when the aggregate endpoint is unavailable.
+The shared news-first data/UI contract and remaining source-dependent work are
+documented in `docs/news-first-workspace.md`; component/layout rules are in
+`UI.md` and `docs/design-system.md`. The corresponding backend change broadens
+the curated candidate pool, forwards archive cursors when provided upstream,
+and provides a bounded related-company-news preview. Deploy both repositories
+together; the full feed remains server-gated.
 
 ## SEO and indexing policy
 

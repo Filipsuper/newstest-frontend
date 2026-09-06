@@ -1,5 +1,7 @@
 import Script from "next/script";
 import "./app.css";
+import "@fontsource-variable/geist";
+import "./styles/tokens.css";
 import Providers from "./providers";
 import SiteChrome from "./components/SiteChrome";
 
@@ -42,13 +44,14 @@ try {
 } catch (e) {}
 `;
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children, story }) {
   return (
     <html lang="sv" suppressHydrationWarning>
       <body className="bg-background text-text">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Providers>
           <SiteChrome>{children}</SiteChrome>
+          {story}
         </Providers>
         <Script
           src="https://getmegadesk.com/embed.js"

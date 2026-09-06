@@ -2,13 +2,93 @@
 
 ## Identity
 
-**OMXsum is one Swedish-market data platform with two product surfaces.** News
-and the daily letters remain the acquisition and synthesis edge. The public
-site is the calmer company-research product for longer horizons; the terminal
-is the dense realtime workspace. Both consume the same source-attributed API.
+**OMXsum is one Swedish-market data platform with two product surfaces.** The
+public site is a news-led daily workspace: understand what happened, inspect
+the observed market reaction, and follow what matters to you. Company research
+adds depth after that first understanding. The terminal remains the dense
+realtime workspace for investigation and monitoring. Both consume the same
+source-attributed API; the public product is not a smaller copy of Terminal.
 
 The funnel: **free morning letter (lead magnet) → habit → personalization
 (paid) → power tools (paid)**.
+
+## News-first public workspace — September 2026
+
+Status: implemented locally, pending release verification and deployment. This
+section supersedes earlier public-navigation and dashboard-layout assumptions.
+Use `UI.md`, `docs/design-system.md`, and `docs/news-first-workspace.md` for the
+implementation contract. Do not interpret the historical “shipped” notes below
+as verification that a new feature has been deployed.
+
+### Implemented in this revision
+
+- [x] Four shared destinations: Marknaden, Bevakning, Aktier, Breven. Compact
+  public shell and Base UI stock search; an explicit search-in-news handoff.
+  Terminal remains separate and the landing page remains a landing page.
+- [x] `/marknaden`: compact index/breadth strip, 3–5 material events, a real
+  letter preview, personal matches, and chronological news on the overview.
+  Document scrolling replaces dashboard-height and nested-list constraints.
+- [x] Public readers see a labelled chronological **selection**; Plus/Pro see
+  the full live feed. Existing subscription/access boundaries are preserved.
+- [x] One event-row grammar and canonical `/nyhet/[id]` reader. Client links
+  open an accessible Base UI dialog; direct visits and refresh open a reading
+  page. Back/Forward, original sources, company follow and copy/native share.
+- [x] Per-story 1200×630 social images and Open Graph/Twitter metadata. Use
+  actual headlines, sources, available price curves and labelled reaction
+  periods. Missing data gets a text-led variant, never an invented graph.
+- [x] Shared feed with URL-backed search/category/reaction views, explicit new
+  version queue, pause/resume, connection status, and older-page controls when
+  the upstream API provides an opaque cursor. No fabricated archive cursors.
+- [x] Inline company following with plan-cap/error handling and visible saved
+  state. Topics/keywords are secondary management choices, not prerequisites
+  for seeing useful news. Following does not enable notification delivery.
+- [x] Bevakning refreshes with explicit new-story acceptance and a local,
+  account-scoped “Sedan sist” filter. This is a last-visit marker for the current
+  device, not cross-device read receipts or a claim that each story was read.
+- [x] `/nyhetsbrev` is a briefing library with morning/evening filters, older
+  editions, real previews and the existing opt-in subscription flow. Market
+  overview refreshes letter candidates and switches to today's evening edition
+  after 17:30 Stockholm only once that edition exists.
+- [x] Company overview surfaces recent news before the main chart controls;
+  Nyheter is the second company tab and the spider profile is secondary.
+  Aktier offers news-led discovery and contextual links into reactions/reports
+  and the existing screener.
+- [x] Backend overview candidate pool widened from 40 / importance ≥60 to
+  100 / importance ≥50. Routine insider items and administrative notices stay
+  out of the featured selection; ordinary announcements plus abnormal trading
+  alone no longer produce a “likely” mover classification.
+
+### Follow-up: evidence and coverage, not another dashboard
+
+- [ ] Verify archive cursor support against the deployed Market API. The
+  proxy now forwards real cursors and filters categories per returned page;
+  it does not manufacture complete history when the source offers none.
+- [ ] Store stable story IDs in letter blocks so each editorial claim can
+  link to the exact underlying event. Do not infer those IDs from company
+  mentions or pretend a keyword search is a source citation.
+- [ ] Expand and evaluate market/sector coverage: fewer duplicated issuer
+  notices, stronger market-wide reporting, source attribution for synthesis.
+  Never fill gaps with an unsupported “why the market moved” narrative.
+- [ ] Rank independent importance, observed reaction, and personal relevance
+  separately. Add measurement-time provenance from the source where absent.
+- [ ] Extend indirect industry connections with visible reasons and evidence.
+  Keep “related industry news” distinct from direct company announcements.
+- [ ] Explicit notification delivery preferences, channels, quiet hours and
+  alert deduplication. UI following is not proof that push/email/Telegram
+  delivery exists or is enabled.
+- [ ] Cross-device catch-up/read state if user testing supports it.
+- [ ] Validate with everyday readers: identify important events, interpret
+  reaction periods correctly, follow a company without visiting settings,
+  and return to a feed without losing position.
+
+Release includes frontend **and** `newsbackend` changes. No deployment, account
+upgrades, billing changes, or production backfills are part of this revision.
+
+Local verification: production build passed; 12 frontend and 13 backend unit
+tests passed; 21 Chromium browser tests passed against fictional data, including
+mobile/light/dark layouts, keyboard/focus/history, clipboard links, OG variants,
+access boundaries, and failed preference saves. These checks do not verify the
+production upstream archive or replace user testing and post-release checks.
 
 ## Shipped foundation (aug 2026)
 

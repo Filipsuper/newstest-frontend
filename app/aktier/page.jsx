@@ -1,5 +1,5 @@
 import StocksDirectoryPage from "../components/StocksDirectoryPage";
-import { fetchCompanyDirectory, fetchCompanyList } from "../utils/api";
+import { fetchCompanyDirectory, fetchCompanyList, fetchMarketOverview } from "../utils/api";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,9 @@ export const metadata = {
 };
 
 export default async function Page() {
-    const companies = await fetchCompanyDirectory() ?? await fetchCompanyList() ?? [];
-    return <StocksDirectoryPage companies={companies} />;
+    const [companies, overview] = await Promise.all([
+        fetchCompanyDirectory().then(async rows => rows ?? await fetchCompanyList() ?? []),
+        fetchMarketOverview().catch(() => null),
+    ]);
+    return <StocksDirectoryPage companies={companies} overview={overview} />;
 }

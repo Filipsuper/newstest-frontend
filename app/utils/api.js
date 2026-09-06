@@ -78,11 +78,13 @@ export async function addEmail(mail, website) {
     }
 }
 
-export async function fetchLiveFeed({ symbol, symbols, q, limit = 60 } = {}) {
+export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, limit = 60 } = {}) {
     const params = new URLSearchParams();
     if (symbol) params.set("symbol", symbol);
     if (symbols?.length) params.set("symbols", symbols.join(","));
     if (q) params.set("q", q);
+    if (cursor) params.set("cursor", cursor);
+    if (category && category !== "all") params.set("category", category);
     params.set("limit", limit);
     try {
         const res = await fetch(`${API_URL}/feed/news?${params}`, {
@@ -151,10 +153,21 @@ export async function fetchStockSpark(symbol) {
 export async function fetchStory(storyId) {
     const response = await fetch(
         `${API_URL}/feed/news/${encodeURIComponent(storyId)}`,
-        { next: { revalidate: 3600 } },
+        { next: { revalidate: 60 }, signal: AbortSignal.timeout(10_000) },
     );
-    if (!response.ok) throw new Error("Kunde inte hämta nyheten");
+    if (!response.ok) {
+        const error = new Error(response.status === 404 ? "Nyheten hittades inte" : "Kunde inte hämta nyheten");
+        error.status = response.status;
+        throw error;
+    }
     return response.json();
+}
+
+export async function fetchRelatedStories(storyId) {
+    const response = await fetch(`${API_URL}/feed/news/${encodeURIComponent(storyId)}/related`, { signal: AbortSignal.timeout(8_000) });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data.items) ? data.items : [];
 }
 
 // Valuation bands are Plus-only and move once a day, so the tab loads them on

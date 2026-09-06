@@ -1,48 +1,62 @@
 "use client";
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { signUp } from "../utils/api";
+import { Button } from "../components/ui/Button";
+import { TextField } from "../components/ui/TextField";
+import { Stack, Text } from "../components/ui/layout";
 
 export default function LogInModal({ redirectTo = "/" }) {
-    const [message, setMessage] = React.useState("")
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const formData = new FormData(e.target);
-        const email = formData.get("email");
-
-        if (!email) {
-            alert("Please enter an email address.");
-            return;
-        }
-
-        const response = await signUp(email, redirectTo)
-
-        if (response.error) {
-            setMessage(response.message || "Inloggningen kunde inte startas.")
-            return false
-        }
-
-        if (response.devLoginUrl) {
-            setMessage("Öppnar lokal inloggning…")
-            window.location.assign(response.devLoginUrl)
-            return
-        }
-
-        setMessage("Inloggningslänk har skickats till din mail!")
-        window.sa_event?.("user_signup")
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    setError("");
+    try {
+      const response = await signUp(email.trim(), redirectTo);
+      if (!response || response.error)
+        throw new Error(
+          response?.message || "Inloggningen kunde inte startas.",
+        );
+      if (response.devLoginUrl) {
+        window.location.assign(response.devLoginUrl);
+        return;
+      }
+      setMessage("En inloggningslänk har skickats till din e-post.");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setBusy(false);
     }
-
-    return (
-        <div className="login-modal flex flex-col items-center justify-center">
-            <form className="flex flex-col items-center space-y-4 mt-4 font-sans" onSubmit={handleSubmit}>
-                <label className="text-2xl text-text font-bold font-serif pr-2 flex mb-1 w-full text-center">Logga in med din email</label>
-                <span className="text-xs text-text-muted mb-4">Du får en inloggningslänk på mailen som du loggar in med</span>
-                <input type="email" name="email" placeholder="Skriv in din mail" className="login-modal__input border border-border px-4 py-2 w-full" />
-                <button type="submit" className="login-modal__submit primary-btn w-full px-4 py-2 text-sm md:text-sm hover:cursor-pointer">Skicka inloggningslänk</button>
-            </form>
-            <p className="text-xs text-text-muted mt-2 h-6">{message}</p>
-        </div>
-    );
+  }
+  return (
+    <Stack as="form" gap={4} onSubmit={submit}>
+      <Text size="sm" tone="secondary">
+        Logga in med en länk till din e-post. Inget lösenord behövs.
+      </Text>
+      <TextField
+        label="E-postadress"
+        type="email"
+        required
+        autoComplete="email"
+        value={email}
+        onValueChange={setEmail}
+        error={error}
+        placeholder="namn@exempel.se"
+      />
+      <Button type="submit" loading={busy}>
+        Skicka inloggningslänk
+      </Button>
+      {message && (
+        <Text size="sm" role="status">
+          {message}
+        </Text>
+      )}
+    </Stack>
+  );
 }

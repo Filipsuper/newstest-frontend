@@ -7,6 +7,7 @@ import { fetchCompanyProfiles } from "../utils/api";
 import { getCompanies } from "../utils/companies";
 import CompanyProfileRadar from "./CompanyProfileRadar";
 import { StockWorkspaceNav } from "./WorkspaceNav";
+import NewsDiscovery from "./NewsDiscovery";
 
 const PAGE_SIZE = 12;
 
@@ -137,7 +138,7 @@ function CompanyCard({ company, profile }) {
     );
 }
 
-export default function StocksDirectoryPage({ companies = [] }) {
+export default function StocksDirectoryPage({ companies = [], overview = null }) {
     const [rows, setRows] = useState(companies);
     const [query, setQuery] = useState("");
     const [segment, setSegment] = useState("all");
@@ -283,6 +284,8 @@ export default function StocksDirectoryPage({ companies = [] }) {
                     )}
                 </label>
             </header>
+
+            <NewsDiscovery overview={overview} />
 
             <section className="stock-catalog__controls" aria-label="Filtrera bolag">
                 <div className="stock-catalog__segments" role="group" aria-label="Välj marknadslista">

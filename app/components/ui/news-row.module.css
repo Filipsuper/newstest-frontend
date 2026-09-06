@@ -1,0 +1,41 @@
+.headline {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: 400 var(--ui-text-sm)/var(--ui-leading-body) var(--ui-font);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.headline strong {
+  font-weight: 600;
+}
+.headline:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--ui-space-3);
+  row-gap: var(--ui-space-1);
+  margin-top: var(--ui-space-2);
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-xs)/var(--ui-leading-body) var(--ui-font);
+}
+.metadata time {
+  font-variant-numeric: tabular-nums;
+}
+.metadata a {
+  color: var(--ui-text);
+  text-decoration: underline;
+  text-decoration-color: var(--ui-border);
+  text-underline-offset: 3px;
+}
+.metadata a:hover {
+  text-decoration-color: currentColor;
+}

@@ -609,7 +609,7 @@ export default function ScreenerPage() {
             {/* <header className="screener-heading">
                 <h1>Aktiescreener</h1>
             </header> */}
-            <PlusPaywall redirectTo="/aktier/screener">
+            <PlusPaywall redirectTo="/aktier/screener" title="Utforska aktier med Plus" description="Hitta bolag med screenerns urval och egna filter. Marknadsöversikten och bolagens nyheter är fortsatt öppna.">
                 <ScreenerTable />
             </PlusPaywall>
         </main>

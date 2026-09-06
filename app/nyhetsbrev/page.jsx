@@ -1,4 +1,4 @@
-import HomePage from "../components/HomePage";
+import LetterLibrary from "../components/LetterLibrary";
 import { fetchAllArticles } from "../utils/api";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +11,13 @@ export const metadata = {
 
 export default async function Page() {
     let articles = [];
+    let unavailable = false;
     try {
         const response = await fetchAllArticles();
         articles = Array.isArray(response) ? response : [];
     } catch {
         articles = [];
+        unavailable = true;
     }
-    return <HomePage articles={articles} />;
+    return <LetterLibrary articles={articles} unavailable={unavailable} />;
 }

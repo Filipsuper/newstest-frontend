@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavigationTabs } from "./ui/layout";
 
 const MARKET_LINKS = [
-    { href: "/marknaden", label: "Idag", exact: true },
+    { href: "/marknaden", label: "Överblick", exact: true },
     { href: "/marknaden/nyheter", label: "Nyhetsflöde" },
 ];
 
@@ -22,8 +23,13 @@ const active = (pathname, link) => link.exact
     ? pathname === link.href
     : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
-function WorkspaceNav({ links, label }) {
+function WorkspaceNav({ links, label, foundation = false }) {
     const pathname = usePathname();
+    if (foundation) {
+        return <NavigationTabs label={label}>
+            {links.map(link => <Link key={link.href} href={link.href} aria-current={active(pathname, link) ? "page" : undefined}>{link.label}</Link>)}
+        </NavigationTabs>;
+    }
     return (
         <nav className="workspace-nav" aria-label={label}>
             {links.map((link) => (
@@ -40,8 +46,8 @@ function WorkspaceNav({ links, label }) {
     );
 }
 
-export function MarketWorkspaceNav() {
-    return <WorkspaceNav links={MARKET_LINKS} label="Marknaden" />;
+export function MarketWorkspaceNav({ foundation = false }) {
+    return <WorkspaceNav links={MARKET_LINKS} label="Marknaden" foundation={foundation} />;
 }
 
 export function StockWorkspaceNav() {
@@ -49,5 +55,5 @@ export function StockWorkspaceNav() {
 }
 
 export function WatchWorkspaceNav() {
-    return <WorkspaceNav links={WATCH_LINKS} label="Bevakning" />;
+    return <WorkspaceNav links={WATCH_LINKS} label="Bevakning" foundation />;
 }

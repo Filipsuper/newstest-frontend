@@ -1,0 +1,301 @@
+.workspace {
+  min-height: 70vh;
+  padding-block: var(--ui-space-3) var(--ui-space-16);
+  font-family: var(--ui-font);
+  color: var(--ui-text);
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ui-space-4);
+  padding-block: var(--ui-space-8) var(--ui-space-6);
+}
+.heading h1 {
+  font-size: var(--ui-text-xl);
+}
+.between {
+  justify-content: space-between;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+  min-width: 0;
+  scroll-margin-top: 6rem;
+}
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+  flex-wrap: wrap;
+}
+.sectionHeader h2 {
+  font-size: var(--ui-text-lg);
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--ui-space-8);
+  align-items: start;
+  margin-top: var(--ui-space-8);
+}
+.mainColumn,
+.context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-8);
+  min-width: 0;
+}
+.marketGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  grid-template-areas: "featured context" "latest context";
+  gap: var(--ui-space-8);
+  margin-top: var(--ui-space-8);
+  align-items: start;
+}
+.featured {
+  grid-area: featured;
+}
+.marketGrid > .context {
+  grid-area: context;
+}
+.latest {
+  grid-area: latest;
+}
+.context {
+  gap: var(--ui-space-6);
+}
+.pulse {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.1fr);
+  gap: var(--ui-space-3);
+}
+.index {
+  background: var(--ui-inset);
+  border-radius: var(--ui-radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  min-width: 0;
+}
+.indexText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+}
+.index strong {
+  font-size: var(--ui-text-sm);
+  font-weight: 500;
+}
+.index small {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-text-xs);
+}
+.indexChart {
+  width: 72px;
+  height: 24px;
+}
+.letter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-6);
+  background: var(--ui-surface);
+  border-radius: var(--ui-radius-lg);
+  min-width: 0;
+}
+.letter h2 {
+  font-size: var(--ui-text-lg);
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+.letter p {
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-secondary);
+}
+.letter a {
+  text-decoration: none;
+}
+.letter a:hover h2 {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.letterMark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+  border-radius: var(--ui-radius-md);
+  font-size: var(--ui-text-lg);
+}
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-text);
+  font: 500 var(--ui-text-sm) / 1.5 var(--ui-font);
+  min-height: var(--ui-control-md);
+  text-decoration: none;
+}
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.workspace a:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 4px;
+  border-radius: var(--ui-radius-sm);
+}
+.notice {
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-inset);
+}
+.news {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+.watchRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+}
+.watchRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+}
+.watchRow a {
+  color: var(--ui-text);
+  font: 500 var(--ui-text-sm) / 1.5 var(--ui-font);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.watchRow a:hover {
+  text-decoration: underline;
+}
+.companyDiscovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+}
+.library {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-6);
+}
+.preferences {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ui-space-8);
+}
+.preferenceRows {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  padding: 0;
+  margin: 0;
+}
+.preferenceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-surface);
+  border-radius: var(--ui-radius-md);
+}
+.preferenceRow a {
+  color: var(--ui-text);
+  text-decoration: none;
+}
+.keywordForm {
+  display: flex;
+  align-items: end;
+  gap: var(--ui-space-2);
+}
+.keywordForm > div {
+  flex: 1;
+}
+.details summary {
+  min-height: var(--ui-control-md);
+  align-content: center;
+  cursor: pointer;
+  font-size: var(--ui-text-md);
+  font-weight: 500;
+}
+.details[open] summary {
+  margin-bottom: var(--ui-space-4);
+}
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: var(--ui-space-6);
+  }
+  .pulse {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .breadth {
+    grid-column: 1 / -1;
+    background: transparent;
+    padding-block: 0;
+  }
+}
+@media (max-width: 760px) {
+  .marketGrid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "featured" "context" "latest";
+    gap: var(--ui-space-6);
+  }
+  .grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ui-space-6);
+  }
+  .mainColumn,
+  .context {
+    width: 100%;
+  }
+  .library,
+  .preferences {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .index {
+    padding: var(--ui-space-3);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .indexChart {
+    display: none;
+  }
+  .breadth {
+    flex-direction: row;
+    padding-inline: 0;
+  }
+  .heading {
+    padding-block: var(--ui-space-6) var(--ui-space-4);
+  }
+}
+.companyIdentity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-3);
+  margin-bottom: var(--ui-space-3);
+}
+.companyIdentity h1 {
+  font-family: var(--ui-font);
+}

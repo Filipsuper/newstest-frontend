@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     Area,
     Bar,
@@ -23,7 +24,13 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { useModal } from "../providers/ModalProvider";
 import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
-import NewsModal from "./NewsModal";
+import NewsFeedItem from "./NewsFeedItem";
+import FollowCompanyButton from "./FollowCompanyButton";
+import { storyToItem } from "../utils/storyToItem";
+import { storyHref } from "../utils/newsroom";
+import { Heading, Stack } from "./ui/layout";
+import { Button } from "./ui/Button";
+import workspace from "./workspace.module.css";
 import { fetchCompanyIntraday, fetchCompanyProfiles, fetchInsiders, fetchShorts, fetchValuation, toggleWatchlist } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 import CompanyProfileRadar from "./CompanyProfileRadar";
@@ -32,12 +39,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TABS = [
     { id: "overview", label: "Översikt" },
+    { id: "news", label: "Nyheter & rapporter" },
     { id: "financials", label: "Finansiellt" },
     { id: "estimates", label: "Estimat" },
     { id: "valuation", label: "Värdering" },
     { id: "insiders", label: "Insyn & ägare" },
     { id: "shorts", label: "Blankning" },
-    { id: "news", label: "Nyheter & rapporter" },
     { id: "calendar", label: "Kalender" },
 ];
 
@@ -256,9 +263,9 @@ function selectMoveDrivers(news, bars) {
 }
 
 function MoveDrivers({ drivers, aiSummary }) {
-    const { openModal } = useModal();
+    const router = useRouter();
     const [lead] = drivers;
-    const openStory = (story) => openModal(<NewsModal story={story} />);
+    const openStory = (story) => router.push(storyHref(story.id), { scroll: false });
 
     // The generated summary replaces the single-story layout when the platform
     // has one for the current driver set. Title and text only — the numbers
@@ -496,7 +503,8 @@ function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, moveSummary }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, moveSummary, showNews = false }) {
+    const router = useRouter();
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
     );
@@ -716,29 +724,25 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         intradayMaximum + intradayPadding,
     ];
 
-    if (!dailyData.length) {
-        return <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p>;
-    }
-
     const changeTone = quote?.changePct == null ? "neutral" : quote.changePct >= 0 ? "positive" : "negative";
 
     return (
-        <section className="company-chart-section" aria-labelledby="price-heading">
-            <div className="flex flex-col company-chart-heading">
+        <section className="company-chart-section" aria-label={`Nyheter och kurs för ${companyName}`}>
+            <div className="flex flex-col company-chart-heading gap-6">
                 {/* <div>
                     <p className="company-eyebrow">Historisk utvecklin g</p>
                     <h2 id="price-heading">Hur har aktien utvecklats?</h2>
                 </div> */}
                 <header className="w-full company-header">
                     <div className="company-identity">
-                        <div className="company-symbol-row">
+                        <div className={workspace.companyIdentity}>
                             {/* <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span> */}
                             {/* {profile.market && <small>{profile.market}</small>} */}
                             {profile.segment && <small className="font-bold">{profile.segment.replaceAll("_", " ")}</small>}
                             <div className="text-text-muted">•</div>
-                            <h1 className="font-serif "> {profile.name ?? symbol}</h1>
+                            <Heading as="h1" size="section">{profile.name ?? symbol}</Heading>
                             {/* <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small> */}
-                            <WatchlistButton symbol={symbol} />
+                            <FollowCompanyButton symbol={symbol} name={profile.name} />
                         </div>
                         <div className="company-symbol-row" />
                         <div className="company-quote gap-4">
@@ -753,6 +757,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                     </div>
                     
                 </header>
+                {showNews && news?.length > 0 && <Stack gap={4} className={workspace.section}>
+                    <Heading size="subsection">Senaste nytt om {profile.name ?? symbol}</Heading>
+                    <NewsList news={news} compact />
+                    <Link className={workspace.textLink} href={`/aktie/${encodeURIComponent(symbol)}?tab=news`}>Alla bolagsnyheter →</Link>
+                </Stack>}
                 <div className="flex flex-row w-full justify-between">
                     <div className="company-range-row" aria-label="Välj tidsperiod">
                         {RANGES.map((option) => (
@@ -777,6 +786,8 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         {!isIntraday && (
                             <button
                                 className="company-control company-icon-control"
+                                aria-label="Jämför med OMXSPI"
+                                aria-pressed={compare}
                                 onClick={() => setCompare((value) => !value)}
                             >
                                 <FaScaleBalanced/>
@@ -806,7 +817,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 </div>
                  
             </div>
-            <div className={`company-chart-layout${drivers.length ? " company-chart-has-context" : ""}`}>
+            {!dailyData.length ? <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p> : <div className={`company-chart-layout${drivers.length ? " company-chart-has-context" : ""}`}>
             <div className="company-chart-main">
             <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="img" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -891,7 +902,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                     <EventMarker
                                         {...props}
                                         items={row.events}
-                                        onOpenStory={(story) => openModal(<NewsModal story={story} />)}
+                                        onOpenStory={(story) => router.push(storyHref(story.id), { scroll: false })}
                                     />
                                 )}
                             />
@@ -923,7 +934,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 {drivers.length > 0 && (
                     <MoveDrivers drivers={drivers} aiSummary={moveSummary} />
                 )}
-            </div>
+            </div>}
         </section>
     );
 }
@@ -976,27 +987,15 @@ function CalendarPreview({ calendar, onSelectTab }) {
     );
 }
 
-// The wire's own story opens in place. Every field the modal shows is already
-// in this payload, so reading the news never leaves the company page and never
-// costs another request; the original release stays one click away inside it.
+// Company news opens the shared URL-backed reader, preserving page context.
 function NewsList({ news, compact = false }) {
-    const { openModal } = useModal();
+    const [count, setCount] = useState(20);
     if (!news?.length) return <p className="company-empty">Inga bolagsspecifika nyheter finns ännu.</p>;
     return (
-        <div className="company-news-list">
-            {news.slice(0, compact ? 3 : 8).map((story) => (
-                <article key={story.id} className="company-news-item company-news-linked">
-                    <button type="button" onClick={() => openModal(<NewsModal story={story} />)}>
-                        <div className="company-news-meta">
-                            <time>{svDate(story.publishedAt, true)}</time>
-                            {(story.tags ?? []).slice(0, 2).map((tag) => <span key={tag}>{tagLabel(tag)}</span>)}
-                        </div>
-                        <h3>{story.headline}</h3>
-                        {!compact && story.summary && <p>{story.summary}</p>}
-                    </button>
-                </article>
-            ))}
-        </div>
+        <Stack gap={2}>
+            {news.slice(0, compact ? 3 : count).map(story => <NewsFeedItem key={story.id} item={storyToItem(story)} showSymbol={false} />)}
+            {!compact && news.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 20)}>Visa fler nyheter</Button>}
+        </Stack>
     );
 }
 
@@ -1076,7 +1075,8 @@ function OverviewTab({ data, mentions = [], onSelectTab, researchProfile }) {
                     <FinancialSnapshot highlights={summary.financialHighlights} onSelectTab={onSelectTab} />
                 </div>
                 <aside className="company-context-column">
-                    <section className="company-context-section company-profile-panel" aria-labelledby="company-profile-heading">
+                    <details className="company-context-section company-profile-panel">
+                        <summary className={workspace.textLink}>Bolagsprofil · sex perspektiv</summary>
                         <div className="company-profile-panel__heading">
                             <div>
                                 <p className="company-eyebrow">Bolagsprofil</p>
@@ -1094,18 +1094,8 @@ function OverviewTab({ data, mentions = [], onSelectTab, researchProfile }) {
                             <button type="button" onClick={() => onSelectTab("financials")}>Finansiellt</button>
                             <button type="button" onClick={() => onSelectTab("insiders")}>Insyn</button>
                         </div>
-                    </section>
+                    </details>
                     <CalendarPreview calendar={summary.calendar} onSelectTab={onSelectTab} />
-                    <section className="company-context-section" aria-labelledby="news-preview-heading">
-                        <div className="company-section-heading">
-                            <div>
-                                <p className="company-eyebrow">Senaste bolagsnytt</p>
-                                <h2 id="news-preview-heading">Vad har hänt?</h2>
-                            </div>
-                        </div>
-                        <NewsList news={news} compact />
-                        <button type="button" className="company-text-link" onClick={() => onSelectTab("news")}>Alla nyheter <FiChevronRight /></button>
-                    </section>
                     <MentionsList mentions={mentions} companyName={summary.profile.name ?? summary.symbol} />
                 </aside>
             </div>
@@ -2544,6 +2534,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
 
             {/* <Performance returns={summary.performance?.returns} /> */}
             <CompanyChart
+                showNews={tab === "overview"}
                 summary={summary}
                 symbol={symbol}
                 chart={initialData.chart}

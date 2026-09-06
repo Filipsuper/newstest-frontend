@@ -33,7 +33,7 @@ export default async function MarketPage() {
     : [];
   const overview = overviewResult.status === "fulfilled" && overviewResult.value
     ? { ...overviewResult.value }
-    : {};
+    : { unavailable: true };
   const referenceTime = new Date().toISOString();
   return (
     <MarketOverviewPage

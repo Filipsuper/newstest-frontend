@@ -1,239 +1,279 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FiArrowLeft, FiPlus, FiX } from "react-icons/fi";
-import { FaStar } from "react-icons/fa6";
+import { FiPlus, FiX } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { useModal } from "../providers/ModalProvider";
-import LogInModal from "../modals/logInModal";
-import { fetchTopics, saveKeywords, saveTopics, toggleWatchlist } from "../utils/api";
+import { fetchTopics, saveKeywords, saveTopics } from "../utils/api";
 import { getCompanies } from "../utils/companies";
 import { TOPIC_LABELS } from "../utils/topicLabels";
 import StockSearch from "./StockSearch";
+import FollowCompanyButton from "./FollowCompanyButton";
 import { WatchWorkspaceNav } from "./WorkspaceNav";
-
-const WATCHLIST_CAPS = { free: 5, plus: 10, premium: 100 };
-const TOPICS_CAP = 10;
-const KEYWORDS_CAP = 10;
+import { Button, IconButton } from "./ui/Button";
+import { TextField } from "./ui/TextField";
+import { Checkbox } from "./ui/Choices";
+import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
+import { EmptyState, Skeleton } from "./ui/data";
+import styles from "./workspace.module.css";
 
 export default function WatchlistPage() {
-    const { user, isGuestUser, refreshUser } = useAuthContext();
-    const { openModal } = useModal();
-    const [companies, setCompanies] = useState([]);
-    const [vocabulary, setVocabulary] = useState(null);
-    const [busySymbol, setBusySymbol] = useState(null);
-    const [topicsBusy, setTopicsBusy] = useState(false);
-    const [keywordsBusy, setKeywordsBusy] = useState(false);
-    const [keywordInput, setKeywordInput] = useState("");
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        getCompanies().then(setCompanies);
-        fetchTopics().then(setVocabulary).catch(() => setVocabulary(null));
-    }, []);
-
-    const companyBySymbol = useMemo(
-        () => new Map(companies.map((row) => [row.symbol, row])),
-        [companies],
-    );
-
-    if (!user) return null;
-
-    if (isGuestUser) {
-        return (
-            <main className="watch-workspace watch-manage">
-                <WatchWorkspaceNav />
-                <section className="watch-empty">
-                    <FaStar aria-hidden="true" />
-                    <h1>Hantera bevakning</h1>
-                    <p>Logga in för att välja bolag, ämnen och nyckelord.</p>
-                    <button type="button" className="primary-btn" onClick={() => openModal(<LogInModal redirectTo="/bevakning/hantera" />)}>Logga in</button>
-                </section>
-            </main>
-        );
+  const { user, isGuestUser, refreshUser } = useAuthContext();
+  const [companies, setCompanies] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [vocabulary, setVocabulary] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let active = true;
+    getCompanies().then((rows) => {
+      if (active) setCompanies(rows);
+    });
+    fetchTopics()
+      .then((value) => {
+        if (active) setVocabulary(value);
+      })
+      .catch(() => {
+        if (active) setVocabulary(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
+  const watchlist = user?.watchlist ?? [],
+    topics = user?.topics ?? [],
+    keywords = user?.keywords ?? [];
+  async function update(kind, values) {
+    if (busy) return false;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await (kind === "topics"
+        ? saveTopics(values)
+        : saveKeywords(values));
+      if (!response || response.error)
+        throw new Error(response?.error || "Dina val kunde inte sparas.");
+      await refreshUser();
+      return true;
+    } catch (error) {
+      setError(error.message);
+      return false;
+    } finally {
+      setBusy(false);
     }
-
-    const watchlist = user.watchlist ?? [];
-    const topics = user.topics ?? [];
-    const keywords = user.keywords ?? [];
-
-    const updateWatchlist = async (symbol) => {
-        if (busySymbol) return;
-        setBusySymbol(symbol);
-        setError("");
-        try {
-            const response = await toggleWatchlist(symbol);
-            if (response?.error) setError(response.error);
-            else await refreshUser();
-        } catch {
-            setError("Bevakningen kunde inte uppdateras.");
-        } finally {
-            setBusySymbol(null);
-        }
-    };
-
-    const addCompany = async (row) => {
-        if (watchlist.includes(row.symbol)) {
-            setError(`${row.name} bevakas redan.`);
-            return;
-        }
-        await updateWatchlist(row.symbol);
-    };
-
-    const toggleTopic = async (topic) => {
-        if (topicsBusy) return;
-        const next = topics.includes(topic)
-            ? topics.filter((item) => item !== topic)
-            : [...topics, topic];
-        if (next.length > TOPICS_CAP) {
-            setError(`Du kan följa högst ${TOPICS_CAP} ämnen.`);
-            return;
-        }
-        setTopicsBusy(true);
-        setError("");
-        try {
-            const response = await saveTopics(next);
-            if (response?.error) setError(response.error);
-            else await refreshUser();
-        } catch {
-            setError("Ämnena kunde inte uppdateras.");
-        } finally {
-            setTopicsBusy(false);
-        }
-    };
-
-    const updateKeywords = async (next) => {
-        setKeywordsBusy(true);
-        setError("");
-        try {
-            const response = await saveKeywords(next);
-            if (response?.error) setError(response.error);
-            else await refreshUser();
-        } catch {
-            setError("Nyckelorden kunde inte uppdateras.");
-        } finally {
-            setKeywordsBusy(false);
-        }
-    };
-
-    const addKeyword = async (event) => {
-        event.preventDefault();
-        const keyword = keywordInput.replace(/\s+/g, " ").trim();
-        if (keyword.length < 2) {
-            setError("Skriv minst två tecken.");
-            return;
-        }
-        if (keywords.some((item) => item.toLocaleLowerCase("sv-SE") === keyword.toLocaleLowerCase("sv-SE"))) {
-            setError(`Du följer redan “${keyword}”.`);
-            return;
-        }
-        if (keywords.length >= KEYWORDS_CAP) {
-            setError(`Du kan följa högst ${KEYWORDS_CAP} nyckelord.`);
-            return;
-        }
-        await updateKeywords([...keywords, keyword]);
-        setKeywordInput("");
-    };
-
-    const topicGroup = (title, items) => Array.isArray(items) && items.length > 0 && (
-        <div className="watch-topic-group">
-            <h3>{title}</h3>
-            <div>
-                {items.map((topic) => (
-                    <button
-                        type="button"
-                        key={topic}
-                        className={topics.includes(topic) ? "is-active" : ""}
-                        disabled={topicsBusy}
-                        onClick={() => toggleTopic(topic)}
-                    >
-                        {TOPIC_LABELS[topic] ?? topic}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-
-    return (
-        <main className="watch-workspace watch-manage">
-            <WatchWorkspaceNav />
-            <header className="watch-heading">
-                <div>
-                    <h1>Hantera bevakning</h1>
-                    <span>Välj vad som ska forma ditt personliga nyhetsflöde</span>
-                </div>
-                <Link href="/bevakning"><FiArrowLeft aria-hidden="true" /> Till flödet</Link>
-            </header>
-
-            {error && <p className="watch-error market-negative" role="alert">{error}</p>}
-
-            <div className="watch-preferences-grid">
-                <section className="watch-preference-section watch-preference-section--companies">
-                    <header>
-                        <div><span>1</span><h2>Bolag</h2></div>
-                        <small>{user.plan === "premium" ? `${watchlist.length}` : `${watchlist.length}/${WATCHLIST_CAPS[user.plan] ?? WATCHLIST_CAPS.free}`}</small>
-                    </header>
-                    <StockSearch placeholder="Sök bolag att bevaka" onSelect={addCompany} showSuggestions />
-                    {watchlist.length ? (
-                        <div className="watch-company-list">
-                            {watchlist.map((symbol) => {
-                                const company = companyBySymbol.get(symbol);
-                                return (
-                                    <div key={symbol}>
-                                        <Link href={`/aktie/${encodeURIComponent(symbol)}`}>
-                                            <strong>{company?.name ?? symbol}</strong>
-                                            <span>{company?.nativeSymbol ?? symbol.replace(".ST", "")}</span>
-                                        </Link>
-                                        <button type="button" onClick={() => updateWatchlist(symbol)} disabled={busySymbol === symbol} aria-label={`Sluta bevaka ${company?.name ?? symbol}`}>
-                                            <FaStar aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : <p className="watch-preference-empty">Inga bolag valda ännu.</p>}
-                </section>
-
-                <section className="watch-preference-section">
-                    <header>
-                        <div><span>2</span><h2>Ämnen</h2></div>
-                        <small>{topics.length}/{TOPICS_CAP}</small>
-                    </header>
-                    <div className="watch-topic-groups">
-                        {topicGroup("Händelser", vocabulary?.events)}
-                        {topicGroup("Sektorer", vocabulary?.sectors)}
-                        {topicGroup("Börslistor", vocabulary?.segments)}
-                    </div>
-                </section>
-
-                <section className="watch-preference-section watch-preference-section--keywords">
-                    <header>
-                        <div><span>3</span><h2>Nyckelord</h2></div>
-                        <small>{keywords.length}/{KEYWORDS_CAP}</small>
-                    </header>
-                    <form className="watch-keyword-form" onSubmit={addKeyword}>
-                        <input
-                            value={keywordInput}
-                            onChange={(event) => setKeywordInput(event.target.value)}
-                            maxLength={40}
-                            placeholder="Exempel: försvar eller vinstvarning"
-                            aria-label="Nytt nyckelord"
-                        />
-                        <button type="submit" disabled={keywordsBusy || !keywordInput.trim()}><FiPlus aria-hidden="true" /> Lägg till</button>
-                    </form>
-                    {keywords.length ? (
-                        <div className="watch-keywords">
-                            {keywords.map((keyword) => (
-                                <span key={keyword}>
-                                    {keyword}
-                                    <button type="button" onClick={() => updateKeywords(keywords.filter((item) => item !== keyword))} disabled={keywordsBusy} aria-label={`Ta bort nyckelordet ${keyword}`}><FiX aria-hidden="true" /></button>
-                                </span>
+  }
+  async function addKeyword(event) {
+    event.preventDefault();
+    const value = keyword.replace(/\s+/g, " ").trim();
+    if (value.length < 2 || value.length > 40) {
+      setError("Skriv mellan 2 och 40 tecken.");
+      return;
+    }
+    if (
+      keywords.some(
+        (item) =>
+          item.toLocaleLowerCase("sv-SE") === value.toLocaleLowerCase("sv-SE"),
+      )
+    ) {
+      setError("Du följer redan det nyckelordet.");
+      return;
+    }
+    if (keywords.length >= 10) {
+      setError("Du kan följa högst 10 nyckelord.");
+      return;
+    }
+    if (await update("keywords", [...keywords, value])) setKeyword("");
+  }
+  return (
+    <Container as="main" className={styles.workspace}>
+      <WatchWorkspaceNav />
+      <header className={styles.heading}>
+        <Heading as="h1" size="page">
+          Hantera bevakning
+        </Heading>
+        <Link className={styles.textLink} href="/bevakning">
+          Till ditt flöde →
+        </Link>
+      </header>
+      {!user ? (
+        <Skeleton />
+      ) : isGuestUser ? (
+        <EmptyState
+          title="Börja med ett bolag"
+          description="Logga in för att spara dina bolag, ämnen och nyckelord."
+          action={
+            <Button nativeButton={false} render={<Link href="/bevakning" />}>
+              Skapa din bevakning
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {error && (
+            <Text role="alert" size="sm">
+              {error}
+            </Text>
+          )}
+          <div className={styles.preferences}>
+            <section className={styles.section}>
+              <Inline className={styles.between}>
+                <Heading size="subsection">Bolag</Heading>
+                <Text size="xs" tone="secondary">
+                  {watchlist.length}/
+                  {{ free: 5, plus: 10, premium: 100 }[user.plan] ?? 5} valda
+                </Text>
+              </Inline>
+              <StockSearch
+                placeholder="Sök ett bolag att följa"
+                onSelect={setSelected}
+                showSuggestions
+              />
+              {selected && !watchlist.includes(selected.symbol) && (
+                <Inline className={styles.notice}>
+                  <Text size="sm">{selected.name}</Text>
+                  <FollowCompanyButton
+                    symbol={selected.symbol}
+                    name={selected.name}
+                  />
+                </Inline>
+              )}
+              <ul className={styles.preferenceRows}>
+                {watchlist.map((symbol) => {
+                  const company = companies.find(
+                    (row) => row.symbol === symbol,
+                  );
+                  return (
+                    <li className={styles.preferenceRow} key={symbol}>
+                      <Link href={`/aktie/${encodeURIComponent(symbol)}`}>
+                        {company?.name || symbol}
+                      </Link>
+                      <FollowCompanyButton
+                        symbol={symbol}
+                        name={company?.name}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+              {!watchlist.length && (
+                <Text size="sm" tone="secondary">
+                  Inga bolag valda ännu.
+                </Text>
+              )}
+            </section>
+            <Stack gap={8}>
+              <details
+                className={styles.details}
+                open={topics.length > 0 || undefined}
+              >
+                <summary>Ämnen · {topics.length}/10</summary>
+                <Stack gap={4}>
+                  {vocabulary ? (
+                    [
+                      ["Händelser", vocabulary.events],
+                      ["Sektorer", vocabulary.sectors],
+                      ["Börslistor", vocabulary.segments],
+                    ].map(
+                      ([title, values]) =>
+                        values?.length > 0 && (
+                          <Stack gap={2} key={title}>
+                            <Heading as="h3" size="subsection">
+                              {title}
+                            </Heading>
+                            {values.map((value) => (
+                              <Checkbox
+                                key={value}
+                                label={TOPIC_LABELS[value] || value}
+                                checked={topics.includes(value)}
+                                disabled={
+                                  busy ||
+                                  (!topics.includes(value) &&
+                                    topics.length >= 10)
+                                }
+                                onCheckedChange={(checked) =>
+                                  update(
+                                    "topics",
+                                    checked
+                                      ? [...topics, value]
+                                      : topics.filter((item) => item !== value),
+                                  )
+                                }
+                              />
                             ))}
-                        </div>
-                    ) : <p className="watch-preference-empty">Nyckelord matchas mot rubrik och sammanfattning.</p>}
-                </section>
-            </div>
-        </main>
-    );
+                          </Stack>
+                        ),
+                    )
+                  ) : (
+                    <>
+                      <Text size="sm">Ämnen kunde inte hämtas.</Text>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setRetry((value) => value + 1)}
+                      >
+                        Försök igen
+                      </Button>
+                    </>
+                  )}
+                </Stack>
+              </details>
+              <details
+                className={styles.details}
+                open={keywords.length > 0 || undefined}
+              >
+                <summary>Nyckelord · {keywords.length}/10</summary>
+                <Stack gap={4}>
+                  <Text size="sm" tone="secondary">
+                    Matchas mot rubrik och sammanfattning. Välj till exempel
+                    försvar eller vinstvarning.
+                  </Text>
+                  <form className={styles.keywordForm} onSubmit={addKeyword}>
+                    <TextField
+                      label="Nytt nyckelord"
+                      value={keyword}
+                      onValueChange={setKeyword}
+                      maxLength={40}
+                    />
+                    <IconButton
+                      label="Lägg till nyckelord"
+                      type="submit"
+                      loading={busy}
+                    >
+                      <FiPlus aria-hidden="true" />
+                    </IconButton>
+                  </form>
+                  <Inline>
+                    {keywords.map((value) => (
+                      <Inline className={styles.notice} key={value}>
+                        <Text as="span" size="sm">
+                          {value}
+                        </Text>
+                        <IconButton
+                          size="sm"
+                          label={`Ta bort nyckelordet ${value}`}
+                          disabled={busy}
+                          onClick={() =>
+                            update(
+                              "keywords",
+                              keywords.filter((item) => item !== value),
+                            )
+                          }
+                        >
+                          <FiX aria-hidden="true" />
+                        </IconButton>
+                      </Inline>
+                    ))}
+                  </Inline>
+                </Stack>
+              </details>
+              <Text size="sm" tone="secondary">
+                De här valen formar ditt nyhetsflöde. Inga aviseringar aktiveras
+                när du följer ett bolag, ämne eller nyckelord.
+              </Text>
+            </Stack>
+          </div>
+        </>
+      )}
+    </Container>
+  );
 }

@@ -1,148 +1,283 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { FiArrowRight, FiSettings, FiStar } from "react-icons/fi";
+import { FiArrowRight, FiPlus } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { useModal } from "../providers/ModalProvider";
-import LogInModal from "../modals/logInModal";
-import { fetchPersonalFeed } from "../utils/api";
-import { TOPIC_LABELS } from "../utils/topicLabels";
+import { fetchPersonalFeed, toggleWatchlist } from "../utils/api";
+import {
+  personalStoryToItem,
+  preferenceReason,
+  pendingChanges,
+  mergeFeed,
+} from "../utils/newsroom";
 import { WatchWorkspaceNav } from "./WorkspaceNav";
 import NewsFeedItem from "./NewsFeedItem";
-
-const reasonFor = (story) => {
-    if (story.matchedKeyword) return `Nyckelord: ${story.matchedKeyword}`;
-    if (story.viaWatchlist) return "Bolag du bevakar";
-    if (story.viaIndustry) {
-        return `Din bransch${story.industry ? `: ${TOPIC_LABELS[story.industry] ?? story.industry}` : ""}`;
-    }
-    if (story.matchedTopic) return `Ämne: ${TOPIC_LABELS[story.matchedTopic] ?? story.matchedTopic}`;
-    return "Ämne du följer";
-};
+import StockSearch from "./StockSearch";
+import LogInModal from "../modals/logInModal";
+import { Button } from "./ui/Button";
+import { Dialog } from "./ui/overlays";
+import { SegmentedControl } from "./ui/SegmentedControl";
+import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
+import { EmptyState, Skeleton } from "./ui/data";
+import styles from "./workspace.module.css";
 
 export default function WatchFeedPage() {
-    const { user, isGuestUser } = useAuthContext();
-    const { openModal } = useModal();
-    const [preview, setPreview] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState("all");
-
-    const watchlist = user?.watchlist ?? [];
-    const topics = user?.topics ?? [];
-    const keywords = user?.keywords ?? [];
-    const preferenceKey = [...watchlist, ...topics, ...keywords].join("|");
-
-    useEffect(() => {
-        if (!user || isGuestUser || !preferenceKey) {
-            setPreview(null);
-            setLoading(false);
-            return undefined;
-        }
-        let active = true;
-        setLoading(true);
-        fetchPersonalFeed({ limit: 40 }).then((data) => {
-            if (active) setPreview(data);
-        }).finally(() => {
-            if (active) setLoading(false);
-        });
-        return () => { active = false; };
-    }, [user?.email, isGuestUser, preferenceKey]);
-
-    const stories = useMemo(() => (preview?.stories ?? []).filter((story) => {
-        if (filter === "companies") return story.viaWatchlist;
-        if (filter === "keywords") return Boolean(story.matchedKeyword);
-        if (filter === "topics") return !story.viaWatchlist && !story.matchedKeyword;
-        return true;
-    }), [preview, filter]);
-
-    const newsItems = useMemo(() => stories.map((story) => ({
-        id: story.id,
-        ts: Date.parse(story.publishedAt),
-        title: story.headline,
-        summary: story.summary,
-        company: story.company,
-        symbol: story.symbol,
-        companies: story.symbol ? [{ symbol: story.symbol, name: story.company }] : [],
-        labels: story.tags ?? [],
-        importance: story.importance,
-        reaction: story.reaction ?? (story.reactionPct == null ? null : { pct: story.reactionPct }),
-        source: story.primarySource?.name ?? story.sources?.[0]?.name ?? null,
-        url: story.primarySource?.url ?? story.sources?.[0]?.url ?? null,
-        sourceCount: story.sources?.length ?? 0,
-        reason: reasonFor(story),
-    })), [stories]);
-
-    if (!user) return null;
-
-    return (
-        <main className="watch-workspace">
-            <WatchWorkspaceNav />
-            <header className="watch-heading">
-                <div>
-                    <h1>Bevakning</h1>
-                    {!isGuestUser && (
-                        <span>{watchlist.length} bolag · {topics.length} ämnen · {keywords.length} nyckelord</span>
-                    )}
+  const { user, isGuestUser, refreshUser } = useAuthContext();
+  const [items, setItems] = useState(null);
+  const [pending, setPending] = useState([]);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [login, setLogin] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [lastVisit, setLastVisit] = useState(null);
+  const [paused, setPaused] = useState(false);
+  const rows = useRef(null);
+  const key = JSON.stringify([
+    user?.email,
+    user?.watchlist,
+    user?.topics,
+    user?.keywords,
+  ]);
+  const hasPreferences = Boolean(
+    user?.watchlist?.length || user?.topics?.length || user?.keywords?.length,
+  );
+  useEffect(() => {
+    if (!user?.email) return;
+    // Local, account-scoped catch-up marker, not a claim of per-story read receipts.
+    const storageKey = `omxsum:watch-visited:${user.email}`;
+    try {
+      const last = Number(localStorage.getItem(storageKey));
+      setLastVisit(last > 0 && last <= Date.now() ? last : null);
+      localStorage.setItem(storageKey, String(Date.now()));
+    } catch {
+      setLastVisit(null);
+    }
+  }, [user?.email]);
+  useEffect(() => {
+    if (paused) return;
+    let active = true,
+      busy = false;
+    rows.current = null;
+    setItems(null);
+    setPending([]);
+    setError("");
+    if (!user || isGuestUser || !hasPreferences) return;
+    async function refresh() {
+      if (!active || busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        const data = await fetchPersonalFeed({ limit: 50 });
+        if (!active) return;
+        if (!data || data.unavailable || !Array.isArray(data.stories))
+          throw new Error(
+            "Bevakningsflödet kunde inte hämtas. Dina val är fortfarande sparade.",
+          );
+        const incoming = data.stories.map((story) => ({
+          ...personalStoryToItem(story),
+          reason: preferenceReason(story),
+          match: story.viaWatchlist
+            ? "companies"
+            : story.matchedKeyword
+              ? "keywords"
+              : "topics",
+        }));
+        if (rows.current === null) {
+          rows.current = incoming;
+          setItems(incoming);
+        } else setPending(pendingChanges(rows.current, incoming));
+        setError("");
+      } catch (error) {
+        if (active) setError(error.message);
+      } finally {
+        busy = false;
+      }
+    }
+    refresh();
+    const timer = setInterval(refresh, 60_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [key, hasPreferences, isGuestUser, retry, paused]);
+  const shown = useMemo(
+    () =>
+      (items ?? []).filter((item) =>
+        filter === "all" || filter === "new"
+          ? filter !== "new" || (lastVisit && item.ts > lastVisit)
+          : item.match === filter,
+      ),
+    [items, filter, lastVisit],
+  );
+  async function follow(company) {
+    if (!user || isGuestUser) {
+      setLogin(true);
+      return;
+    }
+    if (busy || user.watchlist?.includes(company.symbol)) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await toggleWatchlist(company.symbol);
+      if (!result || result.error)
+        throw new Error(result?.error || "Kunde inte spara bolaget.");
+      await refreshUser();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Container as="main" className={styles.workspace}>
+      <WatchWorkspaceNav />
+      <header className={styles.heading}>
+        <Stack gap={2}>
+          <Heading as="h1" size="page">
+            Dina bevakningar
+          </Heading>
+          <Text size="sm" tone="secondary">
+            Nyheterna som berör det du följer.
+          </Text>
+        </Stack>
+        <Button
+          variant="secondary"
+          nativeButton={false}
+          render={<Link href="/bevakning/hantera" />}
+        >
+          <FiPlus aria-hidden="true" /> Lägg till bevakning
+        </Button>
+      </header>
+      <div className={styles.grid}>
+        <section className={styles.section}>
+          {error && (
+            <EmptyState
+              role="alert"
+              title={error}
+              action={
+                <Button
+                  variant="secondary"
+                  onClick={() => setRetry((value) => value + 1)}
+                >
+                  Försök igen
+                </Button>
+              }
+            />
+          )}
+          {!user ? (
+            <Skeleton />
+          ) : isGuestUser || !hasPreferences ? (
+            <Stack gap={4}>
+              <Heading size="subsection">Börja med ett bolag</Heading>
+              <Text size="sm" tone="secondary">
+                Välj ett bolag för att samla dess nyheter här. Du väljer själv
+                om du senare vill ha aviseringar.
+              </Text>
+              <StockSearch
+                placeholder="Sök ett bolag att följa"
+                onSelect={follow}
+                showSuggestions
+              />
+              <Text size="xs" tone="secondary">
+                {busy
+                  ? "Sparar bevakningen…"
+                  : "Du kan även följa ett bolag direkt från en nyhet."}
+              </Text>
+            </Stack>
+          ) : (
+            <>
+              <SegmentedControl
+                label="Filtrera bevakning"
+                value={filter}
+                onValueChange={setFilter}
+                options={[
+                  { value: "all", label: "Alla" },
+                  ...(lastVisit ? [{ value: "new", label: "Sedan sist" }] : []),
+                  { value: "companies", label: "Bolag" },
+                  { value: "topics", label: "Ämnen" },
+                  { value: "keywords", label: "Nyckelord" },
+                ]}
+              />
+              <Inline className={styles.between}>
+                <Text size="xs" tone="secondary">
+                  Matchningar från de senaste 48 timmarna
+                  {filter === "new"
+                    ? " · sedan ditt senaste besök på den här enheten"
+                    : ""}
+                </Text>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPaused((value) => !value)}
+                >
+                  {paused ? "Återuppta" : "Pausa uppdateringar"}
+                </Button>
+              </Inline>
+              {pending.length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const merged = mergeFeed(items ?? [], pending);
+                    rows.current = merged;
+                    setItems(merged);
+                    setPending([]);
+                  }}
+                >
+                  {pending.length} nya eller uppdaterade nyheter
+                </Button>
+              )}
+              {!items && !error ? (
+                <Stack gap={2}>
+                  {[0, 1, 2].map((key) => (
+                    <Skeleton key={key} />
+                  ))}
+                </Stack>
+              ) : shown.length ? (
+                <div className={styles.news}>
+                  {shown.map((item) => (
+                    <NewsFeedItem
+                      key={item.id}
+                      item={item}
+                      reason={item.reason}
+                    />
+                  ))}
                 </div>
-                {!isGuestUser && (
-                    <Link href="/bevakning/hantera"><FiSettings aria-hidden="true" /> Hantera</Link>
-                )}
-            </header>
-
-            {isGuestUser ? (
-                <section className="watch-empty">
-                    <FiStar aria-hidden="true" />
-                    <h2>Följ det som är viktigt för dig</h2>
-                    <p>Samla nyheter om dina bolag, ämnen och nyckelord i ett eget flöde.</p>
-                    <button type="button" className="primary-btn" onClick={() => openModal(<LogInModal redirectTo="/bevakning" />)}>Logga in</button>
-                </section>
-            ) : !preferenceKey ? (
-                <section className="watch-empty">
-                    <FiStar aria-hidden="true" />
-                    <h2>Skapa din bevakning</h2>
-                    <p>Börja med ett bolag eller ett ämne. Flödet fylls när relevanta händelser publiceras.</p>
-                    <Link href="/bevakning/hantera" className="primary-btn">Välj vad du vill följa</Link>
-                </section>
-            ) : (
-                <section className="watch-feed" aria-labelledby="watch-feed-heading">
-                    <header className="watch-feed__heading">
-                        <div>
-                            <h2 id="watch-feed-heading">Viktigast för dig</h2>
-                            <span>Matchningar från de senaste {preview?.sinceHours ?? 48} timmarna</span>
-                        </div>
-                        <Link href="/marknaden/nyheter">Alla nyheter <FiArrowRight aria-hidden="true" /></Link>
-                    </header>
-                    <div className="watch-feed__filters" role="group" aria-label="Filtrera bevakning">
-                        {[
-                            ["all", "Alla"],
-                            ["companies", "Bolag"],
-                            ["topics", "Ämnen"],
-                            ["keywords", "Nyckelord"],
-                        ].map(([id, label]) => (
-                            <button type="button" key={id} className={filter === id ? "is-active" : ""} onClick={() => setFilter(id)}>{label}</button>
-                        ))}
-                    </div>
-
-                    {loading ? (
-                        <div className="market-news-loading" aria-hidden="true">
-                            {[...Array(5)].map((_, index) => <div key={index} />)}
-                        </div>
-                    ) : preview?.unavailable ? (
-                        <div className="market-empty-state">Bevakningsflödet kunde inte hämtas just nu. Dina val är fortfarande sparade.</div>
-                    ) : newsItems.length === 0 ? (
-                        <div className="market-empty-state">
-                            Inga nyheter matchar det här urvalet just nu.
-                        </div>
-                    ) : (
-                        <div className="watch-feed__list">
-                            {newsItems.map((item) => (
-                                <NewsFeedItem key={item.id} item={item} reason={item.reason} />
-                            ))}
-                        </div>
-                    )}
-                </section>
-            )}
-        </main>
-    );
+              ) : (
+                !error && (
+                  <EmptyState
+                    title={
+                      filter === "new"
+                        ? "Du är ikapp"
+                        : "Inga matchningar just nu"
+                    }
+                    description="Dina bevakningar är sparade. Prova Alla för att se fler matchningar."
+                  />
+                )
+              )}
+            </>
+          )}
+        </section>
+        <aside className={styles.section}>
+          <Heading size="subsection">Det du följer</Heading>
+          <Text size="sm" tone="secondary">
+            {user?.watchlist?.length ?? 0} bolag · {user?.topics?.length ?? 0}{" "}
+            ämnen · {user?.keywords?.length ?? 0} nyckelord
+          </Text>
+          <Link className={styles.textLink} href="/bevakning/hantera">
+            Hantera bevakning <FiArrowRight aria-hidden="true" />
+          </Link>
+          <Link className={styles.textLink} href="/marknaden">
+            Se hela marknaden <FiArrowRight aria-hidden="true" />
+          </Link>
+          <Text size="xs" tone="secondary">
+            Att följa något ändrar ditt flöde. Det aktiverar inte mejl eller
+            andra aviseringar.
+          </Text>
+        </aside>
+      </div>
+      <Dialog open={login} onOpenChange={setLogin} title="Spara din bevakning">
+        <LogInModal redirectTo="/bevakning" />
+      </Dialog>
+    </Container>
+  );
 }

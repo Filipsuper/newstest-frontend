@@ -1,0 +1,89 @@
+/* OMXsum UI v1. Only --ui-* consumers opt in; legacy pages and Terminal are unchanged. */
+:root {
+  --ui-font: "Geist Variable", "Geist", system-ui, sans-serif;
+  --ui-font-editorial: "Tinos", Georgia, serif;
+  --ui-text-xs: 0.75rem;
+  --ui-text-sm: 0.875rem;
+  --ui-text-md: 1rem;
+  --ui-text-lg: 1.25rem;
+  --ui-text-xl: 1.5rem;
+  --ui-text-2xl: 2rem;
+  --ui-leading-tight: 1.2;
+  --ui-leading-body: 1.5;
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-6: 1.5rem;
+  --ui-space-8: 2rem;
+  --ui-space-12: 3rem;
+  --ui-space-16: 4rem;
+  --ui-radius-sm: 0.5rem;
+  --ui-radius-md: 0.75rem;
+  --ui-radius-lg: 1rem;
+  --ui-radius-pill: 999px;
+  --ui-control-sm: 2.25rem;
+  --ui-control-md: 2.75rem;
+  --ui-control-lg: 3rem;
+  --ui-page-max: 80rem;
+  --ui-reading-max: 42rem;
+  --ui-duration: 160ms;
+  --ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ui-z-popover: 300;
+  --ui-z-dialog: 200;
+  --ui-z-tooltip: 400;
+}
+
+:root,
+[data-ui-theme="light"] {
+  --ui-canvas: #f6f5f1;
+  --ui-surface: #ffffff;
+  --ui-inset: #eeede8;
+  --ui-hover: #e6e5df;
+  --ui-text: #252620;
+  --ui-text-secondary: #62655c;
+  --ui-border: #dcded5;
+  --ui-control-border: #868a7f;
+  --ui-action: #292c25;
+  --ui-action-hover: #42463c;
+  --ui-on-action: #ffffff;
+  --ui-accent: #89610e;
+  --ui-accent-soft: #f5ebcb;
+  --ui-positive: #176e48;
+  --ui-positive-soft: #e3f1e8;
+  --ui-negative: #ae3634;
+  --ui-negative-soft: #fae9e5;
+  --ui-focus: #4562b4;
+  --ui-backdrop: #16191466;
+  --ui-shadow: 0 8px 32px #25262014, 0 2px 6px #2526200a;
+}
+
+:root.dark,
+[data-ui-theme="dark"] {
+  --ui-canvas: #171916;
+  --ui-surface: #22251f;
+  --ui-inset: #2b2e27;
+  --ui-hover: #353930;
+  --ui-text: #f2f3ed;
+  --ui-text-secondary: #adb3a5;
+  --ui-border: #3b4036;
+  --ui-control-border: #777e6f;
+  --ui-action: #eceee4;
+  --ui-action-hover: #d3d8c9;
+  --ui-on-action: #252820;
+  --ui-accent: #ebc467;
+  --ui-accent-soft: #383225;
+  --ui-positive: #82cea3;
+  --ui-positive-soft: #25382c;
+  --ui-negative: #ef9990;
+  --ui-negative-soft: #3e2b27;
+  --ui-focus: #a4b9fa;
+  --ui-backdrop: #080a08a6;
+  --ui-shadow: 0 8px 32px #00000033, 0 2px 6px #0000001a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration: 0ms;
+  }
+}

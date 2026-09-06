@@ -1,637 +1,326 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FiArrowRight, FiClock } from "react-icons/fi";
-import NewsModal from "./NewsModal";
-import MarketStorySparkline from "./MarketStorySparkline";
-import MiniPriceChart from "./MiniPriceChart";
-import { useModal } from "../providers/ModalProvider";
-import { tagColor, tagLabel } from "../utils/newsTags";
+import { FiArrowDown, FiArrowRight, FiPause, FiPlay } from "react-icons/fi";
+import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
-import { stripSummaryMarkup } from "../utils/stripSummaryMarkup";
-import { fetchMarketOverview } from "../utils/api";
-import { MarketWorkspaceNav } from "./WorkspaceNav";
 import {
-    curateMarketNews,
-    normalizedSymbol,
-    rankNews,
-    storyReaction,
-    storySymbols,
-    uniqueNews,
-} from "../utils/marketNewsRanking";
+  chronologicalNews,
+  featuredNews,
+  finiteNumber,
+  newsDate,
+  pendingChanges,
+} from "../utils/newsroom";
+import { currentLetter, marketDateKey } from "../utils/letters";
+import { MarketWorkspaceNav } from "./WorkspaceNav";
+import { Button } from "./ui/Button";
+import { ChangeBadge, EmptyState } from "./ui/data";
+import { Container, Heading, Inline, Stack, Text, cx } from "./ui/layout";
+import NewsFeedItem from "./NewsFeedItem";
+import LetterPreview from "./LetterPreview";
+import WatchPreview from "./WatchPreview";
+import LiveNewsFeed from "./LiveNewsFeed";
+import { useAuthContext } from "../providers/AuthProvider";
+import styles from "./workspace.module.css";
 
-const MOBILE_PANELS = [
-    { id: "drivers", label: "Drivkrafter" },
-    { id: "movers", label: "Reaktioner" },
-];
+const itemsFrom = (data) =>
+  chronologicalNews(
+    [
+      ...(Array.isArray(data.news) ? data.news : (data.news?.items ?? [])),
+      ...(data.moverNews ?? []),
+    ]
+      .filter((story) => story?.headline && story?.id)
+      .map(storyToItem),
+  );
 
-const MARKET_OVERVIEW_REFRESH_MS = 30_000;
-
-const INDEX_COPY = {
-    omxspi: "OMXSPI",
-    omxs30: "OMXS30",
-    sp500: "S&P 500",
-};
-
-const marketDateKey = (value, timeZone = "Europe/Stockholm") => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    const parts = new Intl.DateTimeFormat("en-CA", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        timeZone,
-    }).formatToParts(date);
-    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-    return `${values.year}-${values.month}-${values.day}`;
-};
-
-const stockholmDateKey = (value) => marketDateKey(value, "Europe/Stockholm");
-
-const stockholmMinutes = (value) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    const parts = new Intl.DateTimeFormat("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-        timeZone: "Europe/Stockholm",
-    }).formatToParts(date);
-    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-    const hours = Number(values.hour);
-    const minutes = Number(values.minute);
-    return Number.isFinite(hours) && Number.isFinite(minutes)
-        ? (hours * 60) + minutes
-        : null;
-};
-
-const formatMarketDate = (value) => {
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value))
-        ? new Date(`${value}T12:00:00Z`)
-        : new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return new Intl.DateTimeFormat("sv-SE", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        timeZone: "Europe/Stockholm",
-    }).format(date).replace(".", "");
-};
-
-const formatTime = (value) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return new Intl.DateTimeFormat("sv-SE", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Europe/Stockholm",
-    }).format(date);
-};
-
-const formatNewsTime = (value) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    if (stockholmDateKey(date) === stockholmDateKey(new Date())) return formatTime(date);
-    return new Intl.DateTimeFormat("sv-SE", {
-        day: "numeric",
-        month: "short",
-        timeZone: "Europe/Stockholm",
-    }).format(date).replace(".", "");
-};
-
-const finite = (value) => {
-    if (value === null || value === undefined || value === "") return null;
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-};
-
-const formatPercent = (value) => `${value >= 0 ? "+" : ""}${Number(value).toLocaleString("sv-SE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-})}%`;
-
-const formatCompactPercent = (value) => `${value >= 0 ? "+" : ""}${Number(value).toLocaleString("sv-SE", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-})}%`;
-
-const formatPrice = (value) => finite(value) === null
-    ? null
-    : Number(value).toLocaleString("sv-SE", { maximumFractionDigits: 2 });
-
-const formatMultiple = (value) => finite(value) === null
-    ? null
-    : `${Number(value).toLocaleString("sv-SE", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    })}× normal handel`;
-
-const formatTurnover = (value) => {
-    const amount = finite(value);
-    if (amount === null) return null;
-    if (amount >= 1_000_000_000) {
-        return `${(amount / 1_000_000_000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} mdkr`;
-    }
-    if (amount >= 1_000_000) {
-        return `${(amount / 1_000_000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} mkr`;
-    }
-    if (amount >= 1_000) {
-        return `${Math.round(amount / 1_000).toLocaleString("sv-SE")} tkr`;
-    }
-    return `${Math.round(amount).toLocaleString("sv-SE")} kr`;
-};
-
-const letterExcerpt = (article) => {
-    const firstBullet = article?.bulletPoints
-        ?.split("\n")
-        .map((line) => line.replace(/^[-*•]\s*/, "").trim())
-        .find(Boolean);
-    const excerpt = stripSummaryMarkup(
-        article?.introText?.trim() || firstBullet || article?.summary || "",
-    );
-    if (excerpt.length <= 240) return excerpt;
-    return `${excerpt.slice(0, 237).trimEnd()}…`;
-};
-
-const benchmarkChange = (benchmark) => {
-    const sessionChange = finite(benchmark?.session?.changePct);
-    if (sessionChange !== null) return sessionChange;
-    const closes = (benchmark?.bars ?? []).map((bar) => finite(bar.close)).filter((value) => value !== null);
-    if (closes.length < 2 || closes.at(-2) === 0) return null;
-    return ((closes.at(-1) - closes.at(-2)) / closes.at(-2)) * 100;
-};
-
-const benchmarkChart = (benchmark, referenceTime) => {
-    const sessionPoints = (benchmark?.session?.points ?? [])
-        .filter((point) => Array.isArray(point) && finite(point[0]) !== null && finite(point[1]) !== null);
-    if (sessionPoints.length >= 2) {
-        const timeZone = benchmark.session.timeZone ?? "Europe/Stockholm";
-        const currentSession = benchmark.session.date === marketDateKey(referenceTime, timeZone);
-        return {
-            points: sessionPoints,
-            label: currentSession ? "Idag" : "Senaste session",
-        };
-    }
-    return {
-        points: (benchmark?.bars ?? []).slice(-6).map((bar) => [bar.time, bar.close]),
-        label: "Senaste veckan",
-    };
-};
-
-const marketTone = (breadth, news) => {
-    const rising = finite(breadth.rising) ?? 0;
-    const falling = finite(breadth.falling) ?? 0;
-    const total = finite(breadth.total) ?? 0;
-    const reactions = news.map(storyReaction).filter((value) => value !== null && value !== 0);
-    const positiveReactions = reactions.filter((value) => value > 0).length;
-    const negativeReactions = reactions.filter((value) => value < 0).length;
-    const breadthSignal = total > 0 ? (rising - falling) / total : null;
-    const reactionSignal = reactions.length
-        ? (positiveReactions - negativeReactions) / reactions.length
-        : null;
-    const signals = [breadthSignal, reactionSignal].filter((value) => value !== null);
-    const score = signals.length
-        ? signals.reduce((sum, value) => sum + value, 0) / signals.length
-        : null;
-
-    const result = score === null || Math.abs(score) < 0.14
-        ? { label: "Blandad", className: "" }
-        : score > 0
-            ? { label: "Positiv", className: "market-positive" }
-            : { label: "Negativ", className: "market-negative" };
-
-    return {
-        ...result,
-        detail: total > 0
-            ? `${rising} stiger · ${falling} faller`
-            : reactions.length
-                ? `${positiveReactions} positiva · ${negativeReactions} negativa reaktioner`
-                : "Underlaget uppdateras",
-    };
-};
-
-function MarketPulse({ benchmarks, breadth, news, referenceTime }) {
-    const tone = marketTone(breadth, news);
-    const byId = new Map(benchmarks.map((benchmark) => [benchmark.id, benchmark]));
-
-    return (
-        <section className="market-pulse" aria-label="Dagens marknadston">
-            <div className="market-pulse__item market-pulse__item--tone">
-                <span>Marknadston</span>
-                <strong className={tone.className}>{tone.label}</strong>
-                <small>{tone.detail}</small>
+function MarketStrip({ overview }) {
+  return (
+    <section className={styles.pulse} aria-label="Marknadsläge">
+      {[
+        ["omxspi", "OMXSPI"],
+        ["omxs30", "OMXS30"],
+        ["sp500", "S&P 500"],
+      ].map(([id, name]) => {
+        const index = (overview.benchmarks ?? []).find(
+          (item) => item.id === id,
+        );
+        const values = (index?.session?.points ?? [])
+          .filter(
+            (point) => Array.isArray(point) && finiteNumber(point[1]) !== null,
+          )
+          .map((point) => Number(point[1]));
+        const min = Math.min(...values),
+          max = Math.max(...values);
+        const path = values
+          .map(
+            (value, i) =>
+              `${i ? "L" : "M"}${(i / Math.max(values.length - 1, 1)) * 72},${22 - ((value - min) / (max - min || 1)) * 20}`,
+          )
+          .join(" ");
+        const bars = (index?.bars ?? []).filter(
+          (bar) => finiteNumber(bar.close) !== null,
+        );
+        const previousClose = finiteNumber(bars.at(-2)?.close);
+        const change =
+          finiteNumber(index?.session?.changePct) ??
+          (previousClose
+            ? ((Number(bars.at(-1).close) - previousClose) / previousClose) *
+              100
+            : null);
+        const session =
+          index?.session?.date ||
+          bars.at(-1)?.date ||
+          marketDateKey(bars.at(-1)?.time);
+        return (
+          <div key={id} className={styles.index}>
+            <div className={styles.indexText}>
+              <strong>{name}</strong>
+              <small>{session || "Kursdata saknas"}</small>
             </div>
-            {["omxspi", "omxs30", "sp500"].map((id) => {
-                const benchmark = byId.get(id);
-                const change = benchmarkChange(benchmark);
-                const chart = benchmarkChart(benchmark, referenceTime);
-                return (
-                    <div className="market-pulse__item market-pulse__item--index" key={id}>
-                        <div className="market-pulse__index-heading">
-                            <span>{INDEX_COPY[id]}</span>
-                            <small>{chart.label}</small>
-                        </div>
-                        <strong className={change === null ? "" : change >= 0 ? "market-positive" : "market-negative"}>
-                            {change === null ? "Saknas" : formatPercent(change)}
-                        </strong>
-                        <MiniPriceChart
-                            points={chart.points}
-                            change={change}
-                            label={`${INDEX_COPY[id]}, ${chart.label.toLowerCase()}`}
-                        />
-                    </div>
-                );
-            })}
-        </section>
-    );
-}
-
-function MoveBadge({ value, fallback = "Nyhet", title }) {
-    const movement = finite(value);
-    const tone = movement === null || movement === 0
-        ? "is-neutral"
-        : movement > 0 ? "is-positive" : "is-negative";
-    return (
-        <span className={`market-move-badge ${tone}`} title={movement === null ? undefined : title}>
-            {movement === null ? fallback : formatCompactPercent(movement)}
-        </span>
-    );
-}
-
-function ImpactStory({ item, personalized = false, onOpen }) {
-    const reaction = storyReaction(item);
-    const primaryTag = (item.labels ?? []).find((tag) => tag !== "REGULATORY")
-        ?? ((item.labels ?? []).includes("REGULATORY") ? "REGULATORY" : null);
-    const isoTime = Number.isFinite(item.ts) ? new Date(item.ts).toISOString() : undefined;
-    const company = item.company ?? item.symbol ?? null;
-
-    return (
-        <li className="impact-story">
-            <MoveBadge value={reaction} title="Kursreaktion sedan publicering" />
-            <div className="impact-story__content">
-                <button type="button" className="impact-story__headline" onClick={() => onOpen(item)}>
-                    {company && <strong>{company}</strong>}
-                    {company && <span aria-hidden="true"> — </span>}
-                    <span>{item.title}</span>
-                </button>
-                <div className="impact-story__meta">
-                    {personalized && <span>Din aktie</span>}
-                    {reaction !== null && <span>Sedan publicering</span>}
-                    <time dateTime={isoTime}>{formatNewsTime(item.ts)}</time>
-                    {(item.sourceCount ?? 0) > 1 && (
-                        <span className="impact-story__sources">{item.sourceCount} källor</span>
-                    )}
-                    {primaryTag && (
-                        <span className={`impact-story__tag ${tagColor(primaryTag)}`}>
-                            {tagLabel(primaryTag)}
-                        </span>
-                    )}
-                    {item.symbol && (
-                        <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
-                            {item.symbol.replace(".ST", "")}
-                        </Link>
-                    )}
-                </div>
-            </div>
-            {item.symbol && (
-                <MarketStorySparkline
-                    symbol={item.symbol}
-                    company={company}
-                    publishedAt={item.ts}
+            <ChangeBadge value={change} label={`${name}, senaste session`} />
+            {values.length > 1 && (
+              <svg
+                viewBox="0 0 72 24"
+                className={styles.indexChart}
+                role="img"
+                aria-label={`${name}, kursförlopp ${session}`}
+              >
+                <path
+                  d={path}
+                  fill="none"
+                  stroke={
+                    change < 0 ? "var(--ui-negative)" : "var(--ui-positive)"
+                  }
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
+              </svg>
             )}
-        </li>
-    );
+          </div>
+        );
+      })}
+      <div className={cx(styles.index, styles.breadth)}>
+        <div className={styles.indexText}>
+          <strong>Stockholmsbörsen</strong>
+          <small>{overview.sessionDate || "Senaste session"}</small>
+        </div>
+        <Text size="xs" tone="secondary">
+          {finiteNumber(overview.breadth?.rising) !== null &&
+          finiteNumber(overview.breadth?.falling) !== null
+            ? `${overview.breadth.rising} stiger · ${overview.breadth.falling} faller`
+            : "Marknadsbredd saknas"}
+        </Text>
+      </div>
+    </section>
+  );
 }
 
-function DriversPanel({ items, onOpen, active }) {
-    return (
-        <section className={`market-digest__panel market-digest__panel--drivers ${active ? "is-active" : ""}`}>
-            <header className="market-digest__panel-heading">
-                <div>
-                    <h2>Det som driver marknaden</h2>
-                    <span>
-                        {items.length} {items.length === 1 ? "händelse" : "händelser"} · viktigast först
-                    </span>
-                </div>
-                <Link href="/marknaden/nyheter">
-                    Hela flödet <FiArrowRight aria-hidden="true" />
-                </Link>
-            </header>
-
-            {items.length ? (
-                <ol className="market-digest__stories">
-                    {items.map((item) => (
-                        <ImpactStory
-                            key={item.id}
-                            item={item}
-                            onOpen={onOpen}
-                        />
-                    ))}
-                </ol>
-            ) : (
-                <div className="market-empty-state">Inga viktiga marknadsnyheter just nu.</div>
-            )}
-        </section>
-    );
-}
-
-function MoverItem({ item, story, onOpen }) {
-    const change = finite(item.changePct);
-    const price = formatPrice(item.price);
-    const relativeVolume = finite(item.explanation?.relativeVolume ?? item.metrics?.rvolAtTime);
-    const turnover = finite(item.explanation?.turnover ?? item.metrics?.turnover);
-    const lowTurnover = item.explanation?.lowTurnover
-        ?? (turnover !== null && turnover < 1_000_000);
-    const confidence = item.explanation?.confidence === "likely" ? "likely" : "possible";
-    const confidenceLabel = confidence === "likely" ? "Trolig nyhetsreaktion" : "Möjlig koppling";
-    const volumeLabel = formatMultiple(relativeVolume);
-    const turnoverLabel = formatTurnover(turnover);
-    return (
-        <li className="explained-mover">
-            <div className="explained-mover__company">
-                <MoveBadge value={change} fallback="–" title="Dagens kursförändring" />
-                <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
-                    <strong>{item.name ?? item.nativeSymbol ?? item.symbol}</strong>
-                    <small>
-                        {item.nativeSymbol ?? item.symbol}
-                        {price ? ` · ${price} kr` : ""}
-                    </small>
-                </Link>
-            </div>
-            <div className="explained-mover__trading">
-                <span>Handel</span>
-                <strong title="Dagens volym jämfört med normalt vid samma tidpunkt">
-                    {volumeLabel ?? "Volym saknas"}
-                </strong>
-                {turnoverLabel && (
-                    <small>{lowTurnover ? "Låg omsättning" : "Omsättning"} · {turnoverLabel}</small>
-                )}
-            </div>
-            <div className="explained-mover__narrative">
-                <div className="explained-mover__narrative-meta">
-                    <span className={`is-${confidence}`}>{confidenceLabel}</span>
-                    <time dateTime={Number.isFinite(story.ts) ? new Date(story.ts).toISOString() : undefined}>
-                        {formatNewsTime(story.ts)}
-                    </time>
-                </div>
-                <button type="button" onClick={() => onOpen(story)} title={story.title}>
-                    {story.title}
-                </button>
-            </div>
-        </li>
-    );
-}
-
-function MoversPanel({ items, stories, active, onOpen }) {
-    const storyBySymbol = useMemo(() => {
-        const result = new Map();
-        for (const story of stories) {
-            for (const symbol of storySymbols(story)) {
-                if (!result.has(symbol)) result.set(symbol, story);
-            }
+export default function MarketOverviewPage({
+  overview = {},
+  articles = [],
+  referenceTime,
+}) {
+  const { isPlusUser } = useAuthContext();
+  const [data, setData] = useState(overview);
+  const [editions, setEditions] = useState(articles);
+  const [pending, setPending] = useState(null);
+  const [paused, setPaused] = useState(false);
+  const [error, setError] = useState(
+    overview.unavailable ? "Marknadsläget kunde inte hämtas." : "",
+  );
+  const [retry, setRetry] = useState(0);
+  const [now, setNow] = useState(() =>
+    new Date(referenceTime || overview.generatedAt || 0).getTime(),
+  );
+  const [visibleItems, setVisibleItems] = useState(() => itemsFrom(overview));
+  useEffect(() => {
+    if (paused) return;
+    let active = true,
+      busy = false,
+      count = 0;
+    async function refresh() {
+      if (!active || busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        const next = await fetchMarketOverview();
+        if (!active) return;
+        setData(next);
+        setNow(Date.now());
+        setError(
+          next.stale
+            ? "Tillfälligt fördröjda data. Senaste tillgängliga uppgifter visas."
+            : "",
+        );
+        const incoming = itemsFrom(next);
+        if (!visibleItems.length) setVisibleItems(incoming);
+        else if (pendingChanges(visibleItems, incoming).length)
+          setPending(incoming);
+        if (count++ % 4 === 0) {
+          const letters = await fetchAllArticles();
+          if (active && Array.isArray(letters)) setEditions(letters);
         }
-        return result;
-    }, [stories]);
-    const explainedItems = useMemo(() => items.flatMap((item) => {
-        const story = storyBySymbol.get(normalizedSymbol(item.symbol));
-        return story ? [{ item, story }] : [];
-    }), [items, storyBySymbol]);
-
-    return (
-        <section className={`market-digest__panel market-digest__panel--movers ${active ? "is-active" : ""}`}>
-            <header className="market-digest__panel-heading">
-                <div>
-                    <h2>Nyhetsreaktioner</h2>
-                    <span>Trolig koppling först</span>
-                </div>
-                <Link href="/aktier">Alla aktier <FiArrowRight aria-hidden="true" /></Link>
-            </header>
-            {explainedItems.length ? (
-                <ol className="market-digest__movers">
-                    {explainedItems.slice(0, 8).map(({ item, story }) => (
-                        <MoverItem
-                            key={item.symbol}
-                            item={item}
-                            story={story}
-                            onOpen={onOpen}
-                        />
-                    ))}
-                </ol>
+      } catch {
+        if (active)
+          setError(
+            "Uppdateringen misslyckades. Senaste tillgängliga uppgifter visas.",
+          );
+      } finally {
+        busy = false;
+      }
+    }
+    if (retry || !visibleItems.length) refresh();
+    const timer = setInterval(refresh, 30_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [paused, retry, visibleItems]);
+  const featured = useMemo(
+    () => featuredNews(visibleItems, now),
+    [visibleItems, now],
+  );
+  const edition = currentLetter(editions, now);
+  const latest = visibleItems[0];
+  const pendingCount = pending
+    ? pendingChanges(visibleItems, pending).length
+    : 0;
+  return (
+    <Container as="main" className={styles.workspace}>
+      <MarketWorkspaceNav foundation />
+      <header className={styles.heading}>
+        <Stack gap={2}>
+          <Heading as="h1" size="page">
+            Marknaden
+          </Heading>
+          <Text size="xs" tone="secondary">
+            {marketDateKey(now)}
+            {latest && ` · Senaste nyhet ${newsDate(latest.ts)}`}
+          </Text>
+        </Stack>
+        <Inline>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<a href="#senaste-nytt" />}
+          >
+            Senaste nytt <FiArrowDown aria-hidden="true" />
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPaused((value) => !value)}
+            aria-pressed={paused}
+          >
+            {paused ? (
+              <FiPlay aria-hidden="true" />
             ) : (
-                <div className="market-empty-state">
-                    Inga rörelser med tillräckligt stark nyhetskoppling just nu.
-                </div>
+              <FiPause aria-hidden="true" />
             )}
-        </section>
-    );
-}
-
-export default function MarketOverviewPage({ overview = {}, articles = [], referenceTime = null }) {
-    const { openModal } = useModal();
-    const [activePanel, setActivePanel] = useState("drivers");
-    const [currentOverview, setCurrentOverview] = useState(overview);
-
-    useEffect(() => {
-        let active = true;
-        let refreshing = false;
-
-        const refresh = async () => {
-            if (!active || refreshing || document.visibilityState === "hidden") return;
-            refreshing = true;
-            try {
-                const nextOverview = await fetchMarketOverview();
-                if (active && nextOverview) setCurrentOverview(nextOverview);
-            } catch {
-                // Keep the last good overview during a temporary feed failure.
-            } finally {
-                refreshing = false;
-            }
-        };
-
-        const interval = window.setInterval(refresh, MARKET_OVERVIEW_REFRESH_MS);
-        const handleVisibility = () => {
-            if (document.visibilityState === "visible") refresh();
-        };
-        document.addEventListener("visibilitychange", handleVisibility);
-
-        return () => {
-            active = false;
-            window.clearInterval(interval);
-            document.removeEventListener("visibilitychange", handleVisibility);
-        };
-    }, []);
-
-    const benchmarks = currentOverview.benchmarks ?? [];
-    const breadth = currentOverview.breadth ?? {};
-    const rawNews = Array.isArray(currentOverview.news)
-        ? currentOverview.news
-        : currentOverview.news?.items ?? [];
-    const marketNews = useMemo(
-        () => curateMarketNews(
-            rawNews.filter((story) => story?.id && story?.headline).map(storyToItem),
-        ),
-        [rawNews],
-    );
-
-    const moverStories = useMemo(() => {
-        const hasDedicatedMoverNews = Array.isArray(currentOverview.moverNews);
-        const rawMoverNews = hasDedicatedMoverNews ? currentOverview.moverNews : [];
-        const mappedMoverNews = rawMoverNews
-            .filter((story) => story?.id && story?.headline)
-            .map(storyToItem);
-        return rankNews(uniqueNews(hasDedicatedMoverNews ? mappedMoverNews : marketNews));
-    }, [currentOverview.moverNews, marketNews]);
-
-    const allMovers = useMemo(() => {
-        const bySymbol = new Map();
-        const candidates = Array.isArray(currentOverview.movers?.items)
-            ? currentOverview.movers.items
-            : [
-                ...(currentOverview.movers?.gainers ?? []),
-                ...(currentOverview.movers?.losers ?? []),
-            ];
-        for (const item of candidates) {
-            const symbol = normalizedSymbol(item.symbol);
-            const change = finite(item.changePct);
-            if (symbol && change !== null && Math.abs(change) >= 1 && !bySymbol.has(symbol)) {
-                bySymbol.set(symbol, item);
-            }
-        }
-        return [...bySymbol.values()].sort((left, right) => {
-            const confidence = (right.explanation?.confidence === "likely" ? 1 : 0)
-                - (left.explanation?.confidence === "likely" ? 1 : 0);
-            return confidence
-                || Math.abs(finite(right.changePct) ?? 0) - Math.abs(finite(left.changePct) ?? 0);
-        });
-    }, [currentOverview.movers]);
-    const marketReferenceTime = currentOverview.generatedAt
-        ?? referenceTime
-        ?? currentOverview.dataAsOf
-        ?? null;
-    const latestMorningArticle = articles.find((article) => !article?.isEveningLetter) ?? null;
-    const stockholmToday = stockholmDateKey(marketReferenceTime);
-    const eveningReleasePassed = (stockholmMinutes(marketReferenceTime) ?? -1) >= (17 * 60) + 30;
-    const todaysEveningArticle = articles.find((article) =>
-        article?.isEveningLetter
-        && stockholmDateKey(article.createdAt) === stockholmToday) ?? null;
-    const featuredLetter = eveningReleasePassed && todaysEveningArticle
-        ? todaysEveningArticle
-        : latestMorningArticle;
-    const featuredLetterIsEvening = Boolean(featuredLetter?.isEveningLetter);
-    const featuredLetterName = featuredLetterIsEvening ? "Kvällsbrevet" : "Morgonbrevet";
-    const featuredLetterHref = featuredLetter
-        ? featuredLetterIsEvening ? "/kvallsbrevet" : "/morgonbrevet"
-        : "/nyhetsbrev";
-    const featuredLetterExcerpt = letterExcerpt(featuredLetter);
-    const featuredLetterDate = featuredLetter?.createdAt
-        ? formatMarketDate(featuredLetter.createdAt)
-        : null;
-    const sessionDate = currentOverview.sessionDate
-        ?? benchmarks.flatMap((benchmark) => benchmark.bars ?? []).at(-1)?.date
-        ?? null;
-    const currentSession = sessionDate === stockholmToday;
-    const toneNews = sessionDate
-        ? marketNews.filter((item) => stockholmDateKey(item.ts) === sessionDate)
-        : marketNews;
-    const sessionLabel = sessionDate
-        ? currentSession ? "Idag" : formatMarketDate(sessionDate)
-        : "Senaste data";
-    const asOf = formatTime(currentOverview.dataAsOf);
-
-    const openStory = (item) => openModal(<NewsModal item={item} />);
-
-    return (
-        <main className="market-digest">
-            <MarketWorkspaceNav />
-            <header className="market-digest__toolbar">
-                <div className="market-digest__title">
-                    <h1>Marknaden idag</h1>
-                    <span>{sessionLabel}</span>
-                </div>
-
-                <div className="market-digest__toolbar-actions">
-                    {asOf && (
-                        <span className={currentOverview.verifiedRealtime ? "is-live" : ""}>
-                            <FiClock aria-hidden="true" />
-                            {currentOverview.verifiedRealtime ? `Live ${asOf}` : `Uppdaterad ${asOf}`}
-                        </span>
-                    )}
-                    <Link href="/marknaden/nyheter">Hela nyhetsflödet <FiArrowRight aria-hidden="true" /></Link>
-                </div>
-            </header>
-
-            <section
-                className="market-digest__summary"
-                aria-label={`Marknadsöversikt och ${featuredLetterName.toLocaleLowerCase("sv-SE")}`}
+            {paused ? "Återuppta" : "Pausa uppdateringar"}
+          </Button>
+        </Inline>
+      </header>
+      {error && (
+        <Inline className={styles.notice} role="status">
+          <Text size="sm">{error}</Text>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setRetry((value) => value + 1)}
+          >
+            Försök igen
+          </Button>
+        </Inline>
+      )}
+      <MarketStrip overview={data} />
+      {data.dataAsOf && (
+        <Text size="xs" tone="secondary">
+          Kurser per {newsDate(data.dataAsOf)}
+          {data.verifiedRealtime ? " · Verifierad realtid" : ""}
+        </Text>
+      )}
+      <div className={styles.marketGrid}>
+        <section
+          className={cx(styles.section, styles.featured)}
+          aria-labelledby="featured-heading"
+        >
+          <div className={styles.sectionHeader}>
+            <Heading id="featured-heading">Viktigast just nu</Heading>
+            <Link
+              href="/marknaden/nyheter?view=reactions"
+              className={styles.textLink}
             >
-                <MarketPulse
-                    benchmarks={benchmarks}
-                    breadth={breadth}
-                    news={toneNews}
-                    referenceTime={marketReferenceTime ?? 0}
-                />
-
-                <aside className="market-digest__letter" aria-labelledby="market-letter-title">
-                    <div className="market-digest__letter-copy">
-                        <p className="market-digest__letter-kicker">
-                            <span>{featuredLetterName}</span>
-                            {featuredLetterDate && (
-                                <time dateTime={featuredLetter.createdAt}>
-                                    Senaste · {featuredLetterDate}
-                                </time>
-                            )}
-                        </p>
-                        <Link className="market-digest__letter-preview" href={featuredLetterHref}>
-                            <h2 id="market-letter-title">
-                                {featuredLetter?.title ?? "Morgonens viktigaste marknadshändelser"}
-                            </h2>
-                            <p>
-                                {featuredLetterExcerpt || (featuredLetterIsEvening
-                                    ? "Nyheterna, bolagen och rörelserna som summerar börsdagen."
-                                    : "Nyheterna, bolagen och rörelserna som sätter tonen för börsdagen.")}
-                            </p>
-                        </Link>
-                    </div>
-                    <nav aria-label={featuredLetterName}>
-                        <Link className="market-digest__letter-primary" href={featuredLetterHref}>
-                            Läs {featuredLetterName.toLocaleLowerCase("sv-SE")} <FiArrowRight aria-hidden="true" />
-                        </Link>
-                        <Link href="/nyhetsbrev">Få det i mejlen</Link>
-                    </nav>
-                </aside>
-            </section>
-
-            <nav className="market-digest__mobile-tabs" aria-label="Innehåll" role="tablist">
-                {MOBILE_PANELS.map((panel) => (
-                    <button
-                        key={panel.id}
-                        type="button"
-                        role="tab"
-                        className={activePanel === panel.id ? "is-active" : ""}
-                        aria-selected={activePanel === panel.id}
-                        onClick={() => setActivePanel(panel.id)}
-                    >
-                        {panel.label}
-                    </button>
+              Se kursreaktioner <FiArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+          {pendingCount > 0 && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setVisibleItems(pending);
+                setPending(null);
+              }}
+            >
+              {pendingCount} nya eller uppdaterade nyheter
+            </Button>
+          )}
+          <div className={styles.news}>
+            {featured.length ? (
+              featured.map((item) => <NewsFeedItem key={item.id} item={item} />)
+            ) : (
+              <EmptyState
+                title="Inga större nyhetshändelser just nu"
+                description="Senaste nytt finns längre ned. Vi fyller inte urvalet med rutinmeddelanden."
+              />
+            )}
+          </div>
+        </section>
+        <div className={styles.context}>
+          <LetterPreview article={edition} />
+          <WatchPreview />
+        </div>
+        <section
+          id="senaste-nytt"
+          className={cx(styles.section, styles.latest)}
+          aria-labelledby="latest-heading"
+        >
+          <div className={styles.sectionHeader}>
+            <Heading id="latest-heading">Senaste nytt</Heading>
+            <Link className={styles.textLink} href="/marknaden/nyheter">
+              Hela flödet <FiArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+          {isPlusUser ? (
+            <LiveNewsFeed compact paused={paused} />
+          ) : (
+            <>
+              <Text size="xs" tone="secondary">
+                Senaste i det publika urvalet · hela nyhetsflödet ingår i Plus
+              </Text>
+              <div className={styles.news}>
+                {visibleItems.slice(0, 12).map((item) => (
+                  <NewsFeedItem key={item.id} item={item} />
                 ))}
-            </nav>
-
-            <div className="market-digest__grid">
-                <DriversPanel
-                    items={marketNews}
-                    onOpen={openStory}
-                    active={activePanel === "drivers"}
+              </div>
+              {!visibleItems.length && (
+                <EmptyState
+                  title="Inga nyheter att visa"
+                  action={
+                    <Button
+                      variant="secondary"
+                      onClick={() => setRetry((value) => value + 1)}
+                    >
+                      Försök igen
+                    </Button>
+                  }
                 />
-
-                <MoversPanel
-                    items={allMovers}
-                    stories={moverStories}
-                    active={activePanel === "movers"}
-                    onOpen={openStory}
-                />
-            </div>
-        </main>
-    );
+              )}
+            </>
+          )}
+        </section>
+      </div>
+    </Container>
+  );
 }

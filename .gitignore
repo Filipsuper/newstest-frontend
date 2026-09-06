@@ -4,6 +4,8 @@
 # Next.js
 /.next/
 /out/
+/test-results/
+/playwright-report/
 
 .env
 .env.local

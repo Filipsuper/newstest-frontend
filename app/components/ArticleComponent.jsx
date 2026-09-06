@@ -122,7 +122,7 @@ export default function ArticleComponent({ article, index }) {
 
     return (
         <article className="public-article max-w-4xl mx-auto px-4 py-4 relative z-10 mb-8" >
-            <Link href="/" className="inline-flex flex-row items-center gap-1 text-text-muted hover:text-text transition-colors mb-8 group">
+            <Link href="/nyhetsbrev" className="inline-flex flex-row items-center gap-1 text-text-muted hover:text-text transition-colors mb-8 group">
                 <FaChevronLeft className="text-xs transition-transform group-hover:-translate-x-0.5" />
                 <span className="text-sm font-sans">Tillbaka</span>
             </Link>

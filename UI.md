@@ -1,7 +1,56 @@
 # OMXsum public-site UI
 
-The public OMXsum site is a calm Swedish research product for understanding
-one company at a time. The terminal shares its brand and data, but not its
+## Foundation v1 — September 2026
+
+The public-site revamp starts with a component system, not a replacement
+landing page. `/designsystem` is the interactive, noindex reference. The
+implementation and migration plan is in `docs/design-system.md`.
+
+- Build new public UI from `app/components/ui`. Use **@base-ui/react** for
+  behavior; use OMXsum CSS Modules for presentation. Do not import Base UI
+  directly into feature pages, copy example CSS, or add another UI library.
+- `app/styles/tokens.css` owns the `--ui-*` tokens. New code must use semantic
+  tokens, not hard-coded colors or additions to the legacy `app/app.css`.
+- The new system is opt-in. Migrate a complete component or route, then remove
+  its obsolete styles once no consumer remains. Do not globally alias the old
+  palette to the new one; Terminal and unfinished routes must remain stable.
+- Reuse `Button`, `TextField`, `Select`, `Checkbox`, `Switch`, `Tabs`,
+  `SegmentedControl`, `Menu`, `Dialog`, and `Tooltip`. Do not reimplement
+  focus traps, menu keyboard navigation, or select behavior with click handlers.
+- Route navigation uses real links in `NavigationTabs`, with `aria-current`.
+  In-page content uses `Tabs` and connected `TabPanel`s. Single-value filters
+  use `SegmentedControl`; form values use `Select`; actions use `Menu`.
+- Components do not fetch data, calculate importance, or create alerts.
+  Features compose them and retain the existing data/auth contracts.
+
+### Type, space, and interaction
+
+- Use locally served **Geist Variable** for product UI. No downloaded or
+  imitated proprietary Wealthsimple fonts. Serif is for editorial content.
+- Type scale: 12px metadata, 14px controls/list text, 16px reading text,
+  20px subsection headings, 24px section headings, 32px page titles. Page
+  titles become 24px on phones. Never shrink metadata below 12px to fit a row.
+- Use 400 for body, 500–550 for labels/headings and 600 for company identity.
+  Use tabular figures for prices, counts, and changes; always show units.
+- Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64px. Use `Stack`, `Inline`, and
+  `Container` instead of unrelated margins. Outer gutters: 32px desktop,
+  16px phone. Maximum workspace width 1280px; reading width 672px.
+- Radius scale: 8px small, 12px rows/fields, 16px panels/dialogs. Pills are for
+  action buttons and segmented choices, not every box or navigation surface.
+- Controls are 44px by default; 36px compact is desktop-only. Touch restores
+  at least 44px. Text inputs use 16px on phones to avoid focus zoom.
+- Every interactive control has a visible keyboard-focus state, a name,
+  disabled behavior and, where applicable, loading and invalid states.
+- Motion uses the shared 160ms duration. Respect reduced motion. No decorative
+  entrance animations on market rows, hover-only actions, or animated prices.
+- Portal overlays use the root theme tokens. Keep app content in an isolated
+  stacking context and do not override theme tokens on a nested surface that
+  needs to open portaled overlays.
+- Errors say what failed and offer recovery. Preserve user input. Loading
+  reserves the same row geometry. Empty, failed, and unavailable are distinct.
+
+The public OMXsum site is a calm Swedish news-led workspace for understanding
+market events and following relevant companies. The terminal shares its brand and data, but not its
 desktop density or abbreviated interaction model.
 
 ## Product navigation
@@ -30,11 +79,10 @@ desktop density or abbreviated interaction model.
   boundary or state.
 - Never use a left border as a visual accent, callout, status marker, or
   decoration on any UI component.
-- Use the established dark/light surfaces, OMXsum yellow identity, blue for
-  neutral interaction, green only for positive values, and red only for
-  negative values.
-- In dark mode, use a lighter charcoal page canvas with deeper neutral inset
-  surfaces for charts, financial tables, and source-backed narrative blocks.
+- Use quiet warm-neutral surfaces, ink-colored primary actions and restrained
+  OMXsum amber identity. Green and red communicate signed data or explicit
+  success/error states; blue is reserved for keyboard focus.
+- In dark mode, use a deep neutral canvas and slightly lighter surfaces.
   The contrast comes from surface tone and spacing rather than bright borders.
 - Data marks and product screenshots may use slightly stronger contrast and
   saturation than surrounding chrome, while preserving truthful values and
@@ -43,125 +91,85 @@ desktop density or abbreviated interaction model.
 - Keep body and metadata text comfortably readable. Comparable numbers use
   tabular numerals and align consistently.
 
-## Public palette
+## Public palette — new components
 
-- The public site uses one shared tonal system across landing pages, news,
+- The target public site uses one shared tonal system across landing pages, news,
   letters, company research, watchlists, settings, screeners, forms, and
   dialogs. `/terminal` keeps its separate product palette.
-- Dark canvas: near-black `#151616`; raised panel: charcoal `#202121`; inset
-  control: `#141515`; quiet divider: translucent warm white.
-- Light canvas: cool grey `#E7E9EC`; raised panel: white; inset control:
-  `#EEF0F2`; quiet divider: translucent near-black.
+- Light: warm off-white canvas `#f6f5f1`, white surface `#ffffff`, inset
+  `#eeede8`, primary text `#252620`, secondary text `#62655c`.
+- Dark: charcoal canvas `#171916`, surface `#22251f`, inset `#2b2e27`, primary
+  text `#f2f3ed`, secondary text `#adb3a5`.
 - Primary text is warm white or near-black according to theme. Secondary text
   is neutral grey. Do not tint general body copy blue or amber.
-- Amber is the OMXsum identity and active-navigation color. Blue is reserved
-  for neutral links and interactive focus. Green and red are reserved for
+- Amber is the OMXsum identity, not a blanket selection color. Navigation uses
+  ink emphasis and local choices use a tonal selected state. Green and red are reserved for
   signed positive and negative data or explicit success and error states.
-- A raised surface should be visibly distinct from the canvas without a bright
-  outline. Nested controls use the inset tone; selected nested controls use an
-  even deeper tone in dark mode and a slightly stronger grey in light mode.
+- A raised surface should be distinct without a bright outline or persistent
+  shadow. Reserve shadows for overlays. Fields use a visible control boundary;
+  subtle decorative dividers are not adequate input boundaries.
 - Reuse the semantic color tokens instead of adding route-specific greys. A
   new surface color must represent a genuinely new elevation or state.
 
-## Market overview and dense data surfaces
+## Market overview and news reading
 
-- `/marknaden` is a compact market workspace, not a landing page. It opens on
-  the current market picture without a hero, introduction, or explanatory
-  marketing copy.
-- News events are the primary objects on `/marknaden`; price, volume, breadth,
-  and index direction are evidence attached to those events.
-- OMXSPI, OMXS30, and S&P 500 appear as small daily-change widgets with compact
-  session sparklines. If an exchange has not opened, label and preserve its
-  latest completed session; historical index charts never occupy the primary
-  workspace by default.
-- The top data row pairs a four-cell KPI block with the current editorial
-  letter.
-  Arrange `Marknadston` and the three indices as a 2×2 grid; market breadth is
-  evidence inside `Marknadston`, never a duplicate standalone KPI.
-- The dominant panel ranks material stories by importance and measured market
-  reaction. A chronological feed remains available as a secondary view.
-- Price language describes sequence, not automatic causality: use `sedan
-  publicering` and avoid claiming that a matched headline caused the move.
-- `Nyhetsreaktioner` starts with the Terminal's `News movers` definition, then
-  applies a stricter evidence check: require company news published before the
-  measured move, at least 1% absolute daily movement, and credible support from
-  event materiality, source quality, relative volume, or turnover. Label the
-  result as a likely reaction or possible connection; never state mechanical
-  causality. Never backfill the panel with unmatched movers.
-- Rank likely news reactions ahead of possible connections. Show relative
-  volume and turnover as the trading evidence; absolute share price may remain
-  secondary beside the ticker but does not deserve its own mover column. Flag
-  low turnover instead of letting an illiquid percentage move look equivalent
-  to a broadly traded reaction.
-- News and mover rows reuse the same visual grammar: a signed reaction badge,
-  clear company identity, and an inline headline or narrative. Their section
-  headers sit directly on the page canvas; each row is its own raised panel.
-  Never nest darker rows inside another panel. Separate rows with gaps instead
-  of divider lines.
-- Keep ranked news rows scannable. The company and headline are primary;
-  category and time are supporting metadata, while summary paragraphs stay in
-  the news detail view.
-- A company news row may carry a compact price trace as evidence. Before the
-  Stockholm session it shows the latest trading week; during the session it
-  shows today's path so far; after close it preserves the completed day. Label
-  the window, mark the story time only when it falls inside that window, and
-  never present the trace as proof that the story caused the move.
-- Routine insider transactions are supporting news, not default market
-  drivers. Their materiality comes from transaction facts and size, never from
-  an unrelated daily share-price move. Exclude routine filings from the market
-  driver ranking, avoid repeated filings for the same company, and keep the
-  complete set in the chronological or personalized feed.
-- Cluster duplicate language versions and source copies of the same company
-  event before ranking. Prefer the clearest Swedish item and retain the number
-  of distinct sources as quiet provenance.
-- `Marknaden` and `Bevakning` reuse the same information architecture. The
-  watchlist is a relevance filter over news and movers, not a separate
-  portfolio dashboard.
-- Full-feed, market-overview and personalized rows share one visual event
-  grammar. Context changes their ordering or filtering, not their identity.
-- Every personalized result says why it was shown. Following controls and
-  notification delivery remain separate so following a topic never silently
-  creates noisy alerts.
-- The editorial letter is a preview within the workspace, with its real title
-  and a short excerpt. Show the morning letter before 17:30 Stockholm time. At
-  or after 17:30, switch to today's evening letter once it exists; if it has not
-  been published, keep the morning letter instead of substituting an older
-  evening edition. Do not reduce the preview to a thin link strip or let it
-  replace the ranked news as the primary region.
-- `Marknadston` is a plain-language summary supported by visible breadth and
-  news-reaction evidence. Do not expose an unexplained numeric sentiment score.
-- Use an asymmetric dashboard composition: the compact KPI block and editorial
-  preview share the top row, followed by one dominant analytical panel and one
-  narrower companion panel. Avoid loose columns of equally weighted cards.
-- Desktop should fit the useful overview within one viewport, with internal
-  scrolling in ranked news and mover panels when the candidate set is larger
-  than the visible area. Do not truncate useful rows merely to avoid a panel
-  scrollbar. On smaller screens, switch between primary regions with tabs
-  instead of stacking the full dashboard into a long page.
-- On phones, do not force the complete workspace into one viewport. Give the
-  active news or mover list enough height to show several useful rows, allow
-  the page to grow, and keep compact market-summary widgets readable through
-  horizontal scrolling rather than squeezing their labels.
-- Density comes from 8–16px internal spacing, short labels, aligned values, and
-  compact rows. Page titles remain modest; data values carry the strongest
-  typographic emphasis.
-- Dense product views use the sans-serif family for headings and rows. Reserve
-  the serif family for editorial reading rather than repeatedly styling data
-  panels with it.
-- Give data workspaces stronger tonal contrast than editorial pages. In dark
-  mode use a near-black canvas, raised charcoal panels, and deeper inset
-  controls. In light mode use the equivalent cool-grey canvas, white panels,
-  and pale-grey inset controls.
-- Separate major tasks with panel surfaces and generous outer gutters, not
-  bright outlines. Within a panel, use quiet rules or spacing to organize rows.
-- KPI bands show a short label, a prominent tabular value, and at most one line
-  of context. Related KPI cells align to the same baseline.
-- Top-level tabs use a restrained amber underline. Local view switches use a
-  darker filled state so navigation levels are visually distinct.
-- Charts should occupy most of their panel and may use a restrained solid area
-  fill to improve data contrast. Decorative gradients remain prohibited.
-- Market provenance is terse: keep only the relevant time, period, and source
-  beside the data. Longer methodology belongs in contextual help.
+- The public site is a news-led daily workspace. Keep the landing page separate.
+  The four destinations are Marknaden, Bevakning, Aktier and Breven.
+- `/marknaden` has two URL-backed views: Överblick and Nyhetsflöde. The
+  overview contains compact market context, 3–5 material events, a real letter
+  preview, personal matches, and a chronological preview. The full feed is the
+  extended reading/search destination, not another product.
+- Index widgets are a compact strip, not a dominant 2×2 dashboard. Show
+  OMXSPI, OMXS30 and S&P 500, honest session dates and small actual sparklines.
+  Transparent market-breadth counts replace the composite Marknadston score.
+- On desktop, selected news is the primary column and the letter/watchlist
+  form a contextual column. On mobile the order is selected news, compact
+  letter and personal context, then latest news, with a direct latest-news jump.
+- Use normal document scrolling on desktop and mobile. Do not force one-screen
+  dashboard height, nest vertical news-list scrollbars or hide primary regions
+  behind Drivkrafter/Reaktioner tabs.
+- Selected importance, chronological order, observed reaction and personal
+  relevance are different concepts. A story can be important before trading
+  reacts. Routine insider notices and administrative invitations must not
+  fill featured slots simply because the stock moved.
+- The public chronological preview is labelled as a selection. The complete
+  feed keeps its existing Plus/Pro boundary; never make the preview appear to
+  cover all events or bypass authorization through client-only filtering.
+- All news surfaces reuse `NewsFeedItem` / `NewsRow`: signed reaction badge,
+  clear headline/company, supporting source/time and optional relevance reason.
+  Rows are raised surfaces separated by gaps, not dark rows inside an outer
+  card. Avoid repetitive summaries and obligatory per-row charts.
+- Every percentage states its period. `Sedan publicering` and `idag` are not
+  interchangeable. A temporal association is not proof of causation. Missing
+  reaction data is not zero, and a price chart must never be fabricated.
+- Show publication time, quote time and connection state separately. A quote
+  timestamp at close does not mean the news feed stopped updating.
+- Live lists buffer new versions behind an explicit action and offer pause.
+  Keep reading position stable. URL-backed filters survive sharing/reload.
+  Only show older-page navigation when the source supplies a real cursor.
+- Story links use canonical `/nyhet/[id]` URLs. Normal client navigation opens
+  a Base UI dialog; direct visits and reload open the full reader. Back closes
+  the dialog, Forward reopens it, and returning retains the source page.
+- Reader hierarchy: headline/source → concise facts → observed reaction →
+  optional detailed periods/figures/source text → company/follow/related paths.
+  Keep original sources easy to reach. Base UI owns focus trapping and Escape.
+- Story social previews are generated from the same public event, with a
+  deliberate 1200×630 composition, legible headline, source, company, and an
+  explicitly labelled reaction where available. Prefer completed fixed windows.
+  Rolling figures are snapshots. No personal data or invented market graphics.
+- Following is a contextual action on stories and companies, with saved,
+  loading, limit and error states. Topics/keywords are secondary preferences.
+  Following must never silently activate notification delivery.
+- Personal results explain their match. The local `Sedan sist` filter is
+  a last-visit comparison, not a cross-device read/unread guarantee.
+- Editorial previews show the actual title, date and short excerpt. After
+  17:30 Stockholm, use today's evening letter only once published; otherwise
+  retain the morning letter. Refresh candidates while the overview is open.
+- Product typography is Geist and uses the shared 12/14/16/20/24/32px scale.
+  Retain full headlines and 44px touch controls; remove nonessential elements
+  before shrinking text. No serif data rows, decorative gradients or glass.
+- The reusable Base UI Combobox belongs in `ui/`; company search adapters own
+  fetching/filtering and provide an explicit handoff to news search.
 
 ## Stock directory
 
@@ -197,12 +205,12 @@ desktop density or abbreviated interaction model.
   and source timestamps remain supporting information.
 - The opening price chart sits directly on the page canvas. Do not wrap it in
   a raised card, outline, shadow, or rounded container.
-- Navigation stays stable: Översikt, Finansiellt, Estimat, Värdering,
-  Insyn & ägare, Blankning, Nyheter & rapporter, Kalender.
+- Navigation stays stable: Översikt, Nyheter & rapporter, Finansiellt, Estimat,
+  Värdering, Insyn & ägare, Blankning, Kalender.
 - The URL always retains the selected company and selected tab.
-- Overview answers questions in reading order: how has the stock performed,
-  what does the company do, what does it earn, what happens next, and what is
-  the latest material news.
+- Overview starts with company identity and recent news, then observed price
+  development and deeper company research. The spider profile is secondary,
+  not the main reason to visit a news-led product.
 - A company page represents one company. Search replaces it rather than adding
   dashboard panels.
 

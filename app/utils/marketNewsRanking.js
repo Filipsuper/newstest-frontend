@@ -50,7 +50,7 @@ export const impactScore = (item, { personalized = false, referenceTs = null } =
         ? 0
         : contextStory
             ? Math.min(reaction * 2, 12)
-            : Math.min(reaction * 8, 40);
+            : Math.min(reaction * 3, 18);
     const insiderPenalty = insiderLevel === "exceptional"
         ? personalized ? 0 : 10
         : insiderLevel === "material"
@@ -134,10 +134,10 @@ export const uniqueNews = (items) => {
 // The overview is an editorial digest, not the complete wire. Routine insider
 // trades remain available in the full and personalized feeds. Only factually
 // large transactions can enter the general market ranking.
-export const curateMarketNews = (items) => {
+export const curateMarketNews = (items, options = {}) => {
     const seenInsiderSymbols = new Set();
     let supportingInsiders = 0;
-    return rankNews(uniqueNews(items)).filter((item) => {
+    return rankNews(uniqueNews(items), options).filter((item) => {
         const level = insiderMateriality(item);
         if (!level) return true;
         if (level === "routine") return false;
@@ -149,4 +149,3 @@ export const curateMarketNews = (items) => {
         return true;
     });
 };
-
