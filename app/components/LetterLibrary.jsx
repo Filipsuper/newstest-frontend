@@ -1,14 +1,11 @@
 "use client";
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { FiArrowRight } from "react-icons/fi";
 import { addEmail } from "../utils/api";
-import { letterExcerpt } from "../utils/letters";
-import { newsDate } from "../utils/newsroom";
+import LetterCard from "./LetterCard";
 import { Button } from "./ui/Button";
 import { TextField } from "./ui/TextField";
 import { SegmentedControl } from "./ui/SegmentedControl";
-import { Container, Heading, Inline, Stack, Text, Surface } from "./ui/layout";
+import { Container, Heading, Stack, Text, Surface } from "./ui/layout";
 import { EmptyState } from "./ui/data";
 import styles from "./workspace.module.css";
 import ui from "./ui/ui.module.css";
@@ -71,7 +68,7 @@ export default function LetterLibrary({ articles, unavailable = false }) {
           nativeButton={false}
           render={<a href="#prenumerera" />}
         >
-          Få breven i mejlen
+          Få Morgonbrevet i mejlen
         </Button>
       </header>
       <Stack gap={6}>
@@ -106,39 +103,10 @@ export default function LetterLibrary({ articles, unavailable = false }) {
         ) : (
           <div className={styles.library}>
             {editions.slice(0, visible).map((article) => (
-              <article
+              <LetterCard
                 key={article._id || article.id || article.title}
-                className={styles.letter}
-              >
-                <Inline className={styles.between}>
-                  <Text size="xs" tone="secondary">
-                    {article.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"}
-                  </Text>
-                  <Text
-                    as="time"
-                    size="xs"
-                    tone="secondary"
-                    dateTime={article.createdAt}
-                  >
-                    {newsDate(article.createdAt, {
-                      hour: undefined,
-                      minute: undefined,
-                    })}
-                  </Text>
-                </Inline>
-                <Link
-                  href={`/article/${encodeURIComponent(article.title.replaceAll("-", "_").replaceAll(" ", "-"))}`}
-                >
-                  <Heading>{article.title}</Heading>
-                </Link>
-                <Text>{letterExcerpt(article)}</Text>
-                <Link
-                  className={styles.textLink}
-                  href={`/article/${encodeURIComponent(article.title.replaceAll("-", "_").replaceAll(" ", "-"))}`}
-                >
-                  Läs brevet <FiArrowRight aria-hidden="true" />
-                </Link>
-              </article>
+                article={article}
+              />
             ))}
           </div>
         )}
@@ -154,8 +122,8 @@ export default function LetterLibrary({ articles, unavailable = false }) {
           <Stack gap={4}>
             <Heading>En bra start. Ett tydligt avslut.</Heading>
             <Text size="sm" tone="secondary">
-              Få morgon- och kvällsbreven kostnadsfritt. Bekräfta
-              prenumerationen i din e-post.
+              Få Morgonbrevet kostnadsfritt i mejlen. Kvällsbrevet läser du på
+              sajten. Bekräfta prenumerationen via länken i din e-post.
             </Text>
             <form className={styles.keywordForm} onSubmit={subscribe}>
               <input

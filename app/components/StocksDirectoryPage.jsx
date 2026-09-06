@@ -2,363 +2,143 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FiArrowRight, FiSearch, FiX } from "react-icons/fi";
-import { fetchCompanyProfiles } from "../utils/api";
-import { getCompanies } from "../utils/companies";
-import CompanyProfileRadar from "./CompanyProfileRadar";
+import { FiInfo, FiSearch } from "react-icons/fi";
+import { fetchCompanyDirectory, fetchCompanyList, fetchCompanyNews } from "../utils/api";
+import { companySector, directoryQuote, discoverStocks, STOCK_PAGE_SIZE, STOCK_SEGMENTS, STOCK_SORTS, STOCK_VIEWS, stockFilters, stockFiltersHref, stockSegment, stockSegmentLabel } from "../utils/stockDiscovery";
+import { newsDate, storyHref } from "../utils/newsroom";
 import { StockWorkspaceNav } from "./WorkspaceNav";
-import NewsDiscovery from "./NewsDiscovery";
+import FollowCompanyButton from "./FollowCompanyButton";
+import NewsTypeLabel from "./NewsTypeLabel";
+import { Container, Heading, Inline, Stack, Surface, Text } from "./ui/layout";
+import { Button, IconButton } from "./ui/Button";
+import { TextField } from "./ui/TextField";
+import { Select } from "./ui/Select";
+import { SegmentedControl } from "./ui/SegmentedControl";
+import { ChangeBadge, DataList, EmptyState } from "./ui/data";
+import { Dialog } from "./ui/overlays";
+import styles from "./stock-discovery.module.css";
 
-const PAGE_SIZE = 12;
-
-const SEGMENT_FILTERS = [
-    { value: "all", label: "Alla" },
-    { value: "large", label: "Large Cap" },
-    { value: "mid", label: "Mid Cap" },
-    { value: "small", label: "Small Cap" },
-    { value: "first_north", label: "First North" },
-    { value: "spotlight", label: "Spotlight" },
-];
-
-const SORT_OPTIONS = [
-    { value: "movement", label: "Störst rörelse" },
-    { value: "gainers", label: "Stiger mest" },
-    { value: "losers", label: "Faller mest" },
-    { value: "name", label: "Namn A–Ö" },
-];
-
-const finite = (value) => {
-    if (value === null || value === undefined || value === "") return null;
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-};
-
-const normalizedSearch = (value = "") => value
-    .toLocaleLowerCase("sv-SE")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-
-const segmentGroup = (company = {}) => {
-    const source = `${company.segment ?? ""} ${company.market ?? ""}`
-        .toLocaleUpperCase("sv-SE")
-        .replace(/[^A-ZÅÄÖ0-9]+/g, "_");
-
-    if (source.includes("FIRST_NORTH") || source.includes("FIRSTNORTH")) return "first_north";
-    if (source.includes("SPOTLIGHT")) return "spotlight";
-    if (source.includes("LARGE")) return "large";
-    if (source.includes("MID")) return "mid";
-    if (source.includes("SMALL")) return "small";
-    return "other";
-};
-
-const segmentLabel = (company) => (
-    SEGMENT_FILTERS.find((option) => option.value === segmentGroup(company))?.label
-    ?? company.segment
-    ?? company.market
-    ?? "Lista saknas"
-);
-
-const formatPrice = (value) => {
-    const price = finite(value);
-    if (price === null) return "Saknas";
-    return `${price.toLocaleString("sv-SE", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: Math.abs(price) < 1 ? 4 : 2,
-    })} kr`;
-};
-
-const formatChange = (value) => {
-    const change = finite(value);
-    if (change === null) return "Saknas";
-    const sign = change > 0 ? "+" : "";
-    return `${sign}${change.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
-};
-
-function CompanyCard({ company, profile }) {
-    const symbol = company.nativeSymbol ?? company.symbol?.replace(/\.ST$/i, "") ?? company.symbol;
-    const change = finite(company.changePct);
-    const profileLoading = profile === undefined || profile === null;
-    const profileAvailable = Boolean(profile);
-    const coverage = finite(profile?.coveragePct);
-
-    return (
-        <Link
-            className="stock-card"
-            href={`/aktie/${encodeURIComponent(company.symbol)}`}
-            aria-label={`Öppna ${company.name}`}
-        >
-            <header className="stock-card__header">
-                <span>
-                    <strong>{company.name}</strong>
-                    <small>{symbol}</small>
-                </span>
-                <FiArrowRight aria-hidden="true" />
-            </header>
-
-            <div className="stock-card__body">
-                <CompanyProfileRadar
-                    companyName={company.name}
-                    loading={profileLoading}
-                    profile={profileAvailable ? profile : null}
-                />
-                <dl>
-                    <div>
-                        <dt>Kurs</dt>
-                        <dd>{formatPrice(company.price)}</dd>
-                    </div>
-                    <div>
-                        <dt>Utveckling</dt>
-                        <dd className={change > 0 ? "market-positive" : change < 0 ? "market-negative" : ""}>
-                            {formatChange(change)}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Lista</dt>
-                        <dd>{segmentLabel(company)}</dd>
-                    </div>
-                </dl>
-            </div>
-
-            <footer className="stock-card__footer">
-                <span title={company.sector ?? company.yahooSector ?? "Sektor saknas"}>
-                    {company.sector ?? company.yahooSector ?? "Sektor saknas"}
-                </span>
-                <small>
-                    {profileLoading
-                        ? "Profil laddas"
-                        : profileAvailable
-                            ? coverage === null
-                                ? "Profil tillgänglig"
-                                : `${Math.round(coverage)} % underlag`
-                            : "Profil saknas"}
-                </small>
-            </footer>
-        </Link>
-    );
+function CompanyRow({ company, now, newsAvailable }) {
+  const quote = directoryQuote(company, now);
+  const story = company.story;
+  const mainTag = story?.tags?.find(tag => tag !== "REGULATORY") ?? story?.tags?.[0];
+  return <Surface as="li" className={styles.row}>
+    <div className={styles.identity}>
+      <Link className={styles.company} href={`/aktie/${encodeURIComponent(company.symbol)}`} prefetch={false}>{company.name}</Link>
+      <Text size="xs" tone="secondary">{company.nativeSymbol || company.symbol.replace(/\.ST$/i, "")} · {stockSegmentLabel(company)}</Text>
+      {companySector(company) && <Text size="xs" tone="secondary">{companySector(company)}</Text>}
+    </div>
+    <div className={styles.quote}>
+      <Text size="sm" numeric>{quote.price}</Text>
+      <ChangeBadge value={quote.change} label={`Dagsförändring, ${quote.period}`} />
+      <Text size="xs" tone="secondary" as="time" dateTime={quote.dateTime}>{quote.period}</Text>
+      {quote.currencyMissing && <Text size="xs" tone="secondary">Valuta saknas</Text>}
+    </div>
+    <div className={styles.story}>
+      {story ? <>
+        <Link href={storyHref(story.id)} scroll={false} prefetch={false} className={styles.headline}>{story.title}</Link>
+        <Inline gap={2} className={styles.metadata}>
+          {mainTag && <NewsTypeLabel type={mainTag} />}
+          {story.source && <span>{story.source}</span>}
+          <time dateTime={story.publishedAt}>{newsDate(story.publishedAt)}</time>
+        </Inline>
+      </> : <Text size="sm" tone="secondary">{newsAvailable ? "Ingen nyhet i urvalet" : "Nyhetsurvalet är inte tillgängligt"}</Text>}
+    </div>
+    <div className={styles.follow}><FollowCompanyButton symbol={company.symbol} name={company.name} /></div>
+  </Surface>;
 }
 
-export default function StocksDirectoryPage({ companies = [], overview = null }) {
-    const [rows, setRows] = useState(companies);
-    const [query, setQuery] = useState("");
-    const [segment, setSegment] = useState("all");
-    const [sector, setSector] = useState("all");
-    const [sort, setSort] = useState("movement");
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-    const [profiles, setProfiles] = useState({});
-
-    useEffect(() => {
-        if (!companies.length) getCompanies().then(setRows);
-    }, [companies]);
-
-    const sortedRows = useMemo(
-        () => rows.filter((company) => company?.symbol && company?.name),
-        [rows],
-    );
-    const sectors = useMemo(
-        () => [...new Set(sortedRows.map((company) => company.sector ?? company.yahooSector).filter(Boolean))]
-            .sort((left, right) => left.localeCompare(right, "sv-SE")),
-        [sortedRows],
-    );
-    const availableSegments = useMemo(() => {
-        const groups = new Set(sortedRows.map(segmentGroup));
-        return SEGMENT_FILTERS.filter((option) => option.value === "all" || groups.has(option.value));
-    }, [sortedRows]);
-
-    const filtered = useMemo(() => {
-        const needle = normalizedSearch(query);
-        const result = sortedRows.filter((company) => {
-            if (segment !== "all" && segmentGroup(company) !== segment) return false;
-            const companySector = company.sector ?? company.yahooSector;
-            if (sector !== "all" && companySector !== sector) return false;
-            if (!needle) return true;
-            return normalizedSearch([
-                company.name,
-                company.nativeSymbol,
-                company.symbol,
-                companySector,
-            ].filter(Boolean).join(" ")).includes(needle);
-        });
-
-        return result.sort((left, right) => {
-            if (sort === "name") return left.name.localeCompare(right.name, "sv-SE");
-
-            const leftChange = finite(left.changePct);
-            const rightChange = finite(right.changePct);
-            if (sort === "movement") {
-                if (leftChange === null && rightChange === null) {
-                    return left.name.localeCompare(right.name, "sv-SE");
-                }
-                if (leftChange === null) return 1;
-                if (rightChange === null) return -1;
-                return Math.abs(rightChange) - Math.abs(leftChange)
-                    || left.name.localeCompare(right.name, "sv-SE");
-            }
-            if (sort === "gainers" || sort === "losers") {
-                if (leftChange === null && rightChange === null) {
-                    return left.name.localeCompare(right.name, "sv-SE");
-                }
-                if (leftChange === null) return 1;
-                if (rightChange === null) return -1;
-                const movementOrder = sort === "gainers"
-                    ? rightChange - leftChange
-                    : leftChange - rightChange;
-                return movementOrder || left.name.localeCompare(right.name, "sv-SE");
-            }
-
-            return left.name.localeCompare(right.name, "sv-SE");
-        });
-    }, [query, sector, segment, sort, sortedRows]);
-
-    useEffect(() => {
-        setVisibleCount(PAGE_SIZE);
-    }, [query, sector, segment, sort]);
-
-    const visible = filtered.slice(0, visibleCount);
-    const visibleSymbolsKey = visible.map((company) => company.symbol).join("|");
-
-    useEffect(() => {
-        const symbols = visibleSymbolsKey.split("|").filter(Boolean);
-        const requested = symbols.filter(
-            (symbol) => !Object.prototype.hasOwnProperty.call(profiles, symbol),
-        );
-        if (!requested.length) return undefined;
-
-        setProfiles((current) => {
-            const next = { ...current };
-            requested.forEach((symbol) => {
-                if (!Object.prototype.hasOwnProperty.call(next, symbol)) next[symbol] = null;
-            });
-            return next;
-        });
-
-        const loadProfiles = async () => {
-            for (let start = 0; start < requested.length; start += PAGE_SIZE) {
-                const batch = requested.slice(start, start + PAGE_SIZE);
-                const response = await fetchCompanyProfiles(batch);
-                const bySymbol = new Map(response.items.map((item) => [item.symbol, item]));
-                setProfiles((current) => {
-                    const next = { ...current };
-                    batch.forEach((symbol) => {
-                        next[symbol] = bySymbol.get(symbol) ?? false;
-                    });
-                    return next;
-                });
-            }
-        };
-
-        loadProfiles();
-        return undefined;
-        // Profile state is intentionally read at the start of each visible batch.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visibleSymbolsKey]);
-
-    const resetFilters = () => {
-        setQuery("");
-        setSegment("all");
-        setSector("all");
-        setSort("movement");
+export default function StocksDirectoryPage({ companies = null, news = null, quotesAvailable = true, initialFilters, asOf }) {
+  const [rows, setRows] = useState(companies);
+  const [snapshot, setSnapshot] = useState(news);
+  const [hasQuotes, setHasQuotes] = useState(quotesAvailable);
+  const [filters, setFilters] = useState(initialFilters ?? stockFilters());
+  const [now, setNow] = useState(asOf);
+  const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState(false);
+  // URL updates do not refetch the full directory on each keystroke. The
+  // mounted state also survives an intercepted story URL without resetting.
+  useEffect(() => {
+    const restore = () => {
+      if (window.location.pathname === "/aktier") setFilters(stockFilters(new URLSearchParams(window.location.search)));
     };
-
-    return (
-        <main className="stock-catalog">
-            <StockWorkspaceNav />
-            <header className="stock-catalog__header">
-                <div>
-                    <p className="market-kicker">Aktier</p>
-                    <h1>Utforska svenska börsbolag</h1>
-                </div>
-                <label className="stock-catalog__search">
-                    <span className="sr-only">Sök bolag eller ticker</span>
-                    <FiSearch aria-hidden="true" />
-                    <input
-                        type="search"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Sök bolag eller ticker"
-                    />
-                    {query && (
-                        <button type="button" onClick={() => setQuery("")} aria-label="Rensa sökning">
-                            <FiX aria-hidden="true" />
-                        </button>
-                    )}
-                </label>
-            </header>
-
-            <NewsDiscovery overview={overview} />
-
-            <section className="stock-catalog__controls" aria-label="Filtrera bolag">
-                <div className="stock-catalog__segments" role="group" aria-label="Välj marknadslista">
-                    {availableSegments.map((option) => (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={segment === option.value ? "is-active" : ""}
-                            aria-pressed={segment === option.value}
-                            onClick={() => setSegment(option.value)}
-                        >
-                            {option.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="stock-catalog__selects">
-                    <label>
-                        <span className="sr-only">Filtrera på sektor</span>
-                        <select value={sector} onChange={(event) => setSector(event.target.value)}>
-                            <option value="all">Alla sektorer</option>
-                            {sectors.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                    </label>
-                    <label>
-                        <span className="sr-only">Sortera bolag</span>
-                        <select value={sort} onChange={(event) => setSort(event.target.value)}>
-                            {SORT_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                    </label>
-                </div>
-            </section>
-
-            <section className="stock-catalog__results" aria-labelledby="stock-results-heading">
-                <div className="stock-catalog__results-heading">
-                    <h2 id="stock-results-heading">Bolag</h2>
-                    <span>{filtered.length.toLocaleString("sv-SE")} träffar</span>
-                </div>
-
-                {sortedRows.length === 0 ? (
-                    <div className="stock-catalog__empty">
-                        <strong>Bolagsregistret kunde inte hämtas</strong>
-                        <span>Försök igen om en stund.</span>
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="stock-catalog__empty">
-                        <strong>Inga bolag matchar filtren</strong>
-                        <button type="button" onClick={resetFilters}>Rensa filter</button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="stock-catalog__grid">
-                            {visible.map((company) => (
-                                <CompanyCard
-                                    key={company.symbol}
-                                    company={company}
-                                    profile={profiles[company.symbol]}
-                                />
-                            ))}
-                        </div>
-                        {visible.length < filtered.length && (
-                            <button
-                                className="stock-catalog__more"
-                                type="button"
-                                onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
-                            >
-                                Visa fler bolag
-                            </button>
-                        )}
-                    </>
-                )}
-            </section>
-        </main>
-    );
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
+  function update(patch) {
+    const next = { ...filters, page: 1, ...patch };
+    setFilters(next);
+    window.history.replaceState(null, "", stockFiltersHref(next));
+  }
+  async function retry() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const [directory, nextNews] = await Promise.all([fetchCompanyDirectory(), fetchCompanyNews()]);
+      const nextRows = directory ?? await fetchCompanyList();
+      setRows(nextRows);
+      setHasQuotes(directory !== null);
+      setSnapshot(nextNews);
+      setNow(Date.now());
+    } finally { setBusy(false); }
+  }
+  const sectors = useMemo(() => [{ value: "all", label: "Alla sektorer" }, ...[...new Set((rows ?? []).map(companySector).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "sv-SE")).map(value => ({ value, label: value }))], [rows]);
+  // Retain an unavailable URL filter so a reload never silently changes it.
+  const sectorOptions = sectors.some(option => option.value === filters.sector) ? sectors : [...sectors, { value: filters.sector, label: filters.sector }];
+  const segments = useMemo(() => {
+    const present = new Set((rows ?? []).map(stockSegment));
+    return STOCK_SEGMENTS.filter(option => option.value === "all" || option.value === filters.segment || present.has(option.value));
+  }, [rows, filters.segment]);
+  const filtered = useMemo(() => discoverStocks(rows, snapshot, filters), [rows, snapshot, filters]);
+  const visible = filtered.slice(0, filters.page * STOCK_PAGE_SIZE);
+  const unavailable = rows === null || (filters.view !== "all" && snapshot === null);
+  const narrowed = Boolean(filters.q || filters.sector !== "all" || filters.segment !== "all");
+  const truncated = snapshot?.coverage?.truncated?.[filters.view === "reports" ? "reports" : "news"];
+  return <Container as="main" className={styles.workspace}>
+    <StockWorkspaceNav foundation />
+    <header className={styles.header}>
+      <Heading as="h1" size="section">Aktier</Heading>
+      <TextField className={styles.search} label="Sök bolag eller ticker" hideLabel type="search" maxLength={80} placeholder="Sök bolag eller ticker" leading={<FiSearch />} value={filters.q} onValueChange={q => update({ q })} />
+    </header>
+    <Stack gap={4}>
+      <SegmentedControl className={styles.views} label="Utforska bolag" options={STOCK_VIEWS} value={filters.view} onValueChange={view => update({ view, sort: view === "all" ? "name" : "recent" })} />
+      <div className={styles.filters}>
+        <Select label="Lista" hideLabel options={segments} value={filters.segment} onValueChange={segment => update({ segment })} />
+        <Select label="Sektor" hideLabel options={sectorOptions} value={filters.sector} onValueChange={sector => update({ sector })} />
+        <Select label="Sortera" hideLabel options={STOCK_SORTS} value={filters.sort} onValueChange={sort => update({ sort })} />
+        {narrowed && <Button variant="ghost" onClick={() => update({ q: "", segment: "all", sector: "all" })}>Rensa filter</Button>}
+      </div>
+    </Stack>
+    <section className={styles.results} aria-label="Bolagsresultat" aria-busy={busy}>
+      <Inline className={styles.resultsHeader}>
+        <Text size="sm" tone="secondary" role="status">{unavailable ? "Urvalet kunde inte hämtas" : `${filtered.length} bolag${filters.view === "all" ? "" : ` · ${snapshot?.coverage?.hours ?? 96} senaste timmarna`}`}</Text>
+        <IconButton variant="ghost" label="Om nyhetsurval och kurser" onClick={() => setInfo(true)}><FiInfo /></IconButton>
+      </Inline>
+      {(!hasQuotes || (filters.view === "all" && snapshot === null)) && rows !== null && <Inline className={styles.notice}>
+        <Text size="sm" tone="secondary">{!hasQuotes ? "Kurserna kunde inte hämtas." : "Nyhetsurvalet kunde inte hämtas."}</Text>
+        <Button variant="ghost" loading={busy} onClick={retry}>Försök igen</Button>
+      </Inline>}
+      {truncated && filters.view !== "all" && <Text className={styles.notice} size="xs" tone="secondary">Urvalet är begränsat till {snapshot.coverage.companyLimit} bolag före filtrering.</Text>}
+      {unavailable ? <EmptyState title="Bolagsurvalet är inte tillgängligt" description="Försök igen, eller sök i hela bolagslistan." action={<Inline><Button loading={busy} onClick={retry}>Försök igen</Button>{rows !== null && <Button variant="secondary" onClick={() => update({ view: "all", sort: "name" })}>Visa alla bolag</Button>}</Inline>} />
+        : filtered.length === 0 ? <EmptyState title={narrowed ? "Inga bolag matchar filtren" : "Inga bolag i det här nyhetsurvalet"} description={filters.view === "all" ? "Prova ett annat bolagsnamn eller ändra filtren." : "Sök bland alla bolag, även de som inte har en nyhet i urvalet."} action={<Inline>{narrowed && <Button variant="secondary" onClick={() => update({ q: "", sector: "all", segment: "all" })}>Rensa filter</Button>}{filters.view !== "all" && <Button onClick={() => update({ view: "all", sort: "name" })}>Visa alla bolag</Button>}</Inline>} />
+          : <>
+            <div className={styles.columns} aria-hidden="true"><span>Bolag</span><span>Kurs / dagsförändring</span><span>{filters.view === "reports" ? "Rapportnyhet" : "Nyhet i fokus"}</span><span>Bevakning</span></div>
+            <DataList label="Bolag" className={styles.list}>{visible.map(company => <CompanyRow key={company.symbol} company={company} now={now} newsAvailable={snapshot !== null} />)}</DataList>
+            <Inline className={styles.pagination}>
+              <Text size="xs" tone="secondary">Visar {visible.length} av {filtered.length} bolag</Text>
+              {visible.length < filtered.length && <Button variant="secondary" onClick={() => update({ page: filters.page + 1 })}>Visa fler bolag</Button>}
+            </Inline>
+          </>}
+    </section>
+    <Dialog open={info} onOpenChange={setInfo} title="Om nyhetsurval och kurser">
+      <Stack gap={4}>
+        <Text size="sm">En utvald nyhet per bolag från de senaste {snapshot?.coverage?.hours ?? 96} timmarna. Urvalet utgår från nyheternas befintliga viktighetsvärde, minst {snapshot?.coverage?.minImportance ?? 60} av 100. Vanliga insynsaffärer under 25 miljoner kronor och administrativa utskick filtreras bort. Det är inte ett köp- eller säljråd.</Text>
+        <Text size="sm">Rapporter visar publicerade resultat, prognoser och vinstvarningar – inte en kalender över kommande rapporter. Högst {snapshot?.coverage?.companyLimit ?? 200} bolag per urval. Alla bolag finns kvar i bolagslistan.</Text>
+        <Text size="sm">Kursen visar senaste tillgängliga notering. Procenten är handelsdagens förändring, inte reaktionen på nyheten. Datum anges för äldre kurser. Öppna nyheten för reaktionen sedan publicering.</Text>
+        {snapshot?.coverage?.to && <Text size="xs" tone="secondary">Nyhetsurval hämtat {newsDate(snapshot.coverage.to)}.</Text>}
+        <Link className={styles.textLink} href="/marknaden/nyheter">Till hela nyhetsflödet →</Link>
+      </Stack>
+    </Dialog>
+  </Container>;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { tagLabel } from "../utils/newsTags";
+import NewsTypeLabel from "./NewsTypeLabel";
+import NewsSummary from "./NewsSummary";
 import { newsDate, storyHref } from "../utils/newsroom";
 import NewsRow from "./ui/NewsRow";
 
@@ -22,6 +23,7 @@ export default function NewsFeedItem({
       highlighted={highlighted}
       company={showSymbol ? (item.company ?? item.symbol) : null}
       title={item.title}
+      description={<NewsSummary value={item.aiSummary} />}
       reaction={reaction}
       href={storyHref(item.id)}
       reactionLabel="Sedan publicering"
@@ -36,7 +38,7 @@ export default function NewsFeedItem({
           >
             {newsDate(item.ts)}
           </time>
-          {mainTag && <span>{tagLabel(mainTag)}</span>}
+          {mainTag && <NewsTypeLabel type={mainTag} />}
           {reaction !== null && <span>Sedan publicering</span>}
           {item.source && <span>{item.source}</span>}
           {reason && <span>{reason}</span>}

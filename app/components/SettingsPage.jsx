@@ -1,162 +1,282 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuthContext } from "../providers/AuthProvider";
-import { saveActiveNewsletters, createPortalSession } from '../utils/api';
+import { saveActiveNewsletters, createPortalSession } from "../utils/api";
 import { useTheme } from "../providers/ThemeProvider";
+import LogInModal from "../modals/logInModal";
+import { Button } from "./ui/Button";
+import { Switch } from "./ui/Choices";
+import { Dialog } from "./ui/overlays";
+import { Label } from "./ui/Label";
+import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
+import { EmptyState, Skeleton } from "./ui/data";
+import styles from "./settings.module.css";
 
-function SettingsPage() {
-    const [selectedNewsletters, setSelectedNewsletters] = React.useState([]);
-    const { user, isGuestUser, refreshUser, isPaidUser } = useAuthContext();
-    const { theme, setTheme } = useTheme();
-    const [isChanged, setIsChanged] = React.useState(false);
-    const router = useRouter();
-
-    useEffect(() => {
-        if (isGuestUser) router.replace("/");
-    }, [isGuestUser, router]);
-
-    useEffect(() => {
-        if (!user || !user.active_newsletters) return
-        setSelectedNewsletters(user.active_newsletters)
-    }, [user])
-
-    useEffect(() => {
-        if (!user || !user.active_newsletters) return
-        setIsChanged(!compareArrays(selectedNewsletters, user.active_newsletters));
-    }, [selectedNewsletters]);
-
-    if (!user || isGuestUser) return null
-
-    const newsletterTypes = [
-        { name: "Morgonbrev", description: "Kort analys och nyheter varje morgon kl 08:00", premium: false },
-        // { name: "Veckobrev", description: "Sammanfattning och insikter varje fredag", premium: true },
-        // { name: "Kvällsbrev", description: "Snabb översikt över dagens rörelser kl 17:00", premium: true },
-    ];
-
-    const compareArrays = (arr1, arr2) => {
-        if (arr1.length !== arr2.length) return false;
-        for (let i = 0; i < arr1.length; i++) {
-            if (!arr2.includes(arr1[i])) return false;
-        }
-        return true;
+function AccountSettings({ user, refreshUser }) {
+  const { theme, setTheme } = useTheme();
+  const original = Array.isArray(user.active_newsletters)
+    ? user.active_newsletters
+    : [];
+  const [selected, setSelected] = useState(original);
+  const [saved, setSaved] = useState(original);
+  const [busy, setBusy] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [portalError, setPortalError] = useState("");
+  const [message, setMessage] = useState("");
+  const changed =
+    selected.length !== saved.length ||
+    selected.some((value) => !saved.includes(value));
+  const preferencesAvailable = Array.isArray(user.active_newsletters);
+  useEffect(() => {
+    if (Array.isArray(user.active_newsletters) && !changed && !busy) {
+      setSelected(user.active_newsletters);
+      setSaved(user.active_newsletters);
     }
+  }, [user.active_newsletters, changed, busy]);
+  const paid = user.plan === "plus" || user.plan === "premium";
+  const plan =
+    user.plan === "premium" ? "Pro" : user.plan === "plus" ? "Plus" : "Gratis";
 
-    const handleNewsletterChange = (newsletter) => {
-        setSelectedNewsletters(prev =>
-            prev.includes(newsletter)
-                ? prev.filter(n => n !== newsletter)
-                : [...prev, newsletter]
-        );
+  async function save(event) {
+    event.preventDefault();
+    if (busy || !changed || !preferencesAvailable) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await saveActiveNewsletters(selected);
+      setSaved([...selected]);
+      setMessage("Dina brevval har sparats.");
+      await refreshUser();
+    } catch {
+      setError(
+        "Brevvalen kunde inte sparas. Dina ändringar finns kvar – försök igen.",
+      );
+    } finally {
+      setBusy(false);
     }
-
-    const handleSave = async () => {
-        const res = await saveActiveNewsletters(selectedNewsletters);
-        await refreshUser();
+  }
+  async function manage() {
+    if (portalBusy) return;
+    setPortalBusy(true);
+    setPortalError("");
+    try {
+      const response = await createPortalSession();
+      const url = new URL(response?.url);
+      if (url.protocol !== "https:" || url.hostname !== "billing.stripe.com")
+        throw new Error("Invalid billing destination");
+      window.location.assign(url.href);
+    } catch {
+      setPortalError("Prenumerationen kunde inte öppnas. Försök igen.");
+      setPortalBusy(false);
     }
+  }
 
-    const handleManageSubscription = async () => {
-        const res = await createPortalSession();
-        if (res.url) window.location.href = res.url;
-    }
-
-    const planLabel = user.plan === "premium" ? "Pro" : user.plan === "plus" ? "Plus" : "Gratis";
-
-    return (
-        <main className="public-page public-page--account min-h-[80vh] mx-auto max-w-4xl px-4 py-10">
-            <h1 className="text-4xl font-serif font-bold text-text mb-12">Inställningar</h1>
-
-            <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-serif font-bold text-text mb-4">Konto</h2>
-                <div className="inline-flex gap-2 body-text mb-4">
-                    <span>För att ändra eller ta bort ditt konto, </span><a href="mailto:filipkarlberg1@gmail.com" className="text-primary underline">kontakta oss</a>
-                </div>
-                <div className="flex flex-col body-text mb-4">
-                    <span className="text-base font-bold font-serif mb-4">Email</span>
-                    <span className="text-text-muted">{user.email}</span>
-                </div>
-                <div className="flex flex-col body-text ">
-                    <span className="text-base font-bold font-serif mb-4">Ljust läge</span>
-                    <div className="flex flex-col items-start justify-between">
-                        <button
-                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                            className="relative inline-flex items-center h-6 border border-border w-11 "
-                        >
-                            <span
-                                className={`${theme === 'light' ? 'translate-x-6' : 'translate-x-1'
-                                    } inline-block w-4 h-4 transform bg-secondary transition-transform`}
-                            />
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <section className="max-w-4xl mx-auto mb-16">
-                <h2 className="text-xl font-serif font-bold text-text mb-4">Prenumeration</h2>
-                <div className="flex flex-col body-text gap-4">
-                    <div className="flex flex-col">
-                        <span className="text-base font-bold font-serif mb-2">Din plan</span>
-                        <span className="text-text-muted">{planLabel}</span>
-                    </div>
-                    {user.plan === "plus" || user.plan === "premium" ? (
-                        <button className="secondary-btn w-fit py-1 cursor-pointer" onClick={handleManageSubscription}>
-                            Hantera prenumeration
-                        </button>
-                    ) : (
-                        <Link href="/pro" className="text-primary underline">
-                            Uppgradera till Plus eller Pro →
-                        </Link>
-                    )}
-                </div>
-            </section>
-
-            <section className="max-w-4xl mx-auto rounded-lg mb-12">
-                <div className="flex flex-col mb-8">
-                    <h2 className="text-xl font-serif font-bold text-text">Nyhetsbrevstyper</h2>
-                    <p className="body-text mb-4">
-                        Välj vilka nyhetsbrev du vill prenumerera på
-                    </p>
-                    <div className="flex flex-col space-y-4">
-                        {newsletterTypes.map((newsletter, index) => (
-                            <label key={index} className="inline-flex items-center cursor-pointer py-2 gap-2">
-                                <span className="w-5 h-5  border border-border mr-2 mt-1 flex-shrink-0 flex items-center justify-center">
-                                    <input
-                                        type="checkbox"
-                                        className="hidden peer"
-                                        checked={selectedNewsletters.includes(newsletter.name)}
-                                        onChange={() => handleNewsletterChange(newsletter.name)}
-                                    />
-                                    <svg
-                                        className="w-6 h-6 text-secondary font-bold hidden peer-checked:block"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </span>
-                                <div className="flex flex-col">
-                                    <span className="text-text font-semibold ">{newsletter.name}<span>{(!isPaidUser && newsletter.premium) && <span className="ml-2 text-background text-xs bg-secondary px-1 py-1">Premium</span>}</span></span>
-                                    <span className="text-text-muted text-sm body-text">{newsletter.description}</span>
-                                </div>
-                            </label>
-                        ))}
-                    </div>
-                </div>
-                {
-                    isChanged &&
-                    <button className="secondary-btn" onClick={handleSave}>Spara</button>
-                }
-
-            </section>
-        </main>
-    )
+  return (
+    <Stack gap={12}>
+      <section aria-labelledby="account-title" className={styles.section}>
+        <Heading id="account-title" size="subsection">
+          Ditt konto
+        </Heading>
+        <div className={styles.rows}>
+          <div className={styles.row}>
+            <Stack gap={1}>
+              <Text size="sm">E-postadress</Text>
+              <Text size="sm" tone="secondary" className={styles.email}>
+                {user.email}
+              </Text>
+            </Stack>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<a href="mailto:filipkarlberg1@gmail.com" />}
+            >
+              Kontakta oss
+            </Button>
+          </div>
+          <div className={styles.row}>
+            <Stack gap={1}>
+              <Text size="sm">Din bevakning</Text>
+              <Text size="sm" tone="secondary">
+                Bolag, ämnen och nyckelord.
+              </Text>
+            </Stack>
+            <Button
+              variant="secondary"
+              nativeButton={false}
+              render={<Link href="/bevakning/hantera" />}
+            >
+              Hantera bevakning →
+            </Button>
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="appearance-title" className={styles.section}>
+        <Heading id="appearance-title" size="subsection">
+          Utseende
+        </Heading>
+        <div className={styles.rows}>
+          <Switch
+            className={styles.switchRow}
+            label="Mörkt läge"
+            description="Sparas i den här webbläsaren."
+            checked={theme === "dark"}
+            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+          />
+        </div>
+      </section>
+      <section aria-labelledby="plan-title" className={styles.section}>
+        <Heading id="plan-title" size="subsection">
+          Prenumeration
+        </Heading>
+        <div className={styles.rows}>
+          <div className={styles.row}>
+            <Inline gap={3}>
+              <Text size="sm">Din plan</Text>
+              <Label tone={paid ? "accent" : "neutral"}>{plan}</Label>
+            </Inline>
+            {paid ? (
+              <Button variant="secondary" loading={portalBusy} onClick={manage}>
+                Hantera prenumeration ↗
+              </Button>
+            ) : (
+              <Button nativeButton={false} render={<Link href="/pro" />}>
+                Se Plus och Pro →
+              </Button>
+            )}
+          </div>
+        </div>
+        {portalError && (
+          <Text size="sm" role="alert">
+            {portalError}
+          </Text>
+        )}
+      </section>
+      <section aria-labelledby="letters-title" className={styles.section}>
+        <Heading id="letters-title" size="subsection">
+          Nyhetsbrev i mejlen
+        </Heading>
+        <Stack as="form" gap={4} onSubmit={save}>
+          <div className={styles.rows}>
+            <Switch
+              className={styles.switchRow}
+              label="Morgonbrevet"
+              description="Börsnyheter och sammanhang varje vardag."
+              checked={selected.includes("Morgonbrev")}
+              disabled={busy || !preferencesAvailable}
+              onCheckedChange={(checked) => {
+                setSelected((previous) =>
+                  checked
+                    ? [...previous, "Morgonbrev"]
+                    : previous.filter((value) => value !== "Morgonbrev"),
+                );
+                setMessage("");
+              }}
+            />
+            <div className={styles.row}>
+              <Stack gap={1}>
+                <Text size="sm">Kvällsbrevet</Text>
+                <Text size="sm" tone="secondary">
+                  Publiceras på sajten efter börsens stängning.
+                </Text>
+              </Stack>
+              <Button
+                variant="ghost"
+                nativeButton={false}
+                render={<Link href="/kvallsbrevet" />}
+              >
+                Läs brevet →
+              </Button>
+            </div>
+          </div>
+          <Inline gap={3}>
+            <Button
+              type="submit"
+              disabled={!changed || !preferencesAvailable}
+              loading={busy}
+            >
+              Spara brevval
+            </Button>
+            {changed && (
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  setSelected([...saved]);
+                  setError("");
+                  setMessage("");
+                }}
+              >
+                Ångra ändringar
+              </Button>
+            )}
+            <Text size="sm" tone="secondary" role="status">
+              {busy ? "Sparar…" : changed ? "Osparade ändringar" : message}
+            </Text>
+          </Inline>
+          {error && (
+            <Text size="sm" role="alert">
+              {error}
+            </Text>
+          )}
+          {!preferencesAvailable && (
+            <Inline gap={3}>
+              <Text size="sm" role="alert">
+                Brevvalen kunde inte hämtas.
+              </Text>
+              <Button variant="secondary" onClick={refreshUser}>
+                Hämta brevval igen
+              </Button>
+            </Inline>
+          )}
+        </Stack>
+      </section>
+      <Text size="sm" tone="secondary">
+        Vill du ändra din e-postadress eller ta bort kontot?{" "}
+        <a className={styles.link} href="mailto:filipkarlberg1@gmail.com">
+          Kontakta oss
+        </a>
+        .
+      </Text>
+    </Stack>
+  );
 }
 
-export default SettingsPage;
+export default function SettingsPage() {
+  const { user, isGuestUser, refreshUser } = useAuthContext();
+  return (
+    <Container as="main" reading className={styles.page}>
+      <header className={styles.header}>
+        <Heading as="h1" size="page">
+          Inställningar
+        </Heading>
+      </header>
+      {!user ? (
+        <Stack gap={6} aria-label="Hämtar dina inställningar" aria-busy="true">
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
+        </Stack>
+      ) : isGuestUser ? (
+        <EmptyState
+          title="Dina inställningar, samlade"
+          description="Logga in för att hantera konto och brev."
+          action={
+            <Dialog title="Logga in" trigger={<Button>Logga in</Button>}>
+              <LogInModal redirectTo="/settings" />
+            </Dialog>
+          }
+        />
+      ) : (
+        <AccountSettings
+          key={user.email}
+          user={user}
+          refreshUser={refreshUser}
+        />
+      )}
+    </Container>
+  );
+}

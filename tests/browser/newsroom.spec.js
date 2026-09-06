@@ -126,6 +126,61 @@ test("chronological feed buffers arrivals, pauses, filters by URL and loads olde
   ).toHaveAttribute("aria-pressed", "true");
 });
 
+test("news rows and reader show AI prose and bullets, never the wire description", async ({ page }) => {
+  const detailRequests = [];
+  page.on("request", (request) => {
+    if (/\/api\/feed\/news\/fixture-/.test(new URL(request.url()).pathname))
+      detailRequests.push(request.url());
+  });
+  await page.goto("/marknaden/nyheter");
+  const row = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-0"]') });
+  await expect(row.getByText("AI-sammanfattning", { exact: true })).toBeVisible();
+  await expect(row.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).getByRole("listitem")).toHaveCount(3);
+  await expect(row).toContainText("Fiktiv AI-text.");
+  await expect(row).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
+  const proseOnly = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-1"]') });
+  await expect(proseOnly.getByRole("list")).toHaveCount(0);
+  const missing = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-2"]') });
+  await expect(missing.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+  await expect(missing).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
+  expect(detailRequests).toEqual([]);
+
+  await row.getByRole("link").first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("AI-sammanfattning", { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).first().getByRole("listitem")).toHaveCount(3);
+  await expect(dialog).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
+  await page.reload();
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /Fiktiv AI-text/);
+  const reader = page.locator("main > article");
+  expect(await reader.evaluate((element) => {
+    const heading = element.querySelector("h1");
+    const summary = element.querySelector("[data-reading]");
+    const action = element.querySelector("button");
+    return Boolean(heading.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && Boolean(summary.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  await page.goto("/nyhet/fixture-2");
+  await expect(page.locator("[data-reading]")).toHaveCount(0);
+  await expect(page.locator("main > article")).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
+});
+
+test("AI enrichment with the same story version waits for explicit feed acceptance", async ({ page, request }) => {
+  const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
+  const enriched = { ...body.items[2], aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
+  await page.goto("/marknaden/nyheter");
+  await expect(page.locator("article")).toHaveCount(12);
+  await page.evaluate((story) => {
+    const source = window.__newsStreams.findLast((source) => !source.closed);
+    source.dispatchEvent(new MessageEvent("story", { data: JSON.stringify(story) }));
+  }, enriched);
+  await expect(page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
+  await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
+  await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toBeVisible();
+  await expect(page.locator("article")).toHaveCount(12);
+});
+
 for (const width of [320, 390, 1440]) {
   test(`market and reader reflow at ${width}px in both themes`, async ({
     page,

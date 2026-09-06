@@ -1,5 +1,7 @@
 // Wire tags -> reader-friendly Swedish labels
 const TAG_LABELS = {
+    NEWS: "Nyhet",
+    PROFIT_WARNING: "Vinstvarning",
     "M&A": "M&A",
     MA: "M&A",
     M_AND_A: "M&A",

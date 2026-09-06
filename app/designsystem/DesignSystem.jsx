@@ -53,6 +53,8 @@ import {
   cx,
 } from "../components/ui/layout";
 import { Dialog, DialogClose, Menu, Tooltip } from "../components/ui/overlays";
+import { Label } from "../components/ui/Label";
+import NewsTypeLabel from "../components/NewsTypeLabel";
 import NewsRow from "../components/ui/NewsRow";
 import ui from "../components/ui/ui.module.css";
 import styles from "./design-system.module.css";
@@ -759,6 +761,23 @@ export default function DesignSystem() {
                 </Stack>
               </Example>
             </div>
+            <Example title="Etiketter" name="Label · NewsTypeLabel">
+              <Stack gap={4}>
+                <Inline gap={2}>
+                  <NewsTypeLabel type="EARNINGS" />
+                  <NewsTypeLabel type="ORDER" />
+                  <NewsTypeLabel type="MACRO" />
+                  <NewsTypeLabel type="INSIDER" />
+                  <Label tone="accent" icon={<FiSun />}>
+                    Morgonbrevet
+                  </Label>
+                </Inline>
+                <Text size="xs" tone="secondary">
+                  Etiketter beskriver innehåll. De är inte knappar, filter eller
+                  köp- och säljsignaler.
+                </Text>
+              </Stack>
+            </Example>
             <Example title="Flikar" name="Tabs · TabList · Tab · TabPanel">
               <Tabs defaultValue="news">
                 <TabList label="Exempel på bolagsflikar">

@@ -12,9 +12,10 @@ import {
   storyHref,
 } from "../utils/newsroom";
 import { reactionGeometry } from "../utils/reactionGeometry";
-import { tagLabel } from "../utils/newsTags";
+import NewsTypeLabel from "./NewsTypeLabel";
+import NewsSummary from "./NewsSummary";
 import { Button } from "./ui/Button";
-import { Badge, ChangeBadge, EmptyState, Skeleton } from "./ui/data";
+import { ChangeBadge, EmptyState, Skeleton } from "./ui/data";
 import { Heading, Inline, Stack, Text } from "./ui/layout";
 import FollowCompanyButton from "./FollowCompanyButton";
 import NewsFeedItem from "./NewsFeedItem";
@@ -213,12 +214,11 @@ export default function StoryReader({
     <article className={styles.reader}>
       <Stack gap={6}>
         <Inline gap={3}>
-          <Badge>
-            {tagLabel(
-              (story.labels ?? []).find((tag) => tag !== "REGULATORY") ||
-                "NEWS",
-            )}
-          </Badge>
+          <NewsTypeLabel
+            type={
+              (story.labels ?? []).find((tag) => tag !== "REGULATORY") || "NEWS"
+            }
+          />
           <Text
             as="time"
             dateTime={published ?? undefined}
@@ -236,6 +236,7 @@ export default function StoryReader({
         <Heading as="h1" size="page" className={styles.title}>
           {story.title}
         </Heading>
+        <NewsSummary value={story.aiSummary} reading />
         <Inline className={styles.actions}>
           {story.companies.slice(0, 2).map((company) => (
             <Inline key={company.symbol} gap={2}>
@@ -268,9 +269,6 @@ export default function StoryReader({
           <Text size="sm" role="alert">
             {shareError} <a href={shareUrl}>{shareUrl}</a>
           </Text>
-        )}
-        {story.summary && (
-          <Text className={styles.summary}>{story.summary}</Text>
         )}
         <section
           className={styles.reaction}

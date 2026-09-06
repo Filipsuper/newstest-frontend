@@ -1,0 +1,27 @@
+.card {
+  min-width: 0;
+  height: 100%;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+.link {
+  display: block;
+  padding: var(--ui-space-6);
+  height: 100%;
+  border-radius: inherit;
+}
+.link:hover h2 {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.link:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 4px;
+}
+@media (max-width: 600px) {
+  .link {
+    padding: var(--ui-space-4);
+  }
+}

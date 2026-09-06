@@ -47,6 +47,14 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
   publishedAt: new Date(base - index * 1800_000).toISOString(),
   summary:
     "Fiktiv testdata. Bolaget höjer helårsprognosen och redovisar en högre orderingång. Uppgifterna kommer från bolagets publicerade rapport.",
+  aiSummary: index === 2 ? null : {
+    text: "Fiktiv AI-text. Starkare efterfrågan får bolaget att höja sin helårsprognos.",
+    bullets: index === 1 ? [] : [
+      "Prognosen avser räkenskapsåret 2026.",
+      "Orderingången ökade med 12 procent.",
+      "Nästa rapport publiceras den 24 oktober.",
+    ],
+  },
   tags:
     index % 5 === 4 ? ["MACRO"] : index % 3 === 0 ? ["EARNINGS"] : ["ORDER"],
   importance: 95 - index,
@@ -73,6 +81,29 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
         }
       : {},
 }));
+const directory = [
+  ...companies.map(company => ({ ...company, currency: "SEK", quoteTime: base })),
+  ...Array.from({ length: 30 }, (_, index) => ({
+    name: `Övrigt Testbolag ${String(index + 1).padStart(2, "0")}`,
+    symbol: `OTHER-${index}.TEST`, nativeSymbol: `OTHER${index}`,
+    segment: "FIRST_NORTH", sector: "Teknik", currency: "SEK",
+    price: null, changePct: null, quoteTime: null,
+  })),
+];
+const companyNews = () => {
+  const group = reports => companies.map(company => ({
+    symbol: company.symbol,
+    story: stories.find(story => story.companies.some(item => item.symbol === company.symbol)
+      && (!reports || story.tags.some(tag => ["EARNINGS", "GUIDANCE", "PROFIT_WARNING"].includes(tag)))),
+  })).filter(row => row.story).map(({ symbol, story }) => ({
+    symbol, story: { id: story.id, title: story.headline, tags: story.tags, source: story.primarySource.name, publishedAt: story.publishedAt },
+  }));
+  return { news: group(false), reports: group(true), coverage: {
+    from: new Date(Date.now() - 96 * 3600_000).toISOString(), to: new Date().toISOString(),
+    hours: 96, minImportance: 60, companyLimit: 200, truncated: { news: false, reports: false },
+  } };
+};
+let discoveryFailure = false;
 const morningDate = new Date();
 morningDate.setUTCHours(5, 0, 0, 0);
 const articles = Array.from({ length: 16 }, (_, index) => ({
@@ -83,7 +114,10 @@ const articles = Array.from({ length: 16 }, (_, index) => ({
       : `Börsbrevet: dagens viktigaste händelser ${index}`,
   introText:
     "Fiktiv testdata. Nya prognoser från industrin, besked om räntan och bolagen att hålla ett öga på inför börsdagen.",
-  summary: "Fiktiv testdata. && Norden Industri && står i fokus.",
+  summary:
+    "Fiktiv testdata. && Norden Industri && står i fokus.\n##Dagens viktigaste händelser##\n**Industrin** växer med /green/+4,2 procent/green/. Läs [källan](https://example.com/rapport).\n##Vad händer härnäst?##\nDet här är exempeltext med [en osäker länk](javascript:alert).",
+  bulletPoints:
+    "- Prognosen höjs efter stark orderingång\n- Rörelsemarginalen ökar – trots högre kostnader\n- Nytt avtal för 2027–2029",
   createdAt: new Date(morningDate.getTime() - index * 86400_000).toISOString(),
   isEveningLetter: index % 2 === 1,
   omxChangePercentage: "+1,2%",
@@ -132,6 +166,7 @@ const server = createServer(async (req, res) => {
   const input = body ? JSON.parse(body) : {};
   let data;
   if (path === "/__newsroom_fixture") data = { fixture: true };
+  else if (path === "/__discovery_failure") { discoveryFailure = Boolean(input.fail); data = { ok: true }; }
   else if (path === "/api/user/watchlist/toggle") {
     user.watchlist = user.watchlist.includes(input.symbol)
       ? user.watchlist.filter((s) => s !== input.symbol)
@@ -143,14 +178,27 @@ const server = createServer(async (req, res) => {
     data = { [key]: user[key] };
   } else if (path === "/api/user") data = user;
   else if (path === "/api/feed/market-overview") data = overview();
-  else if (
-    path === "/api/feed/companies" ||
-    path === "/api/feed/company-directory"
-  )
-    data = companies;
+  else if (path === "/api/feed/companies") data = companies;
+  else if (path === "/api/feed/company-directory") data = directory;
+  else if (path === "/api/feed/company-news") {
+    if (discoveryFailure) { res.writeHead(503, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Fiktivt anslutningsfel" })); return; }
+    data = companyNews();
+  }
   else if (path === "/api/feed/company-profiles")
     data = { items: [], missing: companies.map((c) => c.symbol) };
   else if (path === "/api/data") data = articles;
+  else if (path === "/api/data/morning-letter")
+    data = articles.filter((article) => !article.isEveningLetter);
+  else if (path === "/api/data/evening-letter")
+    data = articles.filter((article) => article.isEveningLetter);
+  else if (path === "/api/data/empty-letter")
+    data = {
+      ...articles[0],
+      summary: null,
+      introText: "",
+      bulletPoints: null,
+      omxChangePercentage: null,
+    };
   else if (path.startsWith("/api/data/")) data = articles[0];
   else if (path === "/api/feed/topics")
     data = {

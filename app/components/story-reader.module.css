@@ -7,11 +7,6 @@
   max-width: 28ch;
   text-wrap: pretty;
 }
-.summary {
-  font-size: var(--ui-text-md);
-  line-height: 1.75;
-  max-width: 66ch;
-}
 .actions {
   gap: var(--ui-space-3);
 }

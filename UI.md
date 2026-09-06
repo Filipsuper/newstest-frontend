@@ -22,6 +22,11 @@ implementation and migration plan is in `docs/design-system.md`.
   use `SegmentedControl`; form values use `Select`; actions use `Menu`.
 - Components do not fetch data, calculate importance, or create alerts.
   Features compose them and retain the existing data/auth contracts.
+- `Label` is a non-interactive content/edition label, distinct from a form
+  label, a filter button, a status `Badge`, or a numeric `ChangeBadge`.
+  `NewsTypeLabel` maps news vocabulary to Swedish text and a quiet icon.
+  Categories stay neutral; reserve amber for editorial/plan identity and
+  green/red for signed data or explicit success/error states.
 
 ### Type, space, and interaction
 
@@ -139,6 +144,11 @@ desktop density or abbreviated interaction model.
   clear headline/company, supporting source/time and optional relevance reason.
   Rows are raised surfaces separated by gaps, not dark rows inside an outer
   card. Avoid repetitive summaries and obligatory per-row charts.
+- When a story has `aiSummary`, show its prose and up to three supplied bullet
+  points immediately below the headline, quietly labelled AI-sammanfattning.
+  Use the same `NewsSummary` in rows and the reader. Do not substitute the
+  deterministic `summary`, manufacture points or fetch every story detail to
+  fill a list. Missing AI copy leaves the headline/source row intact.
 - Every percentage states its period. `Sedan publicering` and `idag` are not
   interchangeable. A temporal association is not proof of causation. Missing
   reaction data is not zero, and a price chart must never be fabricated.
@@ -171,20 +181,52 @@ desktop density or abbreviated interaction model.
 - The reusable Base UI Combobox belongs in `ui/`; company search adapters own
   fetching/filtering and provide an explicit handoff to news search.
 
+## Settings and editorial reading
+
+- Settings group account, appearance, subscription and email preferences.
+  Use the shared Base UI `Switch`, never a styled button pretending to be a
+  switch. Theme changes persist immediately in the existing browser preference;
+  email delivery changes require an explicit save, with pending/error feedback.
+- Preserve unknown saved newsletter values. An unavailable preference is not
+  an unchecked preference; disable its control and offer recovery.
+- Only expose delivery channels the backend actually supports. Morgonbrevet
+  has an email preference; Kvällsbrevet links to its reading route. Account
+  settings link to Bevakning rather than duplicating personalization.
+- Articles and both edition routes share a 672px reading layout, 16px body,
+  real block headings, quiet sharing controls and the existing archive URLs.
+  Use actual highlights, optional saved market figures, and company links.
+  No emoji sentiment dashboard or current chart inserted into an old article.
+- The legacy letter quote fields are sourced from IG Sverige30. Label them as
+  saved broker data, not verified cash-index data or a live price.
+- Inline company previews use the shared keyboard-aware Tooltip; the company
+  link remains usable by touch without opening a preview. Never put article
+  headings inside paragraphs or render raw source HTML.
+- Compare full Stockholm dates for edition freshness. Show the last published
+  edition with an explicit date when today's edition does not exist.
+
 ## Stock directory
 
 - `/aktier` is a discovery workspace, not a marketing hero or an alphabetical
   registry. Begin with compact search and useful market/sector filters, then
   show the matching companies immediately.
-- Company cards combine identity with the small set of facts needed to choose
-  the next company: ticker, latest available price, daily move, list, sector,
-  and the canonical six-axis company profile.
+- Use company-first rows: identity/ticker/list/sector, latest quote with an
+  explicit day/date, one selected headline with source/time, and a separate
+  follow action. Company links and story links have different destinations.
+- `I nyheterna`, `Rapporter`, and `Alla bolag` are discovery filters. Search,
+  sector, listing, sort and revealed pages persist in the URL. Keep the whole
+  directory accessible even when news is absent or the news source fails.
+- News context belongs inside the company row, not a general feed above the
+  results. Use the bounded company-grouped source and disclose its window and
+  cap; never present the market overview's candidate pool as complete coverage.
+- Use `--ui-*` surfaces, shared controls and CSS Modules. Desktop rows are
+  roughly 112px tall and grow with content; on phones stack news beneath
+  identity/quote. Keep document scrolling and full headlines. No inset quote
+  cards or default directory radars. Full AI copy belongs in the opened reader.
 - The public company profile uses the Terminal's underlying axis scores but a
   softer, rounded outline suited to browsing. It is a research fingerprint,
   not a recommendation or an unexplained buy/sell verdict.
-- The profile is one shared component across the stock directory, screener
-  discovery and company overview. Do not use it in news rows, and remove it
-  rather than allowing it to become a decorative one-route motif.
+- The profile remains one shared component in screener discovery and company
+  research. Do not use it in news rows or the default compact directory.
 - Missing profile axes remain visibly missing and never collapse to zero.
   Show profile coverage tersely so sparse source data is not mistaken for a
   complete assessment. Partial profiles retain a filled silhouette; use the
@@ -194,10 +236,8 @@ desktop density or abbreviated interaction model.
   match, OMXsum yellow for a mixed profile, and green only for a strong match.
   The axis values and silhouette remain the primary explanation; color is a
   reinforcement, never a buy or sell verdict.
-- Load profiles only for the currently visible page of cards and reveal more
-  companies in small batches. Filtering the directory must stay immediate.
-- Prefer borderless tonal cards, inset fact groups, tight typography, and a
-  responsive grid over rows divided by prominent outlines.
+- Reveal directory rows in small batches. Filtering stays immediate and does
+  not trigger individual story/profile requests for every visible company.
 
 ## Company pages
 

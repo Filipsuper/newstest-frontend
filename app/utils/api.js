@@ -259,6 +259,20 @@ export async function fetchCompanyDirectory() {
     }
 }
 
+export async function fetchCompanyNews() {
+    try {
+        const response = await fetch(`${API_URL}/feed/company-news`, {
+            // The backend owns the shared 60s cache. A second SSR cache would
+            // silently serve a stale selection through upstream failures.
+            cache: "no-store",
+            signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok) return null;
+        const body = await response.json();
+        return Array.isArray(body?.news) && Array.isArray(body?.reports) && body?.coverage ? body : null;
+    } catch { return null; }
+}
+
 export async function fetchCompanyProfiles(symbols = []) {
     const requested = [...new Set(symbols)].filter(Boolean).slice(0, 12);
     if (requested.length === 0) return { items: [], missing: [] };
@@ -556,7 +570,9 @@ export async function saveActiveNewsletters(newsletters) {
             "credentials": "include",
             body: JSON.stringify({ newsletters })
         })
-        return res.json();
+        const body = await res.json();
+        if (!res.ok || body?.error) throw new Error("Brevvalen kunde inte sparas");
+        return body;
     } catch (error) {
         console.error('Error fetching data:', error);
         throw error;

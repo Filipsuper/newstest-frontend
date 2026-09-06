@@ -9,6 +9,7 @@ export default function NewsRow({
   as = "article",
   company,
   title,
+  description,
   reaction,
   reactionLabel = "Kursförändring",
   metadata,
@@ -47,6 +48,7 @@ export default function NewsRow({
           {title}
         </button>
       )}
+      {description}
       {metadata && <div className={styles.metadata}>{metadata}</div>}
     </ListRow>
   );

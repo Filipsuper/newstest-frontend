@@ -22,7 +22,7 @@ export async function storyMetadata(id) {
     };
   const story = normalizeStory(result.detail.story ?? result.detail);
   const description = (
-    story.summary ||
+    story.aiSummary?.text ||
     "Nyheten, källorna och aktiens utveckling kring publiceringen på OMXsum."
   ).slice(0, 240);
   const url = `https://omxsum.com${storyHref(id)}`;

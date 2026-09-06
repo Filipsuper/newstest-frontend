@@ -124,7 +124,11 @@ test("select, menu and tabs have working keyboard behavior", async ({
   await select.focus();
   await page.keyboard.press("Space");
   await expect(page.getByRole("listbox")).toBeVisible();
+  // Visibility precedes the popup's initial-focus effect. Wait for the selected
+  // option before navigating so a fast keypress cannot race that focus transfer.
+  await expect(page.getByRole("option", { name: "Sverige", exact: true })).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Norden", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(select).toHaveText("Norden");
   await expect(select).toBeFocused();

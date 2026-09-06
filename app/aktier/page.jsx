@@ -1,5 +1,6 @@
 import StocksDirectoryPage from "../components/StocksDirectoryPage";
-import { fetchCompanyDirectory, fetchCompanyList, fetchMarketOverview } from "../utils/api";
+import { fetchCompanyDirectory, fetchCompanyList, fetchCompanyNews } from "../utils/api";
+import { stockFilters } from "../utils/stockDiscovery";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,11 @@ export const metadata = {
     alternates: { canonical: "/aktier" },
 };
 
-export default async function Page() {
-    const [companies, overview] = await Promise.all([
-        fetchCompanyDirectory().then(async rows => rows ?? await fetchCompanyList() ?? []),
-        fetchMarketOverview().catch(() => null),
+export default async function Page({ searchParams }) {
+    const [directory, news, params] = await Promise.all([
+        fetchCompanyDirectory(), fetchCompanyNews(), searchParams,
     ]);
-    return <StocksDirectoryPage companies={companies} overview={overview} />;
+    const companies = directory ?? await fetchCompanyList();
+    const query = new URLSearchParams(Object.entries(params ?? {}).filter(([, value]) => typeof value === "string"));
+    return <StocksDirectoryPage companies={companies} news={news} quotesAvailable={directory !== null} initialFilters={stockFilters(query)} asOf={Date.now()} />;
 }

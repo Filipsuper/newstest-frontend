@@ -1,0 +1,23 @@
+.summary {
+  display: grid;
+  gap: var(--ui-space-2);
+  margin-top: var(--ui-space-3);
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-sm) / var(--ui-leading-body) var(--ui-font);
+  overflow-wrap: anywhere;
+}
+.summary p,
+.summary ul {
+  margin: 0;
+}
+.summary ul {
+  display: grid;
+  gap: var(--ui-space-1);
+  padding-inline-start: var(--ui-space-4);
+  list-style: disc;
+}
+.summary[data-reading] {
+  margin-top: 0;
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+}

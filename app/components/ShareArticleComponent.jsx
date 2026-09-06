@@ -1,84 +1,57 @@
 "use client";
-
-import React, { useState } from 'react'
-import { FaTwitter, FaLink, FaShareAlt } from "react-icons/fa";
+import { useState } from "react";
+import { FiShare2, FiCopy, FiCheck } from "react-icons/fi";
+import { articleHref } from "../utils/editorial";
+import { Button } from "./ui/Button";
+import { Inline, Text } from "./ui/layout";
+import styles from "./editorial.module.css";
 
 export default function ShareArticleComponent({ title }) {
-    const [copySuccess, setCopySuccess] = useState("");
-    const parseTitleForUrl = (title) => {
-        return title.replaceAll("-", "_").replaceAll(" ", "-")
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const url = `https://omxsum.com${articleHref(title)}`;
+  async function share(copy = false) {
+    setError("");
+    try {
+      if (!copy && navigator.share) await navigator.share({ title, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+      }
+    } catch (error) {
+      if (error.name !== "AbortError")
+        setError("Länken kunde inte kopieras. Använd länken nedan.");
     }
-
-    const articleUrl = "https://omxsum.com/article/" + parseTitleForUrl(title) + "?utm_source=share&utm_medium=web&utm_campaign=article_share";
-
-
-    const shareOnTwitter = () => {
-        const text = encodeURIComponent(title);
-        const url = encodeURIComponent(articleUrl);
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-        window.open(twitterUrl, "_blank", "width=550,height=420");
-    };
-
-    const copyToClipboard = async () => {
-        try {
-            await navigator.clipboard.writeText(articleUrl);
-            setCopySuccess("Länk kopierad!");
-            setTimeout(() => setCopySuccess(""), 2000);
-        } catch {
-            setCopySuccess("Kunde inte kopiera länken");
-        }
-    };
-
-    const nativeShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: title,
-                    url: articleUrl,
-                });
-            } catch (err) {
-                // Share cancelled or failed
-            }
-        } else {
-            alert("Dela-funktionen stöds inte i din webbläsare");
-        }
-    };
-
-    return (
-        <div className="flex flex-row gap-4 items-center mb-2">
-            <h2 className="hidden md:flex text-sm font-sans text-text">
-                Dela artiklen
-            </h2>
-            <div className="flex flex-row gap-4">
-                <button
-                    onClick={nativeShare}
-                    aria-label="Dela artikel"
-                    title="Dela artikel"
-                    className=" py-1 rounded"
-                    type="button"
-                >
-                    <FaShareAlt />
-                </button>
-                <button
-                    onClick={shareOnTwitter}
-                    aria-label="Dela på Twitter"
-                    title="Dela på Twitter"
-                    className=" py-1 rounded"
-                    type="button"
-                >
-                    <FaTwitter />
-                </button>
-                <button
-                    onClick={copyToClipboard}
-                    aria-label="Kopiera länk"
-                    title="Kopiera länk"
-                    className=" py-1 rounded"
-                    type="button"
-                >
-                    <FaLink />
-                </button>
-                {copySuccess && <span className="self-center font-sans text-xs ml-2 ">{copySuccess}</span>}
-            </div>
-        </div>
-    )
+  }
+  return (
+    <div className={styles.share}>
+      <Inline className={styles.shareActions}>
+        <Button variant="ghost" onClick={() => share()}>
+          <FiShare2 aria-hidden="true" />
+          Dela brevet
+        </Button>
+        <Button variant="ghost" onClick={() => share(true)}>
+          {copied ? (
+            <FiCheck aria-hidden="true" />
+          ) : (
+            <FiCopy aria-hidden="true" />
+          )}
+          Kopiera länk
+        </Button>
+      </Inline>
+      {copied && (
+        <Text size="xs" role="status">
+          Länk kopierad
+        </Text>
+      )}
+      {error && (
+        <Text size="xs" role="alert" className={styles.shareFeedback}>
+          {error}{" "}
+          <a className={styles.link} href={url}>
+            {url}
+          </a>
+        </Text>
+      )}
+    </div>
+  );
 }

@@ -1,0 +1,32 @@
+.link {
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+.link:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 4px;
+}
+.preview {
+  display: grid;
+  width: 208px;
+  max-width: 100%;
+  gap: var(--ui-space-2);
+  font: 400 var(--ui-text-xs) / 1.5 var(--ui-font);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  font-variant-numeric: tabular-nums;
+}
+.footer {
+  color: var(--ui-text-secondary);
+}
+.positive {
+  color: var(--ui-positive);
+}
+.negative {
+  color: var(--ui-negative);
+}

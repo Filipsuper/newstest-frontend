@@ -50,8 +50,8 @@ export function MarketWorkspaceNav({ foundation = false }) {
     return <WorkspaceNav links={MARKET_LINKS} label="Marknaden" foundation={foundation} />;
 }
 
-export function StockWorkspaceNav() {
-    return <WorkspaceNav links={STOCK_LINKS} label="Aktier" />;
+export function StockWorkspaceNav({ foundation = false }) {
+    return <WorkspaceNav links={STOCK_LINKS} label="Aktier" foundation={foundation} />;
 }
 
 export function WatchWorkspaceNav() {

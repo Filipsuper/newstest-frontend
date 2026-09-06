@@ -100,8 +100,26 @@ Phase 1 is implemented. Phase 2 now includes the public shell/search,
 `/marknaden`, shared chronological feed, URL-backed story reader and social
 images, Bevakning/preferences, and the letter library. The company page has
 news-first ordering and shared news rows; its analytical controls/charts and
-the full directory/screener presentation remain incremental migrations.
+the screener presentation remains an incremental migration.
 See `docs/news-first-workspace.md` for the new product and data contract.
+
+The next approved release also migrates `/settings`, `/article/[id]`,
+`/morgonbrevet`, `/kvallsbrevet`, article sharing and inline company previews.
+`Label` / `NewsTypeLabel` now cover content taxonomy and edition identity in
+the gallery, news rows, story reader and letter library. Email settings retain
+explicit saving and existing backend values; appearance uses the shared switch.
+These changes are separate from the previously approved release.
+`NewsSummary` now supplies the real AI prose/bullets beneath news headlines
+through `NewsRow`'s presentation-only description slot and the story reader.
+Its data adapter retains deterministic text for ranking but never presents it
+as AI copy. See `docs/stock-discovery-ux.md` for the implemented compact
+directory and its bounded company-news data contract. It uses shared controls,
+tonal rows and URL-backed filters; the screener/research radar is unchanged.
+`LetterCard` is shared by the archive and existing landing-page previews;
+`PreviousArticle` is now a compatibility adapter rather than a second renderer.
+The supplemental company preview follows the [Base UI Tooltip guidelines](https://base-ui.com/react/components/tooltip#usage-guidelines):
+the link remains independently named and navigable, and the full company page
+provides the data without requiring hover.
 
 Not included yet: table virtualization, analytical chart/radar restyling,
 notification delivery, cross-device read receipts, exact letter-to-story IDs,

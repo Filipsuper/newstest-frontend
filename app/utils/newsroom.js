@@ -5,6 +5,7 @@ import {
   uniqueNews,
 } from "./marketNewsRanking.js";
 import { TOPIC_LABELS } from "./topicLabels.js";
+import { newsSummary } from "./newsSummary.js";
 
 export const validStoryId = (id) =>
   /^[A-Za-z0-9_-]{1,80}$/.test(String(id ?? ""));
@@ -116,12 +117,20 @@ export function mergeFeed(items, incoming) {
     }
     const existing = byId.get(item.id);
     if (existing && (existing.version ?? 1) > (item.version ?? 1)) continue;
-    byId.set(item.id, { ...existing, ...item });
+    const aiSummary = newsSummary(item.aiSummary)
+      || ((existing?.version ?? 1) === (item.version ?? 1)
+        ? newsSummary(existing?.aiSummary) : null);
+    byId.set(item.id, { ...existing, ...item, aiSummary });
   }
   return chronologicalNews([...byId.values()]);
 }
 export const pendingChanges = (current, incoming) =>
   incoming.filter((item) => {
     const old = current.find((row) => row.id === item.id);
-    return !old || (item.version ?? 1) > (old.version ?? 1);
+    if (!old || (item.version ?? 1) > (old.version ?? 1)) return true;
+    // AI enrichment is published after the wire story without bumping its
+    // version. Queue new copy explicitly; price-only updates still stay quiet.
+    const summary = newsSummary(item.aiSummary);
+    return (item.version ?? 1) === (old.version ?? 1) && summary !== null
+      && JSON.stringify(summary) !== JSON.stringify(newsSummary(old.aiSummary));
   });

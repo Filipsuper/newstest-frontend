@@ -1,5 +1,6 @@
 // Maps the Market API's Story v1 payload to the flat shape our news
 // components render. Used for both REST responses and SSE events.
+import { newsSummary } from "./newsSummary.js";
 const OFFICIAL_SOURCES = new Set(["fi", "nasdaq", "riksbank"]);
 
 export function storyToItem(story) {
@@ -34,6 +35,7 @@ export function storyToItem(story) {
         labels: story.tags ?? [],
         importance: story.importance ?? null,
         summary: story.summary ?? null,
+        aiSummary: newsSummary(story.aiSummary),
         facts: story.facts ?? null,
         reaction: story.reaction ?? null,
         status: story.status,

@@ -14,8 +14,9 @@ The funnel: **free morning letter (lead magnet) → habit → personalization
 
 ## News-first public workspace — September 2026
 
-Status: implemented locally, pending release verification and deployment. This
-section supersedes earlier public-navigation and dashboard-layout assumptions.
+Status: deployed to omxsum.com on 7 September 2026 (Stockholm), frontend
+`a50f173` and backend `c387973`. This section supersedes earlier
+public-navigation and dashboard-layout assumptions.
 Use `UI.md`, `docs/design-system.md`, and `docs/news-first-workspace.md` for the
 implementation contract. Do not interpret the historical “shipped” notes below
 as verification that a new feature has been deployed.
@@ -81,14 +82,88 @@ as verification that a new feature has been deployed.
   reaction periods correctly, follow a company without visiting settings,
   and return to a feed without losing position.
 
-Release includes frontend **and** `newsbackend` changes. No deployment, account
-upgrades, billing changes, or production backfills are part of this revision.
+Release includes frontend **and** `newsbackend` changes, deployed after explicit
+publishing approval. No account upgrades, billing changes, or production
+backfills were performed.
 
 Local verification: production build passed; 12 frontend and 13 backend unit
 tests passed; 21 Chromium browser tests passed against fictional data, including
 mobile/light/dark layouts, keyboard/focus/history, clipboard links, OG variants,
 access boundaries, and failed preference saves. These checks do not verify the
 production upstream archive or replace user testing and post-release checks.
+
+Production verification: capped sequential builds completed, both containers
+are running without restarts, and homepage/company/API health checks passed.
+The market workspace, full-feed entry point, watchlist, letter library and
+component gallery returned HTTP 200. A public story returned canonical and
+social metadata, its image returned a 1200×630 PNG, and related stories loaded.
+The overview returns 100 candidates; anonymous full-feed access remains denied.
+Previous running images are retained for rollback. Authenticated archive
+pagination still needs verification against the upstream API.
+
+## Editorial/account migration — next local iteration
+
+Status: implemented locally, not released. The preceding news-first release
+was pushed and deployed with approval on 7 September 2026. This next batch
+remains separate on `public-settings-editorial` for review.
+
+- [x] Reusable `Label` and `NewsTypeLabel`, neutral category icons, gallery
+  examples, integration with news rows/readers and edition labels.
+- [x] Settings: shared controls, accessible theme/email switches, subscription
+  portal, explicit save/revert, retryable errors and preserved newsletter values.
+- [x] One reading layout for articles, morning and evening editions; safe source
+  links, actual section headings, company previews and canonical sharing links.
+- [x] Shared lightweight letter cards for the archive and existing landing-page
+  previews; reader-only code no longer loads through the legacy preview parser.
+- [x] Full Stockholm-date checks instead of weekday-only edition matching.
+  Missing content and unavailable preferences are distinct from empty values.
+- [ ] Release review for this next batch, then migrate the remaining landing,
+  pricing/account utility pages and analytical stock/screener controls.
+
+Verified locally: production build, 16 frontend unit tests, and 29 Chromium
+browser tests passed. Browser coverage includes explicit/failed email saves,
+missing preferences, theme persistence, keyboard previews, source links,
+clipboard sharing, shared archive cards, and 320/390px/desktop layouts.
+No real newsletter preferences, billing actions, or account data were changed.
+
+## Approved release: AI descriptions and company-first discovery
+
+- [x] Shared `NewsSummary` beneath row/reader headlines: AI prose and up to
+  three real bullet points, labelled as AI. No deterministic-description fallback.
+- [x] Preserve AI fields through the public Market API and personalized proxy;
+  social descriptions use AI prose when available. No generation/ranking changes.
+- [x] Same-version AI enrichment is recognized when fetched/received and queued
+  for explicit feed acceptance; ordinary price updates do not create a queue.
+- [x] Implement the approved `/aktier` direction with compact company/quote/news
+  rows, contextual follow controls and shared neutral surfaces. Remove the
+  separate discovery feed and obsolete directory CSS; keep screener unchanged.
+- [x] URL-backed I nyheterna / Rapporter / Alla bolag, search, sector/list,
+  explicit sorting and pagination. Return from stories/companies without losing
+  filters. Missing prices, empty selections and source failures stay distinct.
+- [x] Bounded company-grouped news endpoint: fixed 96-hour window, importance
+  threshold 60, routine-insider/admin filtering, separate report selection,
+  200-company caps with explicit truncation, one shared cache and query timeout.
+- [x] Public API compatibility bridge reads only AI text/bullets for already
+  selected/authorized story IDs, in one version-matched batch. This makes the
+  release independent of a simultaneous Terminal rebuild.
+
+Release scope: the user approved pushing all three scoped repository changes
+and deploying the public frontend/backend. The compatible `stonks` serializer
+patch is isolated on top of current upstream; the live Terminal checkout also
+has unrelated unfinished work, so do not rebuild or alter it for this release.
+The public API bridge delivers AI copy now and skips the lookup once the upstream
+serializer supplies it. No notification delivery or AI-generation changes.
+
+Verified: fresh isolated production build, 24 frontend unit tests, 19 backend
+unit tests, two Market API serialization tests and its TypeScript check; all
+37 Chromium browser tests passed with fictional data. Desktop/mobile reader
+and directory screenshots were inspected. The production discovery query was
+validated read-only in 39ms. A concurrent local `next dev` preview on port 5173
+shares `.next` with root-checkout production builds and causes SSR module errors
+when it rewrites them. Run production verification in an isolated copy while
+that preview is active. The affected local preview was restored through its
+existing launcher after scoped approval. Account/notification writes are not
+part of this release; tests use fictional identities.
 
 ## Shipped foundation (aug 2026)
 
