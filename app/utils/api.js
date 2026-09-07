@@ -5,9 +5,10 @@ const API_URL =
         ? process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
         : process.env.NEXT_PUBLIC_API_URL;
 
-export async function fetchAllArticles() {
+export async function fetchAllArticles({ signal } = {}) {
     try {
-        const response = await fetch(`${API_URL}/data`, { cache: "no-store" });
+        const response = await fetch(`${API_URL}/data`, { cache: "no-store", signal });
+        if (!response.ok) throw new Error("Kunde inte hämta breven");
         return response.json();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -18,8 +19,9 @@ export async function fetchAllArticles() {
 // A deliberately small public snapshot for the everyday overview. The
 // backend keeps the Market API credential private and limits this response to
 // three reference indices, market breadth, five gainers/losers and selected headlines.
-export async function fetchMarketOverview() {
+export async function fetchMarketOverview({ signal } = {}) {
     const response = await fetch(`${API_URL}/feed/market-overview`, {
+        signal,
         ...(typeof window === "undefined"
             ? { next: { revalidate: 30 } }
             : { cache: "no-store" }),

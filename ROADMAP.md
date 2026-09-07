@@ -9,8 +9,47 @@ adds depth after that first understanding. The terminal remains the dense
 realtime workspace for investigation and monitoring. Both consume the same
 source-attributed API; the public product is not a smaller copy of Terminal.
 
-The funnel: **free morning letter (lead magnet) → habit → personalization
-(paid) → power tools (paid)**.
+The entry points: **free morning letter or public market overview → a daily
+news habit → company following → personal letters and research (paid)**.
+
+## OMXsum 2.0 landing page — approved release
+
+Status: verified locally on 7 September 2026; publishing approved, rollout pending.
+This updates the earlier letter-only landing-page principle, not the product's
+access model. The free letter remains the easy entry point, while visitors can
+also try the news-led workspace without creating an account.
+
+- [x] Benefit-led homepage: understand news, put stock reactions in context,
+  and follow companies/topics/keywords. Shared typography, buttons, labels and
+  responsive spacing; one main landmark and normal document scrolling.
+- [x] OMXsum 2.0 launch identity in the public shell, homepage metadata and
+  1200×630 sharing image. Stable URLs and Terminal branding are unchanged.
+- [x] Two real public news examples using the existing material-news selection
+  and shared reader; no full paid-feed request or fabricated market data.
+  AI copy, sources and observed-reaction periods keep their existing meaning.
+- [x] Published morning/evening letter preview using the existing Stockholm
+  cutoff, separate loading/failure recovery and a path to the letter archive.
+- [x] Landing refinement: newsletter preview beside the hero as the lead
+  magnet, news examples lower down, and wider 112px/64px section spacing.
+  Mobile places the letter immediately after signup; no duplicate previews.
+- [x] Guest signup reuses the confirmed-email onboarding flow. Returning users
+  get Marknaden or Bevakning actions; signup remains available because account
+  membership does not prove newsletter subscription.
+- [x] Replace ticking clock, hard-coded demo blocks and repetitive feature
+  catalogue. Clarify free overview/letters, five followed companies and Plus
+  access to the full feed, research and personal letter additions.
+- [x] User review and explicit publishing approval.
+- [ ] Production rollout and post-release checks.
+
+Verified: isolated production build, all 32 frontend unit tests and all 74
+Chromium browser tests pass. Landing coverage includes guest/returning-user
+actions, unchanged signup confirmation, reader history/focus, metadata and OG,
+320/390px/desktop layouts and automated light/dark accessibility checks.
+Screenshots and the sharing image were inspected. Separate local outage checks
+verify independent preview failure, dual HTTP failures, retry recovery and
+genuine empty states while signup remains usable. All test users and stories
+are fictional; this is not a production upstream or release check.
+No backend, billing, account, notification-delivery or Terminal changes.
 
 ## News-first public workspace — September 2026
 
@@ -320,10 +359,10 @@ entitlements. Separately, verify Stripe portal plan-change configuration and
 add an idempotent existing-subscription upgrade path before offering in-app
 Plus-to-Pro checkout again. The current endpoint creates a new subscription.
 
-Next UI scope: the landing page and remaining account utility surfaces. Keep
-the free letter as the entry point and connect it to the news-led workspace;
-do not turn the landing page into another market dashboard. The unchanged
-landing page also needs a main landmark and clearer personal-letter access copy.
+The landing follow-up is implemented in the local OMXsum 2.0 revision above,
+including the main landmark and personal-letter access copy. Remaining UI
+scope: account utility surfaces and field testing of the complete acquisition
+journey. Keep the free letter as an entry point to the news-led workspace.
 
 ## Shipped foundation (aug 2026)
 
@@ -524,4 +563,6 @@ aspirations. The monthly prices and billing configuration have not changed.
 - The free letter never gets worse to force upgrades — it's the acquisition
   engine. Paid = "mine, about my stocks", not "less bad".
 - Everything renders in Swedish; facts/tags stay English (API contract).
-- Landing page sells the letter only; paid features surface in product.
+- Landing explains the news-led product through concrete benefits and real
+  previews. The free letter and public overview are the entry points; deeper
+  paid features are secondary, with their access boundaries clearly labelled.

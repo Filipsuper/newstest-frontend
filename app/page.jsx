@@ -1,35 +1,42 @@
-import { fetchAllArticles } from "./utils/api";
+import { Suspense } from "react";
 import HomePage from "./components/HomePage";
+import {
+  LandingLetterPreview,
+  LandingNewsPreview,
+  LandingPreviewLoading,
+} from "./components/LandingPreviews";
+import { BRAND_LABEL, LANDING_DESCRIPTION } from "./utils/brand";
 
 export const dynamic = "force-dynamic";
 
-const title = "Svenska börsnyheter, aktiekurser och bolagsanalys";
-const description =
-  "Följ svenska börsnyheter, aktiekurser och över 870 bolag på Stockholmsbörsen. Läs Morgonbrevet, se kursreaktioner och hitta dagens viktigaste händelser.";
+const title = `${BRAND_LABEL} – Börsnyheter med sammanhang`;
+const description = LANDING_DESCRIPTION;
 
 export const metadata = {
-  title: { absolute: `${title} | OMXsum` },
+  title: { absolute: title },
   description,
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${title} | OMXsum`,
+    title,
     description,
     url: "https://omxsum.com",
-    siteName: "OMXsum",
+    siteName: BRAND_LABEL,
     locale: "sv_SE",
     type: "website",
-    images: [{
-      url: "/omxsum_og.jpg",
-      width: 1200,
-      height: 630,
-      alt: "OMXsum – svenska börsnyheter och bolagsanalys",
-    }],
+    images: [
+      {
+        url: "/og/home",
+        width: 1200,
+        height: 630,
+        alt: `${BRAND_LABEL} – Förstå nyheterna. Följ dina bolag.`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${title} | OMXsum`,
+    title,
     description,
-    images: ["/omxsum_og.jpg"],
+    images: ["/og/home"],
   },
 };
 
@@ -53,7 +60,8 @@ const structuredData = {
       "@type": "WebSite",
       "@id": "https://omxsum.com/#website",
       url: "https://omxsum.com",
-      name: "OMXsum",
+      name: BRAND_LABEL,
+      alternateName: "OMXsum",
       description,
       inLanguage: "sv-SE",
       publisher: { "@id": "https://omxsum.com/#organization" },
@@ -61,14 +69,7 @@ const structuredData = {
   ],
 };
 
-export default async function Page() {
-  let articles = null;
-  try {
-    articles = await fetchAllArticles();
-  } catch (error) {
-    articles = null;
-  }
-
+export default function Page() {
   return (
     <>
       <script
@@ -77,7 +78,18 @@ export default async function Page() {
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
-      <HomePage articles={articles} />
+      <HomePage
+        newsPreview={
+          <Suspense fallback={<LandingPreviewLoading type="nyheter" />}>
+            <LandingNewsPreview />
+          </Suspense>
+        }
+        letterPreview={
+          <Suspense fallback={<LandingPreviewLoading type="brevet" />}>
+            <LandingLetterPreview />
+          </Suspense>
+        }
+      />
     </>
   );
 }

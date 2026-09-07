@@ -181,6 +181,32 @@ was not deployed. See ROADMAP.md for live checks and rollback image references.
 
 ## Component use
 
+### OMXsum 2.0 landing composition
+
+The homepage now composes the foundation instead of its legacy clock, demo
+blocks and oversized typography. `HomePage` is a server component with
+independent, bounded news/letter preview slots. It reuses `NewsFeedItem` and
+`LetterCard`; only account-aware actions, signup and retry controls are client
+components. A failed preview leaves the core landing content usable.
+
+`landing.module.css` owns layout, not a new palette or duplicate control
+system. `brand.js` centralizes the launch name/version and headline for the
+public shell, homepage and static OG route. The OG renderer uses explicit
+foundation palette values because ImageResponse cannot resolve CSS variables;
+it does not contain simulated financial data. Terminal remains untouched.
+
+Guest signup uses the existing `EmailInput` and one confirmation dialog.
+Returning readers get a workspace shortcut, with signup available in the
+letter section rather than assuming their subscription state. Selection,
+chronology, causality, paid access and notification opt-in remain distinct.
+The current published letter now sits alongside the hero as the lead magnet
+(below signup on phones); real news examples follow the benefits section.
+Landing sections use 112px desktop and 64px mobile gaps, composed from shared
+spacing tokens, without increasing the density of the individual controls.
+Publishing has been approved; the production rollout is pending.
+
+### Shared primitives
+
 ```jsx
 import { Button, TextField, Select } from './ui/controls';
 import { Stack, Heading } from './ui/layout';

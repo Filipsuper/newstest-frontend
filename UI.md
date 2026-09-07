@@ -75,6 +75,36 @@ desktop density or abbreviated interaction model.
 - Desktop and mobile use the same conceptual destinations. Company pages are
   contextual destinations beneath `Aktier`, not another top-level product.
 
+## OMXsum 2.0 landing page
+
+- `/` explains the product's benefits: less searching, context around observed
+  stock reactions, and news relevant to the reader's own companies. It is not
+  a duplicate of `/marknaden` or a catalogue of analytical tools.
+- Use the shared `brand.js` launch identity in the public header, homepage and
+  homepage sharing image. Keep canonical URLs, organization identity and
+  Terminal branding unchanged. The version is a quiet label, not a new logo.
+- Guests get the existing free Morgonbrevet signup plus an account-free path
+  to Marknaden. Returning readers get a direct workspace action; an account
+  alone does not prove newsletter subscription, so signup remains available.
+- Demonstrate value with at most two real, material news examples and one
+  published letter. Reuse `NewsFeedItem`, AI descriptions, reaction-period
+  labels, the canonical reader and `LetterCard`. Do not invent example prices,
+  testimonials, user counts or live-update promises.
+- The newsletter is the lead magnet: the current published edition sits beside
+  the hero signup on desktop and directly beneath it on mobile. News examples
+  belong further down. Keep the actual edition/date visible rather than calling
+  an older fallback today's letter. Landing section gaps are 112px desktop
+  (64 + 48 from shared tokens) and 64px mobile; internal rows stay compact.
+- News and letter previews load independently, with bounded requests and
+  distinct loading, empty and unavailable states. A failed preview must not
+  prevent reading the benefit copy, navigating or signing up.
+- Keep the free/Plus boundary explicit: public overview and letters, free
+  company following, paid full feed/research and personal letter additions.
+  Following is not notification opt-in. Preserve the confirmed-email flow.
+- Use normal document scrolling, shared type/space tokens and flat benefit
+  sections. Keep phone controls readable; no oversized serif hero, dashboard
+  charts, clipped letter overlays or nested preview scroll areas.
+
 ## Visual hierarchy
 
 - Separate ordinary content with space, alignment, typography, and changes in

@@ -23,7 +23,7 @@
   text-decoration: none;
   flex-shrink: 0;
 }
-.logo span {
+.brandMark {
   display: block;
   width: 8px;
   height: 20px;

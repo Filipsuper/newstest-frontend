@@ -20,6 +20,8 @@ import { Container, cx } from "./ui/layout";
 import { Dialog, Menu } from "./ui/overlays";
 import StockSearch from "./StockSearch";
 import LogInModal from "../modals/logInModal";
+import { BRAND_LABEL, BRAND_NAME, BRAND_VERSION } from "../utils/brand";
+import { Label } from "./ui/Label";
 import ui from "./ui/ui.module.css";
 import styles from "./public-shell.module.css";
 
@@ -55,10 +57,11 @@ export default function PublicShell({ children }) {
           <Link
             href="/"
             className={styles.logo}
-            aria-label="OMXsum – startsida"
+            aria-label={`${BRAND_LABEL} – startsida`}
           >
-            <span aria-hidden="true" />
-            OMXsum
+            <span className={styles.brandMark} aria-hidden="true" />
+            {BRAND_NAME}
+            <Label aria-hidden="true" tone="accent">{BRAND_VERSION}</Label>
           </Link>
           <nav className={styles.navigation} aria-label="Huvudmeny">
             {links.map((link) => (
