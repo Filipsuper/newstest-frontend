@@ -1,8 +1,8 @@
 # OMXsum roadmap
 
 Updated 7 September 2026. OMXsum 2.0's main public-site redesign is released.
-This is the current planning backlog; items below are queued, not work already
-in progress or committed release dates.
+This is the current planning backlog. Unreleased implementation is marked
+explicitly; queued items are not committed release dates.
 
 [Release history and rollback records](docs/release-history.md) ·
 [UI rules](UI.md) · [Design system](docs/design-system.md) ·
@@ -47,6 +47,30 @@ Latest frontend application release: `d3f3405`. Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
+
+### Newsletter email — local implementation, not released
+
+- [x] Align Morgonbrevet email with the article design, with reusable static
+  email components, real intro, exact-edition links and plain-text alternative.
+  Preserve subscription filtering, paid personalization and delivery schedule.
+- [x] Validate fictional light/dark/mobile and fallback previews: 13 unit tests,
+  38 browser layout checks; no emails sent or production changes.
+- [x] Send the authorized single-recipient mockup; delivery was confirmed and
+  the user approved its appearance. Broader email-client coverage remains QA.
+- [ ] Release through the newsletter scheduler (not the frontend deploy command).
+
+Implementation lives in a separate scheduler worktree and is not yet committed.
+See [email ownership, preview commands and handoff](docs/newsletter-email.md).
+
+### Terminal gateway — local polish, not released
+
+- [x] Match the public header, palette, typography, membership panel and sign-in
+  dialog. Keep the real product preview and free market-overview alternative.
+- [x] Validate the production build, 38 unit tests and 28 browser checks covering
+  the gateway, membership and shared components, including mobile, both themes,
+  accessibility and guest/free/Plus/Pro handoffs.
+- [ ] Include the gateway in the next frontend release. Terminal's separate
+  workspace and server authorization remain unchanged.
 
 ### 1. Improve news quality
 

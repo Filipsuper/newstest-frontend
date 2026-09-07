@@ -2,61 +2,140 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { FaArrowRight, FaLock } from "react-icons/fa6";
-
+import { FiArrowRight, FiCheck } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { useModal } from "../providers/ModalProvider";
+import { membershipPlans } from "../utils/membership";
 import LogInModal from "../modals/logInModal";
+import { Button } from "./ui/Button";
+import { Label } from "./ui/Label";
+import { Dialog } from "./ui/overlays";
+import { Container, Heading, Inline, Stack, Surface, Text } from "./ui/layout";
 import TerminalShowcase from "./TerminalShowcase";
+import styles from "./terminal-gateway.module.css";
+
+const plus = membershipPlans.find((plan) => plan.id === "plus");
+const sessionUrl = "/api/auth/terminal-session";
 
 export default function TerminalGateway() {
-    const { user, isGuestUser, isPlusUser } = useAuthContext();
-    const { openModal } = useModal();
+  const { user, isGuestUser, isPlusUser } = useAuthContext();
 
-    useEffect(() => {
-        if (isPlusUser) window.location.replace("/api/auth/terminal-session");
-    }, [isPlusUser]);
+  useEffect(() => {
+    if (isPlusUser) window.location.replace(sessionUrl);
+  }, [isPlusUser]);
 
-    if (!user || isPlusUser) {
-        return (
-            <div className="min-h-[55vh] flex flex-col items-center justify-center gap-3 font-sans">
-                <span className="w-3 h-3 rounded-full bg-secondary animate-pulse" />
-                <p className="text-text-muted">Öppnar OMXsum Terminal…</p>
-            </div>
-        );
-    }
-
+  if (!user || isPlusUser) {
     return (
-        <>
-            <section className="max-w-2xl mx-auto px-6 pt-12 pb-16 text-center font-sans flex flex-col items-center justify-center">
-                <FaLock className="text-3xl text-secondary mb-5" />
-                <p className="text-xs font-bold tracking-[0.18em] text-secondary mb-3">OMXSUM TERMINAL</p>
-                <h1 className="text-4xl md:text-5xl font-serif font-bold text-text mb-4">
-                    Realtidsterminalen för svenska aktier
-                </h1>
-                <p className="text-text-muted max-w-xl mb-8">
-                    Livekurser, nyhetsflöde, movers, finansiella data och intradagsscreening ingår i Plus och Pro.
-                </p>
-
-                {isGuestUser ? (
-                    <div className="flex flex-col sm:flex-row gap-3 items-center">
-                        <button
-                            className="primary-btn extra-padding"
-                            onClick={() => openModal(<LogInModal redirectTo="/terminal" />)}
-                        >
-                            Logga in för att fortsätta
-                        </button>
-                        <Link href="/pro" className="text-sm text-text-muted underline">
-                            Se Plus och Pro
-                        </Link>
-                    </div>
-                ) : (
-                    <Link href="/pro" className="primary-btn extra-padding inline-flex items-center gap-2">
-                        Uppgradera till Plus <FaArrowRight />
-                    </Link>
-                )}
-            </section>
-            <TerminalShowcase />
-        </>
+      <Container as="main" reading className={styles.page}>
+        <Stack gap={4} className={styles.pending}>
+          <Heading as="h1" size="page">
+            OMXsum Terminal
+          </Heading>
+          <Text tone="secondary" role="status">
+            {isPlusUser
+              ? "Öppnar OMXsum Terminal…"
+              : "Kontrollerar din åtkomst…"}
+          </Text>
+          {isPlusUser && (
+            <Inline>
+              <Button
+                variant="secondary"
+                nativeButton={false}
+                role="link"
+                render={<a href={sessionUrl} />}
+              >
+                Öppna Terminal <FiArrowRight aria-hidden="true" />
+              </Button>
+            </Inline>
+          )}
+        </Stack>
+      </Container>
     );
+  }
+
+  return (
+    <Container as="main" className={styles.page}>
+      <Stack gap={12}>
+        <div className={styles.hero}>
+          <header className={styles.intro}>
+            <Stack gap={4}>
+              <Inline>
+                <Label tone="accent">OMXsum Terminal</Label>
+              </Inline>
+              <Heading as="h1" size="page">
+                Nyheter och kursrörelser i samma arbetsyta
+              </Heading>
+              <Text tone="secondary">
+                För dig som vill följa börsen på djupet. Läs nyheterna, hitta
+                bolag med ovanlig aktivitet och undersök kursrörelsen utan att
+                lämna din arbetsyta.
+              </Text>
+              <Inline>
+                <Button
+                  variant="ghost"
+                  nativeButton={false}
+                  role="link"
+                  render={<Link href="/marknaden" />}
+                >
+                  Till den fria marknadsöversikten{" "}
+                  <FiArrowRight aria-hidden="true" />
+                </Button>
+              </Inline>
+            </Stack>
+          </header>
+
+          <Surface
+            as="section"
+            aria-labelledby="terminal-access"
+            className={styles.access}
+          >
+            <Stack gap={4}>
+              <Heading id="terminal-access" size="subsection">
+                Terminal ingår i Plus
+              </Heading>
+              <Inline gap={1} className={styles.price}>
+                <Text as="span" numeric className={styles.amount}>
+                  {plus.price} kr
+                </Text>
+                <Text as="span" size="sm" tone="secondary">
+                  /mån
+                </Text>
+              </Inline>
+              <Text size="sm" tone="secondary">
+                Ingår också i Pro. Du får även Plus-funktionerna på vanliga
+                OMXsum.
+              </Text>
+              <ul className={styles.included}>
+                {[
+                  "Hela nyhetsflödet och sökning",
+                  "Movers och intradagsscreener",
+                  "Grafer och bolagsdata sida vid sida",
+                ].map((feature) => (
+                  <li key={feature}>
+                    <FiCheck aria-hidden="true" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button nativeButton={false} role="link" render={<Link href="/pro" />}>
+                Se Plus & Pro <FiArrowRight aria-hidden="true" />
+              </Button>
+              {isGuestUser && (
+                <Dialog
+                  title="Logga in för att öppna Terminal"
+                  trigger={
+                    <Button variant="secondary">
+                      Har du redan Plus? Logga in
+                    </Button>
+                  }
+                >
+                  <LogInModal redirectTo="/terminal" />
+                </Dialog>
+              )}
+            </Stack>
+          </Surface>
+        </div>
+        <TerminalShowcase />
+      </Stack>
+    </Container>
+  );
 }

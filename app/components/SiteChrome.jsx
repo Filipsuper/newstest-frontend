@@ -51,7 +51,8 @@ export default function SiteChrome({ children }) {
         || pathname.startsWith("/marknaden/")
         || pathname === "/bevakning"
         || pathname.startsWith("/bevakning/");
-    const isTerminalPage = pathname === "/terminal" || pathname.startsWith("/terminal/");
+    // /terminal is the public membership gateway, not the separate workspace.
+    const isTerminalPage = pathname.startsWith("/terminal/");
 
     useEffect(() => {
         setIsMenuOpen(false);

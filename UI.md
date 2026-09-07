@@ -255,6 +255,26 @@ desktop density or abbreviated interaction model.
 - Compare full Stockholm dates for edition freshness. Show the last published
   edition with an explicit date when today's edition does not exist.
 
+## Newsletter email
+
+- Match the public article, not a separate promotional theme: edition/date,
+  headline, actual introduction, “I korthet”, full-article action and personal
+  section. Do not invent a summary or use an arbitrary body excerpt as an intro.
+- Email uses static equivalents of shared components: semantic color tokens,
+  Geist with Arial/Helvetica fallbacks, 32px/24px title, 20px section headings,
+  16px intro, 14px briefing and 12px metadata. Use a 672px shell, 32px desktop
+  gutters and 16px phone gutters. Avoid a second outer card or serif headings.
+- Keep baseline styles inline and layout tables presentational. Optional fonts,
+  rounded corners and dark-mode CSS must not be required to read or act.
+- Link the precise edition, retain unsubscribe/settings, and keep paid content
+  out of free HTML, hidden previews and plain-text alternatives. A follow choice
+  is not a notification opt-in. Missing data stays missing; saved IG figures
+  and observed stock-reaction periods retain their source/time labels.
+- The live newsletter template belongs to `Filipsuper/news-test`, not this
+  frontend or the backend's account-email templates. See
+  [email ownership and validation](docs/newsletter-email.md). Render fictional
+  previews offline; inbox tests and deployment need separate authorization.
+
 ## Signup and confirmation
 
 - Signup uses the shared email field and a single Base UI confirmation dialog.
@@ -295,6 +315,21 @@ desktop density or abbreviated interaction model.
 - `/pro/klart` is not proof of payment. Render only server-confirmed account
   access, with bounded refresh, manual retry and sign-in/support recovery.
   The main handoff is the news feed, then following companies—not Terminal.
+
+## Terminal gateway
+
+- `/terminal` is the public membership gateway. Use the same public header,
+  palette, Geist typography, semantic surfaces, buttons and login dialog as
+  `/pro`. The separately hosted Terminal workspace keeps its own dense UI.
+- State that Terminal is included in Plus and Pro; derive displayed prices
+  from the shared membership presentation. Send readers to `/pro`, not a
+  duplicate checkout. Offer the free market overview as an alternative.
+- Account loading is not a paywall. Plus/Pro keep the existing authenticated
+  session handoff, without flashing purchase actions. Guest login returns to
+  `/terminal`; Base UI handles keyboard focus, Escape and dialog dismissal.
+- Use the real product screenshot with an explicit non-live caption, not fake
+  or blurred data. Keep mobile content in normal document flow and every
+  action touch-sized. Do not promise unverified realtime or price causality.
 
 ## Stock directory
 
