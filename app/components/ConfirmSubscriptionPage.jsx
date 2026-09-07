@@ -3,136 +3,218 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { FaChartLine, FaNewspaper, FaXTwitter } from "react-icons/fa6";
-import { confirmSubscription } from "../utils/api";
+import { FiCheckCircle } from "react-icons/fi";
+import { confirmSubscription, fetchSubscriptionStatus } from "../utils/api";
 import { useAuthContext } from "../providers/AuthProvider";
 import PersonalizationSetup from "./PersonalizationSetup";
+import EmailInput from "./EmailInput";
+import LogInModal from "../modals/logInModal";
+import { Button } from "./ui/Button";
+import { Container, Heading, Stack, Text } from "./ui/layout";
+import { Skeleton } from "./ui/data";
+import styles from "./onboarding.module.css";
 
 export default function ConfirmSubscriptionPage() {
-    const searchParams = useSearchParams();
-    const token = searchParams.get("token");
-    const [status, setStatus] = useState("loading"); // loading | success | error
-    const confirmedRef = useRef(false);
-    const { refreshUser } = useAuthContext();
+  const token = useSearchParams().get("token");
+  const { user, refreshUser } = useAuthContext();
+  const [status, setStatus] = useState("loading");
+  const [session, setSession] = useState("loading");
+  const [email, setEmail] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const [login, setLogin] = useState(false),
+    [newLink, setNewLink] = useState(false);
+  const request = useRef(null),
+    confirmed = useRef(false);
 
-    useEffect(() => {
-        if (!token) {
-            setStatus("error");
+  useEffect(() => {
+    let active = true;
+    if (!token && confirmed.current) return;
+    async function run() {
+      setStatus("loading");
+      try {
+        if (token) {
+          // Reuse only an in-flight request during Strict Mode's effect replay.
+          // Never persist the email token or put it in subsequent story URLs.
+          if (
+            request.current?.token !== token ||
+            request.current?.attempt !== attempt
+          ) {
+            request.current = {
+              token,
+              attempt,
+              promise: confirmSubscription(token),
+            };
+          }
+          const result = await request.current.promise;
+          if (!active) return;
+          if (!result?.success) {
+            setStatus(
+              result?.code === "invalid_token" || result?.status === 400
+                ? "invalid"
+                : "error",
+            );
             return;
+          }
+          confirmed.current = true;
+          setEmail(result.mail || null);
+          setStatus("confirmed");
+          setSession("loading");
+          window.history.replaceState(window.history.state, "", "/bekrafta");
+          const account = await refreshUser();
+          // replaceState updates search params; the token-less effect is a
+          // no-op, so finish this already-confirmed session refresh normally.
+          setSession(
+            account?.email &&
+              (!result.mail ||
+                account.email.toLowerCase() === result.mail.toLowerCase())
+              ? "ready"
+              : "unavailable",
+          );
+          return;
         }
-        if (confirmedRef.current) return;
-        confirmedRef.current = true;
-
-        confirmSubscription(token)
-            .then(async (res) => {
-                if (res.success) {
-                    // The confirm response set a session cookie — pick it up
-                    // so the stock/topic picker below can save right away
-                    await refreshUser();
-                    setStatus("success");
-                } else {
-                    setStatus("error");
-                }
-            })
-            .catch(() => setStatus("error"));
-    }, [token]);
-
-    if (status === "loading") {
-        return (
-            <main className="public-page public-page--status min-h-[60vh] flex items-center justify-center text-text-muted font-sans">
-                Bekräftar din prenumeration…
-            </main>
-        );
+        const [result, account] = await Promise.all([
+          fetchSubscriptionStatus(),
+          refreshUser(),
+        ]);
+        if (!active) return;
+        if (result.confirmed && result.subscribed && account?.email) {
+          confirmed.current = true;
+          setEmail(account.email);
+          setSession("ready");
+          setStatus("confirmed");
+        } else
+          setStatus(
+            result.signedOut || !account?.email ? "signin" : "unconfirmed",
+          );
+      } catch {
+        if (active) setStatus("error");
+      }
     }
+    run();
+    return () => {
+      active = false;
+    };
+  }, [token, attempt, refreshUser]);
 
-    if (status === "error") {
-        return (
-            <main className="public-page public-page--status min-h-[60vh] mx-auto max-w-xl px-4 py-16 text-center font-sans">
-                <h1 className="text-3xl font-serif font-bold text-text mb-4">Länken är ogiltig</h1>
-                <p className="text-text-muted mb-8">
-                    Länken kan redan vara använd eller ha gått ut. Skriv in din mail igen på startsidan så skickar vi en ny.
-                </p>
-                <Link href="/" className="primary-btn extra-padding">Till startsidan</Link>
-            </main>
-        );
-    }
-
-    return (
-        <main className="public-page public-page--onboarding min-h-[70vh] mx-auto max-w-2xl px-4 py-10 font-sans">
-            <div className="text-center mb-12">
-                <h1 className="text-4xl font-serif font-bold text-text mb-3">Du är med! 🎉</h1>
-                <p className="text-text-muted">
-                    Din prenumeration är bekräftad. Ett välkomstmail är på väg till din inkorg.
-                </p>
-            </div>
-
-            <div className="mb-12">
-                <h2 className="text-xl font-serif font-bold text-text mb-4">Vad händer nu?</h2>
-                <div className="flex flex-col gap-3">
-                    <div className="flex flex-row gap-3 items-start">
-                        <span className="text-secondary font-bold shrink-0">08:00</span>
-                        <p className="text-sm text-text-article">
-                            <span className="font-semibold">Morgonbrevet</span> landar i din inkorg varje vardag – marknadsläget på 3 minuter.
-                        </p>
-                    </div>
-                    <div className="flex flex-row gap-3 items-start">
-                        <span className="text-secondary font-bold shrink-0">17:30</span>
-                        <p className="text-sm text-text-article">
-                            <span className="font-semibold">Kvällsbrevet</span> publiceras här på sidan – <Link href="/kvallsbrevet" className="text-primary underline">läs det här</Link>.
-                        </p>
-                    </div>
-                </div>
-                <div className="mt-4">
-                    <Link href="/morgonbrevet" className="text-primary underline text-sm">
-                        Läs dagens morgonbrev redan nu →
-                    </Link>
-                </div>
-            </div>
-
-            <div className="mb-12">
-                <h2 className="text-xl font-serif font-bold text-text mb-1">Gör brevet till ditt</h2>
-                <p className="text-sm text-text-muted mb-6">
-                    Stjärnmärk bolag och välj ämnen du bryr dig om — helt gratis —
-                    så bevakar vi dem åt dig i morgonbrevet.
-                </p>
-                <PersonalizationSetup />
-            </div>
-
-            <div className="mb-12">
-                <h2 className="text-xl font-serif font-bold text-text mb-1">Följ dina bolag hela dagen</h2>
-                <p className="text-sm text-text-muted mb-4">
-                    Nyheterna i ditt brev kommer från vårt eget liveflöde – där kan du
-                    följa dem i realtid.
-                </p>
-                <div className="flex flex-col gap-3 mb-4">
-                    <div className="flex flex-row gap-3 items-center">
-                        <FaNewspaper className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article"><span className="font-semibold">Nyhetsflödet</span> – pressmeddelanden och marknadshändelser live</p>
-                    </div>
-                    <div className="flex flex-row gap-3 items-center">
-                        <FaChartLine className="text-secondary shrink-0" />
-                        <p className="text-sm text-text-article"><span className="font-semibold">Kursreaktioner</span> – se hur aktien rört sig efter varje nyhet</p>
-                    </div>
-                </div>
-                <p className="text-xs text-text-muted mb-4">
-                    Liveflödet ingår i Plus från 49 kr/mån. För proffsen finns även{" "}
-                    <a href="https://terminal.omxsum.com" target="_blank" rel="noopener noreferrer" className="underline">Terminalen</a> i Pro.
-                </p>
-                <Link href="/marknaden/nyheter" className="primary-btn extra-padding inline-block">
-                    Öppna nyhetsflödet →
-                </Link>
-            </div>
-
-            <div className="text-center text-sm text-text-muted">
-                <a
-                    href="https://x.com/omxsumcom"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 hover:text-text underline"
-                >
-                    <FaXTwitter /> Följ oss på X för uppdateringar
-                </a>
-            </div>
-        </main>
+  async function retrySession() {
+    setSession("loading");
+    const account = await refreshUser();
+    setSession(
+      account?.email &&
+        (!email || account.email.toLowerCase() === email.toLowerCase())
+        ? "ready"
+        : "unavailable",
     );
+  }
+  const canPersonalize =
+    session === "ready" &&
+    user?.email &&
+    (!email || user.email.toLowerCase() === email.toLowerCase());
+  return (
+    <Container as="main" reading className={styles.page}>
+      <Stack gap={8}>
+        {status === "loading" ? (
+          <Stack gap={4}>
+            <Heading as="h1" size="page">
+              {token
+                ? "Bekräftar din prenumeration…"
+                : "Hämtar din prenumeration…"}
+            </Heading>
+            <Skeleton />
+          </Stack>
+        ) : status === "confirmed" ? (
+          <>
+            <Stack gap={2}>
+              <Text size="sm" role="status" className={styles.confirmed}>
+                <FiCheckCircle aria-hidden="true" /> Din prenumeration är
+                bekräftad.
+              </Text>
+              <Text size="sm" tone="secondary">
+                Morgonbrevet skickas varje vardag kl. 08.00.
+              </Text>
+            </Stack>
+            {canPersonalize ? (
+              <PersonalizationSetup />
+            ) : (
+              <Stack gap={4}>
+                <Heading as="h1" size="page">
+                  Välkommen till OMXsum
+                </Heading>
+                {session === "loading" ? (
+                  <Text role="status" size="sm">
+                    Hämtar ditt konto…
+                  </Text>
+                ) : (
+                  <>
+                    <Text size="sm" tone="secondary">
+                      Prenumerationen är klar, men ditt konto kunde inte öppnas.
+                      Försök igen eller logga in för att välja bolag.
+                    </Text>
+                    <div className={styles.actions}>
+                      <Button onClick={retrySession}>Försök igen</Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setLogin(true)}
+                      >
+                        Logga in
+                      </Button>
+                    </div>
+                    {login && <LogInModal redirectTo="/bekrafta" />}
+                  </>
+                )}
+                <Link href="/morgonbrevet" className={styles.link}>
+                  Läs Morgonbrevet
+                </Link>
+              </Stack>
+            )}
+          </>
+        ) : (
+          <Stack gap={6}>
+            <Stack gap={3}>
+              <Heading as="h1" size="page">
+                {status === "error"
+                  ? "Det gick inte att slutföra just nu"
+                  : status === "invalid"
+                    ? "Länken kan inte användas"
+                    : status === "unconfirmed"
+                      ? "Bekräfta din prenumeration"
+                      : "Fortsätt till din bevakning"}
+              </Heading>
+              <Text size="sm" tone="secondary">
+                {status === "error"
+                  ? "Vi kunde inte kontrollera prenumerationen. Försök igen; du behöver inte börja om."
+                  : status === "invalid"
+                    ? "Länken är ogiltig eller redan använd. Har du redan bekräftat? Logga in för att fortsätta."
+                    : status === "unconfirmed"
+                      ? "För att börja få Morgonbrevet behöver du bekräfta en prenumeration via din e-post."
+                      : "Logga in för att fortsätta med dina bolag. Har du fått ett bekräftelsemejl? Öppna länken i mejlet."}
+              </Text>
+            </Stack>
+            {status === "error" ? (
+              <Button onClick={() => setAttempt((value) => value + 1)}>
+                Försök igen
+              </Button>
+            ) : status === "unconfirmed" ? (
+              <EmailInput />
+            ) : (
+              <>
+                <LogInModal redirectTo="/bekrafta" />
+                <Button
+                  variant="ghost"
+                  onClick={() => setNewLink((value) => !value)}
+                  aria-expanded={newLink}
+                >
+                  Begär ett bekräftelsemejl
+                </Button>
+                {newLink && <EmailInput />}
+              </>
+            )}
+            <Link href="/morgonbrevet" className={styles.link}>
+              Läs Morgonbrevet
+            </Link>
+          </Stack>
+        )}
+      </Stack>
+    </Container>
+  );
 }

@@ -1,10 +1,10 @@
 import UpgradeSuccessPage from "../../components/UpgradeSuccessPage";
 
 export const metadata = {
-    title: "Välkommen till Pro",
-    robots: { index: false },
+  title: "Din prenumeration",
+  robots: { index: false, follow: false },
 };
 
 export default function Page() {
-    return <UpgradeSuccessPage />;
+  return <UpgradeSuccessPage />;
 }

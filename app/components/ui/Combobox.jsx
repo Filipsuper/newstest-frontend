@@ -1,5 +1,6 @@
 "use client";
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
+import { useId } from "react";
 import { FiSearch } from "react-icons/fi";
 import { cx } from "./layout";
 import styles from "./ui.module.css";
@@ -20,6 +21,7 @@ export function Combobox({
   className,
   empty = "Inga resultat",
 }) {
+  const labelId = useId();
   return (
     <div className={cx(styles.field, className)}>
       <BaseCombobox.Root
@@ -34,12 +36,13 @@ export function Combobox({
         itemToStringLabel={itemLabel}
         autoHighlight
       >
-        <BaseCombobox.Label className={styles.srOnly}>
+        <label htmlFor={labelId} className={styles.srOnly}>
           {label}
-        </BaseCombobox.Label>
+        </label>
         <div className={styles.inputWrap}>
           <FiSearch aria-hidden="true" className={styles.fieldIcon} />
           <BaseCombobox.Input
+            id={labelId}
             autoFocus={autoFocus}
             className={styles.input}
             placeholder={placeholder}

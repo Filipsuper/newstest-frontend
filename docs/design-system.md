@@ -145,6 +145,37 @@ letter mentions and the spider are progressive detail. The shared `Dialog`
 accepts popup `initialFocus`/`finalFocus` for contents navigation; normal dialogs
 retain Base UI's default focus restoration. Route links remain links, not tabs.
 
+### Company-first onboarding
+
+Signup/confirmation now use shared controls and the single Base UI dialog.
+`onboarding.module.css` scopes the narrow company-setup document and preview;
+legacy email/onboarding styles are removed. Search uses a native label linked
+to the Base UI input: `Combobox.Label` labels a trigger, not an input-only
+search. The onboarding preview reuses actual personal-feed stories and
+`NewsFeedItem` rather than its old independent miniature news renderer.
+
+Confirmation state is distinct from account loading, consumed links, delivery
+failure and news availability. Explicit follow state makes retrying safe.
+Third-party scripts are excluded from `/bekrafta`; successful confirmation
+replaces the token-bearing URL. Release requires the compatible public backend
+before the new frontend. This is not a pricing/landing-page redesign or a new
+notification-delivery feature.
+
+### Membership and upgrade return
+
+`/pro` and `/pro/klart` now compose the same shared surfaces, labels, buttons,
+type and Base UI login dialog as the other migrated routes. Presentation is
+scoped to `membership.module.css`; obsolete pricing selectors are removed.
+`membership.js` describes existing prices/access and validates Stripe checkout
+destinations; it is not an authorization or billing source.
+
+The current backend grants Terminal access to both Plus and Pro. Pricing copy
+now reflects that, with 5/10/100 company caps and no unverified realtime or
+notification promises. Existing subscribers take the existing settings/billing
+management path, avoiding the new-subscription endpoint for plan changes.
+The return page waits for server-confirmed access and never treats its URL as
+a purchase receipt. No backend billing changes or deployment are included.
+
 ## Component use
 
 ```jsx

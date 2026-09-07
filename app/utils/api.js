@@ -71,7 +71,9 @@ export async function addEmail(mail, website) {
             },
             body: JSON.stringify({ mail, website })
         })
-        return res.json();
+        const body = await res.json();
+        return { ...body, status: res.status, ...(!res.ok ? { error: true } : {}),
+            retryAfter: Number(res.headers.get("Retry-After")) || body.retryAfter || 0 };
     } catch (error) {
         console.error('Error fetching data:', error);
         throw error;
@@ -336,6 +338,16 @@ export async function toggleWatchlist(symbol) {
 
 // Live preview of "Min sammanfattning": real matched stories for the
 // logged-in user, same matching as the letter composer.
+export async function setCompanyFollowing(symbol, followed) {
+    const response = await fetch(`${API_URL}/user/watchlist/${encodeURIComponent(symbol)}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ followed }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(typeof data.error === "string" ? data.error : "Valet kunde inte sparas. Försök igen.");
+    return data;
+}
+
 export async function fetchPersonalPreview({ limit = 5 } = {}) {
     try {
         const params = new URLSearchParams({ limit: String(limit) });
@@ -443,14 +455,26 @@ export async function fetchHistory(symbol) {
 export async function confirmSubscription(token) {
     try {
         // credentials so the confirm response can set the session cookie
-        const res = await fetch(`${API_URL}/mail/confirm?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`${API_URL}/mail/confirm`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
             credentials: "include",
+            cache: "no-store",
         });
-        return res.json();
+        const body = await res.json();
+        return { ...body, status: res.status, ...(!res.ok ? { error: true } : {}) };
     } catch (error) {
         console.error('Error fetching data:', error);
         throw error;
     }
+}
+
+export async function fetchSubscriptionStatus() {
+    const response = await fetch(`${API_URL}/mail/status`, { credentials: "include", cache: "no-store" });
+    if (response.status === 401 || response.status === 403) return { signedOut: true };
+    if (!response.ok) throw new Error("Prenumerationen kunde inte hämtas.");
+    return response.json();
 }
 
 export async function generateSummary(onProgress) {

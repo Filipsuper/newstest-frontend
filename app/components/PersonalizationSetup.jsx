@@ -1,116 +1,184 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { FaStar } from "react-icons/fa6";
+import { FiX } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { toggleWatchlist, fetchTopics, saveTopics } from '../utils/api';
-import { getCompanies } from '../utils/companies';
-import { TOPIC_LABELS } from '../utils/topicLabels';
-import StockSearch from './StockSearch';
-import PersonalPreview from './PersonalPreview';
+import { setCompanyFollowing } from "../utils/api";
+import { getCompanies } from "../utils/companies";
+import StockSearch from "./StockSearch";
+import PersonalPreview from "./PersonalPreview";
+import { Button, IconButton } from "./ui/Button";
+import { Heading, Inline, Stack, Text } from "./ui/layout";
+import { Skeleton } from "./ui/data";
+import styles from "./onboarding.module.css";
 
-// Compact stock + topics picker used in onboarding (/bekrafta). The full
-// management UI lives on /bevakning/hantera.
 export default function PersonalizationSetup() {
-    const { user, isGuestUser, isPlusUser, refreshUser } = useAuthContext();
-    const [companies, setCompanies] = useState([]);
-    const [vocabulary, setVocabulary] = useState(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        getCompanies().then(setCompanies);
-        fetchTopics().then(setVocabulary).catch(() => setVocabulary(null));
-    }, []);
-
-    if (!user || isGuestUser) return null;
-
-    const watchlist = user.watchlist ?? [];
-    const topics = user.topics ?? [];
-    const companyBySymbol = new Map(companies.map((row) => [row.symbol, row]));
-
-    const run = async (action) => {
-        if (busy) return;
-        setBusy(true);
-        setError(null);
-        try {
-            const res = await action();
-            if (res?.error) setError(res.error);
-            else await refreshUser();
-        } catch {
-            setError("Något gick fel, försök igen.");
-        } finally {
-            setBusy(false);
-        }
+  const { user, refreshUser } = useAuthContext();
+  const [companies, setCompanies] = useState([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [busy, setBusy] = useState(null),
+    [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [retry, setRetry] = useState(0);
+  const pending = useRef(false);
+  useEffect(() => {
+    let active = true;
+    setCompaniesLoading(true);
+    getCompanies().then((rows) => {
+      if (active) {
+        setCompanies(rows);
+        setCompaniesLoading(false);
+      }
+    });
+    return () => {
+      active = false;
     };
-
-    const handleStockSelect = (row) => {
-        if (watchlist.includes(row.symbol)) return;
-        run(() => toggleWatchlist(row.symbol));
-    };
-
-    const handleStockRemove = (symbol) => run(() => toggleWatchlist(symbol));
-
-    const handleTopicToggle = (topic) => {
-        const next = topics.includes(topic)
-            ? topics.filter((item) => item !== topic)
-            : [...topics, topic];
-        run(() => saveTopics(next));
-    };
-
-    const hasPrefs = watchlist.length > 0 || topics.length > 0;
-
-    return (
-        <div className="personalization-setup flex flex-col gap-6">
-            {error && <p className="market-negative text-sm">{error}</p>}
-
-            <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-text">Bevaka bolag</span>
-                <StockSearch placeholder="Sök bolag, t.ex. Volvo…" onSelect={handleStockSelect} />
-                {watchlist.length > 0 && (
-                    <div className="flex flex-row flex-wrap gap-2 mt-1">
-                        {watchlist.map((symbol) => (
-                            <button
-                                key={symbol}
-                                onClick={() => handleStockRemove(symbol)}
-                                title="Ta bort"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full bg-border/40 text-text cursor-pointer hover:bg-border/60 transition-colors"
-                            >
-                                <FaStar className="text-secondary" />
-                                {companyBySymbol.get(symbol)?.name ?? symbol.replace(".ST", "")}
-                                <span className="text-text-muted">×</span>
-                            </button>
-                        ))}
-                    </div>
-                )}
+  }, [retry]);
+  const watchlist = user?.watchlist ?? [];
+  const cap = { free: 5, plus: 10, premium: 100 }[user?.plan] ?? 5;
+  const hasPreferences =
+    watchlist.length || user?.topics?.length || user?.keywords?.length;
+  async function follow(company, followed) {
+    if (pending.current || (followed && watchlist.includes(company.symbol)))
+      return;
+    pending.current = true;
+    setBusy(company.symbol);
+    setError("");
+    setMessage("");
+    try {
+      await setCompanyFollowing(company.symbol, followed);
+      const account = await refreshUser();
+      if (!account?.email)
+        throw new Error(
+          "Valet är sparat, men kontot kunde inte hämtas. Försök öppna kontot igen.",
+        );
+      setMessage(
+        followed
+          ? `${company.name || company.symbol} är sparat.`
+          : `${company.name || company.symbol} har tagits bort.`,
+      );
+    } catch (error) {
+      setError(error.message || "Valet kunde inte sparas. Försök igen.");
+    } finally {
+      pending.current = false;
+      setBusy(null);
+    }
+  }
+  return (
+    <Stack gap={8}>
+      <Stack gap={4}>
+        <Stack gap={3}>
+          <Heading as="h1" size="page">
+            Vilka bolag vill du följa?
+          </Heading>
+          <Text size="sm" tone="secondary">
+            Börja med ett bolag. Du kan ändra dina val när som helst.
+          </Text>
+        </Stack>
+        {companiesLoading ? (
+          <Skeleton />
+        ) : companies.length > 0 ? (
+          <fieldset
+            className={styles.search}
+            disabled={Boolean(busy) || watchlist.length >= cap}
+          >
+            <StockSearch
+              label="Sök ett bolag att följa"
+              placeholder="Sök bolag, till exempel Volvo"
+              initialCompanies={companies}
+              onSelect={(row) => follow(row, true)}
+            />
+          </fieldset>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={() => setRetry((value) => value + 1)}
+          >
+            Hämta bolagslistan igen
+          </Button>
+        )}
+        <Inline className={styles.between}>
+          <Text size="xs" tone="secondary">
+            {watchlist.length}/{cap} bolag i din plan
+          </Text>
+          <Text size="xs" tone="secondary">
+            {busy ? "Sparar…" : "Sparas direkt"}
+          </Text>
+        </Inline>
+        {watchlist.length >= cap && (
+          <Text size="sm" tone="secondary">
+            Du har valt så många bolag som ingår i din plan. Ta bort ett för att
+            välja ett annat.
+          </Text>
+        )}
+        {error && (
+          <Text size="sm" role="alert">
+            {error}
+          </Text>
+        )}
+        <Text size="xs" role="status" className={styles.status}>
+          {message}
+        </Text>
+        {watchlist.length > 0 && (
+          <ul className={styles.rows} aria-label="Valda bolag">
+            {watchlist.map((symbol) => {
+              const company = companies.find(
+                (row) => row.symbol === symbol,
+              ) || { symbol, name: symbol };
+              return (
+                <li className={styles.company} key={symbol}>
+                  <Stack gap={1}>
+                    <Text size="sm">{company.name}</Text>
+                    <Text size="xs" tone="secondary">
+                      {company.nativeSymbol || symbol}
+                    </Text>
+                  </Stack>
+                  <IconButton
+                    label={`Ta bort ${company.name}`}
+                    loading={busy === symbol}
+                    disabled={Boolean(busy)}
+                    onClick={() => follow(company, false)}
+                  >
+                    <FiX aria-hidden="true" />
+                  </IconButton>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Stack>
+      {hasPreferences ? (
+        <>
+          <Stack gap={4}>
+            <div className={styles.actions}>
+              <Button
+                disabled={Boolean(busy)}
+                nativeButton={false}
+                role="link"
+                render={<Link href="/bevakning" />}
+              >
+                Öppna min bevakning
+              </Button>
+              <Link href="/morgonbrevet" className={styles.link}>
+                Läs Morgonbrevet
+              </Link>
             </div>
-
-            {vocabulary && (
-                <div className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-text">Följ ämnen</span>
-                    <div className="flex flex-row flex-wrap gap-2">
-                        {[...(vocabulary.events ?? []), ...(vocabulary.sectors ?? [])].map((topic) => (
-                            <button
-                                key={topic}
-                                onClick={() => handleTopicToggle(topic)}
-                                className={`px-2.5 py-1 text-xs rounded-full cursor-pointer transition-colors ${topics.includes(topic)
-                                    ? "bg-secondary text-background font-semibold"
-                                    : "bg-border/40 text-text-muted hover:text-text"} ${busy ? "opacity-50" : ""}`}
-                            >
-                                {TOPIC_LABELS[topic] ?? topic}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {hasPrefs && <PersonalPreview />}
-
-            <p className="text-xs text-text-muted">
-                Du kan alltid ändra dina val på{" "}
-                <Link href="/bevakning/hantera" className="text-primary underline">Hantera bevakning</Link>.
-            </p>
-        </div>
-    );
+          </Stack>
+          <PersonalPreview />
+          <Link href="/bevakning/hantera" className={styles.link}>
+            Hantera ämnen och nyckelord
+          </Link>
+        </>
+      ) : (
+        <Link href="/morgonbrevet" className={styles.link}>
+          Hoppa över och läs Morgonbrevet
+        </Link>
+      )}
+      <Text size="xs" tone="secondary">
+        Du väljer själv om du vill ha aviseringar. Personliga tillägg i
+        Morgonbrevet ingår i Plus.
+      </Text>
+    </Stack>
+  );
 }

@@ -200,7 +200,11 @@ refresh recovery and guest/free/Plus access. Desktop/mobile screenshots were
 inspected; the existing local preview returns HTTP 200. Browser data and users
 are fictional. Contrast checks wait for theme transitions to finish.
 
-## Continuous company report — implemented, deployment pending
+## Continuous company report — released
+
+Status: frontend `d853488` deployed on 7 September 2026 after explicit approval.
+Production desktop/mobile navigation, story-reader return and health checks
+passed. Backend and Terminal were unchanged.
 
 Approved direction: one scrollable `/aktie/<SYMBOL>` report, not a tab-switched
 dashboard. The chart introduces the company; news is the first research section.
@@ -218,7 +222,7 @@ dashboard. The chart introduces the company; news is the first research section.
   and unchanged server-resolved Plus access. No synthetic intraday loading curve.
 - [x] Complete responsive, keyboard, reader-return and regression verification.
 - [x] User review and push approval on 7 September 2026.
-- [ ] Explicit deployment approval and company-page production release.
+- [x] Explicit deployment approval and company-page production release.
 
 Verified on 7 September: isolated production build, 26 unit tests and all 50
 Chromium browser tests pass. New coverage includes persistent sections, legacy
@@ -240,6 +244,70 @@ still appear separately. Keep this an event-linking/data-quality task rather tha
 guessing equivalence from similar headlines in the company UI.
 
 No backend, Terminal, scoring or account mutations are part of this work.
+
+## Company-first onboarding — implementation, release pending
+
+- [x] Shared signup field and one confirmation dialog with edit, resend,
+  cooldown, existing-subscriber sign-in and honest delivery feedback.
+- [x] `/bekrafta`: confirmation first, optional company selection, saved-state
+  feedback, three actual matched news rows and a direct Bevakning handoff.
+  Skip to Morgonbrevet; topics/keywords remain secondary management choices.
+- [x] Shared AI copy/reactions, normal mobile page scrolling, no forced upsell
+  or notification opt-in. Existing plans, preferences and billing are preserved.
+- [x] Confirmation retries prepare the account/session before atomic token
+  consumption. Invalid/replayed links cannot authenticate. Welcome delivery
+  cannot turn a completed confirmation into an error. Pending resends retain
+  their token; resubscribing requires email proof instead of an anonymous write.
+- [x] Explicit, idempotent follow-state endpoint with atomic membership/cap
+  checks. Existing toggle endpoint retained for older clients.
+- [x] Token-free success URL, authenticated subscription status for reload,
+  no-referrer metadata and no third-party scripts on `/bekrafta`.
+- [x] Final regression and visual verification: isolated production build,
+  26 frontend unit tests, 31 backend unit tests and all 58 Chromium browser
+  tests pass. Inspected desktop/mobile light/dark screenshots; axe checks pass
+  on the onboarding document and signup dialog. Visual review moved the primary
+  action above the compact news preview so it stays reachable on phones.
+- [x] User review and explicit frontend/backend deployment approval on
+  7 September 2026. Backend-first release in progress.
+
+Scope includes `newsbackend`: release the compatible backend before the
+frontend (new POST confirmation, status and PUT following endpoints). Existing
+GET confirmation and toggle clients remain supported. No production emails,
+real account writes, billing changes, backfills or Terminal deployment are part
+of local verification. Rate limits are process-local (one-minute address
+cooldown plus five accepted attempts per IP/hour); shared persistence and a
+durable welcome-email outbox remain separate infrastructure work.
+
+## Membership UX — implementation, release pending
+
+- [x] `/pro`: shared components/tokens, explicit 0/49/99 kr monthly prices,
+  news-first benefits, current/included plan states and mobile stacked plans.
+- [x] Base UI sign-in with focus return; no checkout before account loading
+  or automatic purchase after login. One pending checkout, local retryable
+  failure and an allowlisted Stripe-hosted destination.
+- [x] Existing paid readers go to subscription management instead of creating
+  another subscription. Stripe APIs, prices and entitlements are unchanged.
+- [x] `/pro/klart`: server-confirmed access, bounded polling, retry/sign-in
+  and support recovery. News feed and company following are the next steps.
+- [x] Focused verification: production build, 28 frontend unit tests and nine
+  membership browser tests; inspected desktop/mobile screenshots in both
+  themes, keyboard login and automated accessibility checks.
+- [x] Full isolated regression: all 67 Chromium tests pass, including the
+  completed onboarding, settings, company research and news-reader flows.
+- [x] User review and explicit push/deployment approval on 7 September 2026.
+- [ ] Production rollout and smoke checks, including the earlier onboarding work.
+
+Access audit: backend `feed.js` and `auth.js` grant Plus both the public
+analytical tools and Terminal; `user.js` caps followed companies at 5/10/100.
+Pro currently differentiates on watchlist size, not exclusive Terminal access.
+Before advertising additional Pro features, decide and implement their actual
+entitlements. Separately, verify Stripe portal plan-change configuration and
+add an idempotent existing-subscription upgrade path before offering in-app
+Plus-to-Pro checkout again. The current endpoint creates a new subscription.
+
+Next UI scope: the landing page and remaining account utility surfaces. Keep
+the free letter as the entry point and connect it to the news-led workspace;
+do not turn the landing page into another market dashboard.
 
 ## Shipped foundation (aug 2026)
 
@@ -419,16 +487,21 @@ the news archive grows. Do actual keyword research before adding more.
 - Re-run description translation for newly listed companies
 - Periodic wire rejection audit (5-min check: `filterReason` aggregation)
 
-## Pricing map (current thinking)
+## Pricing map (enforced access, checked 7 September 2026)
 
 | | Gratis | Plus 49 kr | Pro 99 kr |
 |---|---|---|---|
 | Morgon-/kvällsbrev | ✓ | ✓ | ✓ |
-| Marknadsnyheter live + reaktioner | – | ✓ | ✓ |
-| Aktieöversikter | – | ✓ | ✓ |
-| Personaliserat brev + watchlist | – | ✓ (cap ~10 aktier) | ✓ (obegränsat) |
-| Telegram-alerts | – | – | ✓ |
-| Terminalen fullt ut | – | – | ✓ |
+| Marknadens nyhetsurval + aktieöversikter | ✓ | ✓ | ✓ |
+| Hela nyhetsflödet + sökning | – | ✓ | ✓ |
+| Screener + fördjupad bolagsanalys | – | ✓ | ✓ |
+| Bevakade bolag på sajten | 5 | 10 | 100 |
+| Personlig del i Morgonbrevet | – | ✓ | ✓ |
+| Terminalåtkomst | – | ✓ | ✓ |
+
+Notification delivery is not a promised plan benefit; following a company is
+not an alert opt-in. This records current access rather than future pricing
+aspirations. The monthly prices and billing configuration have not changed.
 
 ## Principles
 

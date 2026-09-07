@@ -6,8 +6,11 @@ let companiesPromise = null;
 export function getCompanies() {
     if (!companiesPromise) {
         companiesPromise = fetch(`${API_URL}/feed/companies`)
-            .then((res) => res.json())
-            .then((rows) => (Array.isArray(rows) ? rows : []))
+            .then((res) => { if (!res.ok) throw new Error("Company list unavailable"); return res.json(); })
+            .then((rows) => {
+                if (!Array.isArray(rows) || !rows.length) { companiesPromise = null; return []; }
+                return rows;
+            })
             .catch(() => {
                 companiesPromise = null;
                 return [];

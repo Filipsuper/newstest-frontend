@@ -1,0 +1,110 @@
+.page {
+  padding-block: var(--ui-space-12) var(--ui-space-16);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+.confirmed {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-positive);
+}
+.confirmed svg {
+  flex: 0 0 auto;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+}
+.between {
+  justify-content: space-between;
+}
+.link {
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-sm) / 1.5 var(--ui-font);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 4px;
+  border-radius: var(--ui-radius-sm);
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ui-space-2);
+}
+.company {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  background: var(--ui-surface);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-radius: var(--ui-radius-md);
+}
+.company > div {
+  min-width: 0;
+}
+.notice {
+  background: var(--ui-surface);
+  padding: var(--ui-space-4);
+  border-radius: var(--ui-radius-md);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+  align-items: center;
+}
+.signup {
+  width: 100%;
+  max-width: 28rem;
+  font-family: var(--ui-font);
+}
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+}
+.field {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.email {
+  overflow-wrap: anywhere;
+}
+.status {
+  min-height: var(--ui-space-6);
+}
+.search {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.search:disabled {
+  opacity: 0.6;
+}
+.mailIcon {
+  color: var(--ui-text-secondary);
+  width: var(--ui-space-8);
+  height: var(--ui-space-8);
+}
+@media (max-width: 600px) {
+  .page {
+    padding-top: var(--ui-space-8);
+  }
+  .form > button {
+    width: 100%;
+  }
+  .actions > button,
+  .actions > a {
+    width: 100%;
+  }
+}

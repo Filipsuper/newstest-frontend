@@ -204,6 +204,47 @@ desktop density or abbreviated interaction model.
 - Compare full Stockholm dates for edition freshness. Show the last published
   edition with an explicit date when today's edition does not exist.
 
+## Signup and confirmation
+
+- Signup uses the shared email field and a single Base UI confirmation dialog.
+  Show the submitted address, edit/resend actions and server-backed cooldowns.
+  Never claim a message was sent when the provider rejected it. Existing
+  subscribers get a sign-in path, not another promotional wizard.
+- `/bekrafta` confirms first, then optionally asks for companies. Topics and
+  keywords remain in Hantera bevakning; existing choices and paid plans survive.
+  One company is sufficient and skipping to Morgonbrevet is always possible.
+- Show up to three real matching news rows from the 48-hour personal feed,
+  including available AI copy and explicitly labelled reactions. Errors are
+  retryable and distinct from no matches. Do not manufacture a demo or turn
+  onboarding into an upgrade gate. Personalized letter additions require Plus.
+- Save explicit follow/unfollow state, not a toggle that can reverse on retry.
+  Show pending/error/saved feedback and respect server-enforced plan limits.
+- Confirmation, account session, delivery and news-loading states are separate.
+  A consumed/invalid link cannot establish a new session. After success strip
+  the token from the URL; reload verifies newsletter status with the server.
+  Do not load third-party embeds or analytics on the confirmation route.
+- Use a narrow, single-column reading container, normal page scrolling and
+  shared type/spacing tokens. No oversized celebration screen or nested cards.
+
+## Membership and checkout
+
+- `/pro` uses the shared neutral surfaces, typography, buttons and Base UI
+  login dialog. Keep prices and cadence explicit; no artificial savings,
+  unverified popularity labels or invented plan-exclusive features.
+- Copy follows enforced access: public letters, selected news and company
+  overviews stay free. Plus includes the full feed, screener, analytical depth
+  and Terminal; Pro currently increases followed companies from 10 to 100.
+  Free accounts can follow five. Do not describe Pro as unlimited.
+- Account loading is not a guest or a free-plan result. Disable purchase
+  actions until resolved; login returns to pricing without auto-purchasing.
+  Only one checkout request can be pending; errors stay beside the action.
+- Existing paid accounts go to subscription management, not a second
+  subscription checkout. Prices, Stripe lookup keys and backend authorization
+  are outside this presentation layer.
+- `/pro/klart` is not proof of payment. Render only server-confirmed account
+  access, with bounded refresh, manual retry and sign-in/support recovery.
+  The main handoff is the news feed, then following companies—not Terminal.
+
 ## Stock directory
 
 - `/aktier` is a discovery workspace, not a marketing hero or an alphabetical

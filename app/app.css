@@ -4889,8 +4889,7 @@ body {
 
 .public-palette .site-header__watchlist,
 .public-palette .site-header__login,
-.public-palette .primary-btn,
-.public-palette .email-signup__button {
+.public-palette .primary-btn {
   display: inline-flex;
   min-height: 38px;
   align-items: center;
@@ -4907,7 +4906,6 @@ body {
 }
 
 .public-palette .primary-btn:hover,
-.public-palette .email-signup__button:hover,
 .public-palette .site-header__watchlist:hover,
 .public-palette .site-header__login:hover {
   border-color: transparent;
@@ -4915,8 +4913,7 @@ body {
   color: #17130a;
 }
 
-.public-palette .primary-btn:active,
-.public-palette .email-signup__button:active {
+.public-palette .primary-btn:active {
   transform: translateY(1px);
 }
 
@@ -4941,7 +4938,6 @@ body {
 }
 
 .public-palette .stock-search__field,
-.public-palette .email-signup__input,
 .public-palette .login-modal__input,
 .public-palette .public-field {
   border-color: var(--public-line);
@@ -4952,7 +4948,6 @@ body {
 }
 
 .public-palette .stock-search__field:focus-within,
-.public-palette .email-signup__input:focus,
 .public-palette .login-modal__input:focus,
 .public-palette .public-field:focus {
   border-color: var(--color-primary);
@@ -4984,13 +4979,8 @@ body {
   box-shadow: var(--public-shadow-raised);
 }
 
-.public-palette .login-modal__input,
-.public-palette .email-signup__input {
+.public-palette .login-modal__input {
   min-height: 40px;
-}
-
-.public-palette .email-signup__button {
-  padding: 0 18px;
 }
 
 .public-palette .market-positive {
@@ -5045,7 +5035,6 @@ body {
   background: var(--company-muted-line);
 }
 
-.public-palette .personal-preview,
 .public-palette .article-dashboard {
   border: 1px solid var(--public-line);
   background: var(--public-inset);
@@ -5124,40 +5113,12 @@ body {
   line-height: 1.45;
 }
 
-.public-palette .public-page--plans > div:first-child {
-  margin-bottom: 24px;
-}
-
-.public-palette .public-page--plans > div:first-child h1 {
-  font-size: clamp(2rem, 5vw, 2.8rem);
-}
-
-.public-palette .public-page--plans > div:nth-child(2) {
-  gap: 14px;
-}
-
-.public-palette .public-page--plans > div:nth-child(2) > div {
-  padding: 20px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--public-panel);
-  box-shadow: var(--public-shadow);
-}
-
 .public-palette .public-page--scan .scan-panel {
   margin-bottom: 12px;
 }
 
 .public-palette .public-page--scan .scan-panel h2 {
   font-size: 1.25rem;
-}
-
-.public-palette .public-page--onboarding > div:nth-child(n + 2):not(:last-child) {
-  margin-bottom: 12px;
-  padding: 18px 20px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--public-panel);
 }
 
 .public-palette .public-page--editorial > header,
@@ -5321,14 +5282,6 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .public-palette .email-signup form {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .public-palette .email-signup__button {
-    width: 100%;
-  }
 }
 
 /* News-first market digest ------------------------------------------------ */

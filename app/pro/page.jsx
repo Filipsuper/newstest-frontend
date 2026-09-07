@@ -1,11 +1,11 @@
 import ProPage from "../components/ProPage";
 
 export const metadata = {
-    title: "Omxsum Pro",
-    description:
-        "Uppgradera till Omxsum Plus eller Pro – live-nyhetsflöde, tickernyheter i breven och full tillgång till terminalen med realtidsdata och screener.",
+  title: "Medlemskap – Gratis, Plus och Pro",
+  description:
+    "Jämför OMXsum Gratis, Plus och Pro. Dagliga börsbrev, nyhetsflöde med kursreaktioner, bevakning och fördjupad bolagsanalys.",
 };
 
 export default function Page() {
-    return <ProPage />;
+  return <ProPage />;
 }
