@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { fetchStory } from "./api";
 import { validStoryId, normalizeStory, storyHref } from "./newsroom";
+import { CONTENT_OG_VERSION } from "./brand";
 
 export const loadStory = cache(async (id) => {
   if (!validStoryId(id)) return { notFound: true };
@@ -27,7 +28,7 @@ export async function storyMetadata(id) {
   ).slice(0, 240);
   const url = `https://omxsum.com${storyHref(id)}`;
   const image = {
-    url: `${url}/opengraph-image`,
+    url: `${url}/opengraph-image?v=${CONTENT_OG_VERSION}`,
     width: 1200,
     height: 630,
     alt: story.title,

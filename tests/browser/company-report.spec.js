@@ -142,6 +142,7 @@ test("news is bounded, chronological and deduplicated; intraday loading has no s
   await expect(page).toHaveURL(/ma=50#overview$/);
   await page.getByRole("button", { name: "Dela aktien", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("button", { name: "Kopiera länk" })).toBeVisible();
+  await expect(page.getByRole("dialog").locator('img[src*="/og/aktie"]')).toHaveAttribute("src", /range=1y&ma=50&v=3$/);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Dela aktien", exact: true })).toBeFocused();
 });

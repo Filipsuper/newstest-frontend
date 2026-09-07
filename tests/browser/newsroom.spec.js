@@ -252,7 +252,7 @@ test("direct story has social metadata, missing data is not zero, and OG variant
   ).toBeVisible();
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    "https://omxsum.com/nyhet/missing-data/opengraph-image",
+    "https://omxsum.com/nyhet/missing-data/opengraph-image?v=3",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",

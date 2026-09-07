@@ -211,6 +211,13 @@ desktop density or abbreviated interaction model.
   deliberate 1200×630 composition, legible headline, source, company, and an
   explicitly labelled reaction where available. Prefer completed fixed windows.
   Rolling figures are snapshots. No personal data or invented market graphics.
+- News and chart share images use bundled Geist, the public semantic colors
+  and the same signed formatter/soft ChangeBadge treatment as the UI. Scale
+  type for a 1200×630 image; verify it again at 600×315. News headlines span
+  the canvas, with an optional real chart beneath, never a dark side panel or
+  an empty chart placeholder. Without a series, use a text-led composition.
+  Company shares keep a flat chart, clear company/price/period hierarchy and
+  readable axes; do not use serif branding or plain detached percentages.
 - Following is a contextual action on stories and companies, with saved,
   loading, limit and error states. Topics/keywords are secondary preferences.
   Following must never silently activate notification delivery.

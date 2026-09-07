@@ -231,11 +231,12 @@ const server = createServer(async (req, res) => {
         symbol,
         profile: {
           ...company,
+          ...(symbol === "OG-LONG.TEST" ? { name: "Skärgårdens Industriella Komponenter och Förnybar Energi Holding" } : {}),
           description: "Fiktivt industribolag för lokala tester.",
           currency: "SEK",
         },
         quote: {
-          price: company.price,
+          price: symbol === "OG-PENNY.TEST" ? 0.31 : company.price,
           change: 5.02,
           changePct: company.changePct,
           quoteTime: new Date(base).toISOString(),
@@ -253,7 +254,10 @@ const server = createServer(async (req, res) => {
                 date: new Date(base - (299 - index) * 86400_000)
                   .toISOString()
                   .slice(0, 10),
-                close: 100 + index / 10 + Math.sin(index / 5),
+                close: symbol === "OG-FLAT.TEST" ? 100
+                  : symbol === "OG-PENNY.TEST" ? 0.25 + index / 5000 + Math.sin(index / 5) / 200
+                  : symbol === "OG-DOWN.TEST" ? 150 - index / 10 + Math.sin(index / 5)
+                  : 100 + index / 10 + Math.sin(index / 5),
                 volume: 100_000,
               })),
       },
@@ -273,6 +277,13 @@ const server = createServer(async (req, res) => {
         })),
       } : null,
       access: { plus: symbol !== "FREE.TEST" },
+    };
+  } else if (path === "/api/feed/company/OG-INTRA.TEST/intraday") {
+    data = {
+      previousClose: 100,
+      previous: Array.from({ length: 12 }, (_, n) => ({ time: base - 86400_000 + n * 300_000, close: 99 + n / 12, volume: 10_000 })),
+      current: Array.from({ length: 12 }, (_, n) => ({ time: base + n * 300_000, close: 100 + n / 10, volume: 12_000 })),
+      quote: { price: 101.1, quoteTime: base + 11 * 300_000, fresh: false },
     };
   } else if (path === "/api/feed/news") {
     const items =
@@ -297,7 +308,12 @@ const server = createServer(async (req, res) => {
         reaction: { pct: null },
         headline: "Bolaget publicerar en uppdatering utan tillgänglig kursdata",
       };
-    if (id === "long-title")
+    if (["no-chart", "zero-change", "chart-only"].includes(id))
+      story = {
+        ...stories[0], id,
+        reaction: id === "zero-change" ? { h1Pct: 0 } : id === "chart-only" ? { pct: null } : { pct: 4.2 },
+      };
+    if (id === "long-title" || id === "long-title-no-chart")
       story = {
         ...stories[1],
         id,
@@ -322,7 +338,7 @@ const server = createServer(async (req, res) => {
         body: "Detta är en fiktiv rapport för lokala tester.\n\nSamtliga värden och bolagsnamn i denna miljö är exempeldata.",
       },
       reactionSeries:
-        id === "missing-data"
+        ["missing-data", "no-chart", "zero-change", "long-title-no-chart"].includes(id)
           ? null
           : {
               points: Array.from({ length: 45 }, (_, n) => ({
@@ -331,7 +347,7 @@ const server = createServer(async (req, res) => {
                   (n < 10
                     ? Math.sin(n) * 0.1
                     : (n - 10) * 0.1 + Math.sin(n) * 0.2) *
-                  (id === "fixture-1" ? -1 : 1),
+                  (story.reaction?.h1Pct < 0 ? -1 : 1),
               })),
             },
     };

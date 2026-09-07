@@ -193,6 +193,25 @@ the saved public news snapshot; `preview.json` retains its source and quote
 provenance. No runtime market/font request is required. Dedicated event,
 company and article images still override the generic site artwork.
 
+News and company share renderers reuse `app/og/_shared`: bundled regular/600
+Geist, semantic light/dark palettes, brand lockup, canvas spacing and a static
+equivalent of `ChangeBadge` using the UI formatter. News uses the warm canvas
+and a full-width headline; a real reaction series sits below it, without a
+panel. Missing series remove the chart layout entirely, while a known reaction
+can still have its labelled badge. Fixed windows and rolling snapshots remain
+distinct. The company image keeps the dark, flat chart, explicit selected
+period, quote timestamp and optional moving averages. Its strokes are solid
+so straight/flat SVG paths remain visible at thumbnail size. Neither renderer
+loads remote fonts or changes the canonical story/company URLs. Shared
+`CONTENT_OG_VERSION` versions the image URLs and company share links together,
+keeping the modal preview/download and crawler metadata in sync after redesigns.
+
+`tests/browser/share-images.spec.js` saves full-size and 600×315 previews for
+positive/negative/zero reactions, missing charts, long headlines/company names,
+fractional quotes, intraday and moving-average variants. It also checks real
+PNG dimensions, shared badge colors and visible chart strokes. The fixtures
+are fictional and confined to local tests.
+
 ### OMXsum 2.0 landing composition
 
 The homepage now composes the foundation instead of its legacy clock, demo

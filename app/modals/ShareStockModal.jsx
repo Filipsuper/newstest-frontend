@@ -4,8 +4,7 @@ import { useState } from "react";
 import { FaDownload, FaLink, FaShareAlt, FaTwitter } from "react-icons/fa";
 import { Button } from "../components/ui/Button";
 import { Heading, Stack, Inline, Text } from "../components/ui/layout";
-
-const SHARE_CARD_VERSION = "2";
+import { CONTENT_OG_VERSION as SHARE_CARD_VERSION } from "../utils/brand";
 
 // Previews the very image that will unfurl when the link is shared: the <img>
 // below and the og:image meta tag point at the same /og/aktie URL, so the

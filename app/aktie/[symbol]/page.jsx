@@ -2,13 +2,13 @@ import { cache } from "react";
 import CompanyPage from "../../components/CompanyPage";
 import { fetchCompanyList, fetchCompanyMentions, fetchCompanyOverview } from "../../utils/api";
 import { cookies } from "next/headers";
+import { CONTENT_OG_VERSION as SHARE_CARD_VERSION } from "../../utils/brand";
 
 const SITE_URL = "https://omxsum.com";
 
 const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
 
 const SHAREABLE_RANGES = new Set(["1d", "6m", "1y", "3y", "5y"]);
-const SHARE_CARD_VERSION = "2";
 
 const cleanMovingAverages = (value) => String(Array.isArray(value) ? value[0] : value ?? "")
     .split(",")

@@ -45,6 +45,12 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
 
+Local UI follow-up, not deployed: refreshed dedicated news/company share
+images with Geist, matching percentage badges, clearer spacing and a text-led
+news layout when chart data is absent. The shipped baseline above is unchanged.
+Verified locally: production build, 38 unit tests and 86 browser tests, including
+full-size/thumbnail share previews and versioned crawler metadata.
+
 ### 1. Improve news quality
 
 - [ ] Evaluate a representative story sample for relevance, missing market/
