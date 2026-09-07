@@ -11,6 +11,44 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## News and stock sharing images — released
+
+Frontend `d3f3405` deployed to omxsum.com on 7 September 2026 after explicit
+approval. Backend and Terminal were not redeployed.
+
+- Dedicated news images have full-width, larger Geist headlines, soft signed
+  percentage badges and an optional real reaction chart beneath the headline.
+  No dark side panel or reserved empty chart block. A known reaction still
+  gets its period-labelled badge when its series is unavailable.
+- Company/chart images use the same typography, badge formatter and semantic
+  dark palette, with a flat chart, clearer spacing, readable fractional price
+  ticks, quote time and the existing selected period/moving averages. Solid
+  strokes also render straight/flat series correctly in the image renderer.
+- Shared `CONTENT_OG_VERSION=3` keeps preview/download URLs and crawler images
+  aligned. Canonical story/company routes and the generic site artwork remain
+  unchanged. No news calculations, authorization or notification changes.
+
+Verified locally: isolated production build, 38 unit tests and 86 Chromium
+browser tests. Saved 1200×630 and 600×315 previews cover positive/negative/zero
+reactions, absent charts, long headlines/company names, fractional quotes,
+intraday, moving averages and flat series. Metadata checks preserve canonical
+URLs and the selected chart period; missing news still returns 404/503.
+
+Production verification: homepage, Marknaden, Aktier, Breven, company page and
+company API return HTTP 200. Two public news stories and Ericsson's 1-year
+(MA50/MA200) and intraday shares return new versioned 1200×630 PNGs; both Open
+Graph and Twitter metadata match. Live images inspected. Generic site PNG is
+unchanged and matches the verified local render. Checks used GET requests only.
+
+Frontend image `5da5ccf60e3c`, started `2026-09-07T19:05:44Z`, zero restarts.
+Rollback retains the previous running frontend `53d6e20cd080`. Backend
+`190981d060c9` and Terminal `09a836319b8e` retain their pre-deployment start
+times and zero restarts. Terminal had been updated independently before this
+deployment. The frontend has both bundled Geist fonts, no baked `.env`, and
+no local API addresses in browser assets. Post-release available memory
+~786 MB, free swap ~2.1 GB and free disk ~4.3 GB. Existing four high-severity
+dependency findings remain in the maintenance backlog.
+
 ## Site sharing image and mobile news layouts — released
 
 Frontend `6525c83` deployed to omxsum.com on 7 September 2026 after explicit

@@ -32,6 +32,9 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   filters wrap without hidden options and watchlist columns fit the viewport.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
+- Dedicated news/company share images use Geist, matching percentage badges
+  and clearer spacing. News without a chart has a text-led layout; chart shares
+  retain their selected period/moving averages and use readable axes.
 - Bevakning for companies, topics and keywords; inline following and
   account/device-local catch-up. Personal morning-letter blocks and previews
   already exist, including a first version of indirect industry matches.
@@ -40,16 +43,10 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Newsletter library, shared article reading, settings, company-first signup
   and confirmation, pricing and server-verified checkout return.
 
-Latest frontend application release: `6525c83`. Detailed changes, validation
+Latest frontend application release: `d3f3405`. Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
-
-Local UI follow-up, not deployed: refreshed dedicated news/company share
-images with Geist, matching percentage badges, clearer spacing and a text-led
-news layout when chart data is absent. The shipped baseline above is unchanged.
-Verified locally: production build, 38 unit tests and 86 browser tests, including
-full-size/thumbnail share previews and versioned crawler metadata.
 
 ### 1. Improve news quality
 
