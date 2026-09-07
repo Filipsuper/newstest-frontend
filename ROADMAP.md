@@ -245,7 +245,7 @@ guessing equivalence from similar headlines in the company UI.
 
 No backend, Terminal, scoring or account mutations are part of this work.
 
-## Company-first onboarding — implementation, release pending
+## Company-first onboarding — released 7 September 2026
 
 - [x] Shared signup field and one confirmation dialog with edit, resend,
   cooldown, existing-subscriber sign-in and honest delivery feedback.
@@ -268,9 +268,9 @@ No backend, Terminal, scoring or account mutations are part of this work.
   on the onboarding document and signup dialog. Visual review moved the primary
   action above the compact news preview so it stays reachable on phones.
 - [x] User review and explicit frontend/backend deployment approval on
-  7 September 2026. Backend-first release in progress.
+  7 September 2026. Backend-first release completed and verified.
 
-Scope includes `newsbackend`: release the compatible backend before the
+Scope includes `newsbackend`: the compatible backend was released before the
 frontend (new POST confirmation, status and PUT following endpoints). Existing
 GET confirmation and toggle clients remain supported. No production emails,
 real account writes, billing changes, backfills or Terminal deployment are part
@@ -278,7 +278,7 @@ of local verification. Rate limits are process-local (one-minute address
 cooldown plus five accepted attempts per IP/hour); shared persistence and a
 durable welcome-email outbox remain separate infrastructure work.
 
-## Membership UX — implementation, release pending
+## Membership UX — released 7 September 2026
 
 - [x] `/pro`: shared components/tokens, explicit 0/49/99 kr monthly prices,
   news-first benefits, current/included plan states and mobile stacked plans.
@@ -295,7 +295,22 @@ durable welcome-email outbox remain separate infrastructure work.
 - [x] Full isolated regression: all 67 Chromium tests pass, including the
   completed onboarding, settings, company research and news-reader flows.
 - [x] User review and explicit push/deployment approval on 7 September 2026.
-- [ ] Production rollout and smoke checks, including the earlier onboarding work.
+- [x] Production rollout and smoke checks, including the earlier onboarding work.
+
+Release: frontend application commit `7e3b5ed`, backend `fb5a6f2`, deployed
+backend first on 7 September 2026. Frontend image `0e806c7000b7`, backend image
+`190981d060c9`; previous images `e862d29c82a0` / `7dc1f7d8e282` retained for
+rollback. Terminal remained on its preflight image `c3c948e5af24`.
+
+Production verification: HTTP 200 for pricing/return/confirmation, homepage,
+Marknaden, Aktier, Ericsson's company report, settings and Morgonbrevet.
+Isolated browser checks pass at 1440/390/320px, including guest login focus
+return, no false payment confirmation, and confirmation privacy metadata with
+no third-party script requests. Screenshots inspected. No account, email or
+checkout submissions were made. All 12 injected onboarding tests also pass
+inside the deployed backend; its image excludes `.env`, and the frontend
+bundle contains no local API URLs. The legacy authentication middleware returns
+HTTP 200 with an error object for missing cookies; it still blocks guest access.
 
 Access audit: backend `feed.js` and `auth.js` grant Plus both the public
 analytical tools and Terminal; `user.js` caps followed companies at 5/10/100.
@@ -307,7 +322,8 @@ Plus-to-Pro checkout again. The current endpoint creates a new subscription.
 
 Next UI scope: the landing page and remaining account utility surfaces. Keep
 the free letter as the entry point and connect it to the news-led workspace;
-do not turn the landing page into another market dashboard.
+do not turn the landing page into another market dashboard. The unchanged
+landing page also needs a main landmark and clearer personal-letter access copy.
 
 ## Shipped foundation (aug 2026)
 

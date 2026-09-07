@@ -174,7 +174,10 @@ now reflects that, with 5/10/100 company caps and no unverified realtime or
 notification promises. Existing subscribers take the existing settings/billing
 management path, avoiding the new-subscription endpoint for plan changes.
 The return page waits for server-confirmed access and never treats its URL as
-a purchase receipt. No backend billing changes or deployment are included.
+a purchase receipt. No backend billing changes are included. Membership and
+the earlier onboarding work were released with approval on 7 September 2026:
+backend `fb5a6f2` first, then frontend application commit `7e3b5ed`. Terminal
+was not deployed. See ROADMAP.md for live checks and rollback image references.
 
 ## Component use
 
