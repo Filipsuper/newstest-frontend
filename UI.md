@@ -239,6 +239,24 @@ desktop density or abbreviated interaction model.
 - Reveal directory rows in small batches. Filtering stays immediate and does
   not trigger individual story/profile requests for every visible company.
 
+## Screener
+
+- Keep the compact comparison table distinct from the directory's larger
+  news-led rows: 14px values, 12px supporting labels, roughly 64px desktop rows.
+  Company names may wrap and rows grow when needed; never shrink them to fit.
+- Reuse the Aktier workspace gutters/navigation and shared buttons, fields,
+  grouped Select and Dialog. Active presets have a visible selected state;
+  changing their conditions clears that state. Filter chips remove a rule.
+- Use neutral surfaces and neutral ratio levels; positive/negative colors
+  reinforce signed changes. The small research profile uses the same tokens
+  and existing axis scores, not a separate palette or a recommendation badge.
+- On phones, presets and chips wrap, all controls have 44px touch targets,
+  and the company column stays pinned. Only the table scrolls horizontally;
+  vertical scrolling remains with the document, without a fixed table height.
+- Keep the source timestamp visible in Stockholm time. Detailed methodology
+  belongs in an info dialog. Empty selections, missing values, failed loads
+  and retained data after a refresh failure must remain distinct.
+
 ## Company pages
 
 - The company name is the page title. Ticker, market, segment, quote status,

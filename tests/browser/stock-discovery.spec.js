@@ -33,6 +33,8 @@ test("compact discovery is company-first, uses shared palette and does not fetch
   for (const theme of ["light", "dark"]) {
     await page.evaluate(theme => document.documentElement.classList.toggle("dark", theme === "dark"), theme);
     expect(await row.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(theme === "dark" ? "rgb(34, 37, 31)" : "rgb(255, 255, 255)");
+    // Audit the settled palette, not interpolated colors during a theme change.
+    await page.evaluate(async () => { await Promise.all(document.getAnimations().filter(animation => Number.isFinite(animation.effect?.getComputedTiming().iterations)).map(animation => animation.finished.catch(() => {}))); });
     expect((await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath(`discovery-${theme}-desktop.png`), fullPage: true });
   }

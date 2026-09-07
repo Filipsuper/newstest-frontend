@@ -99,29 +99,34 @@ locally served open-source Geist Variable, not Wealthsimple's Simple Sans.
 Phase 1 is implemented. Phase 2 now includes the public shell/search,
 `/marknaden`, shared chronological feed, URL-backed story reader and social
 images, Bevakning/preferences, and the letter library. The company page has
-news-first ordering and shared news rows; its analytical controls/charts and
-the screener presentation remains an incremental migration.
+news-first ordering and shared news rows; its analytical controls/charts remain
+an incremental migration. Screener presentation is now implemented
+with shared controls, grouped metric selection, a Base UI filter dialog and
+a token-based compact table. The research profile keeps its scores and only
+opts into the new palette inside the screener.
 See `docs/news-first-workspace.md` for the new product and data contract.
 
-The next approved release also migrates `/settings`, `/article/[id]`,
+The 7 September release also migrated `/settings`, `/article/[id]`,
 `/morgonbrevet`, `/kvallsbrevet`, article sharing and inline company previews.
 `Label` / `NewsTypeLabel` now cover content taxonomy and edition identity in
 the gallery, news rows, story reader and letter library. Email settings retain
 explicit saving and existing backend values; appearance uses the shared switch.
-These changes are separate from the previously approved release.
+These changes and company-first discovery are deployed in frontend `7b0f86b`;
+the later screener pass received frontend publishing approval on 7 September.
 `NewsSummary` now supplies the real AI prose/bullets beneath news headlines
 through `NewsRow`'s presentation-only description slot and the story reader.
 Its data adapter retains deterministic text for ranking but never presents it
 as AI copy. See `docs/stock-discovery-ux.md` for the implemented compact
 directory and its bounded company-news data contract. It uses shared controls,
-tonal rows and URL-backed filters; the screener/research radar is unchanged.
+tonal rows and URL-backed filters. Screener filter/sort persistence is a later
+UX improvement; this polish does not add it or change the analytical data.
 `LetterCard` is shared by the archive and existing landing-page previews;
 `PreviousArticle` is now a compatibility adapter rather than a second renderer.
 The supplemental company preview follows the [Base UI Tooltip guidelines](https://base-ui.com/react/components/tooltip#usage-guidelines):
 the link remains independently named and navigable, and the full company page
 provides the data without requiring hover.
 
-Not included yet: table virtualization, analytical chart/radar restyling,
+Not included yet: table virtualization, analytical company-page restyling,
 notification delivery, cross-device read receipts, exact letter-to-story IDs,
 or a new landing page. Existing subscription access remains intact. Nothing
 here deploys itself.

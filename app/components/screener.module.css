@@ -1,0 +1,88 @@
+.workspace {
+  min-height: 70vh;
+  padding-block: var(--ui-space-3) var(--ui-space-16);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+.intro { display: grid; gap: var(--ui-space-2); padding-block: var(--ui-space-6); }
+.presets { gap: var(--ui-space-2); }
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  padding-block: var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-border);
+}
+.toolbar > :last-child { margin-left: auto; }
+.chips { flex: 1; }
+.chip { max-width: 100%; text-align: left; }
+.chip > span { min-width: 0; overflow-wrap: anywhere; }
+.condition { color: var(--ui-text-secondary); font-variant-numeric: tabular-nums; margin-left: var(--ui-space-1); }
+.filterDialog { width: min(100%, 32rem); }
+.fieldPair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-3); }
+.fieldPair > * { min-width: 0; }
+.rule { display: grid; gap: var(--ui-space-3); border-top: 1px solid var(--ui-border); padding-top: var(--ui-space-6); }
+.rule > button { justify-self: start; }
+.resultBar, .footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--ui-space-2) var(--ui-space-4); }
+.resultBar { padding-block: var(--ui-space-4); }
+.footer { padding-top: var(--ui-space-4); }
+.error { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-4); margin-bottom: var(--ui-space-3); background: var(--ui-negative-soft); border-radius: var(--ui-radius-md); }
+.tableShell { background: var(--ui-surface); border-radius: var(--ui-radius-md); min-width: 0; }
+.tableScroll { overflow-x: auto; border-radius: inherit; scrollbar-width: thin; scrollbar-color: var(--ui-control-border) var(--ui-inset); }
+.tableScroll:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.table { width: 100%; min-width: 1280px; table-layout: fixed; border-collapse: separate; border-spacing: 0; color: var(--ui-text); font-size: var(--ui-text-sm); line-height: var(--ui-leading-body); font-variant-numeric: tabular-nums; }
+.table th { height: 48px; padding: var(--ui-space-1); background: var(--ui-surface); border-bottom: 1px solid var(--ui-border); font-weight: 500; }
+.table td { height: 64px; padding: var(--ui-space-2) var(--ui-space-3); border-bottom: 1px solid var(--ui-border); text-align: right; white-space: nowrap; }
+.table tr:last-child td { border-bottom: 0; }
+.table .companyColumn { width: 248px; position: sticky; left: 0; z-index: 1; background: var(--ui-surface); text-align: left; box-shadow: 1px 0 var(--ui-border); }
+.table .companyColumn:first-child { padding-left: var(--ui-space-4); }
+.table th:nth-child(2) { width: 112px; }
+.table th:nth-child(3) { width: 144px; }
+.table tbody tr:hover td, .table tbody tr:focus-within td { background: var(--ui-hover); }
+.sortButton { width: 100%; justify-content: flex-end; padding-inline: var(--ui-space-2); gap: var(--ui-space-1); font-size: var(--ui-text-xs); color: var(--ui-text-secondary); border-radius: var(--ui-radius-sm); white-space: nowrap; }
+.companyColumn .sortButton { justify-content: flex-start; padding-left: 0; }
+.table th[aria-sort="ascending"] .sortButton, .table th[aria-sort="descending"] .sortButton { color: var(--ui-text); }
+.sortButton svg { width: 12px; height: 12px; }
+.companyLink { display: flex; align-items: center; gap: var(--ui-space-3); min-height: var(--ui-control-md); color: var(--ui-text); text-decoration: none; border-radius: var(--ui-radius-sm); }
+.companyLink:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.companyLink:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.companyCopy { min-width: 0; display: grid; gap: var(--ui-space-1); }
+.companyCopy strong { font-weight: 600; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+.companyCopy > span { font-size: var(--ui-text-xs); color: var(--ui-text-secondary); white-space: normal; }
+.table .positive { color: var(--ui-positive); }
+.table .negative { color: var(--ui-negative); }
+.table .missing { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
+.loadingRow { height: 64px; border-radius: 0; border-bottom: 1px solid var(--ui-surface); }
+.loadingRow:first-child { border-radius: var(--ui-radius-md) var(--ui-radius-md) 0 0; }
+.loadingRow:last-child { border-radius: 0 0 var(--ui-radius-md) var(--ui-radius-md); }
+
+/* Opt this compact research profile into the foundation palette without
+   changing the unfinished analytical company page or its underlying scores. */
+.companyLink :global(.stock-profile) { --stock-profile-tone: var(--ui-accent); width: 40px; height: 40px; flex: 0 0 40px; margin: 0; }
+.companyLink :global(.stock-profile--low) { --stock-profile-tone: var(--ui-negative); }
+.companyLink :global(.stock-profile--high) { --stock-profile-tone: var(--ui-positive); }
+.companyLink :global(.stock-profile__ring), .companyLink :global(.stock-profile__spoke) { stroke: var(--ui-border); }
+.companyLink :global(.stock-profile__point) { stroke: var(--ui-surface); }
+.companyLink :global(.stock-profile__missing-point) { fill: var(--ui-surface); }
+.companyLink :global(.stock-profile__placeholder) { fill: var(--ui-inset); stroke: var(--ui-border); }
+
+@media (max-width: 700px) {
+  .intro { padding-block: var(--ui-space-4); }
+  .presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .presets > button { min-height: var(--ui-control-md); padding-inline: var(--ui-space-2); }
+  .toolbar { flex-wrap: wrap; }
+  .chips { flex-basis: 100%; order: 1; }
+  .chips:empty { display: none; }
+  .table { min-width: 1208px; }
+  .table .companyColumn { width: 176px; }
+  .table .companyColumn:first-child { padding-left: var(--ui-space-3); }
+  .table td { height: 72px; }
+  .companyLink { gap: var(--ui-space-2); }
+  .companyLink :global(.stock-profile) { width: 32px; height: 32px; flex-basis: 32px; }
+  .sortButton { min-height: var(--ui-control-md); }
+  .resultBar { align-items: flex-start; flex-direction: column; gap: var(--ui-space-1); }
+  .footer > :last-child { width: 100%; text-align: center; }
+}
+@media (max-width: 380px) {
+  .fieldPair { grid-template-columns: minmax(0, 1fr); }
+}

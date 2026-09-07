@@ -101,11 +101,11 @@ The overview returns 100 candidates; anonymous full-feed access remains denied.
 Previous running images are retained for rollback. Authenticated archive
 pagination still needs verification against the upstream API.
 
-## Editorial/account migration — next local iteration
+## Editorial/account migration — released
 
-Status: implemented locally, not released. The preceding news-first release
-was pushed and deployed with approval on 7 September 2026. This next batch
-remains separate on `public-settings-editorial` for review.
+Status: shipped with approval on 7 September 2026, including the subsequent
+AI-description and company-discovery work below (frontend `7b0f86b`, public
+backend `14452f4`). The earlier local-only status is superseded.
 
 - [x] Reusable `Label` and `NewsTypeLabel`, neutral category icons, gallery
   examples, integration with news rows/readers and edition labels.
@@ -117,8 +117,9 @@ remains separate on `public-settings-editorial` for review.
   previews; reader-only code no longer loads through the legacy preview parser.
 - [x] Full Stockholm-date checks instead of weekday-only edition matching.
   Missing content and unavailable preferences are distinct from empty values.
-- [ ] Release review for this next batch, then migrate the remaining landing,
-  pricing/account utility pages and analytical stock/screener controls.
+- [x] Release review and public frontend/backend deployment.
+- [ ] Migrate the remaining landing, pricing/account utility pages and
+  analytical stock controls; screener presentation is the local pass below.
 
 Verified locally: production build, 16 frontend unit tests, and 29 Chromium
 browser tests passed. Browser coverage includes explicit/failed email saves,
@@ -127,6 +128,10 @@ clipboard sharing, shared archive cards, and 320/390px/desktop layouts.
 No real newsletter preferences, billing actions, or account data were changed.
 
 ## Approved release: AI descriptions and company-first discovery
+
+Status: public frontend `7b0f86b` and backend `14452f4` deployed. The compatible
+Market API serializer patch `7527a09` was pushed separately; Terminal was not
+rebuilt or deployed. The public compatibility bridge remains in use.
 
 - [x] Shared `NewsSummary` beneath row/reader headlines: AI prose and up to
   three real bullet points, labelled as AI. No deterministic-description fallback.
@@ -164,6 +169,35 @@ when it rewrites them. Run production verification in an isolated copy while
 that preview is active. The affected local preview was restored through its
 existing launcher after scoped approval. Account/notification writes are not
 part of this release; tests use fictional identities.
+
+## Screener polish — approved release
+
+Status: frontend push and deployment approved on 7 September 2026. This is a
+frontend-only release; the backend, Terminal and account data stay unchanged.
+
+- [x] Shared stock-workspace navigation, Geist type, neutral light/dark
+  surfaces, compact comparison rows and meaningful signed-change colors.
+- [x] Base UI buttons, grouped metric select, labelled numeric field and
+  accessible filter dialog. Active rules can be removed inside or outside the
+  dialog; modifying a preset clears its selected state.
+- [x] Mobile touch controls, wrapping filter chips, pinned company identity,
+  and horizontal table scrolling without a nested vertical scroll area.
+- [x] Keep all columns, metric calculations, preset thresholds, sorting,
+  50-row pagination, refresh and Plus access. Retain the compact profile and
+  its scores; opt only the screener profile into the shared palette.
+- [x] Visible Stockholm data timestamp, methodology dialog and separate
+  loading/empty/error states. Failed refreshes retain prior data with a notice.
+- [x] Replace obsolete global screener rules with a scoped CSS Module.
+- [ ] Later UX pass: URL-persisted screener filters/sort for shareable screens.
+- [x] Release review and explicit publishing approval.
+
+Verified: isolated production build, all 24 frontend unit tests and all 43
+Chromium browser tests passed. Screener coverage includes both themes,
+320/390px touch layouts, pinned-column/page scrolling, keyboard focus and
+nested-select dismissal, presets/rules, missing values, sorting, pagination,
+refresh recovery and guest/free/Plus access. Desktop/mobile screenshots were
+inspected; the existing local preview returns HTTP 200. Browser data and users
+are fictional. Contrast checks wait for theme transitions to finish.
 
 ## Shipped foundation (aug 2026)
 

@@ -11,7 +11,13 @@ import {
     FiX,
 } from "react-icons/fi";
 import { fetchCompanyProfiles, fetchScreener } from "../utils/api";
-import Dropdown from "./Dropdown";
+import { Button, IconButton } from "./ui/Button";
+import { Select } from "./ui/Select";
+import { TextField } from "./ui/TextField";
+import { Dialog } from "./ui/overlays";
+import { Container, Heading, Inline, Stack, Text, cx } from "./ui/layout";
+import { EmptyState, Skeleton } from "./ui/data";
+import styles from "./screener.module.css";
 import CompanyProfileRadar from "./CompanyProfileRadar";
 import PlusPaywall from "./PlusPaywall";
 import { StockWorkspaceNav } from "./WorkspaceNav";
@@ -98,7 +104,7 @@ const PILL_LABELS = {
 const COLUMNS = [
     { key: "company", label: "Bolag", align: "left" },
     { key: "price", label: "Kurs", format: "price" },
-    { key: "changePct", label: "Idag", format: "signedPct" },
+    { key: "changePct", label: "Dagsförändring", format: "signedPct" },
     { key: "marketCap", label: "Börsvärde", format: "marketCap" },
     { key: "revenueGrowthPct", label: "Oms.tillväxt", format: "signedPct" },
     { key: "ebitMarginPct", label: "EBIT-marginal", format: "signedPct" },
@@ -137,8 +143,8 @@ function formatValue(value, format) {
 
 function signedClass(value) {
     const number = finite(value);
-    if (number == null || number === 0) return "text-text-article";
-    return number > 0 ? "market-positive" : "market-negative";
+    if (number == null || number === 0) return "";
+    return number > 0 ? styles.positive : styles.negative;
 }
 
 function activeFilterParts(filter) {
@@ -156,14 +162,14 @@ function activeFilterParts(filter) {
     };
 }
 
-function EmptyState({ filtered }) {
+const segmentLabel = (value) => ({ LARGE_CAP: "Large Cap", MID_CAP: "Mid Cap", SMALL_CAP: "Small Cap", FIRST_NORTH: "First North" })[value] ?? value;
+
+function FilterChip({ label, condition, onRemove }) {
     return (
-        <div className="screener-empty">
-            <p className="font-semibold text-text">{filtered ? "Inga bolag matchar urvalet" : "Ingen screenerdata att visa ännu"}</p>
-            <p className="mt-1 text-sm text-text-muted">
-                {filtered ? "Prova att ta bort ett filter eller använda ett bredare intervall." : "Försök igen om en liten stund."}
-            </p>
-        </div>
+        <Button variant="secondary" size="sm" className={styles.chip} onClick={onRemove} aria-label={`Ta bort ${label} ${condition}`}>
+            <span>{label} <span className={styles.condition}>{condition}</span></span>
+            <FiX aria-hidden="true" />
+        </Button>
     );
 }
 
@@ -228,25 +234,11 @@ function ScreenerTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        if (!filterOpen) return undefined;
-        const onKeyDown = (event) => {
-            if (event.key === "Escape") setFilterOpen(false);
-        };
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        window.addEventListener("keydown", onKeyDown);
-        return () => {
-            document.body.style.overflow = previousOverflow;
-            window.removeEventListener("keydown", onKeyDown);
-        };
-    }, [filterOpen]);
-
     const segments = useMemo(() => [...new Set((items ?? []).map((row) => row.segment).filter(Boolean))].sort(), [items]);
     const sectors = useMemo(() => [...new Set((items ?? []).map((row) => row.sector).filter(Boolean))].sort(), [items]);
     const segmentOptions = useMemo(() => [
         { value: "all", label: "Alla listor" },
-        ...segments.map((value) => ({ value, label: value })),
+        ...segments.map((value) => ({ value, label: segmentLabel(value) })),
     ], [segments]);
     const sectorOptions = useMemo(() => [
         { value: "all", label: "Alla sektorer" },
@@ -285,7 +277,8 @@ function ScreenerTable() {
 
     useEffect(() => {
         const symbols = shownSymbolsKey.split("|").filter(Boolean);
-        const requested = symbols.filter((symbol) => !Object.prototype.hasOwnProperty.call(profiles, symbol));
+        // Retry unfinished batches when a filter/sort cancels the previous page.
+        const requested = symbols.filter((symbol) => profiles[symbol] === undefined || profiles[symbol] === null);
         if (!requested.length) return undefined;
         setProfiles((current) => {
             const next = { ...current };
@@ -356,195 +349,153 @@ function ScreenerTable() {
         }));
     };
 
+    const removeFilter = (filter) => {
+        setFilters((current) => current.filter((item) => item !== filter));
+        setActivePreset(null);
+    };
+    const changeSegment = (value) => { setSegment(value); setActivePreset(null); };
+    const changeSector = (value) => { setSector(value); setActivePreset(null); };
+    const draftValid = draftValue.trim() !== "" && finite(draftValue) !== null;
+    const dataTime = meta?.dataAsOf ? new Date(meta.dataAsOf) : null;
+    const validDataTime = dataTime && Number.isFinite(dataTime.getTime());
+    const filterCount = filters.length + Number(segment !== "all") + Number(sector !== "all");
+
     return (
-        <section className="font-sans" aria-label="Aktiescreener">
-            <div className="screener-intro">
-                <div>
-                    <h1>Hitta bolag</h1>
-                    <span>Börja med ett färdigt urval eller bygg ett eget.</span>
-                </div>
-                <div className="screener-presets" role="group" aria-label="Färdiga urval">
-                    {PRESETS.map((preset) => (
-                        <button
-                            type="button"
-                            key={preset.id}
-                            className={activePreset === preset.id ? "is-active" : ""}
-                            onClick={() => applyPreset(preset)}
-                        >
-                            {preset.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <div className="screener-toolbar">
-                <h2>Urval</h2>
-                {hasFilters && (
-                    <div className="screener-chips" aria-label="Aktiva filter">
-                        {segment !== "all" && (
-                            <button type="button" className="screener-chip is-active" onClick={() => setSegment("all")} aria-label={`Ta bort listfilter ${segment}`}>
-                                <span className="screener-chip-label">Lista</span>
-                                <span className="screener-chip-divider" aria-hidden="true" />
-                                <span className="screener-chip-condition">{segment}</span>
-                                <FiX aria-hidden="true" />
-                            </button>
+        <section aria-label="Aktiescreener">
+            <header className={styles.intro}>
+                <Heading as="h1" size="page">Hitta bolag</Heading>
+                <Text size="sm" tone="secondary">Börja med ett färdigt urval eller bygg ett eget.</Text>
+            </header>
+            <Inline className={styles.presets} role="group" aria-label="Färdiga urval">
+                {PRESETS.map((preset) => (
+                    <Button
+                        key={preset.id}
+                        variant={activePreset === preset.id ? "primary" : "secondary"}
+                        size="sm"
+                        aria-pressed={activePreset === preset.id}
+                        onClick={() => applyPreset(preset)}
+                    >
+                        {preset.label}
+                    </Button>
+                ))}
+            </Inline>
+
+            <div className={styles.toolbar}>
+                <Dialog
+                    open={filterOpen}
+                    onOpenChange={setFilterOpen}
+                    title="Filtrera bolag"
+                    className={styles.filterDialog}
+                    trigger={<Button variant="secondary" size="sm"><FiPlus aria-hidden="true" /> Lägg till filter</Button>}
+                    footer={<>
+                        {hasFilters && <Button variant="ghost" onClick={resetFilters}>Rensa filter</Button>}
+                        <Button onClick={() => setFilterOpen(false)}>Visa {visibleItems.length} bolag</Button>
+                    </>}
+                >
+                    <Stack gap={6}>
+                        <div className={styles.fieldPair}>
+                            <Select label="Lista" value={segment} onValueChange={changeSegment} options={segmentOptions} />
+                            <Select label="Sektor" value={sector} onValueChange={changeSector} options={sectorOptions} />
+                        </div>
+                        <div className={styles.rule}>
+                            <Select label="Nyckeltal" value={draftMetric} onValueChange={setDraftMetric} groups={METRIC_DROPDOWN_GROUPS} />
+                            <Text size="xs" tone="secondary">{METRICS[draftMetric].description}</Text>
+                            <div className={styles.fieldPair}>
+                                <Select label="Villkor" value={draftOperator} onValueChange={setDraftOperator} options={OPERATOR_OPTIONS} />
+                                <TextField
+                                    label={`Värde (${METRICS[draftMetric].unit})`}
+                                    type="number"
+                                    inputMode="decimal"
+                                    step={METRICS[draftMetric].step}
+                                    value={draftValue}
+                                    onValueChange={setDraftValue}
+                                    onKeyDown={(event) => { if (event.key === "Enter" && draftValid) addDraftFilter(); }}
+                                />
+                            </div>
+                            <Button variant="secondary" disabled={!draftValid} onClick={addDraftFilter}>
+                                <FiPlus aria-hidden="true" /> Lägg till villkor
+                            </Button>
+                        </div>
+                        <div role="status">
+                            <Text size="xs" tone="secondary">
+                                {filterCount ? `${filterCount} aktiva filter · ${visibleItems.length} bolag matchar` : "Inga aktiva filter"}
+                            </Text>
+                        </div>
+                        {hasFilters && (
+                            <Inline role="group" aria-label="Aktiva filter i dialog">
+                                {segment !== "all" && <FilterChip label="Lista" condition={segmentLabel(segment)} onRemove={() => changeSegment("all")} />}
+                                {sector !== "all" && <FilterChip label="Sektor" condition={sector} onRemove={() => changeSector("all")} />}
+                                {filters.map((filter) => <FilterChip key={`${filter.metric}-${filter.operator}`} {...activeFilterParts(filter)} onRemove={() => removeFilter(filter)} />)}
+                            </Inline>
                         )}
-                        {sector !== "all" && (
-                            <button type="button" className="screener-chip is-active" onClick={() => setSector("all")} aria-label={`Ta bort sektorfilter ${sector}`}>
-                                <span className="screener-chip-label">Sektor</span>
-                                <span className="screener-chip-divider" aria-hidden="true" />
-                                <span className="screener-chip-condition">{sector}</span>
-                                <FiX aria-hidden="true" />
-                            </button>
-                        )}
-                        {filters.map((filter) => {
-                            const parts = activeFilterParts(filter);
-                            return (
-                                <button
-                                    type="button"
-                                    key={`${filter.metric}-${filter.operator}`}
-                                    className="screener-chip is-active"
-                                    onClick={() => setFilters((current) => current.filter((item) => item !== filter))}
-                                    aria-label={`Ta bort ${parts.label} ${parts.condition}`}
-                                >
-                                    <span className="screener-chip-label">{parts.label}</span>
-                                    <span className="screener-chip-divider" aria-hidden="true" />
-                                    <span className="screener-chip-condition">{parts.condition}</span>
-                                    <FiX aria-hidden="true" />
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-                <div className="screener-toolbar-actions">
-                    <button
-                        type="button"
-                        className={`screener-toolbar-button ${filterOpen ? "is-active" : ""}`}
-                        onClick={() => setFilterOpen(true)}
-                        aria-haspopup="dialog"
-                        aria-expanded={filterOpen}
-                        aria-label="Lägg till filter"
-                        title="Lägg till filter"
-                    >
-                        <FiPlus aria-hidden="true" />
-                    </button>
-                    <button
-                        type="button"
-                        className="screener-toolbar-button"
-                        onClick={() => load({ silent: true })}
-                        disabled={refreshing}
-                        aria-label={refreshing ? "Uppdaterar screenerdata" : "Uppdatera screenerdata"}
-                        title="Uppdatera"
-                    >
-                        <FiRefreshCw className={refreshing ? "spin" : ""} aria-hidden="true" />
-                    </button>
-                </div>
+                    </Stack>
+                </Dialog>
+                <Inline className={styles.chips} role="group" aria-label="Aktiva filter">
+                    {segment !== "all" && <FilterChip label="Lista" condition={segmentLabel(segment)} onRemove={() => changeSegment("all")} />}
+                    {sector !== "all" && <FilterChip label="Sektor" condition={sector} onRemove={() => changeSector("all")} />}
+                    {filters.map((filter) => <FilterChip key={`${filter.metric}-${filter.operator}`} {...activeFilterParts(filter)} onRemove={() => removeFilter(filter)} />)}
+                    {hasFilters && <Button size="sm" variant="ghost" onClick={resetFilters}>Rensa filter</Button>}
+                </Inline>
+                <IconButton
+                    size="sm"
+                    label={refreshing ? "Uppdaterar screenerdata" : "Uppdatera screenerdata"}
+                    onClick={() => load({ silent: true })}
+                    loading={refreshing}
+                >
+                    {!refreshing && <FiRefreshCw aria-hidden="true" />}
+                </IconButton>
             </div>
 
-            {filterOpen && (
-                <div className="screener-filter-backdrop" onMouseDown={() => setFilterOpen(false)}>
-                    <div
-                        className="screener-filter-modal"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="screener-filter-title"
-                        onMouseDown={(event) => event.stopPropagation()}
-                    >
-                        <div className="screener-filter-modal-heading">
-                            <div>
-                                <h2 id="screener-filter-title">Filtrera bolag</h2>
-                                {/* <p>Kombinera marknad, finansiella nyckeltal och tekniska signaler.</p> */}
-                            </div>
-                            <button type="button" onClick={() => setFilterOpen(false)} aria-label="Stäng filter">
-                                <FiX aria-hidden="true" />
-                            </button>
-                        </div>
+            <div className={styles.resultBar}>
+                <Text size="sm" numeric role="status">
+                    {items == null ? "Hämtar bolag…" : `${visibleItems.length} av ${items.length} bolag`}
+                </Text>
+                <Text size="xs" tone="secondary">
+                    {validDataTime
+                        ? <>Marknadsdata <time dateTime={dataTime.toISOString()}>{dataTime.toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Stockholm" })}</time></>
+                        : "Uppdateringstid saknas"}
+                </Text>
+            </div>
 
-                        <div className="screener-filter-modal-body">
-                            <div className="screener-filter-market">
-                                <div className="screener-filter-field">
-                                    <span>Lista</span>
-                                    <Dropdown value={segment} onChange={setSegment} options={segmentOptions} ariaLabel="Välj lista" />
-                                </div>
-                                <div className="screener-filter-field">
-                                    <span>Sektor</span>
-                                    <Dropdown value={sector} onChange={setSector} options={sectorOptions} ariaLabel="Välj sektor" />
-                                </div>
-                            </div>
-
-                            <div className="screener-filter-divider" />
-
-                            <div className="screener-filter-field">
-                                <span>Nyckeltal</span>
-                                <Dropdown value={draftMetric} onChange={setDraftMetric} groups={METRIC_DROPDOWN_GROUPS} ariaLabel="Välj nyckeltal" />
-                            </div>
-                            <div className="screener-filter-info">
-                                <FiInfo aria-hidden="true" />
-                                <p>{METRICS[draftMetric].description}</p>
-                            </div>
-                            <div className="screener-filter-rule">
-                                <div className="screener-filter-field">
-                                    <span>Villkor</span>
-                                    <Dropdown value={draftOperator} onChange={setDraftOperator} options={OPERATOR_OPTIONS} ariaLabel="Välj villkor" />
-                                </div>
-                                <label className="screener-filter-field">
-                                    <span>Värde ({METRICS[draftMetric].unit})</span>
-                                    <input
-                                        type="number"
-                                        inputMode="decimal"
-                                        step={METRICS[draftMetric].step}
-                                        value={draftValue}
-                                        onChange={(event) => setDraftValue(event.target.value)}
-                                        onKeyDown={(event) => { if (event.key === "Enter") addDraftFilter(); }}
-                                    />
-                                </label>
-                            </div>
-                            <button type="button" className="screener-add-condition" onClick={addDraftFilter}>
-                                <FiPlus aria-hidden="true" /> Lägg till
-                            </button>
-                        </div>
-
-                        <div className="screener-filter-modal-footer">
-                            {hasFilters && <button type="button" className="screener-clear-filters" onClick={resetFilters}>Rensa filter</button>}
-                            <button type="button" className="screener-filter-done" onClick={() => setFilterOpen(false)}>Stäng</button>
-                        </div>
-                    </div>
+            {error && Boolean(items?.length) && (
+                <div className={styles.error} role="alert">
+                    <Text size="sm">{error} Tidigare hämtade värden visas.</Text>
+                    <Button variant="secondary" size="sm" onClick={() => load({ silent: true })} loading={refreshing}>Försök igen</Button>
                 </div>
             )}
 
-            <div className="screener-result-bar">
-                <div>
-                    <strong>{items == null ? "Hämtar bolag…" : `${visibleItems.length} av ${items.length} bolag`}</strong>
-                    <span>
-                        {meta?.financialCoverage != null
-                            ? `Helårsdata för ${meta.financialCoverage} bolag · marknadsdata uppdateras löpande`
-                            : "Rapporterade helårssiffror · marknadsdata uppdateras löpande"}
-                    </span>
-                </div>
-            </div>
-
-            {error && <p className="screener-error" role="alert">{error}</p>}
-
             {items == null ? (
-                <div className="screener-table-shell" aria-label="Laddar screenerdata">
-                    <div className="screener-loading-head" />
-                    {[...Array(9)].map((_, index) => <div key={index} className="screener-loading-row" />)}
+                <div className={styles.tableShell} role="status" aria-label="Laddar screenerdata">
+                    {[...Array(9)].map((_, index) => <Skeleton key={index} className={styles.loadingRow} />)}
                 </div>
+            ) : error && !items.length ? (
+                <EmptyState title="Kunde inte hämta screenerdata" description="Försök att hämta bolagen igen." role="alert"
+                    action={<Button variant="secondary" loading={refreshing} onClick={() => load({ silent: true })}>Försök igen</Button>} />
             ) : visibleItems.length === 0 ? (
-                <EmptyState filtered={hasFilters} />
+                <EmptyState
+                    title={hasFilters ? "Inga bolag matchar urvalet" : "Ingen screenerdata att visa ännu"}
+                    description={hasFilters ? "Ta bort ett filter eller välj ett bredare intervall." : "Försök igen om en liten stund."}
+                    action={hasFilters
+                        ? <Button variant="secondary" onClick={resetFilters}>Visa alla bolag</Button>
+                        : <Button variant="secondary" loading={refreshing} onClick={() => load({ silent: true })}>Försök igen</Button>}
+                />
             ) : (
-                <div className="screener-table-shell">
-                    <div className="screener-table-scroll" tabIndex="0" aria-label="Screenerresultat, skrolla i sidled för fler nyckeltal">
-                        <table className="screener-table">
+                <div className={styles.tableShell}>
+                    <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="Screenerresultat, skrolla i sidled för fler nyckeltal">
+                        <table className={styles.table} aria-label="Bolag och nyckeltal">
                             <thead>
                                 <tr>
                                     {COLUMNS.map((column) => {
                                         const active = sort.key === column.key;
                                         return (
-                                            <th key={column.key} className={column.key === "company" ? "screener-company-column" : ""}>
-                                                <button type="button" onClick={() => toggleSort(column.key)}>
+                                            <th scope="col" key={column.key}
+                                                className={column.key === "company" ? styles.companyColumn : undefined}
+                                                aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
+                                            >
+                                                <Button variant="ghost" size="sm" className={styles.sortButton} onClick={() => toggleSort(column.key)}>
                                                     {column.label}
-                                                    {active && (sort.direction === "asc" ? <FiArrowUp /> : <FiArrowDown />)}
-                                                </button>
+                                                    {active && (sort.direction === "asc" ? <FiArrowUp aria-hidden="true" /> : <FiArrowDown aria-hidden="true" />)}
+                                                </Button>
                                             </th>
                                         );
                                     })}
@@ -553,27 +504,27 @@ function ScreenerTable() {
                             <tbody>
                                 {shownItems.map((row) => (
                                     <tr key={row.symbol}>
-                                        <td className="screener-company-column">
-                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`} className="screener-company-link">
+                                        <td className={styles.companyColumn}>
+                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`} className={styles.companyLink}>
                                                 <CompanyProfileRadar
                                                     compact
                                                     companyName={row.name ?? row.symbol}
                                                     loading={profiles[row.symbol] === undefined || profiles[row.symbol] === null}
                                                     profile={profiles[row.symbol] || null}
                                                 />
-                                                <span className="screener-company-copy">
+                                                <span className={styles.companyCopy}>
                                                     <strong>{row.name ?? row.symbol}</strong>
-                                                    <span>{row.nativeSymbol ?? row.symbol}{row.segment ? ` · ${row.segment}` : ""}</span>
+                                                    <span>{row.nativeSymbol ?? row.symbol}{row.segment ? ` · ${segmentLabel(row.segment)}` : ""}</span>
                                                 </span>
                                             </Link>
                                         </td>
                                         {COLUMNS.slice(1).map((column) => {
                                             const value = valueFor(row, column.key);
                                             return (
-                                                <td
-                                                    key={column.key}
-                                                    className={column.format === "signedPct" ? signedClass(value) : value == null ? "is-missing" : ""}
-                                                >
+                                                <td key={column.key} className={cx(
+                                                    value == null && styles.missing,
+                                                    ["changePct", "revenueGrowthPct", "return15mPct"].includes(column.key) && signedClass(value),
+                                                )}>
                                                     {formatValue(value, column.format)}
                                                 </td>
                                             );
@@ -586,17 +537,22 @@ function ScreenerTable() {
                 </div>
             )}
 
-            {shownItems.length < visibleItems.length && (
-                <button type="button" className="screener-more" onClick={() => setResultLimit((value) => value + 50)}>
-                    Visa fler bolag
-                </button>
-            )}
-
-            <div className="screener-method">
-                <p>
-                    Finansiella nyckeltal bygger på senast rapporterade helår. Värderingsmultiplar visas bara när kurs, antal aktier och jämförbar rapporteringsvaluta finns. Tekniska mått bygger på OMXsums sparade marknadsflöde.
-                </p>
-                {meta?.dataAsOf && <p>Marknadsdata per {new Date(meta.dataAsOf).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })}.</p>}
+            <div className={styles.footer}>
+                <Dialog
+                    title="Om nyckeltalen"
+                    trigger={<Button variant="ghost" size="sm"><FiInfo aria-hidden="true" /> Om nyckeltalen</Button>}
+                >
+                    <Stack gap={4}>
+                        <Text size="sm">Finansiella nyckeltal bygger på senast rapporterade helår. Värderingsmultiplar visas bara när kurs, antal aktier och jämförbar rapporteringsvaluta finns.</Text>
+                        <Text size="sm">Tekniska mått bygger på OMXsums sparade marknadsflöde. Tider visas i svensk tid. Saknade värden visas som Saknas och sorteras sist.</Text>
+                        {meta?.financialCoverage != null && <Text size="sm">Helårsdata finns för {meta.financialCoverage} bolag.</Text>}
+                        <Text size="sm">Bolagsprofilens sex axlar sammanfattar underliggande nyckeltal. Färgen visar genomsnittet av tillgängliga poäng, inte ett köp- eller säljråd. Saknade axlar får inga poäng.</Text>
+                    </Stack>
+                </Dialog>
+                {shownItems.length < visibleItems.length && (
+                    <Button variant="secondary" onClick={() => setResultLimit((value) => value + 50)}>Visa fler bolag</Button>
+                )}
+                <Text size="xs" tone="secondary" numeric>{items?.length ? `Visar ${shownItems.length} av ${visibleItems.length}` : ""}</Text>
             </div>
         </section>
     );
@@ -604,14 +560,11 @@ function ScreenerTable() {
 
 export default function ScreenerPage() {
     return (
-        <main className="screener-page">
-            <StockWorkspaceNav />
-            {/* <header className="screener-heading">
-                <h1>Aktiescreener</h1>
-            </header> */}
+        <Container as="main" className={styles.workspace}>
+            <StockWorkspaceNav foundation />
             <PlusPaywall redirectTo="/aktier/screener" title="Utforska aktier med Plus" description="Hitta bolag med screenerns urval och egna filter. Marknadsöversikten och bolagens nyheter är fortsatt öppna.">
                 <ScreenerTable />
             </PlusPaywall>
-        </main>
+        </Container>
     );
 }
