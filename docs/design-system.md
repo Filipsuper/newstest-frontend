@@ -203,7 +203,11 @@ The current published letter now sits alongside the hero as the lead magnet
 (below signup on phones); real news examples follow the benefits section.
 Landing sections use 112px desktop and 64px mobile gaps, composed from shared
 spacing tokens, without increasing the density of the individual controls.
-Publishing has been approved; the production rollout is pending.
+Released with approval on 7 September 2026 as frontend `b614361`. Production
+checks confirm the newsletter hero, section gaps and both themes at
+1440/390/320px, the real letter link and the new social image. No production
+forms were submitted; backend and Terminal remained unchanged. See ROADMAP.md
+for release and rollback details.
 
 ### Shared primitives
 

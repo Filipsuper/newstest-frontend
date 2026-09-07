@@ -12,9 +12,10 @@ source-attributed API; the public product is not a smaller copy of Terminal.
 The entry points: **free morning letter or public market overview → a daily
 news habit → company following → personal letters and research (paid)**.
 
-## OMXsum 2.0 landing page — approved release
+## OMXsum 2.0 landing page — released
 
-Status: verified locally on 7 September 2026; publishing approved, rollout pending.
+Status: frontend `b614361` deployed to omxsum.com on 7 September 2026 after
+explicit approval. Backend and Terminal were not deployed.
 This updates the earlier letter-only landing-page principle, not the product's
 access model. The free letter remains the easy entry point, while visitors can
 also try the news-led workspace without creating an account.
@@ -39,7 +40,7 @@ also try the news-led workspace without creating an account.
   catalogue. Clarify free overview/letters, five followed companies and Plus
   access to the full feed, research and personal letter additions.
 - [x] User review and explicit publishing approval.
-- [ ] Production rollout and post-release checks.
+- [x] Production rollout and post-release checks.
 
 Verified: isolated production build, all 32 frontend unit tests and all 74
 Chromium browser tests pass. Landing coverage includes guest/returning-user
@@ -50,6 +51,20 @@ verify independent preview failure, dual HTTP failures, retry recovery and
 genuine empty states while signup remains usable. All test users and stories
 are fictional; this is not a production upstream or release check.
 No backend, billing, account, notification-delivery or Terminal changes.
+
+Production verification: homepage, Marknaden, Aktier, Breven, pricing and the
+company API return HTTP 200. Live browser checks at 1440/390/320px confirm
+the OMXsum 2.0 title/header, today's published letter in the hero, working
+letter link, 112px/64px section gaps, no horizontal overflow in light/dark
+mode, signup-anchor focus and no runtime errors. The homepage sharing image
+returns a 1200×630 PNG. No account, email, following or checkout submissions.
+Screenshots inspected. The running image excludes `.env` and its browser
+assets contain no local API addresses.
+
+Frontend image `336df5f3acbb`; previous frontend `0e806c7000b7` retained as
+rollback. Backend stays `190981d060c9`, Terminal stays `c3c948e5af24`, all
+without restarts. Post-release available memory ~743 MB, free swap ~2.3 GB
+and free disk ~4.7 GB. The existing local development server was left running.
 
 ## News-first public workspace — September 2026
 
