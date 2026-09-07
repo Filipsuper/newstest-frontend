@@ -1,6 +1,9 @@
 # News-first workspace
 
-Implementation: September 2026. Local changes; deployment is a separate action.
+Implementation contract for the public workspace released on 7 September 2026.
+See [release history](release-history.md) for deployment evidence and
+[ROADMAP.md](../ROADMAP.md) for the current backlog. Later changes still require
+separate deployment approval.
 
 ## Product contract
 

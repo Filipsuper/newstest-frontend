@@ -177,9 +177,21 @@ The return page waits for server-confirmed access and never treats its URL as
 a purchase receipt. No backend billing changes are included. Membership and
 the earlier onboarding work were released with approval on 7 September 2026:
 backend `fb5a6f2` first, then frontend application commit `7e3b5ed`. Terminal
-was not deployed. See ROADMAP.md for live checks and rollback image references.
+was not deployed. See [release history](release-history.md) for live checks
+and rollback image references; [ROADMAP.md](../ROADMAP.md) owns future work.
 
 ## Component use
+
+### Site sharing artwork
+
+`SITE_OG_IMAGE` in `brand.js` is the versioned generic Open Graph/Twitter image.
+`/og/home` builds a static 1200×630 composition with bundled Geist, exact palette
+values and the existing percentage formatter. ImageResponse cannot render the
+CSS Modules/Base UI DOM directly, so its product-view illustration is a scoped
+renderer, not another interactive component system. A visible date identifies
+the saved public news snapshot; `preview.json` retains its source and quote
+provenance. No runtime market/font request is required. Dedicated event,
+company and article images still override the generic site artwork.
 
 ### OMXsum 2.0 landing composition
 
@@ -206,8 +218,8 @@ spacing tokens, without increasing the density of the individual controls.
 Released with approval on 7 September 2026 as frontend `b614361`. Production
 checks confirm the newsletter hero, section gaps and both themes at
 1440/390/320px, the real letter link and the new social image. No production
-forms were submitted; backend and Terminal remained unchanged. See ROADMAP.md
-for release and rollback details.
+forms were submitted; backend and Terminal remained unchanged. See
+[release history](release-history.md) for release and rollback details.
 
 ### Shared primitives
 

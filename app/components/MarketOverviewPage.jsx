@@ -268,7 +268,7 @@ export default function MarketOverviewPage({
           )}
           <div className={styles.news}>
             {featured.length ? (
-              featured.map((item) => <NewsFeedItem key={item.id} item={item} />)
+              featured.map((item) => <NewsFeedItem key={item.id} item={item} showSummary={false} />)
             ) : (
               <EmptyState
                 title="Inga större nyhetshändelser just nu"

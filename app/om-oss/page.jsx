@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_OG_IMAGE } from "../utils/brand";
 
 export const metadata = {
   title: "Om OMXsum",
@@ -13,7 +14,7 @@ export const metadata = {
     siteName: "OMXsum",
     locale: "sv_SE",
     type: "website",
-    images: ["/omxsum_og.jpg"],
+    images: [SITE_OG_IMAGE],
   },
 };
 

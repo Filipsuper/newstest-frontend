@@ -5,7 +5,7 @@ import {
   LandingNewsPreview,
   LandingPreviewLoading,
 } from "./components/LandingPreviews";
-import { BRAND_LABEL, LANDING_DESCRIPTION } from "./utils/brand";
+import { BRAND_LABEL, LANDING_DESCRIPTION, SITE_OG_IMAGE } from "./utils/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -23,20 +23,13 @@ export const metadata = {
     siteName: BRAND_LABEL,
     locale: "sv_SE",
     type: "website",
-    images: [
-      {
-        url: "/og/home",
-        width: 1200,
-        height: 630,
-        alt: `${BRAND_LABEL} – Förstå nyheterna. Följ dina bolag.`,
-      },
-    ],
+    images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: ["/og/home"],
+    images: [SITE_OG_IMAGE],
   },
 };
 

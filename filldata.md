@@ -139,7 +139,7 @@ relinkade till redan extraherade sektioner.
    ihopblandad text.
 3. **TTM 49,3%** — begränsas av kvartalsdjupet hos källan.
 4. **Estimat 6,7%** — ingen historik över vad konsensus var före tidigare
-   rapporter; Phase 5-frågan.
+   rapporter; se [roadmapens datakrav](ROADMAP.md#data-dependencies).
 5. **5 PDF:er kräver riktig OCR.**
 6. `financialComplete: 289` — PDF-siffertabellextraktionen är en yngre,
    kompletterande pipeline ovanpå Yahoo-boksluten; syns inte som hål på

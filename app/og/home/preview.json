@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-09-07T14:34:43.390Z",
+  "sourceUrl": "https://omxsum.com/api/feed/market-overview",
+  "stories": [
+    {
+      "id": "story_6e8693fc1b3dbae7f48db2469b2b54fd",
+      "headline": "HomeMaid AB förvärvar inkråmet i Hello Cleans verksamhet i Bålsta",
+      "publishedAt": "2026-09-07T13:00:00.000Z",
+      "company": "HomeMaid AB",
+      "source": {
+        "name": "spotlight",
+        "url": "https://spotlightstockmarket.com/sv/market-overview/nyheter/nyhets-artikel/?id=115340&publisher=370"
+      },
+      "reaction": {
+        "pct": 1.9543948604224692,
+        "asOf": 1788786498000
+      },
+      "tags": ["M_AND_A", "REGULATORY"]
+    },
+    {
+      "id": "story_96096416d0cd4f9869a852b8530899ab",
+      "headline": "Scandic Hotels Group AB: Scandic etablerar sig Freiburg och stärker tillväxt i Tyskland",
+      "publishedAt": "2026-09-07T05:30:00.000Z",
+      "company": "Scandic Hotels Group",
+      "source": {
+        "name": "mfn",
+        "url": "https://mfn.se/cis/a/scandic-hotels-group/scandic-hotels-group-ab-scandic-etablerar-sig-freiburg-och-starker-tillvaxt-i-tyskland-0e5260f2"
+      },
+      "reaction": {
+        "pct": 0.2780850610432237,
+        "asOf": 1788791215000
+      },
+      "tags": ["M_AND_A", "REGULATORY"]
+    }
+  ]
+}

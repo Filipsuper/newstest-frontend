@@ -1,5 +1,6 @@
 import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
 import MarketOverviewPage from "../components/MarketOverviewPage";
+import { SITE_OG_IMAGE } from "../utils/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,13 @@ export const metadata = {
     siteName: "OMXsum",
     locale: "sv_SE",
     type: "website",
-    images: ["/omxsum_og.jpg"],
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${title} | OMXsum`,
+    description,
+    images: [SITE_OG_IMAGE],
   },
 };
 

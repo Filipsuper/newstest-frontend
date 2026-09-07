@@ -11,6 +11,7 @@ export default function NewsFeedItem({
   showSymbol = true,
   highlighted = false,
   reason = null,
+  showSummary = true,
   summaryPreview = false,
 }) {
   const reaction = Number.isFinite(item.reaction?.pct)
@@ -24,7 +25,11 @@ export default function NewsFeedItem({
       highlighted={highlighted}
       company={showSymbol ? (item.company ?? item.symbol) : null}
       title={item.title}
-      description={<NewsSummary value={item.aiSummary} preview={summaryPreview} />}
+      description={
+        showSummary ? (
+          <NewsSummary value={item.aiSummary} preview={summaryPreview} />
+        ) : null
+      }
       reaction={reaction}
       href={storyHref(item.id)}
       reactionLabel="Sedan publicering"

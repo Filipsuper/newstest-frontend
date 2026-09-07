@@ -4,6 +4,7 @@ import "@fontsource-variable/geist";
 import "./styles/tokens.css";
 import Providers from "./providers";
 import SiteChrome from "./components/SiteChrome";
+import { BRAND_LABEL, SITE_OG_IMAGE } from "./utils/brand";
 
 export const metadata = {
   metadataBase: new URL("https://omxsum.com"),
@@ -20,15 +21,15 @@ export const metadata = {
     title: "OMXsum – Svenska börsnyheter och marknadsbrev",
     description: "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
     url: "https://omxsum.com",
-    siteName: "Omxsum",
+    siteName: BRAND_LABEL,
     type: "website",
-    images: ["/omxsum_og.jpg"],
+    images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "OMXsum – Svenska börsnyheter och marknadsbrev",
     description: "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
-    images: ["/omxsum_og.jpg"],
+    images: [SITE_OG_IMAGE],
   },
 };
 

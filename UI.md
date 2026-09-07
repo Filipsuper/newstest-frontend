@@ -44,6 +44,10 @@ implementation and migration plan is in `docs/design-system.md`.
   action buttons and segmented choices, not every box or navigation surface.
 - Controls are 44px by default; 36px compact is desktop-only. Touch restores
   at least 44px. Text inputs use 16px on phones to avoid focus zoom.
+- On phones/tablets, segmented filters wrap into visible rows with 44px targets.
+  Keep full labels and the final choice accessible without a sideways swipe;
+  check the control's own overflow, not only the document width. Mobile
+  workspace columns stretch to their container instead of their content width.
 - Every interactive control has a visible keyboard-focus state, a name,
   disabled behavior and, where applicable, loading and invalid states.
 - Motion uses the shared 160ms duration. Respect reduced motion. No decorative
@@ -83,6 +87,12 @@ desktop density or abbreviated interaction model.
 - Use the shared `brand.js` launch identity in the public header, homepage and
   homepage sharing image. Keep canonical URLs, organization identity and
   Terminal branding unchanged. The version is a quiet label, not a new logo.
+- Generic social previews use the shared versioned `SITE_OG_IMAGE`, including
+  Marknaden and routes inheriting the root metadata. Keep the dedicated story,
+  letter and company images. The 1200×630 site composition pairs a clear news
+  benefit with an angled product view and Morgonbrevet; use bundled Geist and
+  foundation colors. Any preview news/figures must have saved public provenance
+  and a visible snapshot date, never appear to be live, and need no runtime API.
 - Guests get the existing free Morgonbrevet signup plus an account-free path
   to Marknaden. Returning readers get a direct workspace action; an account
   alone does not prove newsletter subscription, so signup remains available.
@@ -179,6 +189,10 @@ desktop density or abbreviated interaction model.
   Use the same `NewsSummary` in rows and the reader. Do not substitute the
   deterministic `summary`, manufacture points or fetch every story detail to
   fill a list. Missing AI copy leaves the headline/source row intact.
+- Exception: `Viktigast just nu` is a scannable headline selection. Its rows
+  show company/headline, reaction badge and source/time, without description
+  or AI bullets. Keep the complete supplied AI summary in the opened reader;
+  chronological feeds retain their existing summary presentation.
 - Every percentage states its period. `Sedan publicering` and `idag` are not
   interchangeable. A temporal association is not proof of causation. Missing
   reaction data is not zero, and a price chart must never be fabricated.

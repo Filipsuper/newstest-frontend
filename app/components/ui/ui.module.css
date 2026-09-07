@@ -342,6 +342,7 @@
 
 .segments {
   display: inline-flex;
+  min-width: 0;
   max-width: 100%;
   align-items: stretch;
   flex-shrink: 0;
@@ -683,6 +684,24 @@
   border: 0;
 }
 
+@media (max-width: 900px) {
+  /* Keep all filter choices visible on phones/tablets, including the final option.
+     Wrapping preserves readable labels and leaves focus rings unclipped. */
+  .segments {
+    flex-wrap: wrap;
+    overflow: visible;
+    border-radius: var(--ui-radius-md);
+  }
+  .segmentsPlain {
+    border-radius: 0;
+  }
+  .segment {
+    max-width: 100%;
+    min-height: var(--ui-control-md);
+    padding-inline: var(--ui-space-3);
+    overflow-wrap: anywhere;
+  }
+}
 @media (max-width: 600px) {
   .container {
     width: calc(100% - 2rem);

@@ -246,7 +246,7 @@ test("landing metadata and social image carry 2.0 without fabricated market figu
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    "https://omxsum.com/og/home",
+    "https://omxsum.com/og/home?v=20260907-news",
   );
   const structured = await page
     .locator('script[type="application/ld+json"]')
