@@ -126,10 +126,24 @@ The supplemental company preview follows the [Base UI Tooltip guidelines](https:
 the link remains independently named and navigable, and the full company page
 provides the data without requiring hover.
 
-Not included yet: table virtualization, analytical company-page restyling,
+Not included yet: table virtualization, a full rewrite of analytical renderers,
 notification delivery, cross-device read receipts, exact letter-to-story IDs,
 or a new landing page. Existing subscription access remains intact. Nothing
 here deploys itself.
+
+### Continuous company report
+
+`/aktie/[symbol]` now composes shared controls into a document with desktop
+contents and a mobile Base UI contents dialog. `CompanyReportShell` owns anchor
+navigation, scroll highlighting and reader return; `ReportSection` defers
+analytical rendering without resetting visited sections. Company-report styles
+are scoped: the existing analytical renderers opt into foundation tokens locally,
+without changing the Terminal or globally remapping the legacy palette.
+
+The opening chart is flat, news follows directly, and full statements, reports,
+letter mentions and the spider are progressive detail. The shared `Dialog`
+accepts popup `initialFocus`/`finalFocus` for contents navigation; normal dialogs
+retain Base UI's default focus restoration. Route links remain links, not tabs.
 
 ## Component use
 

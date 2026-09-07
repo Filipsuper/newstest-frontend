@@ -263,12 +263,24 @@ desktop density or abbreviated interaction model.
   and source timestamps remain supporting information.
 - The opening price chart sits directly on the page canvas. Do not wrap it in
   a raised card, outline, shadow, or rounded container.
-- Navigation stays stable: Översikt, Nyheter & rapporter, Finansiellt, Estimat,
-  Värdering, Insyn & ägare, Blankning, Kalender.
-- The URL always retains the selected company and selected tab.
-- Overview starts with company identity and recent news, then observed price
-  development and deeper company research. The spider profile is secondary,
-  not the main reason to visit a news-led product.
+- One continuous document contains Översikt, Nyheter & reaktioner, Finansiellt,
+  Estimat, Värdering, Insyn & ägare, Blankning and Kalender. Desktop contents
+  stay sticky on the left; mobile uses a sticky, touch-sized contents sheet.
+  These are anchor links, not tabs that replace the page content.
+- Section anchors preserve the company, chart range and moving-average state.
+  Translate legacy `?tab=` links to sections. Scroll highlighting must not
+  rewrite a story-reader URL or reset the reading position when it closes.
+- Company identity and a flat chart introduce the report; a material recent
+  event can sit beside it on desktop. News with AI copy and observed reactions
+  follows directly. Compact company/quote context remains in the contents area,
+  not a permanently pinned chart.
+- Start with six chronological, event-deduplicated stories and explicit “Visa
+  fler”. No nested news scrolling, automatic insertion or deterministic copy
+  masquerading as AI. Reports and letter mentions are progressive detail.
+- Defer analytical sections until nearby or explicitly selected, then keep
+  their state mounted. Preserve server-resolved Plus access. Show useful
+  financial charts first, with the full statement and spider as optional depth;
+  their calculations, score thresholds and source distinctions stay unchanged.
 - A company page represents one company. Search replaces it rather than adding
   dashboard panels.
 

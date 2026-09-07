@@ -220,6 +220,11 @@ const server = createServer(async (req, res) => {
     const symbol = decodeURIComponent(path.split("/").at(-2));
     const company =
       companies.find((item) => item.symbol === symbol) || companies[0];
+    if (["MISSING.TEST", "UNAVAILABLE.TEST"].includes(symbol)) {
+      res.writeHead(symbol === "MISSING.TEST" ? 404 : 503, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Fixture unavailable" }));
+      return;
+    }
     data = {
       symbol,
       summary: {
@@ -233,8 +238,12 @@ const server = createServer(async (req, res) => {
           price: company.price,
           change: 5.02,
           changePct: company.changePct,
+          quoteTime: new Date(base).toISOString(),
         },
         calendar: {},
+        financialHighlights: symbol === "FREE.TEST" ? {
+          currency: "SEK", source: "Fiktivt testunderlag", annual: { fiscalPeriod: "2025", frequency: "annual", revenue: 120_000_000, ebit: 14_000_000 },
+        } : null,
       },
       chart: {
         bars:
@@ -248,9 +257,22 @@ const server = createServer(async (req, res) => {
                 volume: 100_000,
               })),
       },
-      news: stories.filter((story) => story.companies[0].symbol === symbol),
+      news: symbol === "MANY.TEST" ? [...stories, { ...stories[0], id: "duplicate-release", primarySource: { ...stories[0].primarySource, language: "en" } }].map(story => ({ ...story, companies: [{ ...company, symbol }] })) : stories.filter((story) => story.companies[0].symbol === symbol),
       reports: [],
-      access: { plus: true },
+      financials: symbol === "NORD.TEST" ? {
+        currency: "SEK",
+        annual: [2023, 2024, 2025].map((year, index) => ({
+          fiscalYear: year, fiscalPeriod: String(year), frequency: "annual", periodKey: `${year}-A`, periodEnd: `${year}-12-31`,
+          revenue: 100_000_000 + index * 10_000_000, ebit: 10_000_000 + index * 2_000_000,
+          netIncome: 8_000_000, ebitMarginPct: 10 + index, dilutedEps: 1.5, sharesOutstanding: 10_000_000,
+        })),
+        quarterly: [1, 2, 3].map((quarter) => ({
+          fiscalYear: 2025, fiscalPeriod: `2025-Q${quarter}`, frequency: "quarterly", periodKey: `2025-Q${quarter}`, periodEnd: `2025-0${quarter * 3}-28`,
+          revenue: 20_000_000 + quarter * 1_000_000, ebit: 2_000_000 + quarter * 200_000,
+          ebitMarginPct: 10 + quarter, dilutedEps: 0.3, sharesOutstanding: 10_000_000,
+        })),
+      } : null,
+      access: { plus: symbol !== "FREE.TEST" },
     };
   } else if (path === "/api/feed/news") {
     const items =

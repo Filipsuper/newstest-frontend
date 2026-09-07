@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { FaDownload, FaLink, FaShareAlt, FaTwitter } from "react-icons/fa";
+import { Button } from "../components/ui/Button";
+import { Heading, Stack, Inline, Text } from "../components/ui/layout";
 
 const SHARE_CARD_VERSION = "2";
 
@@ -9,7 +11,7 @@ const SHARE_CARD_VERSION = "2";
 // below and the og:image meta tag point at the same /og/aktie URL, so the
 // preview cannot drift from the real card. The path deliberately avoids /api,
 // which nginx proxies to the backend.
-export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = false, ma200 = false }) {
+export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = false, ma200 = false, embedded = false }) {
     const [status, setStatus] = useState("");
     const [loaded, setLoaded] = useState(false);
 
@@ -54,6 +56,7 @@ export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = f
     const downloadImage = async () => {
         try {
             const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error("Image unavailable");
             const blob = await response.blob();
             const href = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -67,12 +70,10 @@ export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = f
         }
     };
 
-    const action = "flex flex-row items-center justify-center gap-2 border border-border rounded-full px-4 py-2 text-sm text-text-muted hover:text-text hover:border-text-muted transition-colors cursor-pointer";
-
     return (
-        <div className="flex flex-col font-sans w-[min(78vw,520px)]">
-            <h2 className="text-xl font-serif font-bold text-text mb-1">Dela {companyName}</h2>
-            <p className="text-sm text-text-muted mb-4">Så här ser länken ut när du delar den.</p>
+        <Stack gap={4}>
+            {!embedded && <Heading>Dela {companyName}</Heading>}
+            <Text size="sm" tone="secondary">Så här ser länken ut när du delar den.</Text>
 
             <div className="relative w-full aspect-[1200/630] rounded-xl overflow-hidden bg-foreground border border-border mb-5">
                 {!loaded && (
@@ -88,14 +89,14 @@ export default function ShareStockModal({ symbol, companyName, rangeId, ma50 = f
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-                <button className={action} onClick={nativeShare}><FaShareAlt /> Dela</button>
-                <button className={action} onClick={copyLink}><FaLink /> Kopiera länk</button>
-                <button className={action} onClick={shareOnTwitter}><FaTwitter /> Dela på X</button>
-                <button className={action} onClick={downloadImage}><FaDownload /> Ladda ner bild</button>
-            </div>
+            <Inline gap={2}>
+                <Button variant="secondary" onClick={nativeShare}><FaShareAlt /> Dela</Button>
+                <Button variant="secondary" onClick={copyLink}><FaLink /> Kopiera länk</Button>
+                <Button variant="secondary" onClick={shareOnTwitter}><FaTwitter /> Dela på X</Button>
+                <Button variant="secondary" onClick={downloadImage}><FaDownload /> Ladda ner bild</Button>
+            </Inline>
 
-            <p className="text-xs text-text-muted mt-3 h-4">{status}</p>
-        </div>
+            <Text size="xs" tone="secondary" role="status">{status}</Text>
+        </Stack>
     );
 }

@@ -159,7 +159,9 @@ export default async function Page({ params, searchParams }) {
                 />
             )}
             <CompanyPage
+                key={decoded}
                 symbol={decoded}
+                missing={overview.missing}
                 initialData={overview.data}
                 initialTab={query?.tab}
                 initialRange={query?.range}

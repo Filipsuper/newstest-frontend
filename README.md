@@ -98,8 +98,10 @@ them are explicit:
 - **Transient failures stay indexable.** A listing or backend that failed to
   answer is not evidence that a company is gone.
 - **One URL per company.** `/aktie/<SYMBOL>` is canonical; the `tab`, `range` and
-  `ma` parameters change the view and the share card but never the canonical URL.
-  Tabs are buttons with `replaceState`, so no parameter variants are crawlable.
+  `ma` parameters affect the view/share card but never the canonical URL.
+  The report uses section anchors (`#news`, `#financials`, etc.), with legacy
+  `?tab=` links translated to anchors. Contents links jump within one document;
+  they do not create additional canonical company pages.
 - **Structured data** describes the company (`Corporation` with ticker, ISIN,
   employees and description), the page and its breadcrumb. Prices and estimates
   change by the minute and are deliberately never emitted as structured facts.

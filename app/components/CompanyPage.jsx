@@ -19,34 +19,27 @@ import {
     YAxis,
 } from "recharts";
 import { FiChevronLeft, FiChevronRight, FiExternalLink, FiInfo, FiShare2, FiSliders } from "react-icons/fi";
-import { FaLock, FaRegStar, FaScaleBalanced, FaStar } from "react-icons/fa6";
+import { FaLock, FaScaleBalanced } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
-import { useModal } from "../providers/ModalProvider";
-import LogInModal from "../modals/logInModal";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsFeedItem from "./NewsFeedItem";
 import FollowCompanyButton from "./FollowCompanyButton";
 import { storyToItem } from "../utils/storyToItem";
-import { storyHref } from "../utils/newsroom";
-import { Heading, Stack } from "./ui/layout";
-import { Button } from "./ui/Button";
-import workspace from "./workspace.module.css";
-import { fetchCompanyIntraday, fetchCompanyProfiles, fetchInsiders, fetchShorts, fetchValuation, toggleWatchlist } from "../utils/api";
+import { chronologicalNews, safeSourceUrl, storyHref } from "../utils/newsroom";
+import { Container, Heading, Stack, Text } from "./ui/layout";
+import { Button, IconButton } from "./ui/Button";
+import { ChangeBadge, EmptyState } from "./ui/data";
+import { Checkbox } from "./ui/Choices";
+import { Dialog } from "./ui/overlays";
+import { SegmentedControl } from "./ui/SegmentedControl";
+import CompanyReportShell, { ReportSection } from "./CompanyReportShell";
+import styles from "./company-report.module.css";
+import { fetchCompanyIntraday, fetchCompanyProfiles, fetchInsiders, fetchShorts, fetchValuation } from "../utils/api";
 import { tagLabel } from "../utils/newsTags";
 import CompanyProfileRadar from "./CompanyProfileRadar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const TABS = [
-    { id: "overview", label: "Översikt" },
-    { id: "news", label: "Nyheter & rapporter" },
-    { id: "financials", label: "Finansiellt" },
-    { id: "estimates", label: "Estimat" },
-    { id: "valuation", label: "Värdering" },
-    { id: "insiders", label: "Insyn & ägare" },
-    { id: "shorts", label: "Blankning" },
-    { id: "calendar", label: "Kalender" },
-];
 
 const LINE_FADES = [
     ["company-line-fade-yellow", "--company-yellow", "--company-yellow-bright"],
@@ -262,30 +255,13 @@ function selectMoveDrivers(news, bars) {
         .slice(0, MAX_DRIVERS);
 }
 
-function MoveDrivers({ drivers, aiSummary }) {
-    const router = useRouter();
-    const [lead] = drivers;
-    const openStory = (story) => router.push(storyHref(story.id), { scroll: false });
-
-    // The generated summary replaces the single-story layout when the platform
-    // has one for the current driver set. Title and text only — the numbers
-    // and the underlying stories live in the chart and news tab.
-    if (aiSummary?.summary) {
-        return (
-            <aside className="company-mover company-mover-ai" aria-labelledby="company-mover-heading">
-                <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
-                <p className="company-mover-ai-summary">{aiSummary.summary}</p>
-            </aside>
-        );
-    }
-
+function MoveDrivers({ drivers }) {
+    const [lead] = chronologicalNews(drivers.map(storyToItem));
+    if (!lead) return null;
     return (
-        <aside className="company-mover" aria-labelledby="company-mover-heading">
-            <p className="company-eyebrow" id="company-mover-heading">Vad rör aktien?</p>
-            <h3 className="company-mover-headline">
-                <button type="button" onClick={() => openStory(lead)}>{lead.headline}</button>
-            </h3>
-            {lead.summary && <ExpandableText className="company-mover-summary" text={lead.summary} lines={4} />}
+        <aside className={styles.driver} aria-labelledby="company-mover-heading">
+            <Heading as="h2" size="subsection" id="company-mover-heading">Aktuell händelse</Heading>
+            <NewsFeedItem item={lead} showSymbol={false} summaryPreview />
         </aside>
     );
 }
@@ -296,13 +272,16 @@ function EventMarker({ cx, cy, items, onOpenStory }) {
     // A news mark opens the story in the reader; a report mark points at the
     // issuer's own PDF, which belongs in a new tab.
     const story = items.find((item) => item.story)?.story ?? null;
-    const url = items.find((item) => item.url)?.url ?? null;
+    const url = safeSourceUrl(items.find((item) => item.url)?.url);
     const activate = story
         ? () => onOpenStory(story)
         : url ? () => window.open(url, "_blank", "noopener,noreferrer") : undefined;
     return (
         <g
-            role="img"
+            role={activate ? "button" : "img"}
+            tabIndex={activate ? 0 : undefined}
+            data-company-story={story ? "true" : undefined}
+            onKeyDown={activate ? (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); } } : undefined}
             aria-label={items.map(markerTypeLabel).join(", ")}
             className={`company-event-marker ${marker.className}${activate ? " company-event-marker-linked" : ""}`}
             transform={`translate(${cx}, ${cy - 11})`}
@@ -439,71 +418,17 @@ function ChartTooltip({ active, payload, label, compare, intraday }) {
     );
 }
 
-function WatchlistButton({ symbol }) {
-    const { user, isGuestUser, refreshUser } = useAuthContext();
-    const { openModal } = useModal();
-    const [busy, setBusy] = useState(false);
-
-    if (!user) return null;
-
-    const starred = !isGuestUser && (user.watchlist ?? []).includes(symbol);
-
-    const handleToggle = async () => {
-        if (isGuestUser) {
-            openModal(<LogInModal redirectTo={`/aktie/${encodeURIComponent(symbol)}`} />);
-            return;
-        }
-        if (busy) return;
-        setBusy(true);
-        try {
-            await toggleWatchlist(symbol);
-            await refreshUser();
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    return (
-        <button
-            type="button"
-            className={`company-watchlist ${starred ? "active" : ""}`}
-            onClick={handleToggle}
-            disabled={busy}
-            aria-label={starred ? "Ta bort från bevakningslistan" : "Lägg till i bevakningslistan"}
-            title={starred ? "Sluta bevaka" : "Bevaka bolaget"}
-        >
-            {starred ? <FaStar /> : <FaRegStar />}
-            <span>{starred ? "Bevakar" : "Bevaka"}</span>
-        </button>
-    );
-}
-
 // Opens the share sheet for the move the reader is actually looking at: the
 // selected period and its return.
 function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
-    const { openModal } = useModal();
-
     return (
-        <button
-            className="company-icon-control"
-            aria-label="Dela aktien"
-            title="Dela aktien"
-            onClick={() => openModal(
-                <ShareStockModal
-                    symbol={symbol}
-                    companyName={companyName}
-                    rangeId={range}
-                    ma50={ma50}
-                    ma200={ma200}
-                />,
-            )}
-        >
-            <FiShare2 />
-        </button>
+        <Dialog title={`Dela ${companyName}`} trigger={<IconButton label="Dela aktien"><FiShare2 aria-hidden="true" /></IconButton>}>
+            <ShareStockModal symbol={symbol} companyName={companyName} rangeId={range} ma50={ma50} ma200={ma200} embedded />
+        </Dialog>
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, moveSummary, showNews = false }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, onQuoteChange }) {
     const router = useRouter();
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
@@ -514,7 +439,17 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const [ma50, setMa50] = useState(initialMaSelection.includes("50"));
     const [ma200, setMa200] = useState(initialMaSelection.includes("200"));
     const [showEvents, setShowEvents] = useState(true);
-    const { openModal } = useModal();
+    useEffect(() => {
+        if (window.location.pathname !== `/aktie/${encodeURIComponent(symbol)}`) return;
+        const params = new URLSearchParams(window.location.search);
+        if (range !== "1y" || params.has("range")) params.set("range", range);
+        const averages = [ma50 && "50", ma200 && "200"].filter(Boolean).join(",");
+        if (averages) params.set("ma", averages);
+        else params.delete("ma");
+        const query = params.toString();
+        const next = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+        window.history.replaceState(window.history.state, "", next);
+    }, [range, ma50, ma200, symbol]);
     const [intraday, setIntraday] = useState(null);
     const [intradayError, setIntradayError] = useState("");
     const [intradayLive, setIntradayLive] = useState(false);
@@ -695,20 +630,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const firstIntradayPoint = intradayData.find((row) => row.currentPrice != null);
     const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
     const profile = summary.profile;
-    const quote = isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote;
+    const quote = useMemo(() => isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote, [isIntraday, intraday?.quote, summary.quote]);
+    useEffect(() => { onQuoteChange?.(quote); }, [quote, onQuoteChange]);
     const loadingIntraday = isIntraday && !data.length;
     const placeholderPrice = Number(quote?.price ?? dailyData.at(-1)?.close ?? 1);
-    const quoteTimeValue = quote?.quoteTime ?? quote?.dataAsOf ?? dailyData.at(-1)?.date;
-    const quoteTime = typeof quoteTimeValue === "number" ? quoteTimeValue : Date.parse(quoteTimeValue);
-    const placeholderEnd = Number.isFinite(quoteTime) ? quoteTime : 0;
-    const placeholderData = Array.from({ length: 5 }, (_, index) => ({
-        date: placeholderEnd - (4 - index) * 2 * 60 * 60 * 1000,
-        session: "current",
-        currentPrice: placeholderPrice,
-        previousPrice: null,
-        volume: null,
-    }));
-    const renderedData = loadingIntraday ? placeholderData : data;
+    const renderedData = data;
     const intradayPrices = [
         intraday?.previousClose,
         ...intradayData.map((row) => row.previousPrice ?? row.currentPrice),
@@ -724,102 +650,52 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
         intradayMaximum + intradayPadding,
     ];
 
-    const changeTone = quote?.changePct == null ? "neutral" : quote.changePct >= 0 ? "positive" : "negative";
 
     return (
-        <section className="company-chart-section" aria-label={`Nyheter och kurs för ${companyName}`}>
-            <div className="flex flex-col company-chart-heading gap-6">
-                {/* <div>
-                    <p className="company-eyebrow">Historisk utvecklin g</p>
-                    <h2 id="price-heading">Hur har aktien utvecklats?</h2>
-                </div> */}
-                <header className="w-full company-header">
-                    <div className="company-identity">
-                        <div className={workspace.companyIdentity}>
-                            {/* <span>{profile.nativeSymbol ?? symbol.replace(".ST", "")}</span> */}
-                            {/* {profile.market && <small>{profile.market}</small>} */}
-                            {profile.segment && <small className="font-bold">{profile.segment.replaceAll("_", " ")}</small>}
-                            <div className="text-text-muted">•</div>
-                            <Heading as="h1" size="section">{profile.name ?? symbol}</Heading>
-                            {/* <small className="">{profile.sector ?? "Sektor saknas"} - {profile.industry ? `${profile.industry}` : ""}</small> */}
-                            <FollowCompanyButton symbol={symbol} name={profile.name} />
-                        </div>
-                        <div className="company-symbol-row" />
-                        <div className="company-quote gap-4">
-                            <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} kr`}</strong>
-                            <span className={changeTone}>{quote?.change == null ? "–" : `${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} kr · ${pct(quote.changePct)}`}</span>
-                        </div>
-                        {/* <div className="company-title-row">
-                            <h1>{profile.name ?? symbol}</h1>
-                            <WatchlistButton symbol={symbol} />
-                        </div> */}
-                        
+        <div className={styles.intro}>
+            <header className={styles.identity}>
+                <div className={styles.identityTop}>
+                    <div>
+                        <Heading as="h1" size="page" id="overview-heading" tabIndex={-1}>{profile.name ?? symbol}</Heading>
+                        <Text size="sm" tone="secondary" className={styles.identityMeta}>
+                            {[profile.nativeSymbol ?? symbol, profile.segment?.replaceAll("_", " "), profile.sector].filter(Boolean).join(" · ")}
+                        </Text>
                     </div>
-                    
-                </header>
-                {showNews && news?.length > 0 && <Stack gap={4} className={workspace.section}>
-                    <Heading size="subsection">Senaste nytt om {profile.name ?? symbol}</Heading>
-                    <NewsList news={news} compact />
-                    <Link className={workspace.textLink} href={`/aktie/${encodeURIComponent(symbol)}?tab=news`}>Alla bolagsnyheter →</Link>
-                </Stack>}
-                <div className="flex flex-row w-full justify-between">
-                    <div className="company-range-row" aria-label="Välj tidsperiod">
-                        {RANGES.map((option) => (
-                            <button
-                                key={option.id}
-                                disabled={!option.intraday && (chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15)}
-                                className={range === option.id ? "company-range-active" : ""}
-                                onClick={() => setRange(option.id)}
-                            >
-                                <span>{option.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="company-chart-actions max-w-fit">
-                        <ShareMoveButton
-                            symbol={symbol}
-                            companyName={companyName}
-                            range={range}
-                            ma50={!isIntraday && ma50}
-                            ma200={!isIntraday && ma200}
-                        />
-                        {!isIntraday && (
-                            <button
-                                className="company-control company-icon-control"
-                                aria-label="Jämför med OMXSPI"
-                                aria-pressed={compare}
-                                onClick={() => setCompare((value) => !value)}
-                            >
-                                <FaScaleBalanced/>
-                            </button>
-                        )}
-                        {!isIntraday && (
-                            <div className="company-settings-wrap">
-                                <button
-                                    className="company-icon-control"
-                                    aria-label="Diagraminställningar"
-                                    aria-expanded={settingsOpen}
-                                    onClick={() => setSettingsOpen((value) => !value)}
-                                >
-                                    <FiSliders />
-                                </button>
-                                {settingsOpen && (
-                                    <div className="company-chart-settings">
-                                        <label><input type="checkbox" checked={ma50} onChange={(event) => setMa50(event.target.checked)} /> MA50</label>
-                                        <label><input type="checkbox" checked={ma200} onChange={(event) => setMa200(event.target.checked)} /> MA200</label>
-                                        <label><input type="checkbox" checked={showEvents} onChange={(event) => setShowEvents(event.target.checked)} /> Händelser</label>
-                                        {showEvents && <small>Rapport och utdelning visas för hela perioden. Väsentliga nyheter visas för 6 mån och 1 år.</small>}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <FollowCompanyButton symbol={symbol} name={profile.name} />
                 </div>
-                 
+                <div className={styles.quote}>
+                    <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${profile.currency === "SEK" || !profile.currency ? "kr" : profile.currency}`}</strong>
+                    <ChangeBadge value={quote?.changePct} label="Dagsförändring" />
+                    <span className={styles.quoteMeta}>Idag{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${profile.currency ?? "SEK"}`}</span>
+                </div>
+                <Text size="xs" tone="secondary">
+                    {quote?.quoteTime || quote?.dataAsOf ? `Kursuppdatering ${svDateTime(quote.quoteTime ?? quote.dataAsOf)}` : "Kurstidpunkt saknas"}
+                    {quote?.delayed && " · Fördröjd kurs"}
+                </Text>
+            </header>
+            <div className={styles.controls}>
+                <SegmentedControl label="Kursperiod" value={range} onValueChange={setRange} className={styles.ranges}
+                    options={RANGES.map((option) => ({
+                        value: option.id, label: option.label,
+                        disabled: !option.intraday && (chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15),
+                    }))} />
+                <div className={styles.actions}>
+                    <ShareMoveButton symbol={symbol} companyName={companyName} range={range} ma50={!isIntraday && ma50} ma200={!isIntraday && ma200} />
+                    {!isIntraday && <>
+                        <IconButton label="Jämför med OMXSPI" aria-pressed={compare} onClick={() => setCompare((value) => !value)}><FaScaleBalanced aria-hidden="true" /></IconButton>
+                        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen} title="Diagraminställningar" trigger={<IconButton label="Diagraminställningar"><FiSliders aria-hidden="true" /></IconButton>}>
+                            <Stack gap={4}>
+                                <Checkbox label="MA50" aria-label="MA50" description="Glidande medelvärde, 50 handelsdagar" checked={ma50} onCheckedChange={setMa50} />
+                                <Checkbox label="MA200" aria-label="MA200" description="Glidande medelvärde, 200 handelsdagar" checked={ma200} onCheckedChange={setMa200} />
+                                <Checkbox label="Händelser" aria-label="Händelser" description="Rapporter och utdelningar. Väsentliga nyheter visas för 6 månader och 1 år." checked={showEvents} onCheckedChange={setShowEvents} />
+                            </Stack>
+                        </Dialog>
+                    </>}
+                </div>
             </div>
-            {!dailyData.length ? <p className="company-empty">Ingen historisk kursdata är tillgänglig ännu.</p> : <div className={`company-chart-layout${drivers.length ? " company-chart-has-context" : ""}`}>
+            {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${drivers.length ? styles.chartWithContext : ""}`}>
             <div className="company-chart-main">
-            <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="img" aria-label={`Kursutveckling för ${companyName}`}>
+            <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="group" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={renderedData} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
                         <defs>
@@ -932,10 +808,10 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
             </div>
             </div>
                 {drivers.length > 0 && (
-                    <MoveDrivers drivers={drivers} aiSummary={moveSummary} />
+                    <MoveDrivers drivers={drivers} />
                 )}
             </div>}
-        </section>
+        </div>
     );
 }
 
@@ -949,75 +825,37 @@ function Metric({ label, value, detail }) {
     );
 }
 
-function FinancialSnapshot({ highlights, onSelectTab }) {
+function FinancialSummary({ highlights }) {
     const period = highlights?.ttm ?? highlights?.annual ?? highlights?.quarterly;
-    if (!period) return <p className="company-empty">Finansiella nyckeltal saknas för bolaget.</p>;
-    const currency = highlights?.currency ?? "SEK";
-    return (
-        <section className="company-section" aria-labelledby="financial-question">
-            <div className="company-section-heading">
-                <div>
-                    <p className="company-eyebrow">Finansiell överblick</p>
-                    <h2 id="financial-question">Vad tjänar bolaget?</h2>
-                </div>
-                <button type="button" className="company-text-link" onClick={() => onSelectTab("financials")}>Visa finansiellt <FiChevronRight /></button>
-            </div>
-            <div className="company-metric-grid">
-                <Metric label="Omsättning" value={money(period.revenue, currency)} detail={periodLabel(period)} />
-                <Metric label="EBIT" value={money(period.ebit, currency)} detail={`${number(period.ebitMarginPct)}% marginal`} />
-                <Metric label="Nettoresultat" value={money(period.netIncome, currency)} />
-                <Metric label="Fritt kassaflöde" value={money(period.freeCashFlow, currency)} />
-                <Metric label="Nettoskuld" value={money(period.netDebt, currency)} />
-                <Metric label="Nettoskuld / EBITDA" value={period.netDebtToEbitda == null ? "Saknas" : `${number(period.netDebtToEbitda, 2)}×`} />
-            </div>
-            {/* <p className="company-source">Källa: {highlights?.source ?? "Yahoo"} · Uppdaterad {svDate(highlights?.dataAsOf)}</p> */}
-        </section>
-    );
-}
-
-function CalendarPreview({ calendar, onSelectTab }) {
-    const earnings = calendar?.earningsDates?.[0] ?? calendar?.events?.find((event) => event.type === "earnings")?.date;
-    return (
-        <section className="company-context-section" aria-labelledby="calendar-preview-heading">
-            <p className="company-eyebrow">Nästa händelse</p>
-            <h2 id="calendar-preview-heading">{earnings ? svDate(earnings) : "Inget datum bekräftat"}</h2>
-            <p>{earnings ? "Nästa rapportdatum enligt tillgänglig bolagskalender." : "Vi visar datumet när bolaget eller en verifierad källa publicerar det."}</p>
-            <button type="button" className="company-text-link" onClick={() => onSelectTab("calendar")}>Öppna kalendern <FiChevronRight /></button>
-        </section>
-    );
+    if (!period) return null;
+    const currency = highlights.currency ?? "SEK";
+    // This summary was public before the report migration and stays public;
+    // the detailed statements below still use server-resolved Plus access.
+    return <Stack gap={3} className={styles.financialSummary}>
+        <div className={styles.metrics}>
+            {[
+                ["Omsättning", money(period.revenue, currency)],
+                ["EBIT", money(period.ebit, currency)],
+                ["Nettoresultat", money(period.netIncome, currency)],
+                ["Fritt kassaflöde", money(period.freeCashFlow, currency)],
+                ["Nettoskuld", money(period.netDebt, currency)],
+                ["Nettoskuld / EBITDA", period.netDebtToEbitda == null ? "Saknas" : `${number(period.netDebtToEbitda, 2)}×`],
+            ].map(([label, value]) => <div key={label}><Text size="xs" tone="secondary">{label}</Text><Text numeric>{value}</Text></div>)}
+        </div>
+        <Text size="xs" tone="secondary">{periodLabel(period)}{highlights.source && ` · ${highlights.source}`}{highlights.dataAsOf && ` · ${svDate(highlights.dataAsOf)}`}</Text>
+    </Stack>;
 }
 
 // Company news opens the shared URL-backed reader, preserving page context.
-function NewsList({ news, compact = false }) {
-    const [count, setCount] = useState(20);
-    if (!news?.length) return <p className="company-empty">Inga bolagsspecifika nyheter finns ännu.</p>;
+function NewsList({ news }) {
+    const [count, setCount] = useState(6);
+    const items = useMemo(() => chronologicalNews((news ?? []).map(storyToItem)), [news]);
+    if (!items.length) return <EmptyState title="Inga bolagsspecifika nyheter finns ännu." />;
     return (
         <Stack gap={2}>
-            {news.slice(0, compact ? 3 : count).map(story => <NewsFeedItem key={story.id} item={storyToItem(story)} showSymbol={false} />)}
-            {!compact && news.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 20)}>Visa fler nyheter</Button>}
+            {items.slice(0, count).map(item => <NewsFeedItem key={item.id} item={item} showSymbol={false} />)}
+            {items.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 6)}>Visa fler nyheter</Button>}
         </Stack>
-    );
-}
-
-// The letters that talked about this company — the way back into the editorial
-// side of the site from a stock page.
-function MentionsList({ mentions, companyName }) {
-    if (!mentions?.length) return null;
-    return (
-        <section className="company-context-section" aria-labelledby="company-mentions-heading">
-            <p className="company-eyebrow">I breven</p>
-            <h2 id="company-mentions-heading">Nämns i breven</h2>
-            <div className="company-mentions-list">
-                {mentions.map((item) => (
-                    <Link key={item.id} href={`/article/${articleSlug(item.title)}`}>
-                        <time>{svDate(item.createdAt, true)}</time>
-                        <span>{item.title}</span>
-                        <small>{item.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"}</small>
-                    </Link>
-                ))}
-            </div>
-            <p className="company-source">Sök efter {companyName} i alla brev via <Link className="company-text-link" href="/alla-nyhetsbrev">arkivet <FiChevronRight /></Link></p>
-        </section>
     );
 }
 
@@ -1046,61 +884,46 @@ function ExpandableText({ text, className = "", lines = 6 }) {
                 {text}
             </p>
             {clipped && (
-                <button className="company-readmore" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+                <Button variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
                     {expanded ? "Visa mindre" : "Läs mer"}
-                </button>
+                </Button>
             )}
         </>
     );
 }
 
-function OverviewTab({ data, mentions = [], onSelectTab, researchProfile }) {
-    const { summary, chart, news } = data;
-    return (
-        <>
-            {/* <CompanyChart chart={chart} companyName={summary.profile.name ?? summary.symbol} /> */}
-            <div className="company-overview-layout">
-                <div className="company-main-column">
-                    <section className="company-section" aria-labelledby="company-question">
-                        <p className="company-eyebrow">Bolaget i korthet</p>
-                        <h2 id="company-question">Vad gör bolaget?</h2>
-                        <ExpandableText className="company-description" text={summary.profile.description || "Bolagsbeskrivning saknas ännu."} />
-                        <dl className="company-facts">
-                            {summary.profile.sector && <><dt>Sektor</dt><dd>{summary.profile.sector}</dd></>}
-                            {summary.profile.industry && <><dt>Bransch</dt><dd>{summary.profile.industry}</dd></>}
-                            {summary.profile.employees && <><dt>Anställda</dt><dd>{Number(summary.profile.employees).toLocaleString("sv-SE")}</dd></>}
-                            {summary.profile.website && <><dt>Webbplats</dt><dd><a href={summary.profile.website} target="_blank" rel="noreferrer">Besök bolaget <FiExternalLink /></a></dd></>}
-                        </dl>
-                    </section>
-                    <FinancialSnapshot highlights={summary.financialHighlights} onSelectTab={onSelectTab} />
-                </div>
-                <aside className="company-context-column">
-                    <details className="company-context-section company-profile-panel">
-                        <summary className={workspace.textLink}>Bolagsprofil · sex perspektiv</summary>
-                        <div className="company-profile-panel__heading">
-                            <div>
-                                <p className="company-eyebrow">Bolagsprofil</p>
-                                <h2 id="company-profile-heading">Sex perspektiv</h2>
-                            </div>
-                            {researchProfile?.coveragePct != null && <span>{Math.round(researchProfile.coveragePct)}% underlag</span>}
-                        </div>
-                        <CompanyProfileRadar
-                            companyName={summary.profile.name ?? summary.symbol}
-                            loading={researchProfile === undefined}
-                            profile={researchProfile || null}
-                        />
-                        <div className="company-profile-panel__links">
-                            <button type="button" onClick={() => onSelectTab("valuation")}>Värdering</button>
-                            <button type="button" onClick={() => onSelectTab("financials")}>Finansiellt</button>
-                            <button type="button" onClick={() => onSelectTab("insiders")}>Insyn</button>
-                        </div>
-                    </details>
-                    <CalendarPreview calendar={summary.calendar} onSelectTab={onSelectTab} />
-                    <MentionsList mentions={mentions} companyName={summary.profile.name ?? summary.symbol} />
-                </aside>
-            </div>
-        </>
-    );
+function CompanyAbout({ summary }) {
+    const { profile } = summary;
+    return <details className={styles.details}>
+        <summary>Om {profile.name ?? summary.symbol}</summary>
+        <div className={styles.about}>
+            <Text>{profile.description || "Bolagsbeskrivning saknas ännu."}</Text>
+            <dl className={styles.facts}>
+                {profile.sector && <><dt>Sektor</dt><dd>{profile.sector}</dd></>}
+                {profile.industry && <><dt>Bransch</dt><dd>{profile.industry}</dd></>}
+                {profile.employees && <><dt>Anställda</dt><dd>{Number(profile.employees).toLocaleString("sv-SE")}</dd></>}
+                {safeSourceUrl(profile.website) && <><dt>Webbplats</dt><dd><a href={safeSourceUrl(profile.website)} target="_blank" rel="noreferrer">Besök bolaget ↗</a></dd></>}
+            </dl>
+        </div>
+    </details>;
+}
+
+function ResearchProfile({ symbol, companyName }) {
+    const [profile, setProfile] = useState(undefined);
+    const [requested, setRequested] = useState(false);
+    useEffect(() => {
+        if (!requested) return;
+        let active = true;
+        fetchCompanyProfiles([symbol]).then((response) => {
+            if (active) setProfile(response.items?.[0] ?? null);
+        }).catch(() => { if (active) setProfile(null); });
+        return () => { active = false; };
+    }, [symbol, requested]);
+    return <details className={`${styles.details} ${styles.researchDetails}`} onToggle={(event) => { if (event.currentTarget.open) setRequested(true); }}>
+        <summary>Bolagsprofil · sex perspektiv</summary>
+        <CompanyProfileRadar companyName={companyName} loading={profile === undefined} profile={profile} />
+        {profile?.coveragePct != null && <Text size="xs" tone="secondary">{Math.round(profile.coveragePct)}% underlag</Text>}
+    </details>;
 }
 
 const FINANCIAL_SERIES = [
@@ -1391,7 +1214,8 @@ function FinancialsTab({ financials, estimates }) {
         const align = () => {
             frame = 0;
             const table = thead.parentElement;
-            const shift = Math.min(Math.max(-table.getBoundingClientRect().top, 0), table.clientHeight - thead.clientHeight);
+            const offset = parseFloat(getComputedStyle(table).getPropertyValue("--report-offset")) || 0;
+            const shift = Math.min(Math.max(offset - table.getBoundingClientRect().top, 0), table.clientHeight - thead.clientHeight);
             thead.style.transform = shift > 0 ? `translateY(${shift}px)` : "";
         };
         const onScroll = () => { if (!frame) frame = requestAnimationFrame(align); };
@@ -1432,16 +1256,13 @@ function FinancialsTab({ financials, estimates }) {
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Rapporterat, härlett och estimerat</p>
-            <h2>Finansiell utveckling</h2>
-            <div className="company-period-tabs">
-                {options.map(([id, label, values]) => (
-                    <button key={id} disabled={!values?.length} className={frequency === id ? "active" : ""} onClick={() => setFrequency(id)}>{label}</button>
-                ))}
-            </div>
+            <SegmentedControl className="company-period-tabs" label="Finansiell period" value={frequency} onValueChange={setFrequency} options={options.map(([id, label, values]) => ({ value: id, label, disabled: !values?.length }))} />
             {!periods.length ? <p className="company-empty">Data saknas för vald period.</p> : (
                 <>
                     <FinancialDevelopmentChart periods={periods} currency={currency} />
-                    <div className="company-table-wrap" ref={tableWrapRef}>
+                    <details className={`${styles.details} ${styles.researchDetails}`}>
+                        <summary>Alla nyckeltal och rapporterade siffror</summary>
+                    <div className="company-table-wrap" ref={tableWrapRef} tabIndex={0} role="region" aria-label="Finansiella nyckeltal, rulla i sidled">
                         <table className="company-financial-table company-financial-statement">
                             <colgroup>
                                 <col className="company-metric-column" />
@@ -1470,6 +1291,7 @@ function FinancialsTab({ financials, estimates }) {
                             </tbody>
                         </table>
                     </div>
+                    </details>
                 </>
             )}
             <p className="company-source">
@@ -1669,7 +1491,6 @@ function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price 
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">{ownership ? "FI:s insynsregister · Bolagets årsredovisning" : "FI:s insynsregister"}</p>
-            <h2>Insyn & ägare</h2>
             <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien{hasOwners ? ", och vilka de största ägarna är" : ""}</p>
 
             {error && <p className="company-empty">{error}</p>}
@@ -1885,7 +1706,6 @@ function ShortsTab({ symbol, companyName, bars }) {
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">FI:s blankningsregister</p>
-            <h2>Blankning</h2>
             <p className="company-intro">Hur stor andel av {companyName} som är blankad, och vilka som står bakom de största positionerna</p>
 
             {error && <p className="company-empty">{error}</p>}
@@ -2042,7 +1862,6 @@ function ValuationTab({ symbol, companyName }) {
     return (
         <section className="company-tab-section">
             <p className="company-eyebrow">Bolagets egen historik</p>
-            <h2>Värdering</h2>
             <p className="company-intro">Vad marknaden har betalat för {companyName}s egna rapporterade siffror, och var dagens kurs ligger i det spannet. Ingen riktkurs, inget totalbetyg — varje tal går att räkna om från underlaget längst ned.</p>
 
             {error && <p className="company-empty">{error}</p>}
@@ -2279,25 +2098,30 @@ function ValuationMethod({ data, multiple }) {
     );
 }
 
-function NewsTab({ data }) {
-    return (
-        <section className="company-tab-section">
-            <p className="company-eyebrow">Primärkällor först</p>
-            <h2>Nyheter och rapporter</h2>
-            <div className="company-news-report-layout">
-                <NewsList news={data.news} />
-                <div className="company-report-list">
-                    <h3>Rapporter</h3>
-                    {(data.reports ?? []).length ? data.reports.map((report) => (
-                        <a key={report.reportDocumentId} href={report.attachment?.url ?? report.releaseUrl} target="_blank" rel="noreferrer">
-                            <span>{report.title ?? report.periodLabel ?? report.fiscalPeriod}</span>
-                            <small>{svDate(report.publishedAt)}</small>
-                        </a>
-                    )) : <p className="company-empty">Inga rapportdokument hittades.</p>}
+function NewsSection({ data, mentions }) {
+    return <div className={styles.news}>
+        <NewsList news={data.news} />
+        <div className={styles.newsContext}>
+            <details className={styles.details}>
+                <summary>Rapportdokument{data.reports?.length ? ` · ${data.reports.length}` : ""}</summary>
+                <div className={styles.documents}>
+                    {(data.reports ?? []).length ? data.reports.map((report) => {
+                        const href = safeSourceUrl(report.attachment?.url ?? report.releaseUrl);
+                        return href ? <a key={report.reportDocumentId} href={href} target="_blank" rel="noreferrer">
+                            <span>{report.title ?? report.periodLabel ?? report.fiscalPeriod} ↗</span><small>{svDate(report.publishedAt)}</small>
+                        </a> : <Text key={report.reportDocumentId} size="sm">{report.title ?? report.periodLabel} · Källänk saknas</Text>;
+                    }) : <Text size="sm" tone="secondary">Inga rapportdokument hittades.</Text>}
                 </div>
-            </div>
-        </section>
-    );
+            </details>
+            {mentions?.length > 0 && <details className={styles.details}>
+                <summary>Bolaget i breven · {mentions.length}</summary>
+                <div className={styles.documents}>{mentions.map((item) => <Link key={item.id} href={`/article/${articleSlug(item.title)}`}>
+                    <span>{item.title}</span><small>{item.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"} · {svDate(item.createdAt, true)}</small>
+                </Link>)}</div>
+            </details>}
+        </div>
+        <CompanyAbout summary={data.summary} />
+    </div>;
 }
 
 const CALENDAR_EVENT_LABELS = {
@@ -2385,14 +2209,14 @@ function CalendarTab({ calendar }) {
             <div className="company-calendar-layout">
                 <div className="company-calendar">
                     <header className="company-calendar-toolbar">
-                        <button type="button" disabled={showingCurrentMonth} aria-label="Föregående månad" onClick={() => moveMonth(-1)}><FiChevronLeft /></button>
+                        <IconButton disabled={showingCurrentMonth} label="Föregående månad" onClick={() => moveMonth(-1)}><FiChevronLeft /></IconButton>
                         <h3>{visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}</h3>
-                        <button type="button" aria-label="Nästa månad" onClick={() => moveMonth(1)}><FiChevronRight /></button>
+                        <IconButton label="Nästa månad" onClick={() => moveMonth(1)}><FiChevronRight /></IconButton>
                     </header>
                     <div className="company-calendar-weekdays" aria-hidden="true">
                         {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map((day) => <span key={day}>{day}</span>)}
                     </div>
-                    <div className="company-calendar-grid" role="grid" aria-label={visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}>
+                    <div className="company-calendar-grid" role="group" aria-label={visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}>
                         {days.map((date) => {
                             const key = calendarDateKey(date);
                             const dayEvents = eventsByDate.get(key) ?? [];
@@ -2401,7 +2225,6 @@ function CalendarTab({ calendar }) {
                             return (
                                 <div
                                     key={key}
-                                    role="gridcell"
                                     className={`company-calendar-day ${outsideMonth ? "outside" : ""} ${hasPassed ? "past" : ""} ${key === todayKey ? "today" : ""}`}
                                 >
                                     <time dateTime={key}>{date.getDate()}</time>
@@ -2457,131 +2280,58 @@ function Performance({ returns }) {
     );
 }
 
-// Tabs that live behind Plus. Everything else — identity, chart, description,
-// news and calendar — stays open so the page works as a public landing page.
-const PLUS_TABS = new Set(["financials", "estimates", "valuation", "insiders", "shorts"]);
-
-function PlusTabGate({ companyName }) {
-    const { isGuestUser } = useAuthContext();
-    const { openModal } = useModal();
-    return (
-        <section className="company-tab-section company-plus-gate">
-            <FaLock />
-            <h2>Finansiell data ingår i Plus</h2>
-            <p>
-                Omsättning, resultat, marginaler och estimat för {companyName} – tillsammans med
-                live-nyhetsflödet och klickbara tickers i breven.
-            </p>
-            <div className="company-plus-gate-actions">
-                <Link href="/pro" className="primary-btn extra-padding">Se planer – från 49 kr/mån</Link>
-                {isGuestUser !== false && (
-                    <button onClick={() => openModal(<LogInModal />)}>Har du redan Plus? Logga in</button>
-                )}
-            </div>
-        </section>
-    );
+function PlusSectionGate({ companyName }) {
+    return <div className={styles.gate}>
+        <Text size="sm"><FaLock aria-hidden="true" /> Fördjupad bolagsdata för {companyName} ingår i Plus.</Text>
+        <Button render={<Link href="/pro" />} nativeButton={false} variant="secondary">Utforska Plus</Button>
+    </div>;
 }
 
-export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [] }) {
+export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [], missing = false }) {
     const { isPlusUser } = useAuthContext();
-    const allowedTab = TABS.some((tab) => tab.id === initialTab) ? initialTab : "overview";
-    const [tab, setTab] = useState(allowedTab);
-    const [researchProfile, setResearchProfile] = useState(undefined);
-
-    useEffect(() => {
-        setTab(allowedTab);
-    }, [allowedTab]);
-
-    useEffect(() => {
-        let active = true;
-        setResearchProfile(undefined);
-        fetchCompanyProfiles([symbol]).then((response) => {
-            if (active) setResearchProfile(response.items?.[0] ?? false);
-        });
-        return () => { active = false; };
-    }, [symbol]);
-
+    const [quote, setQuote] = useState(initialData?.summary?.quote);
     if (!initialData?.summary) {
-        return (
-            <main className="company-page company-not-found">
-                <h1>Aktien kunde inte hittas</h1>
-                <p>Kontrollera symbolen eller använd aktiesökningen i sidhuvudet.</p>
-                <Link className="company-text-link" href="/">Till startsidan <FiChevronRight /></Link>
-            </main>
-        );
+        return <Container as="main">
+            <EmptyState title={missing ? "Aktien kunde inte hittas" : "Bolagssidan kunde inte hämtas"}
+                description={missing ? "Sök efter bolaget i aktielistan." : "Försök igen om en stund."}
+                action={<Button render={<Link href={missing ? "/aktier" : `/aktie/${encodeURIComponent(symbol)}`} />} nativeButton={false}>{missing ? "Till aktier" : "Försök igen"}</Button>} />
+        </Container>;
     }
-
     const { summary } = initialData;
-    const profile = summary.profile;
-    // The server already resolved the plan while fetching, so the correct view
-    // renders on the first paint; the context is only a fallback for payloads
-    // from a backend that predates the access flag.
+    const name = summary.profile.name ?? symbol;
+    // Preserve the server-resolved access boundary. Off-screen research does
+    // not mount (or make private requests) for visitors without access.
     const hasPlus = initialData.access?.plus ?? isPlusUser;
-
-    const selectTab = (nextTab) => {
-        setTab(nextTab);
-        const params = new URLSearchParams(window.location.search);
-        if (nextTab === "overview") params.delete("tab");
-        else params.set("tab", nextTab);
-        const query = params.toString();
-        const path = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-        window.history.replaceState(window.history.state, "", path);
-    };
-
-    return (
-        <main className="company-page">
-            
-
-            {/* <Performance returns={summary.performance?.returns} /> */}
-            <CompanyChart
-                showNews={tab === "overview"}
-                summary={summary}
-                symbol={symbol}
-                chart={initialData.chart}
-                news={initialData.news}
-                reports={initialData.reports}
-                initialRange={initialRange}
-                initialMovingAverages={initialMovingAverages}
-                companyName={initialData.summary.profile.name ?? initialData.summary.symbol}
-                moveSummary={initialData.moveSummary}
-            />
-
-            <nav className="company-tabs" aria-label="Bolagsnavigation">
-                {TABS.map((item) => (
-                    <button type="button" key={item.id} className={"flex flex-row items-center " + (tab === item.id ? "active" : "")} onClick={() => selectTab(item.id)}>
-                        {item.label}
-                        {!hasPlus && PLUS_TABS.has(item.id) && <FaLock className="company-tab-lock" />}
-                    </button>
-                ))}
-            </nav>
-
-            {tab === "overview" && <OverviewTab data={initialData} mentions={mentions} onSelectTab={selectTab} researchProfile={researchProfile} />}
-            {!hasPlus && PLUS_TABS.has(tab) && <PlusTabGate companyName={profile.name ?? symbol} />}
-            {hasPlus && tab === "financials" && <FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />}
-            {hasPlus && tab === "estimates" && <EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />}
-            {hasPlus && tab === "valuation" && <ValuationTab symbol={symbol} companyName={profile.name ?? symbol} />}
-            {hasPlus && tab === "shorts" && <ShortsTab symbol={symbol} companyName={profile.name ?? symbol} bars={initialData.chart?.bars ?? []} />}
-            {hasPlus && tab === "insiders" && <InsidersTab symbol={symbol} companyName={profile.name ?? symbol} price={summary.quote?.price ?? null} sharesOutstanding={(() => {
-                for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
-                    for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
-                        if (periods[index]?.sharesOutstanding) return periods[index].sharesOutstanding;
-                    }
-                }
-                return null;
-            })()} marketCap={(() => {
-                // The newest period does not always carry a share count; use
-                // the most recent one that does.
-                const price = summary.quote?.price;
-                if (!price) return null;
-                for (const periods of [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]) {
-                    for (let index = (periods?.length ?? 0) - 1; index >= 0; index -= 1) {
-                        if (periods[index]?.sharesOutstanding) return price * periods[index].sharesOutstanding;
-                    }
-                }
-                return null;
-            })()} />}
-            {tab === "news" && <NewsTab data={initialData} />}
-            {tab === "calendar" && <CalendarTab calendar={summary.calendar} />}
-        </main>
-    );
+    const sharesOutstanding = [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]
+        .flatMap(periods => [...(periods ?? [])].reverse()).find(period => period.sharesOutstanding)?.sharesOutstanding ?? null;
+    const research = (children) => hasPlus ? <div className={styles.research}>{children}</div> : <PlusSectionGate companyName={name} />;
+    return <CompanyReportShell symbol={symbol} name={name} quote={quote} currency={summary.profile.currency} hasPlus={hasPlus} initialTab={initialTab}>
+        <ReportSection id="overview">
+            <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} news={initialData.news} reports={initialData.reports}
+                initialRange={initialRange} initialMovingAverages={initialMovingAverages} companyName={name} onQuoteChange={setQuote} />
+        </ReportSection>
+        <ReportSection id="news" title="Nyheter & reaktioner">
+            <NewsSection data={initialData} mentions={mentions} />
+        </ReportSection>
+        <ReportSection id="financials" title="Finansiell utveckling" deferred={hasPlus}>
+            <FinancialSummary highlights={summary.financialHighlights} />
+            {research(<FinancialsTab financials={initialData.financials} estimates={initialData.estimates} />)}
+            <div className={styles.research}><ResearchProfile symbol={symbol} companyName={name} /></div>
+        </ReportSection>
+        <ReportSection id="estimates" title="Estimat" deferred={hasPlus}>
+            {research(<EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />)}
+        </ReportSection>
+        <ReportSection id="valuation" title="Värdering" deferred={hasPlus}>
+            {research(<ValuationTab symbol={symbol} companyName={name} />)}
+        </ReportSection>
+        <ReportSection id="insiders" title="Insyn & ägare" deferred={hasPlus}>
+            {research(<InsidersTab symbol={symbol} companyName={name} price={summary.quote?.price ?? null} sharesOutstanding={sharesOutstanding} marketCap={summary.quote?.price && sharesOutstanding ? summary.quote.price * sharesOutstanding : null} />)}
+        </ReportSection>
+        <ReportSection id="shorts" title="Blankning" deferred={hasPlus}>
+            {research(<ShortsTab symbol={symbol} companyName={name} bars={initialData.chart?.bars ?? []} />)}
+        </ReportSection>
+        <ReportSection id="calendar" title="Kalender" deferred>
+            <div className={styles.research}><CalendarTab calendar={summary.calendar} /></div>
+        </ReportSection>
+    </CompanyReportShell>;
 }

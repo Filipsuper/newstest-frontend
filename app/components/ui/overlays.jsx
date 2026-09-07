@@ -16,6 +16,8 @@ export function Dialog({
   footer,
   className,
   variant,
+  initialFocus,
+  finalFocus,
   ...props
 }) {
   return (
@@ -29,7 +31,7 @@ export function Dialog({
             variant === "reader" && styles.readerViewport,
           )}
         >
-          <BaseDialog.Popup className={cx(styles.dialog, className)}>
+          <BaseDialog.Popup className={cx(styles.dialog, className)} initialFocus={initialFocus} finalFocus={finalFocus}>
             <div className={styles.dialogHeader}>
               <BaseDialog.Title
                 className={cx(styles.heading, styles.heading_section)}

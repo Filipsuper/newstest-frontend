@@ -366,7 +366,7 @@ test("search uses the keyboard and related stories retain their own identity", a
   await expect(page).toHaveURL(/fixture-3$/);
 });
 
-test("company news precedes the chart and remains available without price history", async ({
+test("company chart introduces a continuous news-led report, including without price history", async ({
   page,
 }, testInfo) => {
   const errors = [];
@@ -374,14 +374,14 @@ test("company news precedes the chart and remains available without price histor
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/aktie/NORD.TEST");
   const heading = page.getByRole("heading", {
-    name: "Senaste nytt om Norden Industri",
+    name: "Nyheter & reaktioner",
   });
   await expect(heading).toBeVisible();
-  const chart = page.getByRole("img", {
+  const chart = page.getByRole("group", {
     name: "Kursutveckling för Norden Industri",
     exact: true,
   });
-  expect((await heading.boundingBox()).y).toBeLessThan(
+  expect((await heading.boundingBox()).y).toBeGreaterThan(
     (await chart.boundingBox()).y,
   );
   expect(
@@ -390,16 +390,16 @@ test("company news precedes the chart and remains available without price histor
     ),
   ).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("company-mobile.png") });
-  await page.locator("article").first().getByRole("link").first().click();
+  await page.locator("#news article").first().getByRole("link").first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/aktie\/NORD.TEST$/);
   await page.goto("/aktie/FJALL.TEST");
   await expect(
-    page.getByRole("heading", { name: "Senaste nytt om Fjäll Energi" }),
+    page.getByRole("heading", { name: "Nyheter & reaktioner" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Ingen historisk kursdata är tillgänglig ännu."),
+    page.locator("main:visible").getByText("Ingen historisk kursdata är tillgänglig ännu."),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

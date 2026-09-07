@@ -21,3 +21,9 @@
   color: var(--ui-text);
   font-size: var(--ui-text-md);
 }
+.summary[data-preview] p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}

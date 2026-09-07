@@ -50,8 +50,9 @@ as verification that a new feature has been deployed.
   editions, real previews and the existing opt-in subscription flow. Market
   overview refreshes letter candidates and switches to today's evening edition
   after 17:30 Stockholm only once that edition exists.
-- [x] Company overview surfaces recent news before the main chart controls;
-  Nyheter is the second company tab and the spider profile is secondary.
+- [x] Initial company-news preview shipped ahead of the chart controls. The
+  continuous-report iteration below supersedes its tabs and ordering locally;
+  the spider profile remains secondary.
   Aktier offers news-led discovery and contextual links into reactions/reports
   and the existing screener.
 - [x] Backend overview candidate pool widened from 40 / importance ≥60 to
@@ -170,10 +171,10 @@ that preview is active. The affected local preview was restored through its
 existing launcher after scoped approval. Account/notification writes are not
 part of this release; tests use fictional identities.
 
-## Screener polish — approved release
+## Screener polish — released
 
-Status: frontend push and deployment approved on 7 September 2026. This is a
-frontend-only release; the backend, Terminal and account data stay unchanged.
+Status: frontend commit `084d69f` pushed and deployed on 7 September 2026 after
+explicit approval. Backend, Terminal and account data stayed unchanged.
 
 - [x] Shared stock-workspace navigation, Geist type, neutral light/dark
   surfaces, compact comparison rows and meaningful signed-change colors.
@@ -198,6 +199,47 @@ nested-select dismissal, presets/rules, missing values, sorting, pagination,
 refresh recovery and guest/free/Plus access. Desktop/mobile screenshots were
 inspected; the existing local preview returns HTTP 200. Browser data and users
 are fictional. Contrast checks wait for theme transitions to finish.
+
+## Continuous company report — implemented, deployment pending
+
+Approved direction: one scrollable `/aktie/<SYMBOL>` report, not a tab-switched
+dashboard. The chart introduces the company; news is the first research section.
+
+- [x] Sticky desktop contents and compact mobile contents sheet, using shared
+  foundation type, tokens, controls, Base UI dialogs and section links.
+- [x] Flat top chart, compact persistent company/quote context, and a source-linked
+  material event beside the chart when available on a wide screen.
+- [x] Chronological, event-deduplicated news with genuine AI summary/bullets,
+  observed reactions, six initial rows and explicit expansion. Reports, letters,
+  company description and financial statements use progressive disclosure.
+- [x] Anchor navigation, scroll highlighting, legacy `?tab=` support, preserved
+  chart/share parameters and canonical company URL.
+- [x] Near-viewport/explicit-selection research mounting, retained section state
+  and unchanged server-resolved Plus access. No synthetic intraday loading curve.
+- [x] Complete responsive, keyboard, reader-return and regression verification.
+- [x] User review and push approval on 7 September 2026.
+- [ ] Explicit deployment approval and company-page production release.
+
+Verified on 7 September: isolated production build, 26 unit tests and all 50
+Chromium browser tests pass. New coverage includes persistent sections, legacy
+links and reload, stable lazy-section jumps, news-reader Back/Forward with focus
+and scroll restoration, bounded/deduplicated news, chart settings/sharing,
+320/390/820px layouts, empty/error states, public summaries and Plus boundaries.
+Automated accessibility checks cover the report in both themes. The shared
+checkbox now labels its control separately from its description.
+
+Light/dark desktop and mobile screenshots were inspected, including a separate
+preview reading real public company data without account mutations. That
+preview had no runtime errors or page overflow at 320/390px. The ordinary local
+preview's backend was offline during validation; it was not restarted or changed.
+Public financial highlights and the optional public spider remain outside Plus;
+the spider's data is requested only when its disclosure is opened.
+
+Follow-up: translated releases with different upstream event/fact identities can
+still appear separately. Keep this an event-linking/data-quality task rather than
+guessing equivalence from similar headlines in the company UI.
+
+No backend, Terminal, scoring or account mutations are part of this work.
 
 ## Shipped foundation (aug 2026)
 

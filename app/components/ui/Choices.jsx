@@ -8,11 +8,13 @@ import { cx } from "./layout";
 import styles from "./ui.module.css";
 
 export function Checkbox({ label, description, className, ...props }) {
+  const labelId = useId();
   const descriptionId = useId();
   return (
     <label className={cx(styles.choice, className)}>
       <BaseCheckbox.Root
         className={styles.checkbox}
+        aria-labelledby={labelId}
         aria-describedby={description ? descriptionId : undefined}
         {...props}
       >
@@ -21,7 +23,7 @@ export function Checkbox({ label, description, className, ...props }) {
         </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>
       <span>
-        <span className={styles.label}>{label}</span>
+        <span id={labelId} className={styles.label}>{label}</span>
         {description && (
           <span id={descriptionId} className={styles.choiceDescription}>
             {description}
