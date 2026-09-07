@@ -1,6 +1,6 @@
 # Newsletter email design handoff
 
-7 September 2026 — implemented locally, **not deployed**.
+7 September 2026 — **released**, newsletter renderer `8bd95c8`.
 
 Morgonbrevet email now follows the public article's visual hierarchy and color
 tokens: warm canvas, Geist with fallback fonts, compact edition label, title,
@@ -22,8 +22,11 @@ The scheduler work is in branch `codex/newsletter-editorial`, based on productio
 `c1cce4e`, in isolated worktree `/private/tmp/omxsum-newsletter.nRD4uo/repo`.
 Its linked checkout is `/Users/filipkarlberg/Documents/coding/news test`, whose
 older branch and unrelated `src/utils/utils.js` edit were preserved.
-These are uncommitted local changes; the temporary worktree is not durable
-release storage. Commit them in the scheduler repository before any cleanup.
+The implementation is committed and pushed to scheduler `main` as `8bd95c8`.
+Production `/root/news-test/news-test` was fast-forwarded and only its existing
+PM2 process `main` (ID 0) restarted at 21:04 UTC. Production mode and disabled
+watch mode were verified first; no immediate mailing batch was triggered.
+The temporary worktree is a convenience, not the durable source of the release.
 
 ## Scope and contracts
 
@@ -58,6 +61,8 @@ rendering contract and email-client compatibility references.
 One explicitly authorized fictional mockup was reported delivered on 7 September
 2026 and the user approved its appearance. No subscription was changed; the test
 disabled its unsubscribe action. Broader Gmail/Outlook/Apple Mail coverage is
-not claimed. Scheduler deployment is still pending. Do not use scheduler
+not claimed. The scheduler is deployed with its existing schedules active and
+no new startup errors. Its 13 rendering tests also passed on production Node 18
+in an isolated directory before release. Do not use scheduler
 dev/start commands or the subscriber-batch
 entry point for a preview. A frontend deployment does not release these emails.

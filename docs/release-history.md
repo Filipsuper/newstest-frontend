@@ -11,6 +11,57 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Terminal gateway and newsletter email — released
+
+Frontend `2caa269` and newsletter scheduler `8bd95c8` deployed on 7 September
+2026 after approval. This is a public paywall refresh, not a Terminal rewrite.
+
+- `/terminal` now uses the public header, semantic colors, Geist type scale,
+  shared membership presentation, buttons and Base UI sign-in dialog. The
+  existing product screenshot is explicitly non-live. Mobile has one document
+  scroll, readable controls and no clipped content in both themes.
+- Prices come from the shared plan presentation. Guests sign in with return
+  path `/terminal`; free readers visit pricing. Plus/Pro retain the existing
+  authenticated session handoff without an upsell. No new checkout or plan rules.
+- Morgonbrevet email follows the article design with a real intro, three supplied
+  highlights, source-labelled saved IG data, exact-edition links and existing
+  paid personal content. Shared static email components add fallback fonts,
+  dark-mode styles and a plain-text alternative without exposing paid copy to
+  free recipients. Subscription filtering, sender and schedules are unchanged.
+
+Validation: production frontend build, 38 unit tests and 28 scoped Chromium
+checks for the gateway, membership and shared components. Browser checks cover
+320/768/1440px, both themes, accessibility, dialog focus and guest/free/Plus/Pro
+states with mocked login/session endpoints. Newsletter: 13 unit tests on local
+Node 22 and server Node 18, plus 38 offline browser layouts. One separately
+authorized fictional mockup was reported delivered and approved by the user;
+this is not a claim of exhaustive email-client support.
+
+Live verification: homepage, company page and company API return HTTP 200.
+Fresh-browser `/terminal` checks at 1440px light and 320px dark confirm the new
+heading, plan/action links, Geist, screenshot and no overflow/runtime errors;
+live screenshots inspected. No real login, checkout or new email was triggered.
+
+Frontend image `7e76196cb7f5`, started `2026-09-07T21:02:50Z`, zero restarts;
+rollback image `5da5ccf60e3c` retained. Both bundled Geist fonts are present and
+no `.env` is baked into the runtime. Backend `190981d060c9` and Terminal
+`3d06a2667e10` retained their pre-deployment image/start times and zero restarts.
+Terminal had been updated independently at 20:53 UTC, before this release.
+
+Newsletter production checkout `/root/news-test/news-test` was clean and
+fast-forwarded from `c1cce4e` to `8bd95c8`. Only PM2 `main` (ID 0, existing
+`npm run start`) restarted; production mode, watch disabled and active morning,
+evening-generation and analytics schedules were verified. PM2 restart count
+increased once, 382 → 383; it stayed online and the error log was unchanged
+since 20 August. No subscriber batch ran during deployment. The next scheduled
+Morgonbrevet uses the new design; evening generation still does not send mail.
+Newsletter rollback source is `c1cce4e`; the older local checkout's unrelated
+`src/utils/utils.js` edit remains untouched.
+
+Post-release capacity: ~903 MB available memory, ~2.1 GB free swap and ~4.0 GB
+free disk. The four existing high-severity dependency findings remain in the
+maintenance backlog; no dependency upgrade was bundled into this release.
+
 ## News and stock sharing images — released
 
 Frontend `d3f3405` deployed to omxsum.com on 7 September 2026 after explicit

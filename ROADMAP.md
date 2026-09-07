@@ -42,35 +42,16 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   sticky contents, a flat opening chart and optional analytical depth.
 - Newsletter library, shared article reading, settings, company-first signup
   and confirmation, pricing and server-verified checkout return.
+- Article-styled Morgonbrevet email with reusable static components, exact
+  edition links and plain-text delivery; existing paid personalization remains.
+- Public Terminal gateway uses the same header, palette, type, membership
+  presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `d3f3405`. Detailed changes, validation
+Latest frontend application release: `2caa269`; newsletter renderer: `8bd95c8`.
+Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
-
-### Newsletter email — local implementation, not released
-
-- [x] Align Morgonbrevet email with the article design, with reusable static
-  email components, real intro, exact-edition links and plain-text alternative.
-  Preserve subscription filtering, paid personalization and delivery schedule.
-- [x] Validate fictional light/dark/mobile and fallback previews: 13 unit tests,
-  38 browser layout checks; no emails sent or production changes.
-- [x] Send the authorized single-recipient mockup; delivery was confirmed and
-  the user approved its appearance. Broader email-client coverage remains QA.
-- [ ] Release through the newsletter scheduler (not the frontend deploy command).
-
-Implementation lives in a separate scheduler worktree and is not yet committed.
-See [email ownership, preview commands and handoff](docs/newsletter-email.md).
-
-### Terminal gateway — local polish, not released
-
-- [x] Match the public header, palette, typography, membership panel and sign-in
-  dialog. Keep the real product preview and free market-overview alternative.
-- [x] Validate the production build, 38 unit tests and 28 browser checks covering
-  the gateway, membership and shared components, including mobile, both themes,
-  accessibility and guest/free/Plus/Pro handoffs.
-- [ ] Include the gateway in the next frontend release. Terminal's separate
-  workspace and server authorization remain unchanged.
 
 ### 1. Improve news quality
 
@@ -158,6 +139,8 @@ Run alongside the product backlog, with scope and release verification per chang
 - [ ] **Email reliability:** shared/persistent rate limits and a durable welcome
   outbox; verify provider capacity, delivery and personal-letter job duration.
   Recheck the provider's current plan/quotas rather than using old estimates.
+  Extend inbox coverage for the released newsletter design; one approved
+  mockup and browser previews do not certify every Gmail/Outlook/Apple Mail variant.
 - [ ] **Browser coverage:** add Safari/WebKit and Firefox CI alongside Chromium,
   and extend visual/accessibility coverage where real gaps remain.
 - [ ] **Remaining foundation debt:** remove unused legacy CSS/remote fonts only
