@@ -11,10 +11,10 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
-## Site sharing image and mobile news layouts — release candidate
+## Site sharing image and mobile news layouts — released
 
-User approved frontend deployment on 7 September 2026. Local verification is
-complete; production status and rollback images will be recorded after rollout.
+Frontend `6525c83` deployed to omxsum.com on 7 September 2026 after explicit
+approval. Backend and Terminal were not redeployed.
 
 - New 1200×630 generic sharing image: clear news benefit, angled dark product
   preview and prominent free Morgonbrevet card. Composition informed by
@@ -37,6 +37,27 @@ browser tests. Checks cover 320/390/600/768/820px controls, light/dark screensho
 reader content/focus/history, default and dedicated sharing metadata, and
 JavaScript-free Facebook/Twitter crawler responses. Sharing image inspected at
 1200×630. No backend, account, billing or Terminal implementation changes.
+
+Production verification: homepage, Marknaden, Aktier, Breven and About return
+HTTP 200 with the new generic Open Graph/Twitter image in crawler HTML.
+`/og/home?v=20260907-news` returns a 1200×630 PNG whose SHA-256 matches the
+visually verified local render:
+`a42eab57e5a5b1cb42893abae88fda3ea90c599a036990ce124f909a2ed82e9a`.
+Live Chromium checks at 320/390/768/1440px confirm compact featured news,
+unclipped controls and no page overflow in both themes. The initialized client
+opens/closes the story modal and returns focus correctly. An early test click
+before hydration used the valid full-reader fallback; verification was repeated
+after client initialization. No runtime errors or production writes were made.
+Screenshots inspected. Homepage, a company page and the company API also passed
+the deployment script's health checks.
+
+Frontend image `53d6e20cd080`; rollback is the prior running frontend
+`336df5f3acbb`. Backend `190981d060c9` and Terminal `c3c948e5af24` retain their
+pre-deployment start times and zero restarts. The image excludes `.env`, and
+browser assets contain no local API addresses. Post-release available memory
+~640 MB, free swap ~2.3 GB and free disk ~4.7 GB. Existing four high-severity
+dependency audit findings remain in the maintenance backlog; no dependencies
+were upgraded in this presentation release.
 
 ## OMXsum 2.0 landing page — released
 

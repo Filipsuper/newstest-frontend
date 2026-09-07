@@ -24,9 +24,12 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Shared Base UI components, semantic colors, typography, responsive layout,
   public navigation and stock search.
 - OMXsum 2.0 landing page: newsletter beside the hero, real previews, wider
-  section spacing and a new homepage sharing image.
+  section spacing and a shared, versioned site image with a news-led product
+  preview and Morgonbrevet. Dedicated story/company/article images remain.
 - News-led Marknaden, a labelled public selection, Plus/Pro chronological
   feed/search, buffered updates and a shared, source-linked news reader.
+- Compact featured headlines with AI detail in the reader; mobile/tablet
+  filters wrap without hidden options and watchlist columns fit the viewport.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
 - Bevakning for companies, topics and keywords; inline following and
@@ -37,7 +40,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Newsletter library, shared article reading, settings, company-first signup
   and confirmation, pricing and server-verified checkout return.
 
-Latest frontend application release: `b614361`. Detailed changes, validation
+Latest frontend application release: `6525c83`. Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
