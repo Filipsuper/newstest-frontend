@@ -1,4 +1,5 @@
 import Image from "next/image";
+import terminalPreview from "../../public/images/terminal-showcase-2026-09-07.png";
 import { FiArrowUpRight } from "react-icons/fi";
 import { Button } from "./ui/Button";
 import { Heading, Inline, Stack, Text } from "./ui/layout";
@@ -33,7 +34,7 @@ export default function TerminalShowcase() {
             role="link"
             render={
               <a
-                href="/images/terminal-showcase.png"
+                href={terminalPreview.src}
                 target="_blank"
                 rel="noreferrer"
               />
@@ -45,10 +46,8 @@ export default function TerminalShowcase() {
         </Inline>
         <figure className={styles.preview}>
           <Image
-            src="/images/terminal-showcase.png"
+            src={terminalPreview}
             alt="Terminal med flera bolagsgrafer, ett bolagskopplat nyhetsflöde och en lista över aktier med stora kursrörelser."
-            width={2048}
-            height={1109}
             sizes="(max-width: 600px) calc(100vw - 32px), (max-width: 1344px) calc(100vw - 64px), 1280px"
             quality={90}
             className={styles.screenshot}

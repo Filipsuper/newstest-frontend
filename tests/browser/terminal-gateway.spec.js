@@ -92,6 +92,22 @@ for (const width of [1440, 768, 320]) {
       main.getByRole("link", { name: "Till den fria marknadsöversikten" }),
     ).toHaveAttribute("href", "/marknaden");
     await expect(main.locator("img")).toBeVisible();
+    await expect(main.locator("img")).toHaveAttribute("width", "2940");
+    await expect(main.locator("img")).toHaveAttribute("height", "1592");
+    const largerImage = main.getByRole("link", {
+      name: "Visa större bild av Terminal (öppnas i ny flik)",
+    });
+    await expect(largerImage).toHaveAttribute(
+      "href",
+      /terminal-showcase-2026-09-07\.[a-f0-9]+\.png$/,
+    );
+    const optimizedSource = new URL(
+      await main.locator("img").getAttribute("src"),
+      page.url(),
+    );
+    expect(optimizedSource.searchParams.get("url")).toBe(
+      await largerImage.getAttribute("href"),
+    );
     await expect(main.locator("img")).toHaveJSProperty("complete", true);
     expect(
       await main.locator("img").evaluate((image) => image.naturalWidth),
