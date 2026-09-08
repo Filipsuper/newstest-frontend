@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 7 September 2026, newest public revisions first.
+Release records through 8 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,31 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## Terminal preview screenshot — released
+
+Frontend `4bf3590` deployed on 8 September 2026 after approval.
+
+- The public `/terminal` preview uses the supplied, unmodified 2940×1592
+  screenshot. A static import supplies its dimensions and a content-hashed URL
+  shared by the optimized preview and full-size link. The old asset remains
+  available for existing links; gateway layout and access rules are unchanged.
+- Verified with an isolated production build and nine focused browser tests,
+  including responsive themes and guest/free/Plus/Pro access states.
+- Live desktop (1440px light) and mobile (320px dark) checks passed, with
+  screenshots inspected and no horizontal overflow or runtime errors. The
+  full-size link returns the exact supplied PNG, verified by dimensions and
+  SHA-256 `79d501c53084a7cf32db3af9463a6c27f15f6aec2115a54794cda230594feb7c`.
+  Homepage, company page and company API health checks return HTTP 200.
+
+Frontend image `a534b8a54b97`, started `2026-09-08T09:11:40Z`, zero restarts;
+rollback `7e76196cb7f5` retained. Backend `190981d060c9` and Terminal
+`3d06a2667e10` retained their pre-deployment images, start times and zero
+restarts. The newsletter service was not redeployed or restarted. No account
+changes, checkout or email sends occurred during verification.
+
+Post-release capacity: ~848 MB available memory, ~1.9 GB free swap and ~4.0 GB
+free disk. Existing dependency findings remain in the maintenance backlog.
 
 ## Terminal gateway and newsletter email — released
 

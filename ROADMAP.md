@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 7 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 8 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -47,7 +47,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `2caa269`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `4bf3590`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
