@@ -4,7 +4,7 @@ import { previewStories } from "../app/designsystem/reactions/fixtures.js";
 import { storyToItem } from "../app/utils/storyToItem.js";
 import { reactionV2For, rowReaction, reactionSeriesFor, retainReactionV2, preferredReactionPeriod, preferredVolumePeriod } from "../app/utils/reactionV2.js";
 import { reactionGeometry } from "../app/utils/reactionGeometry.js";
-import { changedFeedItems, mergeFeed, refreshMarketObservations } from "../app/utils/newsroom.js";
+import { changedFeedItems, mergeFeed, refreshMarketObservations, personalStoryToItem } from "../app/utils/newsroom.js";
 
 test("v2 rows use a completed consistent period, not the legacy 99%", () => {
   const item = storyToItem(previewStories()[0]);
@@ -90,4 +90,26 @@ test("v2-only refreshes update observations without raising new-news counts", ()
   assert.equal(changedFeedItems([item], [next]).length, 0);
   assert.equal(rowReaction(refreshMarketObservations([item], [next])[0]).pct, 5);
   assert.equal(rowReaction(mergeFeed([item], [{ ...item, reactionV2: undefined }])[0]).pct, 4.2);
+});
+
+test("an inconsistent chart endpoint is not paired with a valid KPI", () => {
+  const measurement = previewStories()[0].reactionV2.measurements[0];
+  measurement.series.points.at(-1).pct = 99;
+  assert.equal(reactionSeriesFor(measurement, "h1"), null);
+});
+
+test("a blocked measurement cannot expose leftover returns or a chart", () => {
+  const item = storyToItem(previewStories()[0]);
+  item.reactionV2.measurements[0].status = "retracted";
+  assert.equal(rowReaction(item).pct, null);
+  assert.equal(reactionSeriesFor(item.reactionV2.measurements[0], "h1"), null);
+});
+
+test("personal stories retain their version and second-company measurements", () => {
+  const story = previewStories()[5];
+  story.version = story.reactionV2.storyVersion = 3;
+  const item = personalStoryToItem(story);
+  assert.equal(item.version, 3);
+  assert.equal(reactionV2For(item).measurements.length, 2);
+  assert.equal(item.companies[1].symbol, "SKAR.TEST");
 });

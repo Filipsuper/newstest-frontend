@@ -51,7 +51,8 @@ export default function NewsFeedItem({
           {mainTag && <NewsTypeLabel type={mainTag} />}
           {reaction.pct !== null && <span>{reaction.label}</span>}
           {reaction.version === 2 && reaction.pct === null && <span>{reaction.status}</span>}
-          {reaction.version === 2 && volume?.post?.status === "complete" && volume.baselineMature
+          {reaction.version === 2 && ["measured", "missing_baseline"].includes(reaction.measurement?.status)
+            && volume?.post?.status === "complete" && volume.baselineMature
             && Number.isFinite(volume.relativeToNormal) && (
             <span title="Volym under 30 hela minuter efter nyheten eller nästa öppning, jämfört med samma tid tidigare handelsdagar.">
               Volym {volumeRatioLabel(volume.relativeToNormal)} · 30 min

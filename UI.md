@@ -235,6 +235,11 @@ desktop density or abbreviated interaction model.
   updates price, curve and volume together. Earlier price measurements are
   a read-only comparison under "Mätpunkter & underlag", not separate views.
   A close-period percentage without corresponding curve coverage stays text-only.
+- V2 charts must end at the selected completed measurement's actual endpoint
+  and percentage. Preserve gaps across missing minutes and closed sessions.
+  Refresh visible observations in place without a new-news count or moving rows
+  while reading; let the user accept changed reaction selection/order explicitly.
+  Personal rows retain the same story version and company choices as the reader.
 - Keep v2 cards headline-first. Show a short measurement-period label; show a
   30-minute normal-volume comparison only with complete, mature data. In the
   reader, keep the price badge and both neutral volume badges on one row,

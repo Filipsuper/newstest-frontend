@@ -306,7 +306,7 @@ test("reaction filter only announces changes that can be seen in that view", asy
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   await page.goto("/marknaden/nyheter?view=reactions");
   await expect(page.locator("article")).toHaveCount(12);
-  await expect(page.getByText("Ansluten · Störst förändring sedan publicering")).toBeVisible();
+  await expect(page.getByText("Ansluten · Störst uppmätt förändring")).toBeVisible();
   const incoming = { ...body.items[1], id: "no-reaction", eventId: "no-reaction-event", reaction: null, headline: "Nyhet utan uppmätt reaktion" };
   await emitStories(page, [incoming]);
   await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);

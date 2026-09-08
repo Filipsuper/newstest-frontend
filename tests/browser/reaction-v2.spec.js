@@ -197,6 +197,64 @@ test("the real chronological feed opens the same v2 measurement in its URL-backe
   await expect(badge(row, "1 tim efter nyheten: +4,2 %")).toBeVisible();
 });
 
+test("reaction filtering and refresh use v2 without automatic reordering or false news counts", async ({ page }) => {
+  await page.clock.install();
+  const stories = previewStories();
+  let items = [stories[0], stories[1], stories[4]];
+  let requests = 0;
+  await page.route(/\/api\/feed\/news\?/, route => {
+    requests++;
+    return route.fulfill({ json: { items, nextCursor: null, serverFilters: true } });
+  });
+  await page.goto("/marknaden/nyheter?view=reactions");
+  const rows = page.locator("article");
+  await expect(rows).toHaveCount(2); // Missing v2 is not rescued by legacy +99%.
+  await expect(rows.first()).toContainText(stories[0].headline);
+  await expect(badge(rows.first(), "1 tim efter nyheten: +4,2 %")).toBeVisible();
+  items = structuredClone(items);
+  items[1].reactionV2.asOf += 60_000;
+  items[1].reactionV2.measurements[0].windows.h1.pct = -8;
+  await page.clock.runFor(61_000);
+  await expect(badge(rows.nth(1), "1 tim efter nyheten: −8,0 %")).toBeVisible();
+  await expect(rows.first()).toContainText(stories[0].headline);
+  await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Uppdatera urval", exact: true }).click();
+  await expect(rows.first()).toContainText(stories[1].headline);
+  await page.getByRole("button", { name: "Pausa uppdateringar", exact: true }).click();
+  const before = requests;
+  await page.clock.runFor(61_000);
+  expect(requests).toBe(before);
+});
+
+test("an open reader refreshes its latest measurement without a manual details click", async ({ page, request }) => {
+  await page.clock.install();
+  const detail = await (await request.get("http://127.0.0.1:8100/api/feed/news/reaction-preview-positive")).json();
+  await page.goto("/nyhet/reaction-preview-positive");
+  const data = detail.story.reactionV2;
+  data.asOf += 60_000;
+  const measurement = data.measurements[0];
+  measurement.windows.h1.pct = 6;
+  measurement.windows.h1.endpoint.price = 106;
+  measurement.series.points.at(-1).pct = 6;
+  await page.route("**/api/feed/news/reaction-preview-positive", route => route.fulfill({ json: detail }));
+  await page.clock.runFor(61_000);
+  await expect(badge(reaction(page), "1 tim efter nyheten: +6,0 %")).toBeVisible();
+  await expect(reaction(page).locator("details")).not.toHaveAttribute("open");
+  await expect(reaction(page).getByRole("img")).toHaveCount(1);
+});
+
+test("personalized news uses the same v2 badge as the canonical reader", async ({ page }) => {
+  const story = previewStories()[0];
+  await page.route("**/api/user/personal-feed?**", route => route.fulfill({ json: {
+    stories: [{ ...story, viaWatchlist: true }], matchedCount: 1, hasPrefs: true, sinceHours: 48,
+  } }));
+  await page.goto("/bevakning");
+  const row = page.locator("article").filter({ has: page.locator('a[href="/nyhet/reaction-preview-positive"]') });
+  await expect(badge(row, "1 tim efter nyheten: +4,2 %")).toBeVisible();
+  await row.locator('a[href="/nyhet/reaction-preview-positive"]').click();
+  await expect(badge(reaction(page), "1 tim efter nyheten: +4,2 %")).toBeVisible();
+});
+
 test("share images support the same v2 observation and the text-only missing state", async ({ request }, testInfo) => {
   for (const scenario of ["positive", "missing", "after-close"]) {
     const response = await request.get(`/nyhet/reaction-preview-${scenario}/opengraph-image`);

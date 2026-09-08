@@ -1,7 +1,8 @@
 # Reaction v2 implementation status
 
-8 September 2026. Backend foundation and the first public-site UI integration are
-implemented locally, **not deployed or enabled in production**. The news API's
+8 September 2026. Backend foundation and public-site integration, including the
+v2.2 closing-chart and personal-feed fixes, are implemented,
+**not deployed or enabled in production**. The news API's
 optional v2 read model defaults off. Ranking weights and Terminal behavior are
 unchanged; no worker or new collection/retention policy has been activated.
 
@@ -24,7 +25,11 @@ that repository's `docs/reaction-v2.md`.
 - 5/15/30-minute post-news volume against both pre-news volume and median volume
   in the same clock-time window over preceding sessions. Missing is not zero;
   provisional baselines and incomplete coverage remain visible in the contract.
-- Shared chart geometry inputs with explicit nulls across gaps.
+- Shared chart geometry inputs through both closing windows, with explicit nulls
+  across missing minutes and closed sessions. V2.1 remains available for exact
+  replay; new v2.2 results preserve the original price/volume calculation rules.
+- Strict story/version/publication identity and public measurement checks;
+  malformed periods, stale baselines and inconsistent volume ratios fail closed.
 - Resumable, leased shadow worker with retries, read-only replay/quality inspection,
   and separate opt-ins for minute collection and durable observed-tick capture.
 
@@ -32,7 +37,7 @@ All writes are confined to `reaction_v2_*` collections when explicitly enabled.
 The checked-in service is not installed. Existing source retention is unchanged.
 Implementation tests use only fictional data and isolated test databases.
 
-Verified locally: 70 Reaction v2 tests passed against both the isolated test double
+Verified locally: 75 Reaction v2 tests passed against both the isolated test double
 and real MongoDB, plus three existing minute-source tests. This checks persistence,
 replay and calculation behavior, not current production data coverage.
 
@@ -45,8 +50,8 @@ receipt times cannot be invented for backfilled bars. Rejected source documents
 and every raw revision/AI feature are not yet archived at ingestion time.
 
 First run an approved shadow pilot and audit coverage, lag, storage, retries and
-replay. Then reconcile company charts with the same inputs and qualify personal
-feed coverage. Approve activation of the optional API/UI read model separately
+replay. Then reconcile independent company charts with the same inputs and qualify
+the integrated personal feed against live coverage. Approve activation of the optional API/UI read model separately
 from any migration of ranking inputs. Do not mix a v2 percentage with a legacy
 chart or silently add new volume ratios to editorial ranking.
 
@@ -80,7 +85,8 @@ fixture is never substituted into `/marknaden`, personal feeds or stock pages.
   All six price periods remain a read-only comparison inside measurement details.
   Ranking still uses existing inputs.
 - `ReactionChart` preserves null gaps. Missing/short chart coverage does not
-  produce a fabricated curve or borrow the old `reactionSeries`.
+  produce a fabricated curve or borrow the old `reactionSeries`. A completed
+  chart must end at the selected endpoint with the same percentage as its KPI.
 - Reader volume facts sit alongside price before the chart: comparisons with the
   preceding period and normal same-clock-time volume. The three values and
   period labels stay aligned on mobile, even when KPI names wrap.
@@ -97,6 +103,11 @@ fixture is never substituted into `/marknaden`, personal feeds or stock pages.
 - Optional-data failures retain the previous matching v2 observation with its
   timestamp, without generating a new-news count. A new story version does not
   inherit the previous version's observation. No v2 payload means legacy UI.
+- An open v2 reader refreshes each minute while visible. The active live feed
+  separately polls observations because the story stream does not emit v2 updates.
+  Price/volume refresh in place without reshuffling accepted rows or claiming new
+  news. The reaction view uses the shared v2 percentage; "Uppdatera urval" accepts
+  any resulting selection/order change. Pausing stops feed refreshes.
 
 ### News API integration
 
@@ -111,14 +122,19 @@ series on demand, so a long news list does not download hundreds of unused curve
 
 The API flag does not start the shadow worker, change ingestion or backfill data.
 If no matching results exist, real pages continue to use legacy data. The
-personal-feed builder has a separate path and has not yet been enriched; stock
-charts, mover ranking and editorial ranking have not been migrated to v2.
+personal-feed builder now retains the full company list, story version and
+optional measurements from the shared annotated feed. Existing matching and
+authorization remain intact. Independent company charts, Terminal mover ranking
+and editorial ranking have not been migrated to v2.
 
-Price observations require a pre-publication baseline, completed endpoint no
-later than the evaluation cutoff/target, at most two-minute sampling age and a
-consistent return. Volume requires full minute coverage; missing data and zero
-comparison denominators do not become ratios. Optional lookup failures leave the
-original news response usable. Disabling the API flag rolls back to legacy
+Price observations require a pre-publication baseline, valid session/anchor and
+exact period target, completed endpoint no later than the evaluation cutoff/target,
+at most two-minute sampling age and a consistent return. Volume requires full
+minute coverage, anchor-aligned windows and arithmetically consistent ratios;
+missing data and zero comparison denominators do not become ratios. Retracted
+stories cannot expose valid measurements. V2 detail caches expire after 60 seconds
+even for older stories that are awaiting the next session or a correction.
+Optional lookup failures leave the original news response usable. Disabling the API flag rolls back to legacy
 responses on the next cache refresh without modifying stored results.
 
 Local tests cover the contract and legacy fallback in both repositories, and
@@ -151,3 +167,20 @@ isolated staged source passed a production build and 63 unit tests. All 37
 browser cases passed after removing one test's assumption about the excluded
 ranking policy and rerunning the five-case volume group. This is a Git push,
 not a production deployment or API/worker activation.
+
+### V2.2 integration verification
+
+The scoped source (excluding unrelated editorial-selector/favicon changes)
+passed a production build, **66 frontend unit tests, 51 news-backend tests,
+75 calculation/persistence tests and 40 browser checks**. Persistence passed both
+the isolated test double and disposable real MongoDB; three existing minute-source
+tests also passed. Browser coverage includes automatic observation refresh,
+stable reaction selection, personalized multi-company stories, shared reader/OG
+behavior and 320–1440px light/dark layouts. Reader screenshots were reviewed.
+A real calculation over fictional minute bars was passed through Python engine →
+public API adapter → frontend helpers, verifying hourly and both closing endpoints,
+overnight gaps and exclusion of private archive fields.
+
+This is code readiness for an approved shadow pilot, not evidence of production
+coverage or backtest readiness. No production deployment, feature flag, worker,
+provider collection, retention change or backfill was performed.

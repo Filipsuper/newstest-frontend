@@ -78,6 +78,13 @@ and compatible backend releases are in the release history, not pending tasks.
   the main view. Includes gated fictional
   `/designsystem/reactions` examples for local review. The API flag defaults off;
   no production worker, ranking migration or collection/retention activation.
+- Implemented, **not deployed or enabled (all three repositories)**: v2.2 charts
+  cover both closing windows while retaining exact v2.1 replay. Personal feeds
+  preserve story versions and all company measurements. Reader/live-feed facts
+  refresh without false news counts or automatic row reshuffles; reaction
+  filtering uses the same measurement as its badge. Exact period/identity and
+  volume-ratio validation reject inconsistent data. Scoped unit, persistence,
+  browser and cross-layer contract checks pass; live qualification remains below.
 - [ ] **Reaction v2 qualification and rollout:** run an approved shadow cohort,
   audit data coverage/lag/storage and replay, add corporate-action and matching
   checks, reconcile company charts and personalized-feed coverage, then approve

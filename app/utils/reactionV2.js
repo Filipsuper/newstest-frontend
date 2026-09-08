@@ -17,7 +17,7 @@ export function reactionV2For(story) {
     || reactionTime(value.publishedAt) !== published || !Array.isArray(value.measurements)) return null;
   const symbols = new Set((story.companies ?? []).map(company => company.symbol));
   if (story.symbol) symbols.add(story.symbol);
-  return { ...value, measurements: value.measurements.filter(item => symbols.has(item.symbol)) };
+  return { ...value, measurements: value.measurements.filter(item => item && symbols.has(item.symbol)) };
 }
 export function reactionPeriodLabel(key, measurement) {
   if (key === "session_close") return "Vid stängning";
@@ -46,11 +46,12 @@ export function preferredVolumePeriod(measurement) {
 }
 export function reactionSeriesFor(measurement, period) {
   const window = measurement?.windows?.[period];
-  if (!measurement?.baseline || reactionTime(window?.targetAt) === null) return null;
-  const points = (measurement.series?.points ?? []).filter(point => reactionTime(point.t) !== null
-    && reactionTime(point.t) <= reactionTime(window.targetAt));
+  if (measurement?.status !== "measured" || !measurement.baseline || reactionTime(window?.targetAt) === null) return null;
+  const points = (measurement.series?.points ?? []).filter(point => point && reactionTime(point.t) !== null
+    && reactionTime(point.t) <= reactionTime(window.targetAt)).sort((a, b) => reactionTime(a.t) - reactionTime(b.t));
   const last = points.filter(point => Number.isFinite(point.pct)).at(-1);
-  if (completedReaction(window) && (!last || reactionTime(last.t) < reactionTime(window.endpoint.priceAt))) return null;
+  if (completedReaction(window) && (!last || reactionTime(last.t) !== reactionTime(window.endpoint.priceAt)
+    || Math.abs(last.pct - window.pct) > 1e-8)) return null;
   return { points };
 }
 export function rowReaction(story) {
@@ -60,7 +61,7 @@ export function rowReaction(story) {
   const measurement = v2.measurements.find(item => item.symbol === symbol);
   const key = preferredReactionPeriod(measurement);
   const window = measurement?.windows?.[key];
-  return { version: 2, pct: completedReaction(window) ? window.pct : null,
+  return { version: 2, pct: measurement?.status === "measured" && completedReaction(window) ? window.pct : null,
     label: reactionPeriodLabel(key, measurement), measurement, period: key,
     status: measurement?.status === "waiting_for_session" ? "Inväntar börsöppning"
       : window?.status === "pending" ? "Inväntar mätperiod" : "Kursdata saknas" };

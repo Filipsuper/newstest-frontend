@@ -30,7 +30,7 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
   const measurement = data.measurements.find(item => item.symbol === symbol);
   const period = preferredReactionPeriod(measurement);
   const window = measurement?.windows?.[period];
-  const complete = completedReaction(window);
+  const complete = measurement?.status === "measured" && completedReaction(window);
   const pending = measurement?.status === "waiting_for_session" || window?.status === "pending";
   const label = reactionPeriodLabel(period, measurement);
   const shortPeriod = REACTION_PERIODS.find(([key]) => key === period)?.[1];
@@ -41,7 +41,8 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
   const volumePeriod = preferredVolumePeriod(measurement);
   const volume = measurement?.volume?.[volumePeriod];
   const post = volume?.post;
-  const volumeComplete = post?.status === "complete" && Number.isFinite(post.volume) && post.volume >= 0;
+  const volumeComplete = ["measured", "missing_baseline"].includes(measurement?.status)
+    && post?.status === "complete" && Number.isFinite(post.volume) && post.volume >= 0;
   const normal = volumeComplete ? volume.relativeToNormal : null;
   const before = volumeComplete && volume.pre?.status === "complete" && volume.pre.volume > 0 ? volume.beforeAfterRatio : null;
   const provisional = Number.isFinite(normal) && !volume.baselineMature;
@@ -95,7 +96,7 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
               const point = measurement?.windows?.[key];
               return <div key={key}>
                 <dt>{reactionPeriodLabel(key, measurement)}</dt>
-                <dd>{completedReaction(point)
+                <dd>{measurement?.status === "measured" && completedReaction(point)
                   ? <ChangeBadge value={point.pct} />
                   : <Text as="span" size="xs" tone="secondary">{point?.status === "pending" ? "Inväntar mätning" : reactionStatus(point?.status)}</Text>}</dd>
               </div>;

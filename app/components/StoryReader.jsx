@@ -98,6 +98,14 @@ export default function StoryReader({
     detail?.story ?? (detail?.headline ? detail : initialStory) ?? {},
   );
   const hasStory = Boolean(story.id);
+  const hasReactionV2 = Boolean(reactionV2For(story));
+  useEffect(() => {
+    if (!hasStory || !hasReactionV2) return;
+    const refresh = () => { if (document.visibilityState === "visible") setRetry(value => value + 1); };
+    const timer = setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
+  }, [story.id, hasStory, hasReactionV2]);
   const reaction = finiteNumber(story.reaction?.pct);
   const sources = story.sources ?? [];
   const facts = story.facts ?? {};
