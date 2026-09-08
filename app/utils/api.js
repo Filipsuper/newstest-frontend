@@ -156,12 +156,11 @@ export async function fetchStockSpark(symbol) {
     return body;
 }
 
-// The story plus the release it was built from. Public, and immutable once
-// published, so the browser may keep it.
+// Text is stable, but the attached price/volume observations keep developing.
 export async function fetchStory(storyId) {
     const response = await fetch(
         `${API_URL}/feed/news/${encodeURIComponent(storyId)}`,
-        { next: { revalidate: 60 }, signal: AbortSignal.timeout(10_000) },
+        { cache: "no-store", signal: AbortSignal.timeout(10_000) },
     );
     if (!response.ok) {
         const error = new Error(response.status === 404 ? "Nyheten hittades inte" : "Kunde inte hämta nyheten");

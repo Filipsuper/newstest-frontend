@@ -58,6 +58,33 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ### 1. Improve news quality
 
+- Implemented locally, **not released (frontend + backend)**: single-company
+  session RVOL context and a separate complete-window before/after volume
+  comparison in the news reader. Provisional/missing data remain explicit;
+  no double-counting of daily and time-adjusted RVOL. Recent detail caches
+  refresh within a minute and Marknaden observations can update without a
+  false new-news banner or automatic row reshuffle.
+- Implemented locally, **not released or enabled (market-data backend)**:
+  [Reaction v2 shadow foundation](docs/reaction-v2.md). Immutable per-story-version/
+  company events, news/AI-update capture, timestamped minute-bar revisions,
+  session-aware price windows, complete-window relative volume, durable retries
+  and exact input replay. Existing public reactions and ranking remain unchanged;
+  opt-in collection/retention has not been activated.
+- Implemented locally, **not released (frontend + news backend)**: optional
+  authorized/whitelisted Reaction v2 read model, compact news-row period labels,
+  shared reader/chart/OG latest-measurement selection, one-click company controls,
+  news-first reader with one aligned row of price/volume KPIs and expandable
+  measurement history/provenance. No period dropdowns or repeated metadata in
+  the main view. Includes gated fictional
+  `/designsystem/reactions` examples for local review. The API flag defaults off;
+  no production worker, ranking migration or collection/retention activation.
+- [ ] **Reaction v2 qualification and rollout:** run an approved shadow cohort,
+  audit data coverage/lag/storage and replay, add corporate-action and matching
+  checks, reconcile company charts and personalized-feed coverage, then approve
+  activation of the API/reader/cards and separately qualify ranking inputs.
+  Expand ingestion-time feature archives
+  before describing the dataset as execution-backtest-ready. See the
+  [original reaction/volume audit](docs/news-reaction-volume-2026-09-08.md).
 - [ ] Evaluate a representative story sample for relevance, missing market/
   sector coverage and duplicate issuer notices; define measurable quality goals.
 - [ ] Improve event linking, including translated releases with different

@@ -11,6 +11,7 @@ import {
   finiteNumber,
   newsDate,
   pendingChanges,
+  refreshMarketObservations,
 } from "../utils/newsroom";
 import { currentLetter, marketDateKey } from "../utils/letters";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
@@ -135,6 +136,7 @@ export default function MarketOverviewPage({
     new Date(referenceTime || overview.generatedAt || 0).getTime(),
   );
   const [visibleItems, setVisibleItems] = useState(() => itemsFrom(overview));
+  const [selectionTime, setSelectionTime] = useState(now);
   useEffect(() => {
     if (paused) return;
     let active = true,
@@ -156,7 +158,10 @@ export default function MarketOverviewPage({
             : "",
         );
         const incoming = itemsFrom(next);
-        if (!visibleItems.length) setVisibleItems(incoming);
+        if (!visibleItems.length) {
+          setVisibleItems(incoming);
+          setSelectionTime(Date.now());
+        }
         else
           setPending(pendingChanges(visibleItems, incoming).length ? incoming : null);
         if (count++ % 4 === 0) {
@@ -184,10 +189,15 @@ export default function MarketOverviewPage({
     };
   }, [paused, retry, visibleItems]);
   const featured = useMemo(
-    () => featuredNews(visibleItems, now),
-    [visibleItems, now],
+    () => featuredNews(visibleItems, selectionTime),
+    [visibleItems, selectionTime],
   );
   const edition = currentLetter(editions, now);
+  const incomingItems = useMemo(() => itemsFrom(data), [data]);
+  const observedItems = useMemo(() => refreshMarketObservations(visibleItems, incomingItems), [visibleItems, incomingItems]);
+  const observedById = new Map(observedItems.map(item => [item.id, item]));
+  const selectionChanged = !pending && incomingItems.length > 0
+    && featured.map(item => item.id).join(",") !== featuredNews(incomingItems, now).map(item => item.id).join(",");
   const latest = visibleItems[0];
   const pendingCount = pending
     ? changedFeedItems(featured, featuredNews(pending, now), {
@@ -200,6 +210,7 @@ export default function MarketOverviewPage({
   function applyPending() {
     if (!pending) return;
     setVisibleItems(pending);
+    setSelectionTime(now);
     setPending(null);
   }
   return (
@@ -278,9 +289,10 @@ export default function MarketOverviewPage({
               {pendingCount} nya eller uppdaterade nyheter
             </Button>
           )}
+          {selectionChanged && <Button variant="secondary" onClick={() => { setVisibleItems(incomingItems); setSelectionTime(now); }}>Uppdatera urval</Button>}
           <div className={styles.news}>
             {featured.length ? (
-              featured.map((item) => <NewsFeedItem key={item.id} item={item} showSummary={false} />)
+              featured.map((item) => <NewsFeedItem key={item.id} item={observedById.get(item.id) ?? item} showSummary={false} />)
             ) : (
               <EmptyState
                 title="Inga större nyhetshändelser just nu"
@@ -317,7 +329,7 @@ export default function MarketOverviewPage({
                 </Button>
               )}
               <div className={styles.news}>
-                {visibleItems.slice(0, 12).map((item) => (
+                {observedItems.slice(0, 12).map((item) => (
                   <NewsFeedItem key={item.id} item={item} />
                 ))}
               </div>

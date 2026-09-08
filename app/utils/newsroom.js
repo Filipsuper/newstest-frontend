@@ -7,6 +7,7 @@ import {
 } from "./marketNewsRanking.js";
 import { TOPIC_LABELS } from "./topicLabels.js";
 import { newsSummary } from "./newsSummary.js";
+import { retainReactionV2 } from "./reactionV2.js";
 
 export const validStoryId = (id) =>
   /^[A-Za-z0-9_-]{1,80}$/.test(String(id ?? ""));
@@ -106,6 +107,21 @@ export function featuredNews(items, now, limit = 5) {
     })
     .slice(0, limit);
 }
+// Refresh observations without accepting a new headline/version or moving rows.
+// Price/volume changes must not turn into "new or updated news" notifications.
+export function refreshMarketObservations(items, incoming) {
+  const latest = new Map(incoming.map(item => [item.id, item]));
+  return items.map(item => {
+    const next = latest.get(item.id);
+    if (!next || next.ts !== item.ts || (next.version ?? 1) !== (item.version ?? 1)
+      || next.symbol !== item.symbol) return item;
+    const reaction = Number.isFinite(next.reaction?.asOf) && next.reaction.asOf < (item.reaction?.asOf ?? 0)
+      ? item.reaction : next.reaction ?? null;
+    const marketContext = Number.isFinite(next.marketContext?.asOf) && next.marketContext.asOf < (item.marketContext?.asOf ?? 0)
+      ? item.marketContext : next.marketContext ?? null;
+    return { ...item, reaction, marketContext, reactionV2: retainReactionV2(item, next) };
+  });
+}
 export const chronologicalNews = (items) =>
   uniqueNews(items).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 export function mergeFeed(items, incoming) {
@@ -121,7 +137,7 @@ export function mergeFeed(items, incoming) {
     const aiSummary = newsSummary(item.aiSummary)
       || ((existing?.version ?? 1) === (item.version ?? 1)
         ? newsSummary(existing?.aiSummary) : null);
-    byId.set(item.id, { ...existing, ...item, aiSummary });
+    byId.set(item.id, { ...existing, ...item, aiSummary, reactionV2: retainReactionV2(existing, item) });
   }
   return chronologicalNews([...byId.values()]);
 }

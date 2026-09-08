@@ -11,7 +11,7 @@ import {
   newsDate,
   storyHref,
 } from "../utils/newsroom";
-import { reactionGeometry } from "../utils/reactionGeometry";
+import { reactionV2For, retainReactionV2 } from "../utils/reactionV2";
 import NewsTypeLabel from "./NewsTypeLabel";
 import NewsSummary from "./NewsSummary";
 import { Button } from "./ui/Button";
@@ -19,6 +19,9 @@ import { ChangeBadge, EmptyState, Skeleton } from "./ui/data";
 import { Heading, Inline, Stack, Text } from "./ui/layout";
 import FollowCompanyButton from "./FollowCompanyButton";
 import NewsFeedItem from "./NewsFeedItem";
+import StoryVolume from "./StoryVolume";
+import StoryReaction from "./StoryReaction";
+import ReactionChart from "./ReactionChart";
 import styles from "./story-reader.module.css";
 
 const metricNames = {
@@ -43,83 +46,7 @@ const windows = [
   ["1 dag", "d1Pct"],
 ];
 
-export function ReactionChart({ series, publishedAt }) {
-  const geometry = reactionGeometry(series, publishedAt);
-  if (!geometry)
-    return (
-      <Text size="sm" tone="secondary">
-        Kurskurvan visas när det finns tillräckligt med handel kring
-        publiceringen.
-      </Text>
-    );
-  const { points, width, height, path, area, zero, marker } = geometry;
-  const tone =
-    points.at(-1).pct < 0 ? "var(--ui-negative)" : "var(--ui-positive)";
-  return (
-    <figure className={styles.chart}>
-      <div className={styles.plot}>
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="none"
-          role="img"
-          aria-label="Kursutveckling runt publiceringen, procent mot senaste avslut före nyheten"
-        >
-          <line
-            x1="44"
-            x2={width - 16}
-            y1={zero}
-            y2={zero}
-            stroke="var(--ui-border)"
-          />
-          <path d={area} fill={tone} opacity="0.08" />
-          <path
-            d={path}
-            fill="none"
-            stroke={tone}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          {marker !== null && (
-            <line
-              x1={marker}
-              x2={marker}
-              y1="18"
-              y2={height - 30}
-              stroke="var(--ui-text-secondary)"
-              strokeDasharray="4 5"
-            />
-          )}
-        </svg>
-        <span
-          className={styles.zeroLabel}
-          style={{ top: `${(zero / height) * 100}%` }}
-        >
-          0%
-        </span>
-        {marker !== null && (
-          <span
-            className={styles.publishLabel}
-            style={{
-              left: `clamp(44px, ${(marker / width) * 100}%, calc(100% - 90px))`,
-            }}
-          >
-            Publicering
-          </span>
-        )}
-      </div>
-      <div className={styles.chartAxis}>
-        <span>{newsDate(points[0].t)}</span>
-        <span>{newsDate(points.at(-1).t)}</span>
-      </div>
-      <figcaption>
-        Baslinje: senaste avslut före publicering. Kurvan visar ett tidsmässigt
-        samband, inte bevis på orsak.
-      </figcaption>
-    </figure>
-  );
-}
+export { default as ReactionChart } from "./ReactionChart";
 
 export default function StoryReader({
   storyId,
@@ -151,7 +78,11 @@ export default function StoryReader({
     setError("");
     fetchStory(storyId)
       .then((value) => {
-        if (active) setDetail(value);
+        if (active) setDetail(previous => {
+          const fresh = value.story ?? value;
+          const reactionV2 = retainReactionV2(previous?.story ?? previous ?? initialStory, fresh);
+          return value.story ? { ...value, story: { ...fresh, reactionV2 } } : { ...value, reactionV2 };
+        });
       })
       .catch((error) => {
         if (active) setError(error.message);
@@ -237,6 +168,61 @@ export default function StoryReader({
           {story.title}
         </Heading>
         <NewsSummary value={story.aiSummary} reading />
+        {reactionV2For(story) ? <StoryReaction key={`${story.id}:${story.version}`} story={story} loading={loading} error={error}
+          onRefresh={() => setRetry(value => value + 1)} /> : <section
+          className={styles.reaction}
+          aria-labelledby="story-reaction-heading"
+        >
+          <Inline className={styles.between}>
+            <Heading id="story-reaction-heading" size="subsection">
+              Marknadens reaktion
+            </Heading>
+            <Inline>
+              <Button size="sm" variant="ghost" disabled={loading} onClick={() => setRetry(value => value + 1)}>
+                {loading ? "Hämtar data…" : "Uppdatera data"}
+              </Button>
+              <ChangeBadge
+                value={reaction}
+                fallback="Inväntar kursdata"
+                label="Sedan publicering"
+              />
+              {reaction !== null && (
+                <Text as="span" size="xs" tone="secondary">
+                  sedan publicering
+                </Text>
+              )}
+            </Inline>
+          </Inline>
+          <ReactionChart
+            series={detail?.reactionSeries}
+            publishedAt={published}
+          />
+          {error && <Text size="sm" role="alert">{error}</Text>}
+          {story.reaction?.asOf && <Text size="xs" tone="secondary">Kurs per {newsDate(story.reaction.asOf)}</Text>}
+          <StoryVolume story={story} comparison={detail?.volumeComparison} />
+          {windows.some(
+            ([, key]) => finiteNumber(story.reaction?.[key]) !== null,
+          ) && (
+            <details className={styles.details}>
+              <summary>Fler mätperioder</summary>
+              <dl className={styles.metrics}>
+                {windows.map(
+                  ([label, key]) =>
+                    finiteNumber(story.reaction?.[key]) !== null && (
+                      <div key={key}>
+                        <dt>{label} efter publicering</dt>
+                        <dd>
+                          <ChangeBadge
+                            value={finiteNumber(story.reaction[key])}
+                          />
+                        </dd>
+                      </div>
+                    ),
+                )}
+              </dl>
+            </details>
+          )}
+        </section>}
         <Inline className={styles.actions}>
           {story.companies.slice(0, 2).map((company) => (
             <Inline key={company.symbol} gap={2}>
@@ -270,54 +256,6 @@ export default function StoryReader({
             {shareError} <a href={shareUrl}>{shareUrl}</a>
           </Text>
         )}
-        <section
-          className={styles.reaction}
-          aria-labelledby="story-reaction-heading"
-        >
-          <Inline className={styles.between}>
-            <Heading id="story-reaction-heading" size="subsection">
-              Marknadens reaktion
-            </Heading>
-            <Inline>
-              <ChangeBadge
-                value={reaction}
-                fallback="Inväntar kursdata"
-                label="Sedan publicering"
-              />
-              {reaction !== null && (
-                <Text as="span" size="xs" tone="secondary">
-                  sedan publicering
-                </Text>
-              )}
-            </Inline>
-          </Inline>
-          <ReactionChart
-            series={detail?.reactionSeries}
-            publishedAt={published}
-          />
-          {windows.some(
-            ([, key]) => finiteNumber(story.reaction?.[key]) !== null,
-          ) && (
-            <details className={styles.details}>
-              <summary>Fler mätperioder</summary>
-              <dl className={styles.metrics}>
-                {windows.map(
-                  ([label, key]) =>
-                    finiteNumber(story.reaction?.[key]) !== null && (
-                      <div key={key}>
-                        <dt>{label} efter publicering</dt>
-                        <dd>
-                          <ChangeBadge
-                            value={finiteNumber(story.reaction[key])}
-                          />
-                        </dd>
-                      </div>
-                    ),
-                )}
-              </dl>
-            </details>
-          )}
-        </section>
         {facts.reportMetrics?.length > 0 && (
           <section>
             <Heading size="subsection">Rapporten i siffror</Heading>

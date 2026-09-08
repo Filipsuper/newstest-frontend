@@ -5,6 +5,8 @@ import NewsTypeLabel from "./NewsTypeLabel";
 import NewsSummary from "./NewsSummary";
 import { newsDate, storyHref } from "../utils/newsroom";
 import NewsRow from "./ui/NewsRow";
+import { newsMarketContext, volumeRatioLabel } from "../utils/newsMarketAttention";
+import { rowReaction } from "../utils/reactionV2";
 
 export default function NewsFeedItem({
   item,
@@ -13,10 +15,11 @@ export default function NewsFeedItem({
   reason = null,
   showSummary = true,
   summaryPreview = false,
+  onOpen,
 }) {
-  const reaction = Number.isFinite(item.reaction?.pct)
-    ? item.reaction.pct
-    : null;
+  const marketContext = newsMarketContext(item);
+  const reaction = rowReaction(item);
+  const volume = reaction.measurement?.volume?.m30;
   const mainTag =
     (item.labels ?? []).find((tag) => tag !== "REGULATORY") ?? item.labels?.[0];
 
@@ -30,9 +33,10 @@ export default function NewsFeedItem({
           <NewsSummary value={item.aiSummary} preview={summaryPreview} />
         ) : null
       }
-      reaction={reaction}
-      href={storyHref(item.id)}
-      reactionLabel="Sedan publicering"
+      reaction={reaction.pct}
+      href={onOpen ? undefined : storyHref(item.id)}
+      onOpen={onOpen}
+      reactionLabel={reaction.pct !== null ? reaction.label : reaction.status ?? "Nyhet"}
       metadata={
         <>
           <time
@@ -45,7 +49,19 @@ export default function NewsFeedItem({
             {newsDate(item.ts)}
           </time>
           {mainTag && <NewsTypeLabel type={mainTag} />}
-          {reaction !== null && <span>Sedan publicering</span>}
+          {reaction.pct !== null && <span>{reaction.label}</span>}
+          {reaction.version === 2 && reaction.pct === null && <span>{reaction.status}</span>}
+          {reaction.version === 2 && volume?.post?.status === "complete" && volume.baselineMature
+            && Number.isFinite(volume.relativeToNormal) && (
+            <span title="Volym under 30 hela minuter efter nyheten eller nästa öppning, jämfört med samma tid tidigare handelsdagar.">
+              Volym {volumeRatioLabel(volume.relativeToNormal)} · 30 min
+            </span>
+          )}
+          {reaction.version === 1 && marketContext?.baselineMature && marketContext.rvolAtTime !== null && (
+            <span title={`Bolagets volym jämfört med normal volym vid samma tid. Data per ${newsDate(marketContext.asOf)}; inte volym orsakad av nyheten.`}>
+              Volym {volumeRatioLabel(marketContext.rvolAtTime)} kl. {newsDate(marketContext.asOf, { day: undefined, month: undefined })}
+            </span>
+          )}
           {item.source && <span>{item.source}</span>}
           {reason && <span>{reason}</span>}
           {(item.sourceCount ?? 0) > 1 && (

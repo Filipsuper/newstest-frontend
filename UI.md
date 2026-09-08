@@ -177,6 +177,17 @@ desktop density or abbreviated interaction model.
   relevance are different concepts. A story can be important before trading
   reacts. Routine insider notices and administrative invitations must not
   fill featured slots simply because the stock moved.
+- Daily RVOL and RVOL at time are different comparison periods and must not
+  earn two bonuses for the same volume. Prefer mature, same-time RVOL; daily
+  RVOL is a ranking fallback only at session close. Company/session context
+  requires an exact story/company/date match, and is not event-generated volume.
+  Show one quiet volume label in rows and both methods in the reader's volume
+  details, with source time and provisional baseline status.
+- Before/after news volume compares equal complete windows, excludes the
+  publication-straddling candle and stays unavailable with incomplete minute
+  coverage. Never substitute full-session RVOL for this event-window comparison.
+  Price/volume refreshes keep visible row order and are not new-news alerts;
+  a ranking-only change offers `Uppdatera urval` separately.
 - The public chronological preview is labelled as a selection. The complete
   feed keeps its existing Plus/Pro boundary; never make the preview appear to
   cover all events or bypass authorization through client-only filtering.
@@ -209,9 +220,37 @@ desktop density or abbreviated interaction model.
 - Story links use canonical `/nyhet/[id]` URLs. Normal client navigation opens
   a Base UI dialog; direct visits and reload open the full reader. Back closes
   the dialog, Forward reopens it, and returning retains the source page.
-- Reader hierarchy: headline/source → concise facts → observed reaction →
-  optional detailed periods/figures/source text → company/follow/related paths.
+- Reader hierarchy: headline/source → AI summary → aligned reaction KPIs/chart →
+  company/follow/share actions → optional figures/source text/related paths.
   Keep original sources easy to reach. Base UI owns focus trapping and Escape.
+- Reaction v2 is an optional, exact story-version/company/publication contract.
+  News rows, the reader and share images use the latest completed measurement
+  by target time, including session-close and next-close—not the biggest move.
+  Never pair a v2 percentage with a legacy curve or another company's measurement.
+  Open the reader with news first, then one aligned row of three KPIs:
+  "Kursreaktion", "Volym / normalt", "Volym / före". Show only a short label,
+  value and measurement period per KPI, with no extra section heading,
+  repeated timestamp, period dropdown or tabs. Two/three-company stories use one-click shared
+  SegmentedControl buttons; longer company lists use Select. The company choice
+  updates price, curve and volume together. Earlier price measurements are
+  a read-only comparison under "Mätpunkter & underlag", not separate views.
+  A close-period percentage without corresponding curve coverage stays text-only.
+- Keep v2 cards headline-first. Show a short measurement-period label; show a
+  30-minute normal-volume comparison only with complete, mature data. In the
+  reader, keep the price badge and both neutral volume badges on one row,
+  above the chart, including on mobile. Volume compares with normal same-time
+  activity and the equal preceding period. Automatically use the longest complete
+  5/15/30-minute window and label it explicitly. Provisional ratios stay visibly
+  qualified with a small asterisk and an accessible label; explain the asterisk
+  and comparison-day count in "Mätpunkter & underlag". Pending and unavailable
+  facts never look like zero. Raw share counts, exact timestamps/coverage,
+  refresh controls, other price periods and methodology remain expandable.
+  Session RVOL and post-news-window
+  relative volume are different measures and must not share an ambiguous label.
+  After-hours periods say "efter öppning". Waiting, missing and incomplete data
+  are explicit; missing chart samples remain gaps, not interpolated prices.
+  Local fictional examples live at `/designsystem/reactions`, gated off by
+  default in production, and must never enter real feeds or company pages.
 - Story social previews are generated from the same public event, with a
   deliberate 1200×630 composition, legible headline, source, company, and an
   explicitly labelled reaction where available. Prefer completed fixed windows.

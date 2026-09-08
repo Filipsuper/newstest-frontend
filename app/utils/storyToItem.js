@@ -38,6 +38,8 @@ export function storyToItem(story) {
         aiSummary: newsSummary(story.aiSummary),
         facts: story.facts ?? null,
         reaction: story.reaction ?? null,
+        reactionV2: story.reactionV2,
+        marketContext: story.marketContext ?? null,
         status: story.status,
     };
 }

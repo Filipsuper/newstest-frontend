@@ -1,5 +1,6 @@
 // Local-only integration fixture. All companies, news and account data are fictional.
 import { createServer } from "node:http";
+import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
 
 const base = Date.now() - 2 * 3600_000;
 const companies = [
@@ -81,6 +82,16 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
         }
       : {},
 }));
+// Explicit fictional volume provenance; no database or real trading data.
+for (const story of stories.slice(0, 2)) {
+  story.marketContext = {
+    storyId: story.id, symbol: story.companies[0].symbol, publishedAt: story.publishedAt,
+    scope: "session_context", sessionDate: new Date(base).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" }),
+    asOf: base + 30 * 60_000, rvolAtTime: 3.4, dailyRvol: 1.8,
+    baselineSessionCount: story.id === "fixture-0" ? 20 : 5,
+    baselineMature: story.id === "fixture-0", turnover: 10_000_000,
+  };
+}
 const directory = [
   ...companies.map(company => ({ ...company, currency: "SEK", quoteTime: base })),
   ...Array.from({ length: 30 }, (_, index) => ({
@@ -300,7 +311,7 @@ const server = createServer(async (req, res) => {
   } else if (path.endsWith("/related")) data = { items: [stories[3]] };
   else if (path.startsWith("/api/feed/news/")) {
     const id = path.split("/").at(-1);
-    let story = stories.find((story) => story.id === id);
+    let story = stories.find((story) => story.id === id) ?? previewStories().find(story => story.id === id);
     if (id === "missing-data")
       story = {
         ...stories[0],
@@ -333,6 +344,11 @@ const server = createServer(async (req, res) => {
     const published = Date.parse(story.publishedAt);
     data = {
       story,
+      volumeComparison: id === "fixture-0" ? {
+        status: "ready", beforeShares: 30000, afterShares: 90000, ratio: 3,
+        beforeStart: published - 30 * 60_000, beforeEnd: published,
+        afterStart: published + 60_000, afterEnd: published + 31 * 60_000,
+      } : { status: "unavailable", reason: "incomplete_minute_coverage" },
       document: {
         preamble: "Fiktiv källtext för verifiering.",
         body: "Detta är en fiktiv rapport för lokala tester.\n\nSamtliga värden och bolagsnamn i denna miljö är exempeldata.",

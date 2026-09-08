@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { loadStory } from "../../../utils/storyServer";
 import { normalizeStory, finiteNumber } from "../../../utils/newsroom";
 import { reactionGeometry } from "../../../utils/reactionGeometry";
+import { rowReaction, reactionSeriesFor } from "../../../utils/reactionV2";
 import { tagLabel } from "../../../utils/newsTags";
 import { loadOgFonts } from "../../../og/_shared/fonts";
 import { OgBrand, OgCanvas, OgChangeBadge } from "../../../og/_shared/elements";
@@ -30,13 +31,14 @@ export async function GET(request, { params }) {
     ["d1Pct", "1 dag efter publicering"],
     ["m15Pct", "15 min efter publicering"],
   ].find(([key]) => finiteNumber(story.reaction?.[key]) !== null);
-  const pct = finiteNumber(
+  const observation = rowReaction(story);
+  const pct = observation.version === 2 ? observation.pct : finiteNumber(
     fixed ? story.reaction[fixed[0]] : story.reaction?.pct,
   );
-  const label = fixed?.[1] || "Sedan publicering · ögonblicksbild";
+  const label = observation.version === 2 ? observation.label : fixed?.[1] || "Sedan publicering · ögonblicksbild";
   const geometry = reactionGeometry(
-    result.detail.reactionSeries,
-    story.ts,
+    observation.version === 2 ? reactionSeriesFor(observation.measurement, observation.period) : result.detail.reactionSeries,
+    observation.version === 2 ? observation.measurement?.anchorAt : story.ts,
     520,
     120,
   );
