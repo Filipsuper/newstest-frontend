@@ -11,6 +11,39 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Dashboard loaders and news update counts — released
+
+Frontend `0d78fb2` deployed on 8 September 2026 after approval.
+
+- Live buffering begins after the initial snapshot resolves, including when
+  filters change. Counts follow the rendered, deduplicated events and visible
+  content within the active filter/preview limit. Internal version, price and
+  ranking changes do not announce new news; headline-only selections ignore
+  AI-only enrichment. Replayed event copies do not reappear in the queue.
+- Shared news-row skeletons replace solid blocks in the live feed and watch
+  preview, retaining tonal surfaces, headline/metadata shapes and 8px gaps.
+  Feed/personal requests have a 15-second timeout; failures offer recovery.
+  Public overview and letter refreshes are bounded as well.
+- Verified exact application source with an isolated production build, 45
+  unit tests and 36 focused Chromium tests. These cover slow loads in both
+  themes, real request timeout, duplicate replay, actual new stories, AI
+  enrichment, filters, pause, older pages, reader navigation and mobile reflow.
+
+Production build and homepage/company/API health checks passed. Fresh anonymous
+browser checks at 1440px light and 320px dark confirm the live `/marknaden`, new
+watch skeletons, 8px gaps, successful loading completion and no page overflow
+or runtime errors. Only the browser's genuine anonymous account response was
+delayed to inspect loading; no fake membership, protected-feed access, account
+mutation or email send. Live screenshots inspected. Paid queue scenarios were
+validated with fictional local fixtures, not a production signed-in account.
+
+Frontend image `7618f1a6824c`, started `2026-09-08T10:49:57Z`, zero restarts;
+rollback `a534b8a54b97` retained. Backend `190981d060c9` and Terminal
+`3d06a2667e10` retained their pre-deployment image/start times and zero restarts.
+Newsletter service was not redeployed or restarted. Post-release available
+memory ~353 MB, free swap ~2.1 GB and free disk ~4.0 GB. Existing dependency
+findings remain in the maintenance backlog.
+
 ## Terminal preview screenshot — released
 
 Frontend `4bf3590` deployed on 8 September 2026 after approval.

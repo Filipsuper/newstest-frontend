@@ -30,6 +30,9 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   feed/search, buffered updates and a shared, source-linked news reader.
 - Compact featured headlines with AI detail in the reader; mobile/tablet
   filters wrap without hidden options and watchlist columns fit the viewport.
+- Shared news-row loaders, bounded requests and retryable errors. Update counts
+  reflect visible, deduplicated content after the initial snapshot, not internal
+  version/price changes, hidden candidates or AI-only changes in headline rows.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
 - Dedicated news/company share images use Geist, matching percentage badges
@@ -47,19 +50,9 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `4bf3590`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `0d78fb2`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
-
-## Implemented, not yet released
-
-- Dashboard loading and update counts: shared, spaced news-row skeletons for
-  the live feed and watch preview; bounded requests with retryable failures.
-  Live buffering starts after the initial snapshot. Counts reflect visible,
-  deduplicated content changes in each selection, not internal version/price
-  updates, off-screen candidates or AI-only changes to headline-only rows.
-  Verified with a production build, 45 unit tests and 36 focused browser checks,
-  including slow loads in both themes, actual request timeout and mobile reflow.
 
 ## Now
 
