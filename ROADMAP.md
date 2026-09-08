@@ -50,7 +50,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `0d78fb2`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `72a6aa1`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
@@ -58,37 +58,17 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ### 1. Improve news quality
 
-- Implemented locally, **not released (frontend + backend)**: single-company
-  session RVOL context and a separate complete-window before/after volume
-  comparison in the news reader. Provisional/missing data remain explicit;
-  no double-counting of daily and time-adjusted RVOL. Recent detail caches
-  refresh within a minute and Marknaden observations can update without a
-  false new-news banner or automatic row reshuffle.
-- Implemented locally, **not released or enabled (market-data backend)**:
-  [Reaction v2 shadow foundation](docs/reaction-v2.md). Immutable per-story-version/
-  company events, news/AI-update capture, timestamped minute-bar revisions,
-  session-aware price windows, complete-window relative volume, durable retries
-  and exact input replay. Existing public reactions and ranking remain unchanged;
-  opt-in collection/retention has not been activated.
-- Implemented locally, **not released (frontend + news backend)**: optional
-  authorized/whitelisted Reaction v2 read model, compact news-row period labels,
-  shared reader/chart/OG latest-measurement selection, one-click company controls,
-  news-first reader with one aligned row of price/volume KPIs and expandable
-  measurement history/provenance. No period dropdowns or repeated metadata in
-  the main view. Includes gated fictional
-  `/designsystem/reactions` examples for local review. The API flag defaults off;
-  no production worker, ranking migration or collection/retention activation.
-- Implemented, **not deployed or enabled (all three repositories)**: v2.2 charts
-  cover both closing windows while retaining exact v2.1 replay. Personal feeds
-  preserve story versions and all company measurements. Reader/live-feed facts
-  refresh without false news counts or automatic row reshuffles; reaction
-  filtering uses the same measurement as its badge. Exact period/identity and
-  volume-ratio validation reject inconsistent data. Scoped unit, persistence,
-  browser and cross-layer contract checks pass; live qualification remains below.
-- [ ] **Reaction v2 qualification and rollout:** run an approved shadow cohort,
-  audit data coverage/lag/storage and replay, add corporate-action and matching
-  checks, reconcile company charts and personalized-feed coverage, then approve
-  activation of the API/reader/cards and separately qualify ranking inputs.
+- **Live beta since 8 September:** [Reaction v2.2](docs/reaction-v2.md) worker and
+  public read flag enabled after approval. News-first aligned price/volume KPIs,
+  matching reader/chart/OG periods, personal multi-company preservation, exact
+  replay and observation refresh without false news counts are deployed.
+  Uses existing minute data only; extra collection, tick archiving and ranking
+  migration remain off. Initial real current-version reader/replay checks pass;
+  the broader processing queue is still warming up. See the release history.
+- [ ] **Reaction v2 live qualification:** measure coverage, capture/queue lag,
+  storage growth and missing/stale-period reasons over the first trading sessions.
+  Add corporate-action and matching checks, reconcile independent company charts
+  and verify personalized-feed coverage. Separately qualify ranking inputs.
   Expand ingestion-time feature archives
   before describing the dataset as execution-backtest-ready. See the
   [original reaction/volume audit](docs/news-reaction-volume-2026-09-08.md).

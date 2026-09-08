@@ -11,6 +11,61 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Reaction v2.2 — public live beta
+
+Frontend `72a6aa1`, news backend `2c89137` and isolated worker code `f60fd4b`
+deployed on 8 September 2026 after explicit approval to try v2 live. This is
+an initial beta, not full data-coverage qualification or backtest readiness.
+
+- The reader is news-first with three aligned price/volume KPIs, automatic
+  measurement selection and shared company controls. Rows, readers and news
+  share images use matching periods and chart inputs through both closing
+  windows. V2.1 calculations remain available for exact archived replay.
+- Personal-feed shaping preserves story version and all companies. Visible
+  observations refresh without false news banners or automatic reshuffling.
+  Strict identity, price-window and volume arithmetic checks fail closed.
+- API read flag enabled via `/root/newsweb/compose.override.yaml`. The worker
+  uses existing minute data only: no extra provider collection, tick archiving,
+  source TTL changes or editorial/Terminal ranking migration. Its new v2 archive
+  has no automatic TTL; monitor growth and processing lag.
+- The worker runs from `/root/omxsum-reactions-v2/releases/f60fd4b` with a systemd
+  override: 25% CPU quota, 256 MiB memory cap, five jobs/50 messages per cycle.
+  The unrelated dirty production market-data checkout is untouched; its status
+  fingerprint and existing collector start times were unchanged after release.
+
+Pre-deployment verification: scoped production build, 66 frontend unit tests,
+51 news-backend tests, 75 calculation/persistence tests on both the test double
+and disposable real MongoDB, three existing minute-source tests and 40 browser
+checks. A fictional three-layer engine/API/frontend contract also passed.
+
+Production build succeeded using the established CPU/memory-capped fallback
+because local Docker did not respond. Home, Marknaden, company and company API
+return HTTP 200; the fictional preview returns 404. Anonymous full-feed access
+still returns `No token provided` (existing middleware uses HTTP 200 for this).
+No accounts, sessions, checkout, subscriptions or email delivery were changed.
+
+Initial real results replayed exactly. Three current source versions were warmed
+through the same v2 code: SynAct, Saniona and Gapwaves. Public versions, selected
+percentages and chart endpoints agree, including next-session close, session close
+and +15m where later samples are stale. Their public readers render the v2 KPIs.
+Two live news share images return valid 1200×630 PNGs. The public overview now
+includes v2 measurements and correctly omits unused chart arrays from its list.
+The wider last-24-hour processing queue is still warming up; these samples are
+not an estimate of market-wide coverage.
+
+Frontend image `42538e6e7c8c`, started `2026-09-08T21:35:36Z`; backend image
+`1503217c6735`, restarted with the flag at `2026-09-08T21:37:18Z`; both had zero
+automatic restarts. Worker active since `21:33:45Z`, about 52 MiB memory and zero
+restarts/processing errors at the initial checks. Terminal image `3d06a2667e10`
+and its start time remain unchanged. Newsletter service was not restarted.
+
+Rollback images retained: frontend `7618f1a6824c`, backend `190981d060c9`.
+To disable v2, set the override flag false, recreate only the backend and reload
+nginx; stop the new worker to stop archive writes. Preserve archived data and
+existing collectors. At 21:41 UTC: load ~0.5, ~926 MB available memory, ~2.4 GB
+free swap and ~3.8 GB free disk. Existing four high-severity dependency findings
+remain in the maintenance backlog; no dependency upgrade was included.
+
 ## Dashboard loaders and news update counts — released
 
 Frontend `0d78fb2` deployed on 8 September 2026 after approval.

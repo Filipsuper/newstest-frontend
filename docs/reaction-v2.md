@@ -1,10 +1,11 @@
 # Reaction v2 implementation status
 
-8 September 2026. Backend foundation and public-site integration, including the
-v2.2 closing-chart and personal-feed fixes, are implemented,
-**not deployed or enabled in production**. The news API's
-optional v2 read model defaults off. Ranking weights and Terminal behavior are
-unchanged; no worker or new collection/retention policy has been activated.
+8 September 2026. **Public live beta deployed and enabled after approval**:
+frontend `72a6aa1`, news backend `2c89137`, isolated v2.2 worker code `f60fd4b`.
+The API flag defaults off in code and is explicitly enabled in production.
+The worker reads existing minute data and writes only the new v2 archive;
+extra provider collection and tick archiving remain off. Ranking, existing
+collectors, Terminal and newsletter services are unchanged.
 
 The implementation is in `stonks/stonks/reactions/`, with the opt-in CLI
 `stonks/scripts/reactions_v2.py`. The full measurement contract, collections,
@@ -34,7 +35,8 @@ that repository's `docs/reaction-v2.md`.
   and separate opt-ins for minute collection and durable observed-tick capture.
 
 All writes are confined to `reaction_v2_*` collections when explicitly enabled.
-The checked-in service is not installed. Existing source retention is unchanged.
+The service template is installed with an isolated release path and CPU/memory
+limits. Existing source retention is unchanged; new v2 archive growth needs monitoring.
 Implementation tests use only fictional data and isolated test databases.
 
 Verified locally: 75 Reaction v2 tests passed against both the isolated test double
@@ -49,10 +51,10 @@ overlapping news and company matching still need qualification. Original source
 receipt times cannot be invented for backfilled bars. Rejected source documents
 and every raw revision/AI feature are not yet archived at ingestion time.
 
-First run an approved shadow pilot and audit coverage, lag, storage, retries and
-replay. Then reconcile independent company charts with the same inputs and qualify
-the integrated personal feed against live coverage. Approve activation of the optional API/UI read model separately
-from any migration of ranking inputs. Do not mix a v2 percentage with a legacy
+The approved public beta is now running. Audit coverage, lag, storage, retries and
+replay over the first sessions. Reconcile independent company charts with the same
+inputs and qualify the integrated personal feed against live coverage. Any migration
+of ranking inputs remains a separate decision. Do not mix a v2 percentage with a legacy
 chart or silently add new volume ratios to editorial ranking.
 
 Daily/session RVOL remains separate from the post-news-window ratio. Historical
@@ -181,6 +183,27 @@ A real calculation over fictional minute bars was passed through Python engine �
 public API adapter → frontend helpers, verifying hourly and both closing endpoints,
 overnight gaps and exclusion of private archive fields.
 
-This is code readiness for an approved shadow pilot, not evidence of production
-coverage or backtest readiness. No production deployment, feature flag, worker,
-provider collection, retention change or backfill was performed.
+Those pre-deployment checks established code readiness, not production coverage
+or backtest readiness. The subsequently approved live beta is recorded below.
+
+### Live beta release — 8 September
+
+- The worker runs from `/root/omxsum-reactions-v2/releases/f60fd4b`, using the
+  existing Python environment and connection configuration. The unrelated dirty
+  `/root/stonks` checkout is untouched. Systemd limits the worker to 25% of one CPU
+  and 256 MiB memory, with five jobs and 50 source messages per 30-second cycle.
+- `REACTION_V2_UI_ENABLED=true` is set in `/root/newsweb/compose.override.yaml`.
+  Extra collection/tick flags are absent. New v2 archives have no automatic TTL;
+  existing source retention, authentication and editorial ranking are unchanged.
+- Initial capture starts with the existing last-24-hour emitted-news window.
+  Three current source versions were additionally warmed through the same code
+  for the release check. All three replay exactly; their public API versions,
+  KPI percentages and chart endpoints agree, and the deployed readers render v2.
+  Broader queue warm-up and live-data qualification are still in progress.
+- Public home, Marknaden, company and company API checks pass. The fictional
+  preview returns 404. Anonymous full-feed access still returns the existing
+  `No token provided` error (the existing middleware uses HTTP 200 for this).
+- To disable the public integration, set the override flag false and recreate
+  only the backend, then reload nginx. Stop `stonks-reactions-v2` to stop archive
+  writes; do not delete the archive or modify existing collectors. Previous
+  frontend/backend images remain tagged for rollback. See `release-history.md`.
