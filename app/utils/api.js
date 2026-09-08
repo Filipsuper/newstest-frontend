@@ -93,8 +93,12 @@ export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, limi
     try {
         const res = await fetch(`${API_URL}/feed/news?${params}`, {
             credentials: "include",
+            cache: "no-store",
+            signal: AbortSignal.timeout(15_000),
         });
-        return res.json();
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Nyheterna kunde inte hämtas.");
+        return body;
     } catch (error) {
         console.error('Error fetching data:', error);
         throw error;
@@ -369,9 +373,10 @@ export async function fetchPersonalFeed({ limit = 40 } = {}) {
         const params = new URLSearchParams({ limit: String(limit) });
         const res = await fetch(`${API_URL}/user/personal-feed?${params}`, {
             credentials: "include",
+            signal: AbortSignal.timeout(15_000),
         });
         if (!res.ok) return null;
-        return res.json();
+        return await res.json();
     } catch (error) {
         console.error("Error fetching data:", error);
         return null;

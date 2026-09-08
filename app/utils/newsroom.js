@@ -1,6 +1,7 @@
 import { storyToItem } from "./storyToItem.js";
 import {
   curateMarketNews,
+  eventClusterKey,
   normalizedSymbol,
   uniqueNews,
 } from "./marketNewsRanking.js";
@@ -124,13 +125,23 @@ export function mergeFeed(items, incoming) {
   }
   return chronologicalNews([...byId.values()]);
 }
-export const pendingChanges = (current, incoming) =>
-  incoming.filter((item) => {
-    const old = current.find((row) => row.id === item.id);
-    if (!old || (item.version ?? 1) > (old.version ?? 1)) return true;
-    // AI enrichment is published after the wire story without bumping its
-    // version. Queue new copy explicitly; price-only updates still stay quiet.
-    const summary = newsSummary(item.aiSummary);
-    return (item.version ?? 1) === (old.version ?? 1) && summary !== null
-      && JSON.stringify(summary) !== JSON.stringify(newsSummary(old.aiSummary));
+// Match what a news row actually presents, not ingestion versions, ranking
+// scores, deterministic descriptions or continuously changing quote data.
+const rowContent = (item, { showSummary = true } = {}) => JSON.stringify([
+  item.title ?? "", item.company ?? item.symbol ?? "", item.symbol ?? "",
+  item.ts ?? null, item.source ?? "", item.sourceCount ?? 0,
+  (item.labels ?? []).find((tag) => tag !== "REGULATORY") ?? item.labels?.[0] ?? "",
+  showSummary ? newsSummary(item.aiSummary) : null,
+]);
+
+export function changedFeedItems(current, next, options) {
+  const byId = new Map(current.map((item) => [item.id, item]));
+  const byEvent = new Map(current.map((item) => [eventClusterKey(item), item]));
+  return next.filter((item) => {
+    const old = byId.get(item.id) ?? byEvent.get(eventClusterKey(item));
+    return !old || rowContent(old, options) !== rowContent(item, options);
   });
+}
+
+export const pendingChanges = (current, incoming, options) =>
+  changedFeedItems(current, mergeFeed(current, incoming), options);

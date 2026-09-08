@@ -7,7 +7,7 @@ import { fetchPersonalFeed } from "../utils/api";
 import { preferenceReason, storyHref } from "../utils/newsroom";
 import { Heading, Inline, Text } from "./ui/layout";
 import { Button } from "./ui/Button";
-import { Skeleton } from "./ui/data";
+import NewsListSkeleton from "./ui/NewsListSkeleton";
 import styles from "./workspace.module.css";
 
 export default function WatchPreview() {
@@ -56,7 +56,7 @@ export default function WatchPreview() {
         </Link>
       </Inline>
       {!user || loading ? (
-        <Skeleton />
+        <NewsListSkeleton count={2} compact label="Hämtar dina bevakningar" />
       ) : isGuestUser || !hasPreferences ? (
         <>
           <Text size="sm" tone="secondary">

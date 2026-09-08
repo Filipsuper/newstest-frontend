@@ -51,6 +51,16 @@ Latest frontend application release: `4bf3590`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
+## Implemented, not yet released
+
+- Dashboard loading and update counts: shared, spaced news-row skeletons for
+  the live feed and watch preview; bounded requests with retryable failures.
+  Live buffering starts after the initial snapshot. Counts reflect visible,
+  deduplicated content changes in each selection, not internal version/price
+  updates, off-screen candidates or AI-only changes to headline-only rows.
+  Verified with a production build, 45 unit tests and 36 focused browser checks,
+  including slow loads in both themes, actual request timeout and mobile reflow.
+
 ## Now
 
 ### 1. Improve news quality

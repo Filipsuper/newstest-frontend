@@ -1,0 +1,33 @@
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  padding-block: var(--ui-space-1);
+}
+.rows .line {
+  min-height: 0;
+  height: var(--ui-text-sm);
+  border-radius: var(--ui-radius-sm);
+}
+.rows .badge {
+  min-height: 0;
+  width: 3.5rem;
+  height: var(--ui-space-6);
+  border-radius: var(--ui-radius-sm);
+}
+.title { width: 88%; }
+.continuation { width: 64%; }
+.metadata {
+  display: flex;
+  gap: var(--ui-space-3);
+  margin-top: var(--ui-space-1);
+}
+.metadata .line { height: var(--ui-text-xs); }
+.time { width: 20%; max-width: 5rem; }
+.source { width: 28%; max-width: 7rem; }

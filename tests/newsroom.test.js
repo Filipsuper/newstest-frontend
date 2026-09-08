@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   featuredNews,
+  changedFeedItems,
   mergeFeed,
   pendingChanges,
   normalizeStory,
@@ -83,11 +84,38 @@ test("feed keeps older history, collapses event copies, and rejects older versio
     "Uppdaterad rubrik",
   );
   assert.equal(
-    pendingChanges([existing], [item({ version: 2, reaction: { pct: 4 } })])
+    pendingChanges([existing], [{ ...existing, reaction: { pct: 4 } }])
       .length,
     0,
   );
-  assert.equal(pendingChanges([existing], [item({ version: 3 })]).length, 1);
+  assert.equal(pendingChanges([existing], [item({ version: 3, title: "Ny prognos" })]).length, 1);
+});
+test("pending counts reflect rendered events, not replays, versions or duplicate wire IDs", () => {
+  const existing = item({ eventId: "event-1", version: 2, language: "sv", sourceCount: 1, sourceNames: ["MFN"] });
+  for (const incoming of [
+    { ...existing, version: 3, reaction: { pct: 8 } },
+    { ...existing, version: 3, summary: "Ny intern beskrivning", importance: 92 },
+    { ...existing, id: "wire-copy", language: "en", title: "Another language" },
+    { ...existing, status: "withdrawn" },
+  ]) assert.equal(pendingChanges([existing], [incoming]).length, 0);
+  const next = item({ id: "new", eventId: "new-event", title: "Ett nytt avtal" });
+  assert.equal(pendingChanges([existing], [next, { ...next, id: "new-copy" }]).length, 1);
+  const accepted = mergeFeed([existing], [next]);
+  assert.equal(pendingChanges(accepted, [next, { ...next, id: "new-copy" }]).length, 0);
+});
+test("the same fact-based deduplication is used for rows and update counts", () => {
+  const existing = item({ facts: { contractValue: 100 }, symbol: "TEST.ST" });
+  const duplicate = { ...existing, id: "another-wire", eventId: "another-event" };
+  assert.equal(pendingChanges([existing], [duplicate]).length, 0);
+  assert.equal(pendingChanges([existing], [{ ...duplicate, facts: { contractValue: 200 } }]).length, 1);
+});
+test("headline-only selection ignores AI detail and counts only visible candidate changes", () => {
+  const existing = item({ aiSummary: null });
+  const enriched = { ...existing, aiSummary: { text: "AI-text" } };
+  assert.equal(pendingChanges([existing], [enriched], { showSummary: false }).length, 0);
+  const current = [existing, item({ id: "older", ts: now - 3 * 3600_000 })];
+  const next = mergeFeed(current, [item({ id: "oldest", ts: now - 6 * 3600_000 })]);
+  assert.equal(changedFeedItems(current.slice(0, 2), next.slice(0, 2)).length, 0);
 });
 test("evening letter switches only after 17:30 Stockholm and only to today's edition", () => {
   const morning = { title: "Morgon", createdAt: "2026-09-04T05:00:00Z" };

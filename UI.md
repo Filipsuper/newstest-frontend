@@ -199,6 +199,11 @@ desktop density or abbreviated interaction model.
 - Show publication time, quote time and connection state separately. A quote
   timestamp at close does not mean the news feed stopped updating.
 - Live lists buffer new versions behind an explicit action and offer pause.
+  Count only rendered event/content changes after deduplication and the active
+  filter/preview limit; version, quote and ranking updates alone are not new
+  news. Start buffering after the initial snapshot loads, never over skeletons.
+  News loaders reuse row surfaces, gaps and headline/metadata placeholders;
+  bounded requests end in a retryable error, not endless solid blocks.
   Keep reading position stable. URL-backed filters survive sharing/reload.
   Only show older-page navigation when the source supplies a real cursor.
 - Story links use canonical `/nyhet/[id]` URLs. Normal client navigation opens

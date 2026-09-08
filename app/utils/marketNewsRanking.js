@@ -94,7 +94,7 @@ const hasSpecificFacts = (facts) => {
     });
 };
 
-const eventClusterKey = (item) => {
+export const eventClusterKey = (item) => {
     const companies = storySymbols(item).sort().join(",") || "market";
     if (hasSpecificFacts(item.facts)) {
         return `facts:${companies}:${item.eventType ?? "event"}:${JSON.stringify(stableValue(item.facts))}`;

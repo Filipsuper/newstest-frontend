@@ -5,6 +5,7 @@ import { FiArrowDown, FiArrowRight, FiPause, FiPlay } from "react-icons/fi";
 import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
 import {
+  changedFeedItems,
   chronologicalNews,
   featuredNews,
   finiteNumber,
@@ -143,7 +144,9 @@ export default function MarketOverviewPage({
       if (!active || busy || document.visibilityState === "hidden") return;
       busy = true;
       try {
-        const next = await fetchMarketOverview();
+        const next = await fetchMarketOverview({
+          signal: AbortSignal.timeout(15_000),
+        });
         if (!active) return;
         setData(next);
         setNow(Date.now());
@@ -154,10 +157,12 @@ export default function MarketOverviewPage({
         );
         const incoming = itemsFrom(next);
         if (!visibleItems.length) setVisibleItems(incoming);
-        else if (pendingChanges(visibleItems, incoming).length)
-          setPending(incoming);
+        else
+          setPending(pendingChanges(visibleItems, incoming).length ? incoming : null);
         if (count++ % 4 === 0) {
-          const letters = await fetchAllArticles();
+          const letters = await fetchAllArticles({
+            signal: AbortSignal.timeout(15_000),
+          });
           if (active && Array.isArray(letters)) setEditions(letters);
         }
       } catch {
@@ -185,8 +190,18 @@ export default function MarketOverviewPage({
   const edition = currentLetter(editions, now);
   const latest = visibleItems[0];
   const pendingCount = pending
-    ? pendingChanges(visibleItems, pending).length
+    ? changedFeedItems(featured, featuredNews(pending, now), {
+        showSummary: false,
+      }).length
     : 0;
+  const latestPendingCount = pending && !isPlusUser
+    ? changedFeedItems(visibleItems.slice(0, 12), pending.slice(0, 12)).length
+    : 0;
+  function applyPending() {
+    if (!pending) return;
+    setVisibleItems(pending);
+    setPending(null);
+  }
   return (
     <Container as="main" className={styles.workspace}>
       <MarketWorkspaceNav foundation />
@@ -258,10 +273,7 @@ export default function MarketOverviewPage({
           {pendingCount > 0 && (
             <Button
               variant="secondary"
-              onClick={() => {
-                setVisibleItems(pending);
-                setPending(null);
-              }}
+              onClick={applyPending}
             >
               {pendingCount} nya eller uppdaterade nyheter
             </Button>
@@ -299,6 +311,11 @@ export default function MarketOverviewPage({
               <Text size="xs" tone="secondary">
                 Senaste i det publika urvalet · hela nyhetsflödet ingår i Plus
               </Text>
+              {latestPendingCount > 0 && (
+                <Button variant="secondary" onClick={applyPending}>
+                  {latestPendingCount} nya eller uppdaterade nyheter
+                </Button>
+              )}
               <div className={styles.news}>
                 {visibleItems.slice(0, 12).map((item) => (
                   <NewsFeedItem key={item.id} item={item} />

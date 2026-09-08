@@ -1,15 +1,21 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FiPause, FiPlay, FiSearch, FiX } from "react-icons/fi";
 import { fetchLiveFeed } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
-import { finiteNumber, mergeFeed, pendingChanges } from "../utils/newsroom";
+import {
+  changedFeedItems,
+  finiteNumber,
+  mergeFeed,
+  pendingChanges,
+} from "../utils/newsroom";
 import { useAuthContext } from "../providers/AuthProvider";
 import { Button, IconButton } from "./ui/Button";
 import { TextField } from "./ui/TextField";
 import { SegmentedControl } from "./ui/SegmentedControl";
-import { EmptyState, Skeleton } from "./ui/data";
+import { EmptyState } from "./ui/data";
+import NewsListSkeleton from "./ui/NewsListSkeleton";
 import { Inline, Text } from "./ui/layout";
 import NewsFeedItem from "./NewsFeedItem";
 import styles from "./market-news.module.css";
@@ -63,9 +69,12 @@ export default function LiveNewsFeed({
   const [retry, setRetry] = useState(0);
   const [cursor, setCursor] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadedFor, setLoadedFor] = useState(null);
   const generation = useRef(0);
   const current = useRef([]);
   const isPaused = paused || parentPaused;
+  const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser]);
+  const ready = items !== null && loadedFor === requestKey;
 
   function navigate(next) {
     const search = new URLSearchParams(window.location.search);
@@ -95,11 +104,13 @@ export default function LiveNewsFeed({
         const rows = mergeFeed([], data.items.map(storyToItem));
         current.current = rows;
         setItems(rows);
+        setLoadedFor(requestKey);
         setPending((previous) => pendingChanges(rows, previous));
         setCursor(data.nextCursor || null);
       })
-      .catch((error) => {
-        if (version === generation.current) setError(error.message);
+      .catch(() => {
+        if (version === generation.current)
+          setError("Nyheterna kunde inte hämtas. Försök igen.");
       });
     return () => {
       generation.current++;
@@ -107,8 +118,10 @@ export default function LiveNewsFeed({
   }, [activeQuery, category, retry, isPlusUser]);
 
   useEffect(() => {
-    if (!isPlusUser || activeQuery || isPaused) {
-      setStatus(isPaused ? "Pausat" : "Sökresultat");
+    if (!isPlusUser || !ready || activeQuery || isPaused) {
+      setStatus(
+        !ready ? "Hämtar nyheter" : isPaused ? "Pausat" : "Sökresultat",
+      );
       return;
     }
     let source,
@@ -132,21 +145,19 @@ export default function LiveNewsFeed({
         );
       }
       // Price-only updates stay out of the reading queue. New versions remain explicit.
-      const changes = pendingChanges(
-        current.current,
-        incoming.filter(
-          (item) =>
-            !withdrawn.has(item.id) &&
-            (category === "all" ||
-              item.labels?.some((tag) =>
-                FILTERS.find(
-                  (filter) => filter.id === category,
-                )?.tags?.includes(tag),
-              )),
-        ),
+      const eligible = incoming.filter(
+        (item) =>
+          !withdrawn.has(item.id) &&
+          (category === "all" ||
+            item.labels?.some((tag) =>
+              FILTERS.find((filter) => filter.id === category)?.tags?.includes(tag),
+            )),
       );
-      if (changes.length)
-        setPending((previous) => mergeFeed(previous, changes));
+      // Deduplicate before counting; also clear queued copy that has reverted
+      // to the displayed version. A replay must not resurrect the same banner.
+      setPending((previous) =>
+        pendingChanges(current.current, mergeFeed(previous, eligible)),
+      );
     }
     function connect() {
       source?.close();
@@ -156,16 +167,24 @@ export default function LiveNewsFeed({
         `${process.env.NEXT_PUBLIC_API_URL}/feed/stream`,
         { withCredentials: true },
       );
+      const connection = source;
       source.onopen = () => {
+        if (!active || source !== connection) return;
         setStatus("Ansluten");
         // Catch up on reconnect; the stream alone cannot replay a missed interval.
         fetchLiveFeed({ category, limit: 100 })
           .then((data) => {
-            if (Array.isArray(data?.items)) accept(data.items.map(storyToItem));
+            if (
+              active && source === connection &&
+              document.visibilityState !== "hidden" && Array.isArray(data?.items)
+            )
+              accept(data.items.map(storyToItem));
           })
           .catch(() => {});
       };
       source.addEventListener("story", (event) => {
+        if (!active || source !== connection || document.visibilityState === "hidden")
+          return;
         try {
           accept([storyToItem(JSON.parse(event.data))]);
         } catch {
@@ -173,7 +192,7 @@ export default function LiveNewsFeed({
         }
       });
       source.onerror = () => {
-        if (active) setStatus("Återansluter");
+        if (active && source === connection) setStatus("Återansluter");
       };
     }
     connect();
@@ -183,7 +202,7 @@ export default function LiveNewsFeed({
       source?.close();
       document.removeEventListener("visibilitychange", connect);
     };
-  }, [isPlusUser, activeQuery, category, isPaused, retry]);
+  }, [isPlusUser, ready, activeQuery, category, isPaused, retry]);
 
   async function loadOlder() {
     if (!cursor || loadingMore) return;
@@ -203,6 +222,7 @@ export default function LiveNewsFeed({
       const merged = mergeFeed(current.current, data.items.map(storyToItem));
       current.current = merged;
       setItems(merged);
+      setPending((previous) => pendingChanges(merged, previous));
       setCursor(
         data.nextCursor && data.nextCursor !== cursor ? data.nextCursor : null,
       );
@@ -212,20 +232,25 @@ export default function LiveNewsFeed({
       if (version === generation.current) setLoadingMore(false);
     }
   }
-  const shown = useMemo(() => {
+  const selectRows = (rows) => {
     const filter = FILTERS.find((filter) => filter.id === category);
-    const filtered = (items ?? []).filter(
+    const filtered = rows.filter(
       (item) =>
         (!filter.tags ||
           item.labels?.some((tag) => filter.tags.includes(tag))) &&
         (!reactions || finiteNumber(item.reaction?.pct) !== null),
     );
-    return reactions
+    const sorted = reactions
       ? [...filtered].sort(
           (a, b) => Math.abs(b.reaction.pct) - Math.abs(a.reaction.pct),
         )
       : filtered;
-  }, [items, category, reactions]);
+    return compact ? sorted.slice(0, 12) : sorted;
+  };
+  const shown = selectRows(ready ? items : []);
+  const pendingCount = ready
+    ? changedFeedItems(shown, selectRows(mergeFeed(items, pending))).length
+    : 0;
 
   return (
     <section className={styles.feed} aria-label="Nyhetsflöde">
@@ -288,7 +313,7 @@ export default function LiveNewsFeed({
       )}
       <Inline>
         <Text as="span" size="xs" tone="secondary" role="status">
-          {status}
+          {error && !ready ? "Inte ansluten" : status}
           {reactions
             ? " · Störst förändring sedan publicering"
             : " · Senast publicerat först"}
@@ -309,7 +334,7 @@ export default function LiveNewsFeed({
           </Button>
         )}
       </Inline>
-      {pending.length > 0 && (
+      {pendingCount > 0 && (
         <Button
           variant="secondary"
           onClick={() => {
@@ -319,7 +344,7 @@ export default function LiveNewsFeed({
             setPending([]);
           }}
         >
-          {pending.length} nya eller uppdaterade nyheter
+          {pendingCount} nya eller uppdaterade nyheter
         </Button>
       )}
       {error && (
@@ -338,12 +363,8 @@ export default function LiveNewsFeed({
           }
         />
       )}
-      {!items && !error ? (
-        <div aria-label="Hämtar nyheter" aria-busy="true">
-          {[0, 1, 2, 3].map((key) => (
-            <Skeleton key={key} />
-          ))}
-        </div>
+      {!ready && !error ? (
+        <NewsListSkeleton />
       ) : !shown.length && !error ? (
         <EmptyState
           title="Inga nyheter i urvalet"
@@ -361,7 +382,7 @@ export default function LiveNewsFeed({
         />
       ) : (
         <div className={styles.rows}>
-          {(compact ? shown.slice(0, 12) : shown).map((item) => (
+          {shown.map((item) => (
             <NewsFeedItem key={item.id} item={item} />
           ))}
         </div>

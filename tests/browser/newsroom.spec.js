@@ -165,6 +165,156 @@ test("news rows and reader show AI prose and bullets, never the wire description
   await expect(page.locator("main > article")).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
 });
 
+for (const width of [320, 1440]) {
+  test(`slow dashboard loads have spaced news skeletons and no premature queue at ${width}px`, async ({ page, request }, testInfo) => {
+    const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
+    const personal = await (await request.get("http://127.0.0.1:8100/api/user/personal-feed")).json();
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    await page.route("**/api/feed/news?**", async (route) => {
+      await gate;
+      await route.fulfill({ json: body });
+    });
+    await page.route("**/api/user/personal-feed?**", async (route) => {
+      await gate;
+      await route.fulfill({ json: personal });
+    });
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/marknaden");
+    const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
+    const loader = latest.getByRole("status", { name: "Hämtar nyheter", exact: true });
+    await expect(loader).toBeVisible();
+    await expect(page.getByRole("status", { name: "Hämtar dina bevakningar" })).toBeVisible();
+    await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+    expect(await page.evaluate(() => window.__newsStreams.length)).toBe(0);
+    expect(await loader.evaluate((element) => ({
+      gap: getComputedStyle(element).rowGap,
+      rows: element.children.length,
+      lines: [...element.querySelectorAll('[aria-hidden="true"]')].filter((line) => getComputedStyle(line).height === "14px").length,
+    }))).toEqual({ gap: "8px", rows: 4, lines: 8 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((theme) => {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(theme);
+      }, theme);
+      await page.screenshot({ path: testInfo.outputPath(`dashboard-loading-${width}-${theme}.png`), fullPage: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect((await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    }
+    release();
+    await expect(loader).toHaveCount(0);
+    await expect(latest.locator("article")).toHaveCount(12);
+    await expect(latest.getByText("Ansluten · Senast publicerat först")).toBeVisible();
+    await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  });
+}
+
+async function emitStories(page, stories) {
+  await page.evaluate(async (stories) => {
+    const source = window.__newsStreams.findLast((source) => !source.closed);
+    for (const story of stories)
+      source.dispatchEvent(new MessageEvent("story", { data: JSON.stringify(story) }));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }, stories);
+}
+
+test("dashboard ignores replayed copies, internal revisions and stories outside its preview", async ({ page, request }) => {
+  const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
+  await page.goto("/marknaden");
+  const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
+  await expect(latest.locator("article")).toHaveCount(12);
+  await expect(latest.getByText("Ansluten · Senast publicerat först")).toBeVisible();
+  const existing = body.items[1];
+  await emitStories(page, [
+    { ...existing, version: 2, importance: existing.importance + 1, reaction: { pct: 99 } },
+    { ...existing, id: "duplicate-wire", importance: 1 },
+    { ...body.items.at(-1), id: "older-wire", eventId: "older-event", publishedAt: "2026-01-01T08:00:00Z" },
+  ]);
+  await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  const incoming = { ...existing, id: "real-new", eventId: "real-new-event", headline: "En faktiskt ny händelse", publishedAt: new Date().toISOString() };
+  await emitStories(page, [incoming, { ...incoming, id: "new-wire-copy", importance: 1 }]);
+  await expect(latest.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
+  await latest.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
+  await expect(latest.locator("article").first()).toContainText(incoming.headline);
+  await emitStories(page, [incoming, { ...incoming, id: "new-wire-copy", importance: 1 }]);
+  await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+});
+
+test("failed initial news requests leave the loader and recover through retry", async ({ page }) => {
+  let fail = true;
+  await page.route("**/api/feed/news?**", async (route) => {
+    if (fail) return route.fulfill({ status: 503, json: { error: "Temporarily unavailable", items: [] } });
+    return route.fallback();
+  });
+  await page.goto("/marknaden");
+  const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
+  await expect(latest.getByRole("alert")).toContainText("Nyheterna kunde inte hämtas");
+  await expect(latest.getByRole("status", { name: "Hämtar nyheter" })).toHaveCount(0);
+  expect(await page.evaluate(() => window.__newsStreams.length)).toBe(0);
+  fail = false;
+  await latest.getByRole("button", { name: "Försök igen" }).click();
+  await expect(latest.locator("article")).toHaveCount(12);
+  await expect(latest.getByRole("alert")).toHaveCount(0);
+  await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+});
+
+test("a stalled dashboard request times out instead of showing skeletons indefinitely", async ({ page }) => {
+  await page.route("**/api/feed/news?**", () => {});
+  await page.goto("/marknaden");
+  const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
+  await expect(latest.getByRole("status", { name: "Hämtar nyheter" })).toBeVisible();
+  await expect(latest.getByRole("alert")).toContainText("Nyheterna kunde inte hämtas", { timeout: 20000 });
+  await expect(latest.getByRole("status", { name: "Hämtar nyheter" })).toHaveCount(0);
+  await expect(latest.getByRole("button", { name: "Försök igen" })).toBeVisible();
+  await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+});
+
+test("featured headlines do not announce AI-only enrichment or hidden candidate revisions", async ({ page, request }) => {
+  const snapshot = await (await request.get("http://127.0.0.1:8100/api/feed/market-overview")).json();
+  await page.clock.install();
+  await page.goto("/marknaden");
+  const featured = page.getByRole("region", { name: "Viktigast just nu", exact: true });
+  await expect(featured.locator("article")).toHaveCount(3);
+  let response = {
+    ...snapshot,
+    news: snapshot.news.map((story, index) => ({
+      ...story,
+      aiSummary: { text: "Uppdaterad AI-text som bara visas i läsaren." },
+      ...(index === 3 ? { version: 2, headline: "Uppdaterad rubrik utanför toppurvalet" } : {}),
+    })),
+  };
+  let refreshes = 0;
+  await page.route("**/api/feed/market-overview", (route) => {
+    refreshes++;
+    return route.fulfill({ json: response });
+  });
+  await page.clock.runFor(31000);
+  await expect.poll(() => refreshes).toBe(1);
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  response = { ...response, news: response.news.map((story, index) => index === 0
+    ? { ...story, version: 2, headline: "Bolaget meddelar en ny helårsprognos" } : story) };
+  await page.clock.runFor(30000);
+  await expect(featured.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
+  await featured.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
+  await expect(featured.locator("article").first()).toContainText("Bolaget meddelar en ny helårsprognos");
+  await page.clock.runFor(31000);
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+});
+
+test("reaction filter only announces changes that can be seen in that view", async ({ page, request }) => {
+  const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
+  await page.goto("/marknaden/nyheter?view=reactions");
+  await expect(page.locator("article")).toHaveCount(12);
+  await expect(page.getByText("Ansluten · Störst förändring sedan publicering")).toBeVisible();
+  const incoming = { ...body.items[1], id: "no-reaction", eventId: "no-reaction-event", reaction: null, headline: "Nyhet utan uppmätt reaktion" };
+  await emitStories(page, [incoming]);
+  await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Senaste", exact: true }).click();
+  await page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
+  await expect(page.locator("article").filter({ hasText: incoming.headline })).toBeVisible();
+});
+
 test("AI enrichment with the same story version waits for explicit feed acceptance", async ({ page, request }) => {
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   const enriched = { ...body.items[2], aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
