@@ -3,12 +3,13 @@ const allowed = story => new Set([story?.symbol, ...(story?.companies ?? []).map
 
 // Scope validation is shared by the reader and OG. Absolute stock prices are
 // display context, not the percentage or baseline of an archived news outcome.
+// Only server read metadata gets clock-skew tolerance; actual prices stay <= now.
 export function storyStockChartFor(story, symbol, chart, now = Date.now()) {
   const published = time(story?.ts ?? story?.publishedAt);
   if (!allowed(story).has(symbol) || chart?.schemaVersion !== 1 || chart.scope !== "stock_price"
     || chart.storyId !== story.id || chart.storyVersion !== (story.version ?? 1)
     || chart.symbol !== symbol || !Number.isFinite(published) || time(chart.publishedAt) !== published
-    || !Number.isFinite(time(chart.asOf)) || time(chart.asOf) > now
+    || !Number.isFinite(time(chart.asOf)) || time(chart.asOf) > now + 60_000
     || !["available", "pending", "unavailable"].includes(chart.status)) return null;
   if (chart.status !== "available") return { ...chart, points: [] };
   const open = time(chart.session?.open), close = time(chart.session?.close);

@@ -20,8 +20,9 @@ export function stockChartGeometry(chart, width = 640, height = 220, now = Date.
     || !finite(now)) return null;
   const open = time(chart.session?.open), close = time(chart.session?.close);
   const asOf = time(chart.asOf), observedAt = time(chart.observedAt);
+  // Read metadata may reflect a slightly faster server clock, never future trades.
   if (![open, close, asOf, observedAt].every(Number.isFinite) || open >= close
-    || asOf > now || observedAt > asOf || observedAt < open || observedAt > close) return null;
+    || asOf > now + 60_000 || observedAt > now || observedAt > asOf || observedAt < open || observedAt > close) return null;
 
   const ordered = chart.points.map(point => ({ t: time(point?.t), price: point?.price }))
     .filter(point => Number.isFinite(point.t) && finite(point.price) && point.price > 0

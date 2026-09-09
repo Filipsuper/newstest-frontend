@@ -274,3 +274,16 @@ test("feed rows do not fetch stock charts before the reader opens", async ({ pag
     && url.searchParams.get("symbol") === "LITEN.TEST")).toBe(true);
   expect(chartRequests.some(url => url.pathname === "/api/feed/news/session-preview-during/chart")).toBe(false);
 });
+
+test("a small server read-clock offset does not hide a valid historical stock chart", async ({ page }) => {
+  await page.route(/\/api\/feed\/news\/session-preview-premarket\/chart(?:\?|$)/, async route => {
+    const selected = story("premarket");
+    const chart = structuredClone(selected.previewCharts["LITEN.TEST"]);
+    chart.asOf = Date.parse(SESSION_PREVIEW_NOW) + 1000;
+    await route.fulfill({ json: { data: chart } });
+  });
+  await page.goto("/nyhet/session-preview-premarket");
+  await continuousStockChart(reaction(page));
+  await expect(badge(reaction(page), "Idag · mot föregående stängning: +10,0 %")).toBeVisible();
+  await expect(reaction(page).getByText("Aktiekurvan kunde inte hämtas.", { exact: true })).toHaveCount(0);
+});

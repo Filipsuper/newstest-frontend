@@ -156,13 +156,31 @@ test("future and out-of-session samples cannot extend the observed endpoint", ()
 
 test("read-time freshness cannot stand in for a missing or inconsistent actual endpoint", () => {
   for (const values of [
-    { observedAt: null }, { observedAt: now + minute }, { asOf: now + minute },
+    { observedAt: null }, { observedAt: now + minute }, { asOf: now + minute + 1 },
     { observedAt: open - minute }, { observedAt: close + minute },
     { observedAt: open + 121 * minute }, { asOf: open },
   ]) assert.equal(build({ ...fixture(), ...values }), null);
   const geometry = build(fixture());
   assert.equal(geometry.end, fixture().observedAt);
   assert.notEqual(geometry.end, now);
+});
+
+test("geometry tolerates read-clock skew but never moves the actual endpoint into the future", () => {
+  const chart = fixture();
+  for (const skew of [100, 60_000]) {
+    const geometry = build({ ...chart, asOf: now + skew });
+    finiteGeometry(geometry);
+    assert.deepEqual(geometry.points, chart.points);
+    assert.equal(geometry.end, chart.observedAt);
+  }
+  assert.equal(build({ ...chart, asOf: now + 60_001 }), null);
+  const duringSession = chart.observedAt + minute;
+  const future = { t: duringSession + 1, price: 112 };
+  const live = { ...chart, asOf: duringSession + 100, points: [...chart.points, future] };
+  const geometry = stockChartGeometry(live, 640, 220, duringSession);
+  finiteGeometry(geometry);
+  assert.deepEqual(geometry.points, chart.points);
+  assert.equal(stockChartGeometry({ ...live, observedAt: future.t }, 640, 220, duringSession), null);
 });
 
 test("unordered and identical duplicate samples normalize without mutating source data", () => {

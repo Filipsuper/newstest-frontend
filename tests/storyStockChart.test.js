@@ -24,10 +24,28 @@ test("exact story, version, publication and company scope are required", () => {
 });
 test("the plot never accepts a fresh read time in place of a real endpoint", () => {
   const { story, chart } = fixture();
-  for (const change of [{ asOf: now + 1 }, { observedAt: chart.asOf },
+  for (const change of [{ asOf: now + 60_001 }, { observedAt: chart.asOf },
     { points: [...chart.points, { t: now + 1, price: 12 }] }]) {
     assert.equal(storyStockChartFor(story, story.symbol, { ...chart, ...change }, now), null);
   }
+});
+test("small server read-clock skew is allowed without accepting a future trade", () => {
+  const { story, chart } = fixture();
+  for (const skew of [100, 60_000]) {
+    const result = storyStockChartFor(story, story.symbol, { ...chart, asOf: now + skew }, now);
+    assert.deepEqual(result.points, chart.points);
+    assert.equal(result.observedAt, chart.observedAt);
+  }
+  assert.equal(storyStockChartFor(story, story.symbol, { ...chart, asOf: now + 60_001 }, now), null);
+  // This future trade is still inside the exchange session and before server
+  // read time, so only the strict client observation-time check can reject it.
+  const duringSession = chart.session.close - 60_000;
+  const past = chart.points.filter(point => point.t <= duringSession);
+  const live = { ...chart, asOf: duringSession + 100, points: past, observedAt: past.at(-1).t };
+  assert.ok(storyStockChartFor(story, story.symbol, live, duringSession));
+  const future = { t: duringSession + 1, price: 12 };
+  assert.equal(storyStockChartFor(story, story.symbol, { ...live, points: [...past, future] }, duringSession), null);
+  assert.equal(storyStockChartFor(story, story.symbol, { ...live, points: [...past, future], observedAt: future.t }, duringSession), null);
 });
 test("invalid, unordered, duplicate and out-of-session observations fail closed", () => {
   const { story, chart } = fixture();
@@ -59,5 +77,7 @@ test("pending and unavailable responses cannot leak points from an older result"
   const { story, chart } = fixture();
   for (const status of ["pending", "unavailable"]) {
     assert.deepEqual(storyStockChartFor(story, story.symbol, { ...chart, status }, now).points, []);
+    assert.deepEqual(storyStockChartFor(story, story.symbol, { ...chart, status, asOf: now + 100 }, now).points, []);
+    assert.equal(storyStockChartFor(story, story.symbol, { ...chart, status, storyId: "other", asOf: now + 100 }, now), null);
   }
 });
