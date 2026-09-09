@@ -11,6 +11,53 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Continuous news stock charts — released
+
+Frontend `7163f29` (including `afb17dc`) and news backend `bdc2809` deployed on
+9 September 2026 after approval. Backend release documentation is `f321110`.
+This is the chart/optional-reader release, not activation of new session writers.
+
+- News readers and share images use continuous absolute stock-price history for
+  the first eligible exchange session around publication. Recent history uses
+  the existing seven-day tick cache; older history falls back to one stored
+  minute-candle source. No fabricated prices, extra tick archive, retention/index
+  change, new provider collection or archived reaction-calculation change.
+- The on-demand chart API authorizes the canonical public story/company, validates
+  identities and timestamps, bounds output to 600 points, and caches bounded
+  reads. Opening/switching a company fetches history; feed rows do not each fetch it.
+- Optional company/session readers are compatible with independently validated
+  prices/RVOL, but the new producer, baseline rebuild and refresh timer remain
+  off. Existing missing reaction or volume values remain missing. Unrelated local
+  editorial-ranking, favicon and obsolete sparse-renderer edits are excluded.
+- Verification: 115 scoped frontend unit tests, 133 Chromium tests, 99 backend
+  tests, production build and standalone PNG/AVIF image checks passed. Actual
+  Linux ARM64 candidates retained Next 15.5.25, Sharp 0.35.4 and libheif 1.23.2;
+  no baked environment files or fixture API addresses. Preview routes stay 404.
+- Live indexed reads confirmed existing tick TTL 604,800 seconds. Freemelt's
+  9 September order/interview returned 381 tick points; Wyld's 8 September news
+  returned 251 tick points; its 28 August report returned 270 minute-candle
+  points through 17:30 Stockholm. Wrong-company chart requests return 403.
+  These are sampled checks, not a claim of full-market or historical coverage.
+- The initial browser smoke exposed a roughly 53 ms server/client read-clock
+  offset. `7163f29` tolerates up to 60 seconds only for `asOf` read metadata;
+  actual prices/endpoints remain strictly non-future. Regression tests cover both.
+- Final live browser checks verified matching story/company/session/source,
+  continuous paths, desktop and 320px label bounds for all three samples, no
+  page errors, and a visually inspected Freemelt 1200×630 share image. Home,
+  Marknaden, company API and Freemelt routes return 200.
+
+Final frontend image `7904830a8fa3`, started `2026-09-09T21:40:27Z`, zero
+restarts. Immediate rollback is `ae990429de98` (`afb17dc`, before the read-clock
+fix); `newsweb-frontend:before-chart-20260909` retains the full pre-chart image
+`09f0c64e40d8`. Backend image `e5f8ee25af7c`, started `2026-09-09T21:18:35Z`,
+zero restarts; its rollback and pre-chart tags retain `1503217c6735`.
+
+Terminal `8d5c40cfefae` retains its `16:06:02Z` start time and zero restarts.
+The reaction worker stays active since `09:33:51Z`, zero restarts. Post-release
+capacity: ~732 MB available memory, ~2.4 GB free swap, ~6.0 GB free disk. Builds
+used one CPU core and 1,400 MB memory; no cache/data/image pruning was performed.
+Logs and visual artifacts are in `/private/tmp/omxsum-chart-release.Zx3dmZ/`.
+
 ## Frontend dependency security update — released
 
 Frontend `f5fa7b0` (including `ac996f7`) deployed on 9 September 2026 after

@@ -50,7 +50,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `f5fa7b0`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `7163f29`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
@@ -72,13 +72,15 @@ and compatible backend releases are in the release history, not pending tasks.
   Expand ingestion-time feature archives
   before describing the dataset as execution-backtest-ready. See the
   [original reaction/volume audit](docs/news-reaction-volume-2026-09-08.md).
-- **Release candidate, not deployed:** continuous stock charts and optional
+- **Released 9 September:** continuous stock charts and optional
   company/session readers only. Charts use the existing seven-day tick cache,
   then stored minute candles, with no extra tick archive or retention changes.
   Independently validated context can show previous-close prices and session
   RVOL alongside unchanged archived news reactions, with shared company selection.
   **Producer activation is not included**; missing/unverified context stays
-  unavailable. See the [release boundary and verification](docs/news-data-consistency-next.md).
+  unavailable. Freemelt/Wyld recent tick charts and older Wyld minute history
+  passed live desktop/mobile and share-image checks. This is sampled validation,
+  not complete market coverage. See the [release boundary and verification](docs/news-data-consistency-next.md).
 - [ ] **Separate producer activation:** qualify provenance-aware snapshots,
   rebuild safe baseline profiles and benchmark a full read-only refresh pass
   before explicitly enabling the new refresh cadence. Then audit live field

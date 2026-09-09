@@ -1,6 +1,6 @@
 # Reaction v2 implementation status
 
-## Local display revision — not deployed
+## Continuous stock-chart display — released 9 September
 
 The news reader and share images now use an independent continuous absolute-price
 chart for the first eligible exchange session around publication. It reads the
@@ -8,7 +8,11 @@ existing seven-day `live_ticks` cache, otherwise stored `reaction_v2_market` or
 `minute_bars` candles. No retention changes, extra tick archive or provider calls.
 This does not change archived Reaction v2 inputs, missing-coverage rules, fixed
 +1/+5/+15/+60-minute results or exact replay. See
-[the local implementation and release gates](news-data-consistency-next.md).
+[the released implementation and remaining producer gates](news-data-consistency-next.md).
+Frontend `7163f29` and news backend `bdc2809` are live. Real recent Freemelt/Wyld
+and older Wyld charts passed sampled source/identity, desktop/mobile and image
+checks. Optional company/session readers are included; new producer refreshes
+are not enabled and complete market coverage is not established.
 
 ## Deployed calculation status
 
@@ -77,7 +81,7 @@ features available at the time from subsequently measured outcomes.
 
 Run the frontend dev server and visit `/designsystem/reactions`. This route uses
 explicitly fictional, dated examples, not live news or market prices. Open each
-row to review positive/negative moves, chart gaps, next-open timing, waiting,
+  row to review positive/negative moves, independent stock history, next-open timing, waiting,
 missing baselines and multiple companies. No worker or database is needed.
 
 The route is unavailable in a production build unless the test server explicitly
@@ -98,9 +102,10 @@ fixture is never substituted into `/marknaden`, personal feeds or stock pages.
   use the company Select. Price, chart and facts follow that company together.
   All six price periods remain a read-only comparison inside measurement details.
   Ranking still uses existing inputs.
-- `ReactionChart` preserves null gaps. Missing/short chart coverage does not
-  produce a fabricated curve or borrow the old `reactionSeries`. A completed
-  chart must end at the selected endpoint with the same percentage as its KPI.
+- Archived event-return geometry retains its missing-coverage semantics. It is
+  no longer the reader/OG curve: `StoryStockHistory` uses independent absolute
+  stock prices and joins real observations continuously. Its full-session date,
+  source resolution and price scale stay separate from the fixed reaction KPI.
 - Reader volume facts sit alongside price before the chart: comparisons with the
   preceding period and normal same-clock-time volume. The three values and
   period labels stay aligned on mobile, even when KPI names wrap.
@@ -113,7 +118,8 @@ fixture is never substituted into `/marknaden`, personal feeds or stock pages.
   missing-data explanations, and disclose baseline/endpoint/target/calculation times,
   minute resolution and unverified source, and association/corporate-action
   limitations. After-hours measurements say "efter öppning".
-- News OG images use the same selected company/period and matching series.
+- News OG images use the same selected company/metric as the reader, with an
+  independently labelled absolute-price chart and actual observed endpoint.
 - Optional-data failures retain the previous matching v2 observation with its
   timestamp, without generating a new-news count. A new story version does not
   inherit the previous version's observation. No v2 payload means legacy UI.

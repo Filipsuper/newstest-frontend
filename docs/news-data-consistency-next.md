@@ -1,9 +1,9 @@
 # Continuous stock charts and optional company/session readers
 
-9 September 2026. **Release candidate; charts and optional context readers only.
-Producer activation is not included.** This candidate is not yet committed,
-pushed or deployed and follows the separately released dependency-security patch.
-It deploys the read-only chart API and compatible frontend/optional-context
+9 September 2026. **Released: charts and optional context readers only.
+Producer activation is not included.** Backend `bdc2809` and frontend `7163f29`
+follow the separately released dependency-security patch. This release includes
+the read-only chart API and compatible frontend/optional-context
 readers, not new snapshot writers, baseline rebuilds, scheduled refreshes or data
 collection. Absent or unverified company-context capsules remain unavailable;
 this release does not promise new live price/RVOL coverage. Archived reaction
@@ -11,7 +11,7 @@ engines and replay data remain unchanged.
 
 ## Implemented components and release boundary
 
-- Producer follow-up, **outside this release candidate**: an atomic
+- Producer follow-up, **outside this release**: an atomic
   `screener_current.companySessionSnapshot`, independent
   price/volume source times, exact previous-session close, explicit field states
   and coverage-aware RVOL baselines. Existing incremental updates cannot mix new
@@ -54,24 +54,25 @@ tests freeze the example clock.
 
 Implementation checkouts:
 
-- Frontend release candidate: `/private/tmp/omxsum-chart-release.Zx3dmZ/frontend`.
+- Frontend release checkout: `/private/tmp/omxsum-chart-release.Zx3dmZ/frontend`.
   Unrelated editorial/favicon work and superseded sparse-event chart changes
   remain outside this selective checkout.
 - Producer: `/private/tmp/omxsum-session-context.O1Ap4L/stonks`, based on deployed
   producer `0b3f7bb`; details in its `docs/company-session-context-v1.md`.
-- API: `/private/tmp/omxsum-session-context.O1Ap4L/newsbackend`, based on `8f03da8`
-  (documentation above deployed `2c89137`); details in its
-  `docs/news-company-session-context.md`.
+- API release: `/private/tmp/omxsum-chart-release.Zx3dmZ/newsbackend`, runtime
+  `bdc2809`, release documentation `f321110`; details in its
+  `docs/news-company-session-context.md` and `docs/story-stock-chart.md`.
 
 Keep these changes isolated from the older dirty sibling checkouts during release.
 
 ## Continuous-chart revision verification
 
-Scoped release candidate (9 September): **113 frontend unit tests, 132 Chromium
-tests and 99 backend tests passed**. The clean frontend build and standalone
-PNG/AVIF checks passed. Unlike the broader local-worktree counts below, this
-candidate excludes editorial ranking, favicon and obsolete sparse-event-renderer
-changes. Share-image URL expectations now use the central version constant.
+Scoped release (9 September): **115 frontend unit tests, 133 Chromium tests and
+99 backend tests passed**, including the server read-clock regression. The clean
+frontend build and standalone PNG/AVIF checks passed. Unlike the broader
+local-worktree counts below, this release excludes editorial ranking, favicon
+and obsolete sparse-event-renderer changes. Share-image URL expectations use
+the central version constant (`4`).
 
 Backend `bdc2809` passed isolated image checks and was released at 21:18 UTC.
 Public checks verified 381 Freemelt points for 9 September and 251 Wyld points
@@ -79,12 +80,27 @@ for 8 September from `live_ticks`; Wyld's 28 August report returned 270 stored
 minute-candle points through 17:30 Stockholm. Identity and timestamp ordering
 passed; unrelated-company requests return 403. Indexed source reads and actual
 chart responses were bounded and fast. These samples do not establish complete
-market-wide coverage. Frontend traffic has not yet switched at this record.
+market-wide coverage. The existing tick TTL is 604,800 seconds; no source indexes
+or retention rules were changed.
 
-The results below record the prior combined local implementation, not verification
-of this narrower release candidate. The selective candidate must be rebuilt and
-tested independently before deployment; its expected test counts exclude the
-unreleased editorial/favicon work and superseded sparse-event geometry tests.
+Frontend `7163f29` was released at 21:40 UTC after `afb17dc`. The live browser
+smoke check found a roughly 53 ms server/client read-clock offset; only chart
+`asOf` metadata now tolerates up to 60 seconds of positive skew. Actual price
+timestamps and endpoints still cannot be in the future. New regression tests
+cover both boundaries. All three live sample charts then passed actual browser
+response identity/session/source checks, continuous geometry, 320px label bounds
+and desktop rendering. The Freemelt 1200×630 share image was inspected visually.
+No page errors. Daily price/RVOL producer activation remains deferred, and
+existing missing reaction/volume KPIs remain missing rather than fabricated.
+
+Release logs and screenshots are under
+`/private/tmp/omxsum-chart-release.Zx3dmZ/`; see `live-browser-final.log`,
+`frontend-browser-skew.log`, `frontend-unit-skew.log` and the deployment logs.
+Exact images, start times and rollback records are in [release history](release-history.md).
+
+The results below record the prior combined local implementation, not the
+narrower release above. Their test counts include unreleased editorial/favicon
+work and superseded sparse-event geometry tests.
 
 - Frontend: **137 unit tests passed**. Isolated production build and standalone
   PNG/AVIF → WebP checks passed. Final production-mode Chromium suite: **133 tests
@@ -133,16 +149,16 @@ Verification logs and screenshots are under
 `frontend-browser-production-final.log`. No production requests for new provider
 data, snapshot writes, timer changes or deployment were performed.
 
-## Release candidate gates
+## Chart release checks
 
-1. Verify the selective diff, rebuild it and run its unit/browser/image checks.
+1. Verified the selective diff, rebuilt it and ran unit/browser/image checks.
    The release excludes editorial ranking, favicon artwork and producer activation.
-2. Deploy the compatible read-only API before the frontend, capture rollback
-   revisions and verify real story charts, company selection and share images.
+2. Deployed the compatible read-only API before the frontend, with rollback
+   revisions. Real-story, source and image checks are recorded in release history.
    Existing missing-data states remain valid; no extra collection or archive is
    introduced. Keep fictional previews disabled in production.
-3. Inspect actual `observedAt` values and source/session labels, not just HTTP
-   health or fresh request timestamps. Do not claim complete historical charts
+3. Inspected actual `observedAt` values and source/session labels, not just HTTP
+   health or fresh request timestamps. This does not establish complete historical charts
    or newly populated company-context/RVOL fields without a separate live audit.
 
 ## Separate producer activation gates — outside this release
