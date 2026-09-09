@@ -6,6 +6,7 @@
     "dev": "next dev",
     "test": "node --test tests/*.test.js",
     "test:security": "npm audit --audit-level=high",
+    "test:standalone-images": "node scripts/check-standalone-images.mjs",
     "test:ui": "playwright test",
     "build": "next build",
     "start": "next start"

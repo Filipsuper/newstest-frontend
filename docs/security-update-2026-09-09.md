@@ -61,6 +61,14 @@ for running the final Linux native libraries. Rebuild with the production API
 URL; never ship the local fixture-backed test build. Retain the running image
 as rollback and verify public routes after the swap.
 
+The first Linux candidate was stopped before swapping: standalone tracing omitted
+Sharp's `@img/sharp-libvips-*/versions.json`. Next correctly kept AVIF decoding
+disabled because it could not establish the bundled libheif version. The scoped
+`outputFileTracingIncludes` entry retains the actual package metadata; no safety
+checks are bypassed and no versions are fabricated. `npm run test:standalone-images`
+now exercises PNG/AVIF decoding from the built standalone tree, not development
+dependencies. See [Next's tracing guidance](https://nextjs.org/docs/15/app/api-reference/config/next-config-js/output).
+
 Test-only cleanup during the broad regression: the no-AI fixture has distinct
 facts so it cannot collapse into another story in the company deduper; a legacy
 company-link test waits for streamed markup to settle before asserting section

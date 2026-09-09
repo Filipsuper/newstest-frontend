@@ -43,6 +43,8 @@ test("Next loads patched Sharp and optimizes trusted PNG and AVIF input", async 
   const { getSharp, optimizeImage } = require("next/dist/server/image-optimizer.js");
   const sharp = getSharp(1);
   assert.ok(atLeast(sharp.versions.sharp, "0.35.4"));
+  assert.ok(atLeast(sharp.versions.heif || "0.0.0", "1.23.2"),
+    "Next requires the real, patched libheif version before allowing AVIF decoding");
   // Tiny generated pixels only: no remote images or exploit payloads.
   for (const format of ["png", "avif"]) {
     const input = await sharp({ create: { width: 16, height: 8, channels: 3,
