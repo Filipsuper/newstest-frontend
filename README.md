@@ -39,6 +39,9 @@ continues to use Resend.
 ## Verification
 
 Run `npm test` for unit tests and `npm run build` for a production build.
+Run `npm run test:security` to audit the locked dependencies for high/critical
+advisories; see [the security update](docs/security-update-2026-09-09.md) for
+the scoped overrides and release checks.
 `npm run test:ui` starts an isolated preview on port 3111 and a fictional API
 on 8100, runs browser/accessibility tests, and stops both services. It does not
 write to production accounts. See `docs/news-first-workspace.md` for production

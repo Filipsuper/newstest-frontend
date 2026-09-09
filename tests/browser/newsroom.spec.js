@@ -176,6 +176,7 @@ for (const width of [320, 1440]) {
       for (const text of [
         "Rapporten i siffror", "Utfall mot förväntan", "Insynstransaktioner", "Belopp:",
         "2 450 MSEK", "410 MSEK", "Fiktiv estimatkälla", "Fiktiv Insynsperson", "987 miljoner kronor",
+        "3 120 MSEK", "520 MSEK", "654 miljoner kronor",
       ]) await expect(reader).not.toContainText(text);
     };
     await page.setViewportSize({ width, height: 900 });

@@ -150,6 +150,8 @@ test("news is bounded, chronological and deduplicated; intraday loading has no s
 test("server access prevents private requests while news/calendar remain usable; empty and error states are honest", async ({ page }) => {
   const requests = privateRequests(page);
   await page.goto("/aktie/FREE.TEST?tab=insiders");
+  await expect(page).toHaveURL(/#insiders$/);
+  await belowChrome(page, "insiders");
   await expect(page.locator("#insiders")).toContainText("ingår i Plus");
   await expect(page.locator("#financials")).toContainText("Omsättning");
   await expect(page.locator("#financials")).toContainText("120 M SEK");

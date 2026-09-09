@@ -76,16 +76,16 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
     index === 0 || index === 2
       ? {
           reportMetrics: [
-            { key: "revenue", value: "2 450 MSEK (2 100)" },
-            { key: "ebit", value: "410 MSEK (340)" },
+            { key: "revenue", value: index === 2 ? "3 120 MSEK (2 780)" : "2 450 MSEK (2 100)" },
+            { key: "ebit", value: index === 2 ? "520 MSEK (470)" : "410 MSEK (340)" },
           ],
           estimateComparisons: [
-            { key: "ebit", actualDisplay: "410 MSEK", estimateDisplay: "390 MSEK", source: "Fiktiv estimatkälla" },
+            { key: "ebit", actualDisplay: index === 2 ? "520 MSEK" : "410 MSEK", estimateDisplay: index === 2 ? "490 MSEK" : "390 MSEK", source: "Fiktiv estimatkälla" },
           ],
           transactions: [
-            { person: "Fiktiv Insynsperson", nature: "Acquisition", volume: 12345, price: 67, currency: "SEK" },
+            { person: index === 2 ? "Annan Fiktiv Insynsperson" : "Fiktiv Insynsperson", nature: "Acquisition", volume: 12345, price: 67, currency: "SEK" },
           ],
-          money: { display: "987 miljoner kronor" },
+          money: { display: index === 2 ? "654 miljoner kronor" : "987 miljoner kronor" },
         }
       : {},
 }));
