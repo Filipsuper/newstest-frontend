@@ -221,8 +221,12 @@ desktop density or abbreviated interaction model.
   a Base UI dialog; direct visits and reload open the full reader. Back closes
   the dialog, Forward reopens it, and returning retains the source page.
 - Reader hierarchy: headline/source → AI summary → aligned reaction KPIs/chart →
-  company/follow/share actions → optional figures/source text/related paths.
+  company/follow/share actions → source text/related paths.
   Keep original sources easy to reach. Base UI owns focus trapping and Escape.
+- Extracted key facts are paused in the news reader: no report metrics,
+  estimate comparisons, insider-transaction tables or standalone extracted
+  amounts. This also applies when an AI summary is missing; do not substitute
+  deterministic facts. Market-reaction KPIs and original source text remain.
 - Reaction v2 is an optional, exact story-version/company/publication contract.
   News rows, the reader and share images use the latest completed measurement
   by target time, including session-close and next-close—not the biggest move.

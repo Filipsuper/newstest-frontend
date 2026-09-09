@@ -166,6 +166,54 @@ test("news rows and reader show AI prose and bullets, never the wire description
 });
 
 for (const width of [320, 1440]) {
+  test(`reader omits extracted facts while retaining summaries and source access at ${width}px`, async ({ page, request }) => {
+    const detail = await (await request.get("http://127.0.0.1:8100/api/feed/news/fixture-0")).json();
+    expect(detail.story.facts.reportMetrics).toHaveLength(2);
+    expect(detail.story.facts.estimateComparisons).toHaveLength(1);
+    expect(detail.story.facts.transactions).toHaveLength(1);
+    expect(detail.story.facts.money.display).toBe("987 miljoner kronor");
+    const expectNoExtractedFacts = async (reader) => {
+      for (const text of [
+        "Rapporten i siffror", "Utfall mot förväntan", "Insynstransaktioner", "Belopp:",
+        "2 450 MSEK", "410 MSEK", "Fiktiv estimatkälla", "Fiktiv Insynsperson", "987 miljoner kronor",
+      ]) await expect(reader).not.toContainText(text);
+    };
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/marknaden/nyheter");
+    await page.locator('a[href="/nyhet/fixture-0"]').first().click();
+    const dialogReader = page.getByRole("dialog").locator("article").first();
+    await expect(dialogReader.locator("[data-reading]")).toContainText("Fiktiv AI-text.");
+    await expectNoExtractedFacts(dialogReader);
+    await expect(dialogReader.getByRole("heading", { name: "Marknadens reaktion" })).toBeVisible();
+    await expect(dialogReader.getByRole("img", { name: /Kursutveckling runt publiceringen/ })).toBeVisible();
+    await expect(dialogReader.getByText("Handelsvolym", { exact: true })).toBeVisible();
+    await expect(dialogReader.getByText("Läs hela källtexten", { exact: true })).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const reader = page.locator("main > article");
+    await expect(reader.locator("[data-reading]")).toContainText("Fiktiv AI-text.");
+    await expect(reader.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).first().getByRole("listitem")).toHaveCount(3);
+    await expectNoExtractedFacts(reader);
+    await expect(reader.getByRole("heading", { name: "Marknadens reaktion" })).toBeVisible();
+    await expect(reader.getByRole("img", { name: /Kursutveckling runt publiceringen/ })).toBeVisible();
+    await reader.getByText("Handelsvolym", { exact: true }).click();
+    await expect(reader.getByText("RVOL vid denna tid", { exact: true })).toBeVisible();
+    await expect(reader.locator('a[href="https://example.com/release"]')).toHaveCount(1);
+    await reader.getByText("Läs hela källtexten", { exact: true }).click();
+    await expect(reader.getByText("Fiktiv källtext för verifiering.", { exact: true })).toBeVisible();
+
+    // Missing AI text must not bring back the paused deterministic fact blocks.
+    const noSummary = await (await request.get("http://127.0.0.1:8100/api/feed/news/fixture-2")).json();
+    expect(noSummary.story.aiSummary).toBeNull();
+    expect(noSummary.story.facts.reportMetrics).toHaveLength(2);
+    await page.goto("/nyhet/fixture-2");
+    await expect(reader.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(reader.locator("[data-reading]")).toHaveCount(0);
+    await expectNoExtractedFacts(reader);
+    await expect(reader.getByText("Läs hela källtexten", { exact: true })).toBeVisible();
+  });
+
   test(`slow dashboard loads have spaced news skeletons and no premature queue at ${width}px`, async ({ page, request }, testInfo) => {
     const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
     const personal = await (await request.get("http://127.0.0.1:8100/api/user/personal-feed")).json();

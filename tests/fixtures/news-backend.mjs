@@ -73,12 +73,19 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
     m15Pct: 1.2,
   },
   facts:
-    index === 0
+    index === 0 || index === 2
       ? {
           reportMetrics: [
             { key: "revenue", value: "2 450 MSEK (2 100)" },
             { key: "ebit", value: "410 MSEK (340)" },
           ],
+          estimateComparisons: [
+            { key: "ebit", actualDisplay: "410 MSEK", estimateDisplay: "390 MSEK", source: "Fiktiv estimatkälla" },
+          ],
+          transactions: [
+            { person: "Fiktiv Insynsperson", nature: "Acquisition", volume: 12345, price: 67, currency: "SEK" },
+          ],
+          money: { display: "987 miljoner kronor" },
         }
       : {},
 }));

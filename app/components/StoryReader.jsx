@@ -24,19 +24,6 @@ import StoryReaction from "./StoryReaction";
 import ReactionChart from "./ReactionChart";
 import styles from "./story-reader.module.css";
 
-const metricNames = {
-  revenue: "Omsättning",
-  net_sales: "Nettoomsättning",
-  ebit: "EBIT",
-  ebita: "EBITA",
-  ebitda: "EBITDA",
-  operating_profit: "Rörelseresultat",
-  net_profit: "Nettoresultat",
-  eps: "Vinst per aktie",
-  cash_flow: "Kassaflöde",
-  order_intake: "Orderingång",
-  dividend: "Utdelning",
-};
 const windows = [
   ["Första avslut", "tickPct"],
   ["1 minut", "m1Pct"],
@@ -108,7 +95,6 @@ export default function StoryReader({
   }, [story.id, hasStory, hasReactionV2]);
   const reaction = finiteNumber(story.reaction?.pct);
   const sources = story.sources ?? [];
-  const facts = story.facts ?? {};
   const release = detail?.document;
   const published = Number.isFinite(story.ts)
     ? new Date(story.ts).toISOString()
@@ -263,67 +249,6 @@ export default function StoryReader({
           <Text size="sm" role="alert">
             {shareError} <a href={shareUrl}>{shareUrl}</a>
           </Text>
-        )}
-        {facts.reportMetrics?.length > 0 && (
-          <section>
-            <Heading size="subsection">Rapporten i siffror</Heading>
-            <dl className={styles.metrics}>
-              {facts.reportMetrics.map((metric, index) => (
-                <div key={`${metric.key}-${index}`}>
-                  <dt>
-                    {metricNames[metric.key] || metric.label || metric.key}
-                  </dt>
-                  <dd>{metric.value ?? "Saknas"}</dd>
-                </div>
-              ))}
-            </dl>
-            <Text size="xs" tone="secondary">
-              Uppgifter ur bolagets rapport. Eventuella jämförelsetal visas inom
-              parentes.
-            </Text>
-          </section>
-        )}
-        {facts.estimateComparisons?.length > 0 && (
-          <details className={styles.details}>
-            <summary>Utfall mot förväntan</summary>
-            <Stack gap={3}>
-              {facts.estimateComparisons.map((row, index) => (
-                <Text size="sm" key={index}>
-                  {metricNames[row.key] || row.label || row.key}:{" "}
-                  {row.actualDisplay ?? row.actualAmount ?? "Saknas"} mot{" "}
-                  {row.estimateDisplay ?? row.estimateAmount ?? "Saknas"}
-                  {row.source && ` · ${row.source}`}
-                </Text>
-              ))}
-            </Stack>
-          </details>
-        )}
-        {facts.transactions?.length > 0 && (
-          <details className={styles.details}>
-            <summary>Insynstransaktioner</summary>
-            <Stack gap={3}>
-              {facts.transactions.map((row, index) => (
-                <Text size="sm" key={index}>
-                  {row.person}
-                  {row.position && ` · ${row.position}`}
-                  <br />
-                  {row.nature === "Acquisition"
-                    ? "Köp"
-                    : row.nature === "Disposal"
-                      ? "Försäljning"
-                      : row.nature}
-                  {row.volume != null &&
-                    ` · ${row.volume.toLocaleString("sv-SE")} aktier`}
-                  {row.price != null &&
-                    ` à ${row.price.toLocaleString("sv-SE")} ${row.currency || ""}`}
-                  {row.transactionDate && ` · ${row.transactionDate}`}
-                </Text>
-              ))}
-            </Stack>
-          </details>
-        )}
-        {facts.money?.display && (
-          <Text size="sm">Belopp: {facts.money.display}</Text>
         )}
         {release?.body && (
           <details className={styles.details}>
