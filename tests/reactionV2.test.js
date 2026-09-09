@@ -44,7 +44,7 @@ test("missing v2 observation is not zero and does not borrow a legacy percentage
 });
 test("older APIs keep their existing presentation", () => {
   const story = storyToItem(previewStories()[0]); delete story.reactionV2;
-  assert.deepEqual(rowReaction(story), { version: 1, pct: 99, label: "Sedan publicering" });
+  assert.deepEqual(rowReaction(story), { version: 1, scope: "event", companySession: null, pct: 99, label: "Sedan publicering" });
 });
 test("mismatched story version or publication is rejected", () => {
   const story = storyToItem(previewStories()[0]);

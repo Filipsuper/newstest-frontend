@@ -1,8 +1,10 @@
 import { ImageResponse } from "next/og";
 import { loadStory } from "../../../utils/storyServer";
 import { normalizeStory, finiteNumber } from "../../../utils/newsroom";
-import { reactionGeometry } from "../../../utils/reactionGeometry";
-import { rowReaction, reactionSeriesFor } from "../../../utils/reactionV2";
+import { stockChartGeometry, stockChartPriceLabel } from "../../../utils/stockChartGeometry";
+import { fetchStoryStockChart } from "../../../utils/api";
+import { storyStockChartFor } from "../../../utils/storyStockChart";
+import { rowReaction, legacyReactionMatches } from "../../../utils/reactionV2";
 import { tagLabel } from "../../../utils/newsTags";
 import { loadOgFonts } from "../../../og/_shared/fonts";
 import { OgBrand, OgCanvas, OgChangeBadge } from "../../../og/_shared/elements";
@@ -32,18 +34,17 @@ export async function GET(request, { params }) {
     ["m15Pct", "15 min efter publicering"],
   ].find(([key]) => finiteNumber(story.reaction?.[key]) !== null);
   const observation = rowReaction(story);
-  const pct = observation.version === 2 ? observation.pct : finiteNumber(
+  const useObservation = observation.version === 2 || Boolean(observation.companySession) || !legacyReactionMatches(story);
+  const pct = useObservation ? observation.pct : finiteNumber(
     fixed ? story.reaction[fixed[0]] : story.reaction?.pct,
   );
-  const label = observation.version === 2 ? observation.label : fixed?.[1] || "Sedan publicering · ögonblicksbild";
-  const geometry = reactionGeometry(
-    observation.version === 2 ? reactionSeriesFor(observation.measurement, observation.period) : result.detail.reactionSeries,
-    observation.version === 2 ? observation.measurement?.anchorAt : story.ts,
-    520,
-    120,
-  );
-  const chartColor =
-    geometry?.points.at(-1).pct < 0 ? colors.negative : colors.positive;
+  const label = useObservation ? observation.label : fixed?.[1] || "Sedan publicering · ögonblicksbild";
+  // Independent absolute-price chart, identical to the reader. Optional history
+  // failure never blocks sharing the news or changes its fixed reaction badge.
+  const chart = story.symbol ? await fetchStoryStockChart(story.id, story.symbol)
+    .then(value => storyStockChartFor(story, story.symbol, value)).catch(() => null) : null;
+  const geometry = stockChartGeometry(chart, 520, 120);
+  const chartColor = colors.accent;
   const title = previewText(story.title, geometry ? 185 : 230);
   const titleSize = geometry
     ? title.length > 150
@@ -134,7 +135,7 @@ export async function GET(request, { params }) {
                   color: colors.secondary,
                 }}
               >
-                {pct !== null ? label : "Kursförlopp kring publicering"}
+                {pct !== null ? label : "Aktiekurs kring nyheten"}
               </div>
             </div>
             {geometry && (
@@ -147,13 +148,8 @@ export async function GET(request, { params }) {
                 }}
               >
                 <svg width="520" height="120" viewBox="0 0 520 120">
-                  <line
-                    x1="44"
-                    x2="504"
-                    y1={geometry.zero}
-                    y2={geometry.zero}
-                    stroke={colors.line}
-                  />
+                  {geometry.ticks.map(tick => <line key={tick.value} x1={geometry.plot.left} x2={geometry.plot.right}
+                    y1={tick.y} y2={tick.y} stroke={colors.line} />)}
                   <path d={geometry.area} fill={chartColor} opacity="0.08" />
                   <path
                     d={geometry.path}
@@ -163,12 +159,13 @@ export async function GET(request, { params }) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {geometry.marker !== null && (
+                  {geometry.singlePoint && <circle cx={geometry.singlePoint.x} cy={geometry.singlePoint.y} r="4" fill={chartColor} />}
+                  {geometry.marker?.kind === "publication" && (
                     <line
-                      x1={geometry.marker}
-                      x2={geometry.marker}
-                      y1="12"
-                      y2="104"
+                      x1={geometry.marker.x}
+                      x2={geometry.marker.x}
+                      y1={geometry.plot.top}
+                      y2={geometry.plot.bottom}
                       stroke={colors.secondary}
                       strokeDasharray="4 5"
                     />
@@ -177,12 +174,12 @@ export async function GET(request, { params }) {
                 <div
                   style={{
                     display: "flex",
-                    paddingLeft: 44,
+                    paddingLeft: 8,
                     fontSize: 20,
                     color: colors.secondary,
                   }}
                 >
-                  {`Kursförlopp till ${ogDate(geometry.points.at(-1).t, { hour: "2-digit", minute: "2-digit" })}`}
+                  {`Kurs ${stockChartPriceLabel(geometry.points.at(-1).price)}${/^[A-Z]{3}$/.test(chart.currency ?? "") ? ` ${chart.currency}` : ""} · ${ogDate(chart.observedAt, { hour: "2-digit", minute: "2-digit" })}`}
                 </div>
               </div>
             )}
@@ -201,7 +198,9 @@ export async function GET(request, { params }) {
         >
           <span>{`${previewText(source, 38)}${published ? ` · ${published}` : ""}`}</span>
           <span>
-            {fixed || pct === null
+            {observation.scope === "session"
+              ? `Kurs ${ogDate(observation.asOf, { hour: "2-digit", minute: "2-digit" })}`
+              : fixed || pct === null
               ? "omxsum.com"
               : `Bild ${ogDate(Date.now(), { hour: "2-digit", minute: "2-digit" })}`}
           </span>

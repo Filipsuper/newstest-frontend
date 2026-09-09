@@ -11,9 +11,11 @@ import { volumeRatioLabel } from "../utils/newsMarketAttention";
 import {
   completedReaction, preferredReactionPeriod, preferredVolumePeriod,
   REACTION_PERIODS, reactionPeriodLabel, reactionStatus,
-  reactionSeriesFor, reactionV2For,
+  reactionV2For,
+  rowReaction,
 } from "../utils/reactionV2";
-import ReactionChart from "./ReactionChart";
+import { companyContextFor, sessionDateLabel } from "../utils/companySession";
+import StoryStockHistory from "./StoryStockHistory";
 import styles from "./story-reaction.module.css";
 
 const clockTime = value => newsDate(value, { day: undefined, month: undefined });
@@ -21,21 +23,25 @@ const shares = value => Number.isFinite(value) ? value.toLocaleString("sv-SE") +
 const ratio = value => Number.isFinite(value) ? volumeRatioLabel(value) : "Saknas";
 const startsAtOpen = measurement => ["before_open", "after_close", "non_trading_day"].includes(measurement?.timing);
 
-export default function StoryReaction({ story, loading = false, error, onRefresh }) {
+export default function StoryReaction({ story, loading = false, error, onRefresh, refreshKey, previewCharts }) {
   const data = reactionV2For(story);
   const companies = story.companies ?? [];
   const [selectedSymbol, setSelectedSymbol] = useState(null);
-  if (!data) return null;
+  if (!data && !companyContextFor(story)) return null;
   const symbol = companies.some(company => company.symbol === selectedSymbol) ? selectedSymbol : companies[0]?.symbol;
-  const measurement = data.measurements.find(item => item.symbol === symbol);
+  const observation = rowReaction(story, symbol);
+  const context = observation.companySession;
+  const sessionPrice = observation.scope === "session";
+  const sessionVolume = context && context.relationship !== "before_event_session"
+    && (sessionPrice || ["dailyRvol", "rvolAtTime"].some(key => Number.isFinite(context.fields[key]?.value)));
+  const sessionLabel = sessionDateLabel(context);
+  const measurement = data?.measurements.find(item => item.symbol === symbol);
   const period = preferredReactionPeriod(measurement);
   const window = measurement?.windows?.[period];
   const complete = measurement?.status === "measured" && completedReaction(window);
   const pending = measurement?.status === "waiting_for_session" || window?.status === "pending";
   const label = reactionPeriodLabel(period, measurement);
   const shortPeriod = REACTION_PERIODS.find(([key]) => key === period)?.[1];
-  const series = reactionSeriesFor(measurement, period);
-  const hasChart = (series?.points ?? []).filter(point => Number.isFinite(point.pct)).length >= 3;
   const afterOpen = startsAtOpen(measurement);
   const status = measurement?.status === "measured" ? window?.status : measurement?.status;
   const volumePeriod = preferredVolumePeriod(measurement);
@@ -49,6 +55,12 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
   const volumeFallback = post?.status === "pending" || measurement?.status === "waiting_for_session" ? "Väntar" : "Saknas";
   const volumeLabel = (afterOpen ? "Från öppning · " : "Första ") + volumePeriod.slice(1) + " min";
   const companyOptions = companies.map(company => ({ value: company.symbol, label: company.name || company.symbol }));
+  const sessionRvol = context?.fields.rvolAtTime;
+  const dailyRvol = context?.fields.dailyRvol;
+  const sessionProvisional = Number.isFinite(sessionRvol?.value) && !context.baselineMature;
+  const unavailable = field => field?.status === "stale" ? "Äldre data" : "Saknas";
+  const quoteLabel = field => Number.isFinite(field?.value)
+    ? field.value.toLocaleString("sv-SE") + (context?.currency ? ` ${context.currency}` : " · valuta saknas") : unavailable(field);
 
   return (
     <section className={styles.section} aria-label="Marknadens reaktion">
@@ -57,32 +69,52 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
         : <Select label="Bolag i nyheten" value={symbol} onValueChange={setSelectedSymbol} options={companyOptions} />)}
       <dl className={styles.kpis} aria-label="Nyckeltal">
         <div className={styles.kpi}>
-          <dt>Kursreaktion</dt>
+          <dt>{sessionPrice ? `Aktien ${sessionLabel.toLowerCase()}` : "Kursreaktion"}</dt>
           <dd>
-            <ChangeBadge value={complete ? window.pct : null} fallback={pending ? "Väntar" : "Saknas"} label={label} className={styles.kpiValue} />
+            <ChangeBadge value={observation.pct} fallback={pending ? "Väntar" : "Saknas"} label={observation.label} className={styles.kpiValue} />
           </dd>
-          <dd className={styles.period}>{afterOpen && !period.includes("close") ? shortPeriod + " från öppning" : shortPeriod}</dd>
+          <dd className={styles.period}>{sessionPrice ? "Mot föregående stängning" : data
+            ? afterOpen && !period.includes("close") ? shortPeriod + " från öppning" : shortPeriod
+            : Number.isFinite(observation.pct) ? observation.label : ""}</dd>
         </div>
         <div className={styles.kpi}>
-          <dt>Volym / normalt</dt>
+          <dt>{sessionVolume ? "RVOL vid samma tid" : "Volym / normalt"}</dt>
           <dd>
-            <Badge className={styles.kpiValue} aria-label={provisional ? "Volym mot normalt: " + ratio(normal) + ", preliminär jämförelse" : undefined}>
-              {Number.isFinite(normal) ? ratio(normal) : volumeFallback}{provisional && <span aria-hidden="true">*</span>}
+            <Badge className={styles.kpiValue} aria-label={sessionVolume ? sessionProvisional ? `RVOL vid samma tid: ${ratio(sessionRvol.value)}, preliminär jämförelse` : undefined
+              : provisional ? `Volym mot normalt: ${ratio(normal)}, preliminär jämförelse` : undefined}>
+              {sessionVolume ? Number.isFinite(sessionRvol?.value) ? ratio(sessionRvol.value) : unavailable(sessionRvol) : Number.isFinite(normal) ? ratio(normal) : volumeFallback}
+              {(sessionVolume ? sessionProvisional : provisional) && <span aria-hidden="true">*</span>}
             </Badge>
           </dd>
-          <dd className={styles.period}>{volumeLabel}</dd>
+          <dd className={styles.period}>{sessionVolume ? sessionLabel : volumeLabel}</dd>
         </div>
         <div className={styles.kpi}>
-          <dt>Volym / före</dt>
-          <dd><Badge className={styles.kpiValue}>{Number.isFinite(before) ? ratio(before) : volumeFallback}</Badge></dd>
-          <dd className={styles.period}>{volumeLabel}</dd>
+          <dt>{sessionVolume ? "RVOL mot heldag" : "Volym / före"}</dt>
+          <dd><Badge className={styles.kpiValue}>{sessionVolume ? Number.isFinite(dailyRvol?.value) ? ratio(dailyRvol.value) : unavailable(dailyRvol) : Number.isFinite(before) ? ratio(before) : volumeFallback}</Badge></dd>
+          <dd className={styles.period}>{sessionVolume ? `${sessionLabel} · 20 dagars snitt` : volumeLabel}</dd>
         </div>
       </dl>
-      {hasChart && <ReactionChart v2 series={series} publishedAt={measurement.anchorAt} markerLabel={afterOpen ? "Börsöppning" : "Publicering"} caption={false} />}
+      <StoryStockHistory key={`${story.id}:${story.version}:${symbol}`} story={story} symbol={symbol} refreshKey={refreshKey} previewCharts={previewCharts} />
       {error && <Text role="alert" size="sm">{error}</Text>}
       <details className={styles.details}>
         <summary>Mätpunkter & underlag</summary>
         <Stack gap={4}>
+          {context && <Stack gap={3}>
+            <Text size="sm">Aktien {sessionLabel.toLowerCase()}</Text>
+            <dl className={styles.provenance} aria-label="Dagens handel">
+              <div><dt>Senaste kurs</dt><dd>{quoteLabel(context.fields.price)}{context.fields.price.at && <Text size="xs" tone="secondary">{newsDate(context.fields.price.at)}</Text>}</dd></div>
+              <div><dt>Föregående stängning</dt><dd>{quoteLabel(context.fields.previousClose)}{context.fields.previousClose.sessionDate && <Text size="xs" tone="secondary">{context.fields.previousClose.sessionDate}</Text>}</dd></div>
+              <div><dt>Handlad volym</dt><dd>{shares(context.fields.dayVolume.value)}{context.fields.dayVolume.at && <Text size="xs" tone="secondary">{newsDate(context.fields.dayVolume.at)}</Text>}</dd></div>
+              <div><dt>Jämförelseunderlag</dt><dd>{Number.isInteger(context.baselineSessionCount) ? `${context.baselineSessionCount} handelsdagar` : "Saknas"}{Number.isInteger(context.baselineSessionCount) && !context.baselineMature && " · preliminärt"}</dd></div>
+            </dl>
+            {!sessionPrice && Number.isFinite(context.fields.changePct.value) && <Inline><Text size="sm">{sessionLabel} mot föregående stängning</Text><ChangeBadge value={context.fields.changePct.value} /></Inline>}
+            <Text size="xs" tone="secondary">RVOL vid samma tid jämför den kumulativa volymen med samma klockslag tidigare handelsdagar. RVOL mot heldag jämför med snittet för 20 hela handelsdagar. Det är bolagets handel, inte volym orsakad av nyheten.</Text>
+            {context.relationship === "later_session" && <Text size="xs" tone="secondary">Handelsdagen ovan är senare än nyhetens första börssession.</Text>}
+            {context.relationship === "before_event_session" && <Text size="xs" tone="secondary">Handeln ovan skedde före nyhetens första börssession.</Text>}
+            {context.fields.previousClose.adjustmentBasis === "unknown" && <Text size="xs" tone="secondary">Leverantörens stängningskurs; justering för bolagshändelser är inte verifierad.</Text>}
+          </Stack>}
+          {!data && onRefresh && <Button variant="ghost" size="sm" disabled={loading} onClick={onRefresh}>{loading ? "Hämtar data…" : "Uppdatera data"}</Button>}
+          {data && <>
           <Inline className={styles.between}>
             <Text size="sm">{label}</Text>
             {onRefresh && <Button variant="ghost" size="sm" disabled={loading} onClick={onRefresh}>{loading ? "Hämtar data…" : "Uppdatera data"}</Button>}
@@ -90,7 +122,6 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
           {measurement?.status === "waiting_for_session" && measurement.session?.open &&
             <Text size="sm" tone="secondary">Mätningen börjar vid börsöppning {newsDate(measurement.session.open)}.</Text>}
           {!complete && measurement?.status !== "waiting_for_session" && <Text size="sm" tone="secondary">{reactionStatus(status)}.</Text>}
-          {complete && !hasChart && <Text size="sm" tone="secondary">Kurskurva saknas för den senaste mätperioden.</Text>}
           <dl className={styles.measurements} aria-label="Alla mätpunkter">
             {REACTION_PERIODS.map(([key]) => {
               const point = measurement?.windows?.[key];
@@ -109,6 +140,7 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
             <div><dt>Beräkning uppdaterad</dt><dd>{measurement?.asOf ? newsDate(measurement.asOf) : "Saknas"}</dd></div>
           </dl>
           {volumeComplete ? <Stack gap={2}>
+            {sessionVolume && <dl className={styles.measurements}><div><dt>Volym / normalt · {volumeLabel}</dt><dd>{ratio(normal)}</dd></div><div><dt>Volym / före · {volumeLabel}</dt><dd>{ratio(before)}</dd></div></dl>}
             <Text size="sm" tone="secondary">{shares(post.volume)} · {newsDate(post.start)}–{clockTime(post.end)}</Text>
             <Text size="xs" tone="secondary">Volym: första {volumePeriod.slice(1)} hela minuterna · {post.observedBars} av {post.expectedBars} minuter.</Text>
             <Text size="xs" tone="secondary">{volume.baselineSessionCount >= 5
@@ -123,7 +155,8 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
           <Text size="xs" tone="secondary">Hela minuter jämförs med samma klockslag tidigare handelsdagar. Minuten som överlappar nyheten ingår inte. Volymen visar aktivitet kring nyheten, inte hur mycket handel den orsakade.</Text>
           <Text size="xs" tone="secondary">Yahoo Finance · minutdata, inte verifierad realtid. Endast avslutade minutstaplar används; avläsningen får ligga högst två minuter före mättiden.</Text>
           {afterOpen && <Text size="xs" tone="secondary">Perioden räknas från nästa börsöppning och jämförs med föregående börsdags sista tillgängliga minutkurs.</Text>}
-          <Text size="xs" tone="secondary">Kurvan visar ett tidsmässigt samband, inte bevis på orsak. Andra nyheter och bolagshändelser som split eller utdelning är inte borträknade.</Text>
+          <Text size="xs" tone="secondary">Aktiekurvan visar bolagets handel. Mätpunkterna ovan är separat sparade nyhetsreaktioner. Samband i tid är inte bevis på orsak; andra nyheter och bolagshändelser är inte borträknade.</Text>
+          </>}
         </Stack>
       </details>
     </section>

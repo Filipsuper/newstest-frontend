@@ -8,6 +8,7 @@ import {
 import { TOPIC_LABELS } from "./topicLabels.js";
 import { newsSummary } from "./newsSummary.js";
 import { retainReactionV2 } from "./reactionV2.js";
+import { retainCompanyContext } from "./companySession.js";
 
 export const validStoryId = (id) =>
   /^[A-Za-z0-9_-]{1,80}$/.test(String(id ?? ""));
@@ -119,7 +120,7 @@ export function refreshMarketObservations(items, incoming) {
       ? item.reaction : next.reaction ?? null;
     const marketContext = Number.isFinite(next.marketContext?.asOf) && next.marketContext.asOf < (item.marketContext?.asOf ?? 0)
       ? item.marketContext : next.marketContext ?? null;
-    return { ...item, reaction, marketContext, reactionV2: retainReactionV2(item, next) };
+    return { ...item, reaction, marketContext, reactionV2: retainReactionV2(item, next), companyContext: retainCompanyContext(item, next) };
   });
 }
 export const chronologicalNews = (items) =>
@@ -137,7 +138,7 @@ export function mergeFeed(items, incoming) {
     const aiSummary = newsSummary(item.aiSummary)
       || ((existing?.version ?? 1) === (item.version ?? 1)
         ? newsSummary(existing?.aiSummary) : null);
-    byId.set(item.id, { ...existing, ...item, aiSummary, reactionV2: retainReactionV2(existing, item) });
+    byId.set(item.id, { ...existing, ...item, aiSummary, reactionV2: retainReactionV2(existing, item), companyContext: retainCompanyContext(existing, item) });
   }
   return chronologicalNews([...byId.values()]);
 }

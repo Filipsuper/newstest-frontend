@@ -1,4 +1,5 @@
 // Fictional, dated UI scenarios. Imported only by the gated preview and tests.
+import { previewStockChart } from "../sessions/chartFixtures.js";
 const minute = 60_000;
 const anchor = Date.parse("2026-09-08T08:00:00Z");
 const iso = value => new Date(value).toISOString();
@@ -106,6 +107,10 @@ export function previewStories() {
     }
     story.reactionV2 = { schemaVersion: 2, storyId: story.id, storyVersion: 1, publishedAt: story.publishedAt,
       asOf: Date.parse(measurement.asOf), measurements };
+    story.previewCharts = Object.fromEntries(story.companies.map((company, index) => [company.symbol, previewStockChart(story, company.symbol, {
+      price: index ? 80 : 100, change: index ? -1.2 : pct,
+      status: key === "waiting" ? "pending" : key === "missing" ? "unavailable" : "available",
+    })]));
     return story;
   });
 }

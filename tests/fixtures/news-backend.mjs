@@ -1,8 +1,25 @@
 // Local-only integration fixture. All companies, news and account data are fictional.
 import { createServer } from "node:http";
 import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
+import { sessionPreviewStories } from "../../app/designsystem/sessions/fixtures.js";
+import { previewStockChart } from "../../app/designsystem/sessions/chartFixtures.js";
 
 const base = Date.now() - 2 * 3600_000;
+function genericStockChart(story, symbol, unavailable = false) {
+  const published = Date.parse(story.publishedAt), now = Date.now();
+  let date = new Date(published).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
+  // Fictional September-only fixtures; real code uses the verified calendar.
+  let noon = Date.parse(`${date}T12:00:00Z`);
+  if (published >= Date.parse(`${date}T15:30:00Z`)) noon += 86_400_000;
+  while ([0, 6].includes(new Date(noon).getUTCDay())) noon += 86_400_000;
+  date = new Date(noon).toISOString().slice(0, 10);
+  const pending = now < Date.parse(`${date}T07:00:00Z`);
+  const chart = previewStockChart(story, symbol, { date, status: unavailable ? "unavailable" : pending ? "pending" : "available" });
+  chart.asOf = now;
+  chart.points = chart.points.filter(point => point.t <= now);
+  chart.observedAt = chart.points.at(-1)?.t ?? null;
+  return chart;
+}
 const companies = [
   {
     name: "Norden Industri",
@@ -315,10 +332,20 @@ const server = createServer(async (req, res) => {
       nextCursor: url.searchParams.has("cursor") ? null : "page2",
       serverFilters: true,
     };
+  } else if (path.startsWith("/api/feed/news/") && path.endsWith("/chart")) {
+    const id = path.split("/").at(-2), symbol = url.searchParams.get("symbol");
+    const sample = [...previewStories(), ...sessionPreviewStories()].find(story => story.id === id);
+    const story = sample ?? stories.find(story => story.id === id) ?? {
+      ...stories[id.startsWith("long-title") ? 1 : 0], id,
+    };
+    data = { data: sample?.previewCharts?.[symbol] ?? genericStockChart(story, symbol,
+      ["missing-data", "no-chart", "zero-change", "long-title-no-chart"].includes(id)) };
   } else if (path.endsWith("/related")) data = { items: [stories[3]] };
   else if (path.startsWith("/api/feed/news/")) {
     const id = path.split("/").at(-1);
-    let story = stories.find((story) => story.id === id) ?? previewStories().find(story => story.id === id);
+    let story = stories.find((story) => story.id === id)
+      ?? previewStories().find(story => story.id === id)
+      ?? sessionPreviewStories().find(story => story.id === id);
     if (id === "missing-data")
       story = {
         ...stories[0],

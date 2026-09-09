@@ -181,8 +181,9 @@ desktop density or abbreviated interaction model.
   earn two bonuses for the same volume. Prefer mature, same-time RVOL; daily
   RVOL is a ranking fallback only at session close. Company/session context
   requires an exact story/company/date match, and is not event-generated volume.
-  Show one quiet volume label in rows and both methods in the reader's volume
-  details, with source time and provisional baseline status.
+  Show one quiet volume label in rows. Independently validated company-session
+  context can use both methods as the reader's two volume KPIs, with its date;
+  exact event-window volume then remains in expandable details.
 - Before/after news volume compares equal complete windows, excludes the
   publication-straddling candle and stays unavailable with incomplete minute
   coverage. Never substitute full-session RVOL for this event-window comparison.
@@ -238,9 +239,19 @@ desktop density or abbreviated interaction model.
   SegmentedControl buttons; longer company lists use Select. The company choice
   updates price, curve and volume together. Earlier price measurements are
   a read-only comparison under "Mätpunkter & underlag", not separate views.
-  A close-period percentage without corresponding curve coverage stays text-only.
-- V2 charts must end at the selected completed measurement's actual endpoint
-  and percentage. Preserve gaps across missing minutes and closed sessions.
+  A fixed reaction remains valid even when independent stock history is missing.
+- The news reader and OG use a separate absolute-price stock chart, not the
+  archived event-return series. Show the first eligible trading session around
+  publication, with its date and an accurate publication marker. The curve joins
+  real price observations continuously at their real timestamps. It is display
+  context, never an input to reaction percentages, volume or backtest outcomes.
+  Do not add zero prices, filled-in candles or fabricated trades between points.
+  A genuinely single observation remains a dot; absent history stays text-only.
+  Prefer existing stream ticks while the entire session is within the seven-day
+  cache; use stored minute candles afterward or when ticks are unavailable.
+  Show a quiet `Tickdata` / `1 min` source label. Do not extend tick retention or
+  create a tick archive just for a news chart. Fetch only inside an open reader
+  or when generating its share image; never one history request per feed row.
   Refresh visible observations in place without a new-news count or moving rows
   while reading; let the user accept changed reaction selection/order explicitly.
   Personal rows retain the same story version and company choices as the reader.
@@ -257,9 +268,28 @@ desktop density or abbreviated interaction model.
   Session RVOL and post-news-window
   relative volume are different measures and must not share an ambiguous label.
   After-hours periods say "efter öppning". Waiting, missing and incomplete data
-  are explicit; missing chart samples remain gaps, not interpolated prices.
+  are explicit. Missing measurement coverage remains missing in calculations,
+  independently of the visually continuous stock-price chart.
   Local fictional examples live at `/designsystem/reactions`, gated off by
   default in production, and must never enter real feeds or company pages.
+- Company/session context is separate from archived event reactions. Before-open
+  news in its first eligible session may show `Aktien idag` against the exact
+  previous session close. During-session news keeps its valid event return; a
+  missing event return may use an explicitly labelled daily view, never pretend
+  it is a post-news return. Older stories retain their event outcome, with later
+  company context separately dated. One company selector changes all metrics.
+  Use one aligned row: price, `RVOL vid samma tid`, `RVOL mot heldag` when session
+  volume is available. Never borrow another company's legacy percentage.
+- Context prices and volume retain independent source timestamps, availability
+  and freshness; a newer snapshot timestamp cannot freshen an old field. Ratios
+  share their cumulative-volume timestamp. Retained snapshots expire at the next
+  verified exchange open. Exact source times, prior-close date, baseline maturity
+  and unknown adjustment basis belong under `Mätpunkter & underlag`.
+- A session percentage and an absolute-price chart have their own explicit
+  periods; never imply the chart's full-session range is a fixed news-return
+  window. Earlier reaction measurements remain in details, not extra charts.
+  Rows, reader and news share images use the same company/metric selection. The local
+  `/designsystem/sessions` examples are fictional and gated off in production.
 - Story social previews are generated from the same public event, with a
   deliberate 1200×630 composition, legible headline, source, company, and an
   explicitly labelled reaction where available. Prefer completed fixed windows.
@@ -466,8 +496,9 @@ desktop density or abbreviated interaction model.
 
 ## Data and charts
 
-- Historical daily data is the website default. Tick data belongs in the
-  terminal.
+- Historical daily data remains the company-page default. News stock charts may
+  use the existing seven-day tick cache for their publication session, with
+  stored minute candles as fallback. Advanced tick controls remain in Terminal.
 - OMXsum yellow is the primary stock line; comparisons and moving averages are
   quieter and opt-in.
 - Tooltips identify date, exact value, unit, and whether data is reported,

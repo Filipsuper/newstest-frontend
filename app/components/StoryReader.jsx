@@ -12,6 +12,7 @@ import {
   storyHref,
 } from "../utils/newsroom";
 import { reactionV2For, retainReactionV2 } from "../utils/reactionV2";
+import { companyContextFor, retainCompanyContext } from "../utils/companySession";
 import NewsTypeLabel from "./NewsTypeLabel";
 import NewsSummary from "./NewsSummary";
 import { Button } from "./ui/Button";
@@ -21,7 +22,7 @@ import FollowCompanyButton from "./FollowCompanyButton";
 import NewsFeedItem from "./NewsFeedItem";
 import StoryVolume from "./StoryVolume";
 import StoryReaction from "./StoryReaction";
-import ReactionChart from "./ReactionChart";
+import StoryStockHistory from "./StoryStockHistory";
 import styles from "./story-reader.module.css";
 
 const windows = [
@@ -68,7 +69,8 @@ export default function StoryReader({
         if (active) setDetail(previous => {
           const fresh = value.story ?? value;
           const reactionV2 = retainReactionV2(previous?.story ?? previous ?? initialStory, fresh);
-          return value.story ? { ...value, story: { ...fresh, reactionV2 } } : { ...value, reactionV2 };
+          const companyContext = retainCompanyContext(previous?.story ?? previous ?? initialStory, fresh);
+          return value.story ? { ...value, story: { ...fresh, reactionV2, companyContext } } : { ...value, reactionV2, companyContext };
         });
       })
       .catch((error) => {
@@ -86,13 +88,16 @@ export default function StoryReader({
   );
   const hasStory = Boolean(story.id);
   const hasReactionV2 = Boolean(reactionV2For(story));
+  const hasCompanyContext = Boolean(companyContextFor(story)?.companies.length);
   useEffect(() => {
-    if (!hasStory || !hasReactionV2) return;
+    // A newly published story may acquire its first observation after opening.
+    // Keep retrying optional enrichment while the reader is visible.
+    if (!hasStory) return;
     const refresh = () => { if (document.visibilityState === "visible") setRetry(value => value + 1); };
     const timer = setInterval(refresh, 60_000);
     document.addEventListener("visibilitychange", refresh);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
-  }, [story.id, hasStory, hasReactionV2]);
+  }, [story.id, hasStory]);
   const reaction = finiteNumber(story.reaction?.pct);
   const sources = story.sources ?? [];
   const release = detail?.document;
@@ -162,7 +167,7 @@ export default function StoryReader({
           {story.title}
         </Heading>
         <NewsSummary value={story.aiSummary} reading />
-        {reactionV2For(story) ? <StoryReaction key={`${story.id}:${story.version}`} story={story} loading={loading} error={error}
+        {hasReactionV2 || hasCompanyContext ? <StoryReaction key={`${story.id}:${story.version}`} story={story} loading={loading} error={error} refreshKey={retry}
           onRefresh={() => setRetry(value => value + 1)} /> : <section
           className={styles.reaction}
           aria-labelledby="story-reaction-heading"
@@ -187,10 +192,7 @@ export default function StoryReader({
               )}
             </Inline>
           </Inline>
-          <ReactionChart
-            series={detail?.reactionSeries}
-            publishedAt={published}
-          />
+          <StoryStockHistory story={story} refreshKey={retry} />
           {error && <Text size="sm" role="alert">{error}</Text>}
           {story.reaction?.asOf && <Text size="xs" tone="secondary">Kurs per {newsDate(story.reaction.asOf)}</Text>}
           <StoryVolume story={story} comparison={detail?.volumeComparison} />

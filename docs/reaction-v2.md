@@ -1,5 +1,17 @@
 # Reaction v2 implementation status
 
+## Local display revision — not deployed
+
+The news reader and share images now use an independent continuous absolute-price
+chart for the first eligible exchange session around publication. It reads the
+existing seven-day `live_ticks` cache, otherwise stored `reaction_v2_market` or
+`minute_bars` candles. No retention changes, extra tick archive or provider calls.
+This does not change archived Reaction v2 inputs, missing-coverage rules, fixed
++1/+5/+15/+60-minute results or exact replay. See
+[the local implementation and release gates](news-data-consistency-next.md).
+
+## Deployed calculation status
+
 9 September 2026. **Public live beta deployed and enabled after approval**:
 frontend `72a6aa1`, news backend `2c89137`, isolated v2.2 worker code `68138e1`.
 The API flag defaults off in code and is explicitly enabled in production.

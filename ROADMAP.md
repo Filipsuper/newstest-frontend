@@ -72,6 +72,18 @@ and compatible backend releases are in the release history, not pending tasks.
   Expand ingestion-time feature archives
   before describing the dataset as execution-backtest-ready. See the
   [original reaction/volume audit](docs/news-reaction-volume-2026-09-08.md).
+- **Release candidate, not deployed:** continuous stock charts and optional
+  company/session readers only. Charts use the existing seven-day tick cache,
+  then stored minute candles, with no extra tick archive or retention changes.
+  Independently validated context can show previous-close prices and session
+  RVOL alongside unchanged archived news reactions, with shared company selection.
+  **Producer activation is not included**; missing/unverified context stays
+  unavailable. See the [release boundary and verification](docs/news-data-consistency-next.md).
+- [ ] **Separate producer activation:** qualify provenance-aware snapshots,
+  rebuild safe baseline profiles and benchmark a full read-only refresh pass
+  before explicitly enabling the new refresh cadence. Then audit live field
+  coverage and missing reasons, including Freemelt/Wyld. This is not part of
+  the chart/optional-reader release; fictional examples do not prove coverage.
 - [ ] Evaluate a representative story sample for relevance, missing market/
   sector coverage and duplicate issuer notices; define measurable quality goals.
 - [ ] Improve event linking, including translated releases with different

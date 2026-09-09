@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { writeFile } from "node:fs/promises";
+import { CONTENT_OG_VERSION } from "../../app/utils/brand.js";
 
 // Run against a preview with API_URL=http://127.0.0.1:8100/api and the fixture server.
 test.beforeEach(async ({ page }) => {
@@ -186,7 +187,8 @@ for (const width of [320, 1440]) {
     await expect(dialogReader.locator("[data-reading]")).toContainText("Fiktiv AI-text.");
     await expectNoExtractedFacts(dialogReader);
     await expect(dialogReader.getByRole("heading", { name: "Marknadens reaktion" })).toBeVisible();
-    await expect(dialogReader.getByRole("img", { name: /Kursutveckling runt publiceringen/ })).toBeVisible();
+    await expect(dialogReader.getByRole("img", { name: /^Aktiekurs/ })
+      .or(dialogReader.getByText("Aktiekurvan visas när handeln börjar.", { exact: true }))).toBeVisible();
     await expect(dialogReader.getByText("Handelsvolym", { exact: true })).toBeVisible();
     await expect(dialogReader.getByText("Läs hela källtexten", { exact: true })).toBeVisible();
 
@@ -197,7 +199,8 @@ for (const width of [320, 1440]) {
     await expect(reader.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).first().getByRole("listitem")).toHaveCount(3);
     await expectNoExtractedFacts(reader);
     await expect(reader.getByRole("heading", { name: "Marknadens reaktion" })).toBeVisible();
-    await expect(reader.getByRole("img", { name: /Kursutveckling runt publiceringen/ })).toBeVisible();
+    await expect(reader.getByRole("img", { name: /^Aktiekurs/ })
+      .or(reader.getByText("Aktiekurvan visas när handeln börjar.", { exact: true }))).toBeVisible();
     await reader.getByText("Handelsvolym", { exact: true }).click();
     await expect(reader.getByText("RVOL vid denna tid", { exact: true })).toBeVisible();
     await expect(reader.locator('a[href="https://example.com/release"]')).toHaveCount(1);
@@ -451,7 +454,7 @@ test("direct story has social metadata, missing data is not zero, and OG variant
   ).toBeVisible();
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    "https://omxsum.com/nyhet/missing-data/opengraph-image?v=3",
+    `https://omxsum.com/nyhet/missing-data/opengraph-image?v=${CONTENT_OG_VERSION}`,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",

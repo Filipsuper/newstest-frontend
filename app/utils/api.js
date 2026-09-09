@@ -170,6 +170,19 @@ export async function fetchStory(storyId) {
     return response.json();
 }
 
+// Display-only stock history. The server validates the company against the
+// canonical public story; this never changes saved reaction measurements.
+export async function fetchStoryStockChart(storyId, symbol, { signal } = {}) {
+    const params = new URLSearchParams({ symbol });
+    const response = await fetch(`${API_URL}/feed/news/${encodeURIComponent(storyId)}/chart?${params}`, {
+        cache: "no-store", signal: signal ?? AbortSignal.timeout(12_000),
+    });
+    if (!response.ok) throw new Error("Kunde inte hämta aktiekurvan");
+    const body = await response.json();
+    if (body?.error || !body?.data) throw new Error("Kunde inte hämta aktiekurvan");
+    return body.data;
+}
+
 export async function fetchRelatedStories(storyId) {
     const response = await fetch(`${API_URL}/feed/news/${encodeURIComponent(storyId)}/related`, { signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return [];

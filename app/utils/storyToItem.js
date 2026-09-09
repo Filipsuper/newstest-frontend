@@ -40,6 +40,7 @@ export function storyToItem(story) {
         reaction: story.reaction ?? null,
         reactionV2: story.reactionV2,
         marketContext: story.marketContext ?? null,
+        companyContext: story.companyContext,
         status: story.status,
     };
 }

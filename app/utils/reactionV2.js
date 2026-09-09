@@ -1,5 +1,6 @@
 // One presentation contract for rows and reader. Never rewrite legacy ranking
 // inputs or combine another company's/measurement's percentage and chart.
+import { companySessionFor, sessionDateLabel, sessionPricePreferred } from "./companySession.js";
 const finite = value => typeof value === "number" && Number.isFinite(value) ? value : null;
 export const reactionTime = value => {
   const result = typeof value === "string" ? Date.parse(value) : finite(value);
@@ -54,14 +55,26 @@ export function reactionSeriesFor(measurement, period) {
     || Math.abs(last.pct - window.pct) > 1e-8)) return null;
   return { points };
 }
-export function rowReaction(story) {
+export function legacyReactionMatches(story, symbol = story.symbol ?? story.companies?.[0]?.symbol) {
+  const symbols = new Set([story.symbol, ...(story.companies ?? []).map(company => company.symbol)].filter(Boolean));
+  return story.reaction?.symbol ? story.reaction.symbol === symbol
+    : symbols.size === 1 && symbols.has(symbol);
+}
+export function rowReaction(story, symbol = story.symbol ?? story.companies?.[0]?.symbol, now = Date.now()) {
   const v2 = reactionV2For(story);
-  if (!v2) return { version: 1, pct: finite(story.reaction?.pct), label: "Sedan publicering" };
-  const symbol = story.symbol ?? story.companies?.[0]?.symbol;
-  const measurement = v2.measurements.find(item => item.symbol === symbol);
+  const companySession = companySessionFor(story, symbol, now);
+  const measurement = v2?.measurements.find(item => item.symbol === symbol);
   const key = preferredReactionPeriod(measurement);
   const window = measurement?.windows?.[key];
-  return { version: 2, pct: measurement?.status === "measured" && completedReaction(window) ? window.pct : null,
+  const eventPct = v2 ? measurement?.status === "measured" && completedReaction(window) ? window.pct : null
+    : legacyReactionMatches(story, symbol) ? finite(story.reaction?.pct) : null;
+  if (sessionPricePreferred(companySession, eventPct)) return {
+    version: v2 ? 2 : 1, scope: "session", companySession, measurement, period: null,
+    pct: companySession.fields.changePct.value, label: `${sessionDateLabel(companySession, now)} · mot föregående stängning`,
+    asOf: companySession.fields.changePct.at,
+  };
+  if (!v2) return { version: 1, scope: "event", companySession, pct: eventPct, label: "Sedan publicering" };
+  return { version: 2, scope: "event", companySession, pct: eventPct,
     label: reactionPeriodLabel(key, measurement), measurement, period: key,
     status: measurement?.status === "waiting_for_session" ? "Inväntar börsöppning"
       : window?.status === "pending" ? "Inväntar mätperiod" : "Kursdata saknas" };

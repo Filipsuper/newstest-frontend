@@ -18,6 +18,17 @@ test.beforeEach(async ({ page }) => {
 const badge = (scope, label) => scope.locator(`[aria-label="${label}"]`);
 const reaction = page => page.getByRole("region", { name: "Marknadens reaktion", exact: true });
 const kpis = scope => scope.locator('dl[aria-label="Nyckeltal"]');
+const stockChart = scope => scope.getByRole("figure", { name: /^Aktiekurs ·/ });
+
+async function expectContinuousStockChart(scope) {
+  const chart = stockChart(scope);
+  await expect(chart).toBeVisible();
+  const line = chart.locator('path[fill="none"]');
+  await expect(line).toHaveAttribute("stroke", "var(--ui-accent)");
+  expect((await line.getAttribute("d")).match(/M/g)).toHaveLength(1);
+  expect(await line.getAttribute("d")).toContain("L");
+  await expect(chart.locator("circle")).toHaveCount(0);
+}
 
 async function expectAlignedKpis(scope) {
   const columns = kpis(scope).locator(":scope > div");
@@ -61,6 +72,7 @@ for (const width of [320, 1440]) {
       await expect(dialog.getByText(/180\s000 aktier/)).not.toBeVisible();
       await expect(dialog.getByText(/inte bevis på orsak/)).not.toBeVisible();
       await expectAlignedKpis(dialog);
+      await expectContinuousStockChart(dialog);
       await page.screenshot({ path: testInfo.outputPath(`reader-${width}-${theme}.png`) });
       await expect(dialog.getByText("2,4×", { exact: true })).toBeVisible();
       await expect(dialog.getByText("2×", { exact: true })).toBeVisible();
@@ -99,7 +111,7 @@ test("one-click company switching updates the latest price, curve and visible vo
     const share = [...element.querySelectorAll("button")].find(button => button.textContent.includes("Dela nyheten")).getBoundingClientRect();
     return summary.bottom <= data.top && data.bottom <= share.top;
   })).toBe(true);
-  expect(await section.locator('svg path[fill="none"]').getAttribute("stroke")).toBe("var(--ui-negative)");
+  await expectContinuousStockChart(section);
   expect(await companies.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
   for (const button of await companies.getByRole("button").all()) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
   await section.evaluate(element => element.scrollIntoView({ block: "start" }));
@@ -114,7 +126,9 @@ test("one-click company switching updates the latest price, curve and visible vo
 test("next-open, waiting and missing states have explicit labels and no fabricated charts", async ({ page }) => {
   await page.goto("/nyhet/reaction-preview-after-close");
   await expect(badge(reaction(page), "1 tim efter öppning: +2,8 %")).toBeVisible();
-  await expect(reaction(page).getByText("Börsöppning", { exact: true })).toBeVisible();
+  await expectContinuousStockChart(reaction(page));
+  await expect(stockChart(reaction(page)).getByText("Nyhet före öppning", { exact: true })).toBeVisible();
+  await expect(stockChart(reaction(page)).locator('line[stroke-dasharray]')).toHaveCount(0);
   await expect(kpis(reaction(page)).getByText("1 tim från öppning", { exact: true })).toBeVisible();
   await expect(kpis(reaction(page)).getByText("Från öppning · 30 min", { exact: true })).toHaveCount(2);
   await expect(kpis(reaction(page)).getByText("Saknas", { exact: true })).toBeVisible();
@@ -134,15 +148,15 @@ test("next-open, waiting and missing states have explicit labels and no fabricat
   await expect(reaction(page).locator('[aria-label*="0,0 %"]')).toHaveCount(0);
 });
 
-test("negative curves retain gaps and provisional volume remains qualified", async ({ page }, testInfo) => {
+test("negative event returns retain their meaning beside a continuous amber stock-price curve", async ({ page }, testInfo) => {
   await page.goto("/nyhet/reaction-preview-negative");
   const section = reaction(page);
   await expect(badge(section, "1 tim efter nyheten: −3,1 %")).toBeVisible();
-  expect((await section.locator('svg path[fill="none"]').getAttribute("d")).match(/M/g)).toHaveLength(2);
+  await expectContinuousStockChart(section);
   await expect(section.locator('[aria-label*="preliminär jämförelse"]')).toBeVisible();
   await expect(kpis(section).getByText("*", { exact: true })).toBeVisible();
   await expect(section.getByText(/8 jämförbara handelsdagar/)).not.toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("negative-gap.png"), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("negative-stock-chart.png"), fullPage: true });
   await section.getByText("Mätpunkter & underlag", { exact: true }).click();
   await expect(section.getByText("* Preliminärt · 8 jämförbara handelsdagar.", { exact: true })).toBeVisible();
 });
@@ -159,9 +173,11 @@ test("a detail refresh without optional v2 data retains the matching measurement
   await expect(reaction(page).getByText("Handelsvolym", { exact: true })).toHaveCount(0);
 });
 
-test("latest facts advance without period controls and never pair a closing return with an earlier chart", async ({ page, request }) => {
+test("changing fixed measurement periods never replaces or hides the independent stock-price chart", async ({ page, request }) => {
   const detail = await (await request.get("http://127.0.0.1:8100/api/feed/news/reaction-preview-positive")).json();
   await page.goto("/nyhet/reaction-preview-positive");
+  await expectContinuousStockChart(reaction(page));
+  const pricePath = await stockChart(reaction(page)).locator('path[fill="none"]').getAttribute("d");
   const measurement = detail.story.reactionV2.measurements[0];
   measurement.windows.h1.status = "pending";
   measurement.volume.m30.post.status = "pending";
@@ -170,15 +186,16 @@ test("latest facts advance without period controls and never pair a closing retu
   await reaction(page).getByRole("button", { name: "Uppdatera data" }).click();
   await expect(badge(reaction(page), "15 min efter nyheten: +1,1 %")).toBeVisible();
   await expect(kpis(reaction(page)).getByText("Första 15 min", { exact: true })).toHaveCount(2);
-  await expect(reaction(page).getByRole("figure").getByText("8 sep. 10:15", { exact: true })).toBeVisible();
+  await expect(stockChart(reaction(page)).locator('path[fill="none"]')).toHaveAttribute("d", pricePath);
+  await expect(stockChart(reaction(page))).toContainText("Aktiekurs · 8 sep.");
   const close = measurement.windows.session_close;
   Object.assign(close, { status: "complete", pct: 0, endpoint: { price: 100, priceAt: close.targetAt } });
   measurement.asOf = close.targetAt;
   detail.story.reactionV2.asOf = Date.parse(close.targetAt);
   await reaction(page).getByRole("button", { name: "Uppdatera data" }).click();
   await expect(badge(reaction(page), "Vid stängning: 0,0 %")).toBeVisible();
-  await expect(reaction(page).getByRole("img")).toHaveCount(0);
-  await expect(reaction(page).getByText("Kurskurva saknas för den senaste mätperioden.", { exact: true })).toBeVisible();
+  await expectContinuousStockChart(reaction(page));
+  await expect(stockChart(reaction(page)).locator('path[fill="none"]')).toHaveAttribute("d", pricePath);
   await expect(reaction(page).getByRole("combobox")).toHaveCount(0);
 });
 
@@ -241,6 +258,7 @@ test("an open reader refreshes its latest measurement without a manual details c
   await expect(badge(reaction(page), "1 tim efter nyheten: +6,0 %")).toBeVisible();
   await expect(reaction(page).locator("details")).not.toHaveAttribute("open");
   await expect(reaction(page).getByRole("img")).toHaveCount(1);
+  await expectContinuousStockChart(reaction(page));
 });
 
 test("personalized news uses the same v2 badge as the canonical reader", async ({ page }) => {
