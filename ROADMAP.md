@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 8 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 9 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -50,7 +50,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `72a6aa1`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `f5fa7b0`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
@@ -146,9 +146,11 @@ Ideas to validate, not delivery commitments:
 
 Run alongside the product backlog, with scope and release verification per change.
 
-- [ ] **Dependencies/security:** resolve the four high-severity findings recorded
-  in the 6 September audit; rerun the audit to establish current exposure.
-  Keep framework/dependency upgrades separate from presentation changes.
+- [x] **Dependencies/security:** released 9 September. Next.js 15.5.25,
+  Sharp 0.35.4, PostCSS 8.5.28 and nanoid 3.3.18 clear the current dependency
+  audit. Linux ARM64 image/codec checks and live verification passed; see
+  [verification and advisory notes](docs/security-update-2026-09-09.md).
+  Keep framework/dependency upgrades separate from presentation/data changes.
 - [ ] **Billing:** verify Stripe portal plan changes and implement an idempotent
   existing-subscription upgrade path before offering in-app Plus-to-Pro
   checkout. The current checkout creates a new subscription; retain the

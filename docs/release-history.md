@@ -11,6 +11,37 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Frontend dependency security update — released
+
+Frontend `f5fa7b0` (including `ac996f7`) deployed on 9 September 2026 after
+approval. No application UI, news ranking, reaction calculations, accounts,
+backend, collector or Terminal changes were bundled into this release.
+
+- Next.js 15.5.25, Sharp 0.35.4, PostCSS 8.5.28 and nanoid 3.3.18; full and
+  production-only dependency audits report zero known vulnerabilities.
+- The first candidate was stopped before switching traffic: standalone tracing
+  omitted codec version metadata, so Next correctly blocked AVIF decoding.
+  A narrow trace include retains the real package metadata. No codec safety
+  checks are bypassed. A new post-build regression check covers this failure.
+- Final isolated verification: 69 unit tests, 121 Chromium browser tests,
+  production build and standalone PNG/AVIF optimization checks passed.
+- The actual Linux ARM64 image passed PNG/AVIF-to-WebP checks with Node 22.23.2,
+  musl 1.2.6, libvips 8.18.6 and patched libheif 1.23.2 before traffic switched.
+- Candidate and public endpoints serve the Terminal preview as 640px WebP and
+  the site, Freemelt story and Ericsson share images as valid 1200×630 PNGs.
+  Home, Marknaden, Aktier, Terminal, Kvällsbrevet, company, news and company API
+  routes return 200. The fictional reaction preview stays 404. Live Marknaden
+  renders its news selection, chronological preview, market widgets and letter.
+- Running image matches the tested candidate, with no baked `.env` files or
+  fixture API addresses. Frontend logs show a clean startup and zero restarts.
+
+Frontend image `09f0c64e40d8`, started `2026-09-09T16:39:10Z`; rollback retains
+the previous running image `8e839a6b468d`. Backend `1503217c6735` and Terminal
+`8d5c40cfefae` retain their pre-deployment image/start times and zero restarts.
+The reaction worker remains active since `2026-09-09T09:33:51Z`, zero restarts.
+Post-release capacity: ~734 MB available memory, ~2 GB free swap, ~7.1 GB disk.
+The separate news-data consistency work remains planned, not implemented here.
+
 ## News reader — extracted facts paused
 
 Frontend `79f89e7` deployed on 9 September 2026 after approval. Only the

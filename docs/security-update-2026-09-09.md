@@ -1,8 +1,8 @@
 # Frontend dependency security update
 
-9 September 2026. Scoped frontend security patch; production release status is
-recorded in [the release history](release-history.md). Keep this patch separate
-from news-data changes and the pending editorial/favicon work.
+9 September 2026. Released as frontend `f5fa7b0`; production verification and
+rollback details are recorded in [the release history](release-history.md).
+News-data changes and the pending editorial/favicon work were not included.
 
 ## Dependency changes
 
@@ -41,8 +41,9 @@ tests were used.
 Passed: 69 unit tests and all 121 Chromium browser tests on the isolated
 production standalone build. The full working checkout also passes 77 unit
 tests, including its unrelated, unreleased ranking tests. Full and runtime-only
-audits report zero known vulnerabilities. The Linux container check below is
-still a release gate, not something the macOS tests have established.
+audits report zero known vulnerabilities. The final Linux ARM64 container also
+passed the native/image checks below: Node 22.23.2, musl 1.2.6, Sharp 0.35.4,
+libvips 8.18.6 and libheif 1.23.2. The macOS tests alone did not establish this.
 
 - Clean checkout based on released application source, with only this patch.
 - Production compilation/standalone tracing and local runtime verification.
@@ -53,7 +54,7 @@ still a release gate, not something the macOS tests have established.
 - `npm run test:security` repeats the advisory audit and fails on high/critical
   findings. Unit version floors complement this command; they do not replace it.
 
-Before a separately approved deployment, build the production image using the
+For future approved deployments, repeat the production image checks using the
 existing capped release procedure. Confirm Node >=20.9 and musl >=1.2.5 in the
 ARM64 Alpine runtime, and smoke-test the optimized Terminal image and OG routes
 from the built image. macOS native tests and ARM64 lock entries do not substitute
