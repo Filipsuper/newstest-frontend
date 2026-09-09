@@ -1,10 +1,10 @@
 # Reaction v2 implementation status
 
-8 September 2026. **Public live beta deployed and enabled after approval**:
-frontend `72a6aa1`, news backend `2c89137`, isolated v2.2 worker code `f60fd4b`.
+9 September 2026. **Public live beta deployed and enabled after approval**:
+frontend `72a6aa1`, news backend `2c89137`, isolated v2.2 worker code `68138e1`.
 The API flag defaults off in code and is explicitly enabled in production.
-The worker reads existing minute data and writes only the new v2 archive;
-extra provider collection and tick archiving remain off. Ranking, existing
+The worker reads existing minute data and collects bounded completed minute bars
+for news-related instruments, writing only the v2 archive. Tick archiving remains off. Ranking, existing
 collectors, Terminal and newsletter services are unchanged.
 
 The implementation is in `stonks/stonks/reactions/`, with the opt-in CLI
@@ -207,3 +207,36 @@ or backtest readiness. The subsequently approved live beta is recorded below.
   only the backend, then reload nginx. Stop `stonks-reactions-v2` to stop archive
   writes; do not delete the archive or modify existing collectors. Previous
   frontend/backend images remain tagged for rollback. See `release-history.md`.
+
+### Worker freshness repair — 9 September
+
+- Approved worker release `68138e1` activated at **09:33:51 UTC**. No website,
+  news backend or Terminal container was rebuilt or restarted. Existing app images
+  and the unrelated dirty server checkout remain unchanged.
+- Current story versions and recent news take priority. Superseded jobs stop
+  automatic retries, while their archived inputs/results remain available for
+  replay and explicit retry. Future outcomes for superseded versions are not
+  automatically completed; do not claim full historical backtest coverage.
+- Up to three supported news-stock minute fetches per cycle, before measurement;
+  excess jobs wait for collection capacity. Rate limits trigger a global pause.
+  Targets and missing-data retries are scheduled separately, with a bounded
+  per-cycle bar cache. Tick collection is still disabled.
+- Private replay manifests are compressed losslessly; the public price, chart
+  and volume contract is unchanged. Old uncompressed records still replay with
+  the new reader. No historical records were rewritten or deleted.
+- Verified **93 reaction tests** against test-double and real disposable MongoDB,
+  five minute-source tests and 13 public-adapter tests. Live checks confirmed
+  current-day candles, three old and three new exact replays, and matching chart
+  endpoints for all 11 completed periods in a newly updated multi-company story.
+  Initial cycles had no calculation failures or worker restarts, at about 70 MiB
+  memory. Backlog catch-up and reference-history accumulation remain ongoing.
+  At 09:38 UTC, 30 instruments had fetched successfully, 43 current-version
+  results were checked since rollout and no superseded jobs remained due.
+- Unused Docker build cache older than 24 hours reclaimed **9.737 GB**; roughly
+  **11.8 GB** remains free. Running and rollback images, volumes and database
+  archives were preserved. The cache is rebuildable.
+- Worker override now uses `--jobs 20 --interval 15 --collect-minutes
+  --collections-per-cycle 3`, retaining 25% CPU and 256 MiB limits. Previous
+  configuration is preserved at `/root/omxsum-reactions-v2/releases/68138e1/previous-live-beta.conf`.
+  Stop only this worker to halt writes; retain the new replay reader for compact
+  records even if the scheduler is rolled back. Public API rollback is unchanged.
