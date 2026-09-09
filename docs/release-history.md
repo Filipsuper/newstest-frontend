@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 8 September 2026, newest public revisions first.
+Release records through 9 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,38 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## News reader — extracted facts paused
+
+Frontend `79f89e7` deployed on 9 September 2026 after approval. Only the
+shared reader, its regression fixtures/tests and matching UI rule shipped;
+unrelated local editorial-ranking and favicon work remains uncommitted.
+
+- Removed report figures, estimate comparisons, insider-transaction tables
+  and standalone extracted amounts from both dialogs and full news pages.
+- AI prose/bullets, reaction KPIs/charts, original sources and source text
+  remain. Missing AI text does not restore deterministic fact blocks. Stored
+  source facts and all market-reaction calculations are unchanged.
+- Clean release verification: 66 unit tests, four Chromium checks covering
+  320/1440px readers, AI-present/absent cases and dialog/history navigation,
+  plus the resource-capped production build. Local example servers were not
+  used as production API endpoints.
+- The reported Acconeer story `story_657a4f01b0922c295b9655ec589f2a41` returns
+  HTTP 200 without the extracted-facts headings. Its AI summary, three
+  reaction KPIs and sources were verified in live HTML and Chromium; the
+  public API still carries its source facts. Home, Marknaden, Aktier, an
+  Ericsson page and the company API return 200. Fictional reaction preview
+  remains 404. No baked `.env` or local API addresses in runtime assets.
+
+Frontend image `8e839a6b468d`, started `2026-09-09T14:07:31Z`, zero restarts.
+Rollback retains `42538e6e7c8c`. Backend `1503217c6735`, Terminal `276a76647520`
+and the isolated reaction worker retained their start times and zero restarts.
+Post-release capacity: ~754 MB available memory, ~2 GB free swap, ~11 GB disk.
+
+The unchanged dependency set reports three high and one critical package
+finding in `npm audit --omit=dev`, including Next.js 15.5.22 advisories. This
+UI-only release does not remediate those findings; dependency patching and
+validation remain a separate security follow-up. No exploit testing was run.
 
 ## Reaction v2.2 — public live beta
 
