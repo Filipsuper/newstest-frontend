@@ -1,11 +1,6 @@
-import WatchFeedPage from "../components/WatchFeedPage";
+import { permanentRedirect } from "next/navigation";
+import { canonicalWatchHref } from "../utils/navigation";
 
-export const metadata = {
-    title: "Bevakning",
-    description: "Nyheter och marknadsreaktioner från bolagen och ämnena du följer.",
-    robots: { index: false },
-};
-
-export default function Page() {
-    return <WatchFeedPage />;
+export default async function Page({ searchParams }) {
+    permanentRedirect(canonicalWatchHref(await searchParams));
 }

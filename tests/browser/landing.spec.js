@@ -189,7 +189,7 @@ test("returning readers get workspace actions without assuming newsletter subscr
   const hero = page.locator("#kom-igang");
   await expect(
     hero.getByRole("link", { name: "Öppna min bevakning" }),
-  ).toHaveAttribute("href", "/bevakning");
+  ).toHaveAttribute("href", "/marknaden/bevakning");
   await expect(hero.getByRole("textbox")).toHaveCount(0);
   await expect(
     page
@@ -209,7 +209,7 @@ test("returning readers get workspace actions without assuming newsletter subscr
   ).toHaveAttribute("href", "/marknaden");
   await expect(
     hero.getByRole("link", { name: "Välj bolag att följa" }),
-  ).toHaveAttribute("href", "/bevakning/hantera");
+  ).toHaveAttribute("href", "/marknaden/bevakning/hantera");
   expect(state.writes).toEqual([]);
 });
 

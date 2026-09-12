@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 9 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 13 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -55,6 +55,24 @@ Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
+
+### Market workspace follow-through — release candidate
+
+- Bevakning lives inside Marknaden alongside Överblick and Nyhetsflöde;
+  legacy links redirect, and primary navigation is Marknaden / Aktier / Breven.
+- One compact preference editor provides Bolag / Ämnen / Nyckelord tabs,
+  selected chips, grouped topic search and the existing plan limits.
+- Incoming news appears automatically in the full feed, overview and personal
+  snapshots. Pause/resume, reading position, reader history, URL filters and
+  quote-only ordering are preserved, without a manual acceptance gate.
+- The published letter leads the supporting column for everyone, with its
+  full title and two supplied takeaways (excerpt fallback). Two compact
+  personal headlines and `Visa alla` follow; tablets stack earlier.
+- Frontend-only release: existing access and alert-delivery rules are unchanged.
+  The intercepted news loading state can recover through the existing bounded
+  client reader if Back/Forward abandons the original server response.
+  Build and live verification are pending; see the release history for the
+  deployed baseline. Unrelated local ranking/favicon/chart edits are excluded.
 
 ### 1. Improve news quality
 

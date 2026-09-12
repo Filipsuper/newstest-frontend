@@ -189,6 +189,7 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Headers", "content-type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -196,6 +197,13 @@ const server = createServer(async (req, res) => {
   }
   const url = new URL(req.url, "http://localhost");
   const path = url.pathname;
+  if (path === "/api/feed/stream") {
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
+    res.write(": fictional local preview connected\n\n");
+    const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 15_000);
+    res.on("close", () => clearInterval(heartbeat));
+    return;
+  }
   let body = "";
   for await (const chunk of req) body += chunk;
   const input = body ? JSON.parse(body) : {};
@@ -206,6 +214,11 @@ const server = createServer(async (req, res) => {
     user.watchlist = user.watchlist.includes(input.symbol)
       ? user.watchlist.filter((s) => s !== input.symbol)
       : [...user.watchlist, input.symbol];
+    data = { watchlist: user.watchlist };
+  } else if (req.method === "PUT" && path.startsWith("/api/user/watchlist/")) {
+    const symbol = decodeURIComponent(path.split("/").at(-1));
+    user.watchlist = user.watchlist.filter((value) => value !== symbol);
+    if (input.followed === true) user.watchlist.push(symbol);
     data = { watchlist: user.watchlist };
   } else if (path === "/api/user/topics" || path === "/api/user/keywords") {
     const key = path.split("/").at(-1);

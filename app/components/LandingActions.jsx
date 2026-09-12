@@ -34,7 +34,7 @@ export function LandingActions() {
               nativeButton={false}
               role="link"
               render={
-                <Link href={hasPreferences ? "/bevakning" : "/marknaden"} />
+                <Link href={hasPreferences ? "/marknaden/bevakning" : "/marknaden"} />
               }
             >
               {hasPreferences ? "Öppna min bevakning" : "Öppna Marknaden"}
@@ -45,7 +45,7 @@ export function LandingActions() {
               role="link"
               render={
                 <Link
-                  href={hasPreferences ? "/marknaden" : "/bevakning/hantera"}
+                  href={hasPreferences ? "/marknaden" : "/marknaden/bevakning/hantera"}
                 />
               }
             >

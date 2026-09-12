@@ -101,7 +101,7 @@ export default function UpgradeSuccessPage() {
                 variant="secondary"
                 nativeButton={false}
                 role="link"
-                render={<Link href="/bevakning/hantera" />}
+                render={<Link href="/marknaden/bevakning/hantera" />}
               >
                 Välj bolag att följa
               </Button>

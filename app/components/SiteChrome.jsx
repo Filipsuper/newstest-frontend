@@ -12,13 +12,9 @@ import LogInModal from "../modals/logInModal";
 import StockSearch from "./StockSearch";
 import FloatingDock from "./FloatingDock";
 import PublicShell from "./PublicShell";
+import { PRIMARY_NAVIGATION, isPrimaryNavigationActive } from "../utils/navigation";
 
-const PRIMARY_LINKS = [
-    { href: "/marknaden", label: "Marknaden" },
-    { href: "/bevakning", label: "Bevakning" },
-    { href: "/aktier", label: "Aktier" },
-    { href: "/nyhetsbrev", label: "Breven" },
-];
+const PRIMARY_LINKS = PRIMARY_NAVIGATION;
 
 const SECONDARY_LINKS = [
     { href: "/morgonbrevet", label: "Morgonbrevet" },
@@ -27,16 +23,7 @@ const SECONDARY_LINKS = [
     { href: "/om-oss", label: "Om OMXsum" },
 ];
 
-const isActive = (pathname, link) => {
-    if (link.exact) return pathname === link.href;
-    if (link.href === "/aktier" && (pathname.startsWith("/aktie/") || pathname.startsWith("/screener"))) return true;
-    if (link.href === "/marknaden" && pathname.startsWith("/marknadsnyheter")) return true;
-    if (link.href === "/bevakning" && pathname.startsWith("/mina-aktier")) return true;
-    if (link.href === "/nyhetsbrev" && ["/morgonbrevet", "/kvallsbrevet", "/article/"].some(
-        (route) => pathname === route || pathname.startsWith(route),
-    )) return true;
-    return pathname === link.href || pathname.startsWith(`${link.href}/`);
-};
+const isActive = (pathname, link) => isPrimaryNavigationActive(pathname, link.href);
 
 export default function SiteChrome({ children }) {
     const { openModal } = useModal();
@@ -44,13 +31,8 @@ export default function SiteChrome({ children }) {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const loggedIn = Boolean(user) && !isGuestUser;
-    const preferenceCount = loggedIn
-        ? (user.watchlist?.length ?? 0) + (user.topics?.length ?? 0) + (user.keywords?.length ?? 0)
-        : 0;
     const isMarketPage = pathname === "/marknaden"
-        || pathname.startsWith("/marknaden/")
-        || pathname === "/bevakning"
-        || pathname.startsWith("/bevakning/");
+        || pathname.startsWith("/marknaden/");
     // /terminal is the public membership gateway, not the separate workspace.
     const isTerminalPage = pathname.startsWith("/terminal/");
 
@@ -84,9 +66,6 @@ export default function SiteChrome({ children }) {
                                 className={isActive(pathname, link) ? "is-active" : ""}
                             >
                                 {link.label}
-                                {link.href === "/bevakning" && preferenceCount > 0 && (
-                                    <span className="site-header__preference-count">{preferenceCount}</span>
-                                )}
                             </Link>
                         ))}
                     </nav>
@@ -135,9 +114,6 @@ export default function SiteChrome({ children }) {
                                         className={isActive(pathname, link) ? "is-active" : ""}
                                     >
                                         {link.label}
-                                        {link.href === "/bevakning" && preferenceCount > 0 && (
-                                            <span className="site-header__preference-count">{preferenceCount}</span>
-                                        )}
                                     </Link>
                                 ))}
                             </div>

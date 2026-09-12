@@ -7,10 +7,10 @@ import { storyToItem } from "../utils/storyToItem";
 import {
   changedFeedItems,
   mergeFeed,
-  pendingChanges,
   refreshMarketObservations,
 } from "../utils/newsroom";
 import { rowReaction } from "../utils/reactionV2";
+import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { useAuthContext } from "../providers/AuthProvider";
 import { Button, IconButton } from "./ui/Button";
 import { TextField } from "./ui/TextField";
@@ -48,6 +48,26 @@ const FILTERS = [
   { id: "insider", label: "Insyn", tags: ["INSIDER"] },
 ];
 
+// Keep withdrawals as versioned tombstones so a delayed poll or replay cannot
+// restore an older story, including one no longer present in the rendered rows.
+function acceptVersions(incoming, latest) {
+  return incoming.filter((item) => {
+    if (!item?.id) return false;
+    const previous = latest.get(item.id);
+    if (previous && ((previous.version ?? 1) > (item.version ?? 1)
+      || ((previous.version ?? 1) === (item.version ?? 1)
+        && previous.status && !["flash", "update"].includes(previous.status)
+        && (!item.status || ["flash", "update"].includes(item.status))))) return false;
+    latest.set(item.id, item);
+    return true;
+  });
+}
+
+const reactionRanking = (rows) => rows
+  .filter((item) => rowReaction(item).pct !== null)
+  .sort((a, b) => Math.abs(rowReaction(b).pct) - Math.abs(rowReaction(a).pct))
+  .map((item) => item.id);
+
 export default function LiveNewsFeed({
   compact = false,
   paused: parentPaused = false,
@@ -63,8 +83,8 @@ export default function LiveNewsFeed({
   const reactions = !compact && params.get("view") === "reactions";
   const [query, setQuery] = useState(activeQuery);
   const [items, setItems] = useState(null);
-  const [pending, setPending] = useState([]);
-  const [observations, setObservations] = useState(new Map());
+  const observations = useRef(new Map());
+  const [reactionOrder, setReactionOrder] = useState([]);
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState("Ansluter");
   const [error, setError] = useState("");
@@ -74,6 +94,8 @@ export default function LiveNewsFeed({
   const [loadedFor, setLoadedFor] = useState(null);
   const generation = useRef(0);
   const current = useRef([]);
+  const latest = useRef(new Map());
+  const { captureAnchor, listRef } = useLiveScrollAnchor();
   const isPaused = paused || parentPaused;
   const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser]);
   const ready = items !== null && loadedFor === requestKey;
@@ -94,8 +116,9 @@ export default function LiveNewsFeed({
     const version = ++generation.current;
     setItems(null);
     current.current = [];
-    setPending([]);
-    setObservations(new Map());
+    latest.current = new Map();
+    observations.current = new Map();
+    setReactionOrder([]);
     setError("");
     setCursor(null);
     setLoadingMore(false);
@@ -104,11 +127,11 @@ export default function LiveNewsFeed({
         if (version !== generation.current) return;
         if (!Array.isArray(data?.items))
           throw new Error(data?.error || "Nyheterna kunde inte hämtas");
-        const rows = mergeFeed([], data.items.map(storyToItem));
+        const rows = mergeFeed([], acceptVersions(data.items.map(storyToItem), latest.current));
         current.current = rows;
         setItems(rows);
+        setReactionOrder(reactionRanking(rows));
         setLoadedFor(requestKey);
-        setPending((previous) => pendingChanges(rows, previous));
         setCursor(data.nextCursor || null);
       })
       .catch(() => {
@@ -121,6 +144,13 @@ export default function LiveNewsFeed({
   }, [activeQuery, category, retry, isPlusUser]);
 
   useEffect(() => {
+    if (reactions) {
+      captureAnchor();
+      setReactionOrder(reactionRanking(refreshMarketObservations(current.current, [...observations.current.values()])));
+    }
+  }, [reactions]);
+
+  useEffect(() => {
     if (!isPlusUser || !ready || activeQuery || isPaused) {
       setStatus(
         !ready ? "Hämtar nyheter" : isPaused ? "Pausat" : "Sökresultat",
@@ -131,46 +161,38 @@ export default function LiveNewsFeed({
       active = true;
     function accept(incoming) {
       if (!active) return;
-      const withdrawn = new Set(
-        incoming
-          .filter(
-            (item) => item.status && !["flash", "update"].includes(item.status),
-          )
-          .map((item) => item.id),
-      );
-      if (withdrawn.size) {
-        current.current = current.current.filter(
-          (item) => !withdrawn.has(item.id),
-        );
-        setItems(current.current);
-        setPending((previous) =>
-          previous.filter((item) => !withdrawn.has(item.id)),
-        );
-      }
-      // Price-only updates stay out of the reading queue. New versions remain explicit.
-      const eligible = incoming.filter(
+      const admitted = acceptVersions(incoming, latest.current);
+      const currentById = new Map(current.current.map((item) => [item.id, item]));
+      const eligible = admitted.filter(
         (item) =>
-          !withdrawn.has(item.id) &&
-          (category === "all" ||
+          currentById.has(item.id) || category === "all" ||
             item.labels?.some((tag) =>
               FILTERS.find((filter) => filter.id === category)?.tags?.includes(tag),
-            )),
+            ),
       );
-      setObservations(previous => {
-        const next = new Map(previous);
-        for (const item of eligible) {
-          const old = next.get(item.id);
-          if (old && (old.version ?? 1) > (item.version ?? 1)) continue;
-          next.set(item.id, old && (old.version ?? 1) === (item.version ?? 1)
-            ? refreshMarketObservations([old], [item])[0] : item);
+      if (!eligible.length) return;
+      const rows = mergeFeed(current.current, eligible);
+      const contentChanged = rows.length !== current.current.length
+        || rows.some((item) => !currentById.has(item.id))
+        || changedFeedItems(current.current, rows).length > 0;
+      const next = new Map(observations.current);
+      for (const item of eligible) {
+        if (item.status && !["flash", "update"].includes(item.status)) {
+          next.delete(item.id);
+          continue;
         }
-        return new Map([...next].slice(-500));
-      });
-      // Deduplicate before counting; also clear queued copy that has reverted
-      // to the displayed version. A replay must not resurrect the same banner.
-      setPending((previous) =>
-        pendingChanges(current.current, mergeFeed(previous, eligible)),
-      );
+        const old = next.get(item.id) ?? currentById.get(item.id);
+        next.set(item.id, old && (old.version ?? 1) === (item.version ?? 1)
+          ? refreshMarketObservations([old], [item])[0] : item);
+      }
+      const observedRows = refreshMarketObservations(rows, [...next.values()]);
+      // News and AI copy appear immediately. Quote-only changes update metrics
+      // in place; actual news changes or a view switch refresh reaction order.
+      captureAnchor();
+      observations.current = new Map([...next].slice(-500));
+      current.current = observedRows;
+      setItems(observedRows);
+      if (contentChanged) setReactionOrder(reactionRanking(observedRows));
     }
     let refreshing = false;
     async function refresh() {
@@ -237,10 +259,11 @@ export default function LiveNewsFeed({
       if (version !== generation.current) return;
       if (!Array.isArray(data?.items))
         throw new Error("Äldre nyheter kunde inte hämtas.");
-      const merged = mergeFeed(current.current, data.items.map(storyToItem));
+      const merged = mergeFeed(current.current, acceptVersions(data.items.map(storyToItem), latest.current));
+      captureAnchor();
       current.current = merged;
       setItems(merged);
-      setPending((previous) => pendingChanges(merged, previous));
+      setReactionOrder(reactionRanking(refreshMarketObservations(merged, [...observations.current.values()])));
       setCursor(
         data.nextCursor && data.nextCursor !== cursor ? data.nextCursor : null,
       );
@@ -252,26 +275,23 @@ export default function LiveNewsFeed({
   }
   const selectRows = (rows) => {
     const filter = FILTERS.find((filter) => filter.id === category);
+    const order = new Map(reactionOrder.map((id, index) => [id, index]));
     const filtered = rows.filter(
       (item) =>
         (!filter.tags ||
           item.labels?.some((tag) => filter.tags.includes(tag))) &&
-        (!reactions || rowReaction(item).pct !== null),
+        (!reactions || order.has(item.id)),
     );
     const sorted = reactions
       ? [...filtered].sort(
-          (a, b) => Math.abs(rowReaction(b).pct) - Math.abs(rowReaction(a).pct),
+          (a, b) => order.get(a.id) - order.get(b.id),
         )
       : filtered;
     return compact ? sorted.slice(0, 12) : sorted;
   };
   const shown = selectRows(ready ? items : []);
-  const observed = refreshMarketObservations(ready ? items : [], [...observations.values()]);
+  const observed = refreshMarketObservations(ready ? items : [], [...observations.current.values()]);
   const observedById = new Map(observed.map(item => [item.id, item]));
-  const selectionChanged = reactions && shown.map(item => item.id).join(",") !== selectRows(observed).map(item => item.id).join(",");
-  const pendingCount = ready
-    ? changedFeedItems(shown, selectRows(mergeFeed(items, pending))).length
-    : 0;
 
   return (
     <section className={styles.feed} aria-label="Nyhetsflöde">
@@ -355,19 +375,6 @@ export default function LiveNewsFeed({
           </Button>
         )}
       </Inline>
-      {pendingCount > 0 && (
-        <Button
-          variant="secondary"
-          onClick={() => {
-            const merged = mergeFeed(current.current, pending);
-            current.current = merged;
-            setItems(merged);
-            setPending([]);
-          }}
-        >
-          {pendingCount} nya eller uppdaterade nyheter
-        </Button>
-      )}
       {error && (
         <EmptyState
           role="alert"
@@ -384,7 +391,6 @@ export default function LiveNewsFeed({
           }
         />
       )}
-      {selectionChanged && <Button variant="secondary" onClick={() => { current.current = observed; setItems(observed); }}>Uppdatera urval</Button>}
       {!ready && !error ? (
         <NewsListSkeleton />
       ) : !shown.length && !error ? (
@@ -403,9 +409,11 @@ export default function LiveNewsFeed({
           }
         />
       ) : (
-        <div className={styles.rows}>
+        <div className={styles.rows} ref={listRef}>
           {shown.map((item) => (
-            <NewsFeedItem key={item.id} item={observedById.get(item.id) ?? item} />
+            <div key={item.id} data-live-news-id={item.id}>
+              <NewsFeedItem item={observedById.get(item.id) ?? item} />
+            </div>
           ))}
         </div>
       )}

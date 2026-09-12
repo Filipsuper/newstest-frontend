@@ -76,7 +76,7 @@ test("overview is news first and opens a URL-backed dialog with Back and forward
   expect(errors).toEqual([]);
 });
 
-test("chronological feed buffers arrivals, pauses, filters by URL and loads older news", async ({
+test("chronological feed inserts arrivals automatically, pauses, filters by URL and loads older news", async ({
   page,
 }) => {
   await page.goto("/marknaden/nyheter");
@@ -96,18 +96,10 @@ test("chronological feed buffers arrivals, pauses, filters by URL and loads olde
       }),
     );
   });
-  await expect(
-    page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "En helt ny testnyhet", exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "1 nya eller uppdaterade nyheter" })
-    .click();
   await expect(page.locator("article").first()).toContainText(
     "En helt ny testnyhet",
   );
+  await expect(page.getByRole("button", { name: /nya eller uppdaterade|Visa nya/ })).toHaveCount(0);
   await page
     .getByRole("button", { name: "Pausa uppdateringar", exact: true })
     .click();
@@ -271,7 +263,7 @@ async function emitStories(page, stories) {
   }, stories);
 }
 
-test("dashboard ignores replayed copies, internal revisions and stories outside its preview", async ({ page, request }) => {
+test("dashboard deduplicates arrivals and inserts visible stories automatically", async ({ page, request }) => {
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   await page.goto("/marknaden");
   const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
@@ -286,9 +278,8 @@ test("dashboard ignores replayed copies, internal revisions and stories outside 
   await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
   const incoming = { ...existing, id: "real-new", eventId: "real-new-event", headline: "En faktiskt ny händelse", publishedAt: new Date().toISOString() };
   await emitStories(page, [incoming, { ...incoming, id: "new-wire-copy", importance: 1 }]);
-  await expect(latest.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
-  await latest.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
   await expect(latest.locator("article").first()).toContainText(incoming.headline);
+  await expect(latest.locator("article")).toHaveCount(12);
   await emitStories(page, [incoming, { ...incoming, id: "new-wire-copy", importance: 1 }]);
   await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
 });
@@ -322,7 +313,7 @@ test("a stalled dashboard request times out instead of showing skeletons indefin
   await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
 });
 
-test("featured headlines do not announce AI-only enrichment or hidden candidate revisions", async ({ page, request }) => {
+test("featured headlines update automatically without exposing AI-only enrichment", async ({ page, request }) => {
   const snapshot = await (await request.get("http://127.0.0.1:8100/api/feed/market-overview")).json();
   await page.clock.install();
   await page.goto("/marknaden");
@@ -342,19 +333,22 @@ test("featured headlines do not announce AI-only enrichment or hidden candidate 
     return route.fulfill({ json: response });
   });
   await page.clock.runFor(31000);
-  await expect.poll(() => refreshes).toBe(1);
-  await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  // Server-rendered rows can be visible before the initial client refresh;
+  // require a refresh without assuming hydration made exactly one request.
+  await expect.poll(() => refreshes).toBeGreaterThan(0);
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
+  await expect(featured.getByText("Uppdaterad AI-text som bara visas i läsaren.", { exact: true })).toHaveCount(0);
   response = { ...response, news: response.news.map((story, index) => index === 0
     ? { ...story, version: 2, headline: "Bolaget meddelar en ny helårsprognos" } : story) };
   await page.clock.runFor(30000);
-  await expect(featured.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
-  await featured.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
   await expect(featured.locator("article").first()).toContainText("Bolaget meddelar en ny helårsprognos");
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
   await page.clock.runFor(31000);
-  await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  await expect(featured.locator("article").first()).toContainText("Bolaget meddelar en ny helårsprognos");
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
 });
 
-test("reaction filter only announces changes that can be seen in that view", async ({ page, request }) => {
+test("reaction filter excludes unmeasured arrivals while latest shows them automatically", async ({ page, request }) => {
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   await page.goto("/marknaden/nyheter?view=reactions");
   await expect(page.locator("article")).toHaveCount(12);
@@ -363,11 +357,10 @@ test("reaction filter only announces changes that can be seen in that view", asy
   await emitStories(page, [incoming]);
   await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Senaste", exact: true }).click();
-  await page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
   await expect(page.locator("article").filter({ hasText: incoming.headline })).toBeVisible();
 });
 
-test("AI enrichment with the same story version waits for explicit feed acceptance", async ({ page, request }) => {
+test("AI enrichment with the same story version appears automatically", async ({ page, request }) => {
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   const enriched = { ...body.items[2], aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
   await page.goto("/marknaden/nyheter");
@@ -376,10 +369,8 @@ test("AI enrichment with the same story version waits for explicit feed acceptan
     const source = window.__newsStreams.findLast((source) => !source.closed);
     source.dispatchEvent(new MessageEvent("story", { data: JSON.stringify(story) }));
   }, enriched);
-  await expect(page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" })).toBeVisible();
-  await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "1 nya eller uppdaterade nyheter" }).click();
   await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /nya eller uppdaterade|Visa nya/ })).toHaveCount(0);
   await expect(page.locator("article")).toHaveCount(12);
 });
 
@@ -390,6 +381,10 @@ for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/marknaden");
     await expect(page.locator("article").first()).toBeVisible();
+    // Featured rows are server-rendered. Wait for the authenticated live feed
+    // before measuring the completed layout or relying on client navigation.
+    await expect(page.getByRole("region", { name: "Senaste nytt", exact: true })
+      .getByText("Ansluten · Senast publicerat först", { exact: true })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -482,6 +477,16 @@ test("direct story has social metadata, missing data is not zero, and OG variant
 test("letter library reads and paginates while following remains separate from alerts", async ({
   page,
 }) => {
+  // Keep follow state per test, so retries do not mutate the shared demo user.
+  const user = { email: "letters@example.test", verified: true, plan: "plus",
+    watchlist: ["NORD.TEST"], topics: [], keywords: [] };
+  await page.route("**/api/user", route => route.fulfill({ json: user }));
+  await page.route("**/api/user/watchlist/toggle", route => {
+    const { symbol } = route.request().postDataJSON();
+    user.watchlist = user.watchlist.includes(symbol)
+      ? user.watchlist.filter(value => value !== symbol) : [...user.watchlist, symbol];
+    return route.fulfill({ json: { watchlist: user.watchlist } });
+  });
   await page.goto("/nyhetsbrev");
   await expect(
     page.getByRole("heading", { name: "Breven", exact: true }),
@@ -503,10 +508,11 @@ test("letter library reads and paginates while following remains separate from a
       exact: true,
     }),
   ).toHaveAttribute("aria-pressed", "true");
-  await page.goto("/bevakning");
+  await page.goto("/marknaden/bevakning");
   await expect(page.getByText("Bolag du följer").first()).toBeVisible();
+  await page.getByRole("button", { name: "Anpassa bevakning", exact: true }).click();
   await expect(
-    page.getByText("Att följa något ändrar ditt flöde.", { exact: false }),
+    page.getByRole("dialog").getByText("Valen formar ditt nyhetsflöde. De aktiverar inga aviseringar.", { exact: true }),
   ).toBeVisible();
 });
 
@@ -613,11 +619,12 @@ test("mobile preferences preserve unsaved keywords after a failed save", async (
   await page.route("**/api/user/keywords", (route) =>
     route.fulfill({ status: 503, json: { error: "Försök igen senare." } }),
   );
-  await page.goto("/bevakning/hantera");
-  await page.getByText("Nyckelord · 0/10", { exact: true }).click();
-  const field = page.getByRole("textbox", { name: "Nytt nyckelord" });
+  await page.goto("/marknaden/bevakning/hantera");
+  await page.getByRole("tablist", { name: "Anpassa bevakning" }).getByRole("tab", { name: /^Nyckelord/ }).click();
+  const panel = page.getByRole("tabpanel", { name: /^Nyckelord/ });
+  const field = panel.getByRole("textbox", { name: "Nytt nyckelord" });
   await field.fill("halvledare");
-  await page.getByRole("button", { name: "Lägg till nyckelord" }).click();
+  await panel.getByRole("button", { name: "Lägg till", exact: true }).click();
   await expect(page.locator("main").getByRole("alert")).toHaveText(
     "Försök igen senare.",
   );

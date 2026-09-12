@@ -31,7 +31,7 @@ const benefits = [
     icon: FiStar,
     title: "Håll koll på det som berör dig.",
     text: "Följ bolag, ämnen och nyckelord. Bevakning samlar matchande nyheter och visar varför de är relevanta för dina val.",
-    href: "/bevakning",
+    href: "/marknaden/bevakning",
     link: "Gör nyhetsflödet till ditt",
   },
 ];

@@ -62,7 +62,7 @@ test("quote-only refresh updates visible observations without a new-news banner"
   await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
 });
 
-test("ranking-only changes wait behind a selection action, not a new-news count", async ({ page, request }) => {
+test("ranking-only changes keep the selection stable until new content arrives automatically", async ({ page, request }) => {
   const snapshot = await (await request.get("http://127.0.0.1:8100/api/feed/market-overview")).json();
   await page.clock.install();
   await page.goto("/marknaden");
@@ -70,16 +70,19 @@ test("ranking-only changes wait behind a selection action, not a new-news count"
   await expect(featured.locator("article").first()).toContainText("Höjer prognosen");
   const replacement = featured.locator('a[href="/nyhet/fixture-10"]');
   await expect(replacement).toHaveCount(0);
-  await page.route("**/api/feed/market-overview", route => route.fulfill({ json: {
+  let response = {
     ...snapshot, news: snapshot.news.map((story, i) => i === 10 ? { ...story, importance: 100 } : story),
-  } }));
+  };
+  await page.route("**/api/feed/market-overview", route => route.fulfill({ json: response }));
   await page.clock.runFor(31000);
-  await expect(featured.getByRole("button", { name: "Uppdatera urval" })).toBeVisible();
-  await expect(featured.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
   await expect(featured.locator("article").first()).toContainText("Höjer prognosen");
   await expect(replacement).toHaveCount(0);
-  await featured.getByRole("button", { name: "Uppdatera urval" }).click();
-  // Selection acceptance must not depend on which editorial policy ranks it first.
+  response = { ...response, news: response.news.map((story, i) => i === 10
+    ? { ...story, version: 2, headline: "Räntebeskedet följs av en uppdaterad prognos" } : story) };
+  await page.clock.runFor(30_000);
+  // Actual news content re-evaluates the selection without an acceptance step.
   await expect(replacement).toBeVisible();
-  await expect(featured.getByRole("button", { name: "Uppdatera urval" })).toHaveCount(0);
+  await expect(replacement).toContainText("Räntebeskedet följs av en uppdaterad prognos");
+  await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
 });

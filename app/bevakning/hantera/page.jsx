@@ -1,10 +1,6 @@
-import WatchlistPage from "../../components/WatchlistPage";
+import { permanentRedirect } from "next/navigation";
+import { canonicalWatchHref } from "../../utils/navigation";
 
-export const metadata = {
-    title: "Hantera bevakning",
-    robots: { index: false },
-};
-
-export default function Page() {
-    return <WatchlistPage />;
+export default async function Page({ searchParams }) {
+    permanentRedirect(canonicalWatchHref(await searchParams, true));
 }

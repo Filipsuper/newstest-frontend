@@ -64,18 +64,26 @@ desktop density or abbreviated interaction model.
 
 ## Product navigation
 
-- Organize the public product around four jobs: `Marknaden` explains what
-  matters today, `Bevakning` explains what matters to the reader, `Aktier`
-  supports discovery and research, and `Breven` contains editorial reading.
+- Organize the public product around three destinations: `Marknaden` explains
+  what matters today and to the reader, `Aktier` supports discovery and research,
+  and `Breven` contains editorial reading.
 - The logo is the route back to the landing page; do not spend a primary-nav
   position on a duplicate `Start` link.
 - The complete chronological news feed is a URL-backed view inside
   `Marknaden`, while the screener is a URL-backed view inside `Aktier`.
   Preserve legacy route redirects, but do not expose duplicate top-level
   destinations.
-- `Bevakning` covers companies, topics and keywords. It opens on useful matched
-  news, with preference management as a secondary view. Account settings do
-  not own personalization.
+- `Bevakning` is a URL-backed view inside `Marknaden`, alongside `Överblick`
+  and `Nyhetsflöde`. It opens on matched news, not settings. A shared compact
+  editor exposes `Bolag`, `Ämnen` and `Nyckelord` as always-visible tabs, with
+  selected chips first and searchable, bounded topic results. Open it in a
+  Base UI dialog from the overview or personal feed; keep the direct manager
+  route and legacy redirects. Account settings do not own personalization.
+- Keep existing free/Plus/Pro access rules. Personalization previews must not
+  invent private stories, imply enabled alerts or introduce a new client-only
+  paywall. The published letter leads the overview's supporting column for
+  everyone; a two-story personal preview follows, with a visible `Visa alla`
+  link and direct access to the shared preference editor.
 - Desktop and mobile use the same conceptual destinations. Company pages are
   contextual destinations beneath `Aktier`, not another top-level product.
 
@@ -159,8 +167,8 @@ desktop density or abbreviated interaction model.
 ## Market overview and news reading
 
 - The public site is a news-led daily workspace. Keep the landing page separate.
-  The four destinations are Marknaden, Bevakning, Aktier and Breven.
-- `/marknaden` has two URL-backed views: Överblick and Nyhetsflöde. The
+  The three destinations are Marknaden, Aktier and Breven.
+- `/marknaden` has three URL-backed views: Överblick, Nyhetsflöde and Bevakning. The
   overview contains compact market context, 3–5 material events, a real letter
   preview, personal matches, and a chronological preview. The full feed is the
   extended reading/search destination, not another product.
@@ -170,6 +178,11 @@ desktop density or abbreviated interaction model.
 - On desktop, selected news is the primary column and the letter/watchlist
   form a contextual column. On mobile the order is selected news, compact
   letter and personal context, then latest news, with a direct latest-news jump.
+  Let the contextual column grow to 384px on wider screens and switch to one
+  column at 960px. Keep the letter above personal matches in DOM and visual
+  order. Its edition/icon/date share one row; retain the actual full headline
+  and at most two supplied takeaways, falling back to a short word-boundary
+  excerpt. Never clip a letter or its actions into a fixed-height container.
 - Use normal document scrolling on desktop and mobile. Do not force one-screen
   dashboard height, nest vertical news-list scrollbars or hide primary regions
   behind Drivkrafter/Reaktioner tabs.
@@ -187,8 +200,9 @@ desktop density or abbreviated interaction model.
 - Before/after news volume compares equal complete windows, excludes the
   publication-straddling candle and stays unavailable with incomplete minute
   coverage. Never substitute full-session RVOL for this event-window comparison.
-  Price/volume refreshes keep visible row order and are not new-news alerts;
-  a ranking-only change offers `Uppdatera urval` separately.
+  Price/volume refreshes keep visible row order and are not new-news alerts.
+  Recompute editorial/reaction order on content or membership changes, or an
+  explicit view change; never require an `Uppdatera urval` acceptance step.
 - The public chronological preview is labelled as a selection. The complete
   feed keeps its existing Plus/Pro boundary; never make the preview appear to
   cover all events or bypass authorization through client-only filtering.
@@ -205,15 +219,24 @@ desktop density or abbreviated interaction model.
   show company/headline, reaction badge and source/time, without description
   or AI bullets. Keep the complete supplied AI summary in the opened reader;
   chronological feeds retain their existing summary presentation.
+- The personal sidebar uses the compact variant of the same news row: two
+  full headlines, signed reaction with its period, publication time, source
+  and match reason. Leave AI summaries, type labels, repeated ticker links
+  and extra volume context to the full feed/reader. Do not truncate headlines
+  or shrink type to make this preview fit.
 - Every percentage states its period. `Sedan publicering` and `idag` are not
   interchangeable. A temporal association is not proof of causation. Missing
   reaction data is not zero, and a price chart must never be fabricated.
 - Show publication time, quote time and connection state separately. A quote
   timestamp at close does not mean the news feed stopped updating.
-- Live lists buffer new versions behind an explicit action and offer pause.
-  Count only rendered event/content changes after deduplication and the active
-  filter/preview limit; version, quote and ranking updates alone are not new
-  news. Start buffering after the initial snapshot loads, never over skeletons.
+- Live lists apply incoming stories and content changes automatically, after
+  deduplication and version checks. Do not require `Visa nya` or a counted
+  acceptance button. Preserve the visible story's screen position when rows
+  arrive above it, and leave an open reader undisturbed. Offer pause/resume;
+  resuming catches up automatically without discarding the visible snapshot.
+  The full feed uses streaming plus fallback polling; overview and personal
+  snapshots refresh every 30 seconds while visible. Do not imply browser push
+  delivery or instantaneous streaming on snapshot-only surfaces.
   News loaders reuse row surfaces, gaps and headline/metadata placeholders;
   bounded requests end in a retryable error, not endless solid blocks.
   Keep reading position stable. URL-backed filters survive sharing/reload.

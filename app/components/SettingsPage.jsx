@@ -107,7 +107,7 @@ function AccountSettings({ user, refreshUser }) {
             <Button
               variant="secondary"
               nativeButton={false}
-              render={<Link href="/bevakning/hantera" />}
+              render={<Link href="/marknaden/bevakning/hantera" />}
             >
               Hantera bevakning →
             </Button>

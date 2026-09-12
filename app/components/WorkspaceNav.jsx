@@ -7,16 +7,12 @@ import { NavigationTabs } from "./ui/layout";
 const MARKET_LINKS = [
     { href: "/marknaden", label: "Överblick", exact: true },
     { href: "/marknaden/nyheter", label: "Nyhetsflöde" },
+    { href: "/marknaden/bevakning", label: "Bevakning" },
 ];
 
 const STOCK_LINKS = [
     { href: "/aktier", label: "Utforska", exact: true },
     { href: "/aktier/screener", label: "Screener" },
-];
-
-const WATCH_LINKS = [
-    { href: "/bevakning", label: "Flöde", exact: true },
-    { href: "/bevakning/hantera", label: "Hantera" },
 ];
 
 const active = (pathname, link) => link.exact
@@ -55,5 +51,5 @@ export function StockWorkspaceNav({ foundation = false }) {
 }
 
 export function WatchWorkspaceNav() {
-    return <WorkspaceNav links={WATCH_LINKS} label="Bevakning" foundation />;
+    return <MarketWorkspaceNav foundation />;
 }

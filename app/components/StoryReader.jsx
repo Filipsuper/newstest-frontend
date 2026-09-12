@@ -318,7 +318,7 @@ export default function StoryReader({
           <Link className={styles.company} href="/marknaden/nyheter">
             Fortsätt till nyhetsflödet <FiArrowUpRight aria-hidden="true" />
           </Link>
-          <Link className={styles.company} href="/bevakning">
+          <Link className={styles.company} href="/marknaden/bevakning">
             Dina bevakningar <FiArrowUpRight aria-hidden="true" />
           </Link>
         </Inline>

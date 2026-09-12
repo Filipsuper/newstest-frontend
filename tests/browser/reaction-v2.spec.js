@@ -234,8 +234,9 @@ test("reaction filtering and refresh use v2 without automatic reordering or fals
   await page.clock.runFor(61_000);
   await expect(badge(rows.nth(1), "1 tim efter nyheten: −8,0 %")).toBeVisible();
   await expect(rows.first()).toContainText(stories[0].headline);
-  await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
-  await page.getByRole("button", { name: "Uppdatera urval", exact: true }).click();
+  await expect(page.getByRole("button", { name: /nya eller uppdaterade|Uppdatera urval/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Senaste", exact: true }).click();
+  await page.getByRole("button", { name: "Kursreaktion", exact: true }).click();
   await expect(rows.first()).toContainText(stories[1].headline);
   await page.getByRole("button", { name: "Pausa uppdateringar", exact: true }).click();
   const before = requests;

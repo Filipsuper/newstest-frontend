@@ -61,7 +61,7 @@ export default function FollowCompanyButton({ symbol, name, size = "sm" }) {
       </Button>
       {error && (
         <Text as="span" size="xs" role="alert">
-          {error} <Link href="/bevakning/hantera">Hantera bevakning</Link>
+          {error} <Link href="/marknaden/bevakning/hantera">Hantera bevakning</Link>
         </Text>
       )}
       <Dialog open={login} onOpenChange={setLogin} title="Spara din bevakning">

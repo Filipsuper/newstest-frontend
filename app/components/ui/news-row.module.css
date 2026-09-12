@@ -10,6 +10,19 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
+.compact {
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+}
+.compact .metadata {
+  column-gap: var(--ui-space-2);
+  margin-top: var(--ui-space-1);
+}
+@media (max-width: 960px), (pointer: coarse) {
+  .compact .headline {
+    min-height: var(--ui-control-md);
+  }
+}
 .headline strong {
   font-weight: 600;
 }

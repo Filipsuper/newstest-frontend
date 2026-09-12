@@ -156,7 +156,7 @@ export default function PersonalizationSetup() {
                 disabled={Boolean(busy)}
                 nativeButton={false}
                 role="link"
-                render={<Link href="/bevakning" />}
+                render={<Link href="/marknaden/bevakning" />}
               >
                 Öppna min bevakning
               </Button>
@@ -166,7 +166,7 @@ export default function PersonalizationSetup() {
             </div>
           </Stack>
           <PersonalPreview />
-          <Link href="/bevakning/hantera" className={styles.link}>
+          <Link href="/marknaden/bevakning/hantera" className={styles.link}>
             Hantera ämnen och nyckelord
           </Link>
         </>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChangeBadge, ListRow } from "./data";
+import { cx } from "./layout";
 import styles from "./news-row.module.css";
 
 /** Presentation only: callers own sources, timestamps, relevance and detail navigation. */
@@ -16,6 +17,8 @@ export default function NewsRow({
   onOpen,
   href,
   highlighted,
+  compact = false,
+  className,
   ...props
 }) {
   return (
@@ -25,6 +28,7 @@ export default function NewsRow({
         <ChangeBadge value={reaction} fallback="Nyhet" label={reactionLabel} />
       }
       highlighted={highlighted}
+      className={cx(compact && styles.compact, className)}
       {...props}
     >
       {href ? (

@@ -67,8 +67,13 @@ preview and backend test commands.
   `/marknaden/nyheter` is its Plus/Pro chronological news view with URL filters.
 - `/nyhet/<id>` is the public, shareable event reader. Client navigation opens
   a Base UI dialog; direct visits/reloads render a standalone reading page.
-- `/bevakning` is the signed-in reader's matched news feed, with companies,
-  topics and keywords managed at `/bevakning/hantera`.
+- `/marknaden/bevakning` is the signed-in reader's matched news feed. Companies,
+  topics and keywords share a compact editor available inline in a dialog and
+  at `/marknaden/bevakning/hantera`; old `/bevakning` bookmarks redirect.
+- New stories appear automatically. The full feed uses streaming with fallback
+  polling; public and personal snapshots refresh every 30 seconds while visible.
+  Pause/resume preserves the current snapshot, and price-only refreshes retain
+  row order. No manual new-news acceptance step is required.
 - `/aktier` is the searchable company directory and `/aktier/screener` its
   discovery tool; `/aktie/<SYMBOL>` remains the canonical company page.
 - `/nyhetsbrev` is the reading library for Morgonbrevet and Kvällsbrevet. The two
@@ -112,7 +117,8 @@ them are explicit:
   change by the minute and are deliberately never emitted as structured facts.
 - **Sitemap** lists exactly the tracked companies, so it cannot disagree with the
   per-page directive.
-- **Out of the index entirely:** `/settings`, `/bevakning`, `/bekrafta` and
+- **Out of the index entirely:** `/settings`, `/marknaden/bevakning`, legacy
+  `/bevakning`, `/bekrafta` and
   `/pro/klart` — personal, token-bearing or post-checkout pages.
 
 ## Production (VPS)

@@ -9,7 +9,6 @@ import {
   FiList,
   FiSearch,
   FiSettings,
-  FiStar,
   FiSun,
   FiMoon,
 } from "react-icons/fi";
@@ -21,32 +20,20 @@ import { Dialog, Menu } from "./ui/overlays";
 import StockSearch from "./StockSearch";
 import LogInModal from "../modals/logInModal";
 import { BRAND_LABEL, BRAND_NAME, BRAND_VERSION } from "../utils/brand";
+import { PRIMARY_NAVIGATION, isPrimaryNavigationActive } from "../utils/navigation";
 import { Label } from "./ui/Label";
 import ui from "./ui/ui.module.css";
 import styles from "./public-shell.module.css";
 
-const links = [
-  { href: "/marknaden", label: "Marknaden", icon: FiGrid },
-  { href: "/bevakning", label: "Bevakning", icon: FiStar },
-  { href: "/aktier", label: "Aktier", icon: FiList },
-  { href: "/nyhetsbrev", label: "Breven", icon: FiBookOpen },
-];
-const active = (path, href) =>
-  path === href ||
-  path.startsWith(`${href}/`) ||
-  (href === "/aktier" && path.startsWith("/aktie/")) ||
-  (href === "/marknaden" && path.startsWith("/nyhet/")) ||
-  (href === "/nyhetsbrev" &&
-    ["/morgonbrevet", "/kvallsbrevet", "/article/"].some((prefix) =>
-      path.startsWith(prefix),
-    ));
+const icons = { "/marknaden": FiGrid, "/aktier": FiList, "/nyhetsbrev": FiBookOpen };
+const links = PRIMARY_NAVIGATION.map((link) => ({ ...link, icon: icons[link.href] }));
 
 export default function PublicShell({ children }) {
   const pathname = usePathname();
   const { user, isGuestUser } = useAuthContext();
   const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [login, setLogin] = useState(false);
+  const [login, setLogin] = useState(null);
   return (
     <div className={cx(ui.scope, styles.shell)}>
       <a href="#site-main" className={styles.skip}>
@@ -68,7 +55,7 @@ export default function PublicShell({ children }) {
               <Link
                 key={link.href}
                 href={link.href}
-                aria-current={active(pathname, link.href) ? "page" : undefined}
+                aria-current={isPrimaryNavigationActive(pathname, link.href) ? "page" : undefined}
               >
                 {link.label}
               </Link>
@@ -97,7 +84,7 @@ export default function PublicShell({ children }) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setLogin(true)}
+                onClick={() => setLogin(`${pathname}${window.location.search}`)}
               >
                 Logga in
               </Button>
@@ -118,7 +105,7 @@ export default function PublicShell({ children }) {
                   {
                     id: "watch",
                     label: "Hantera bevakning",
-                    render: <Link href="/bevakning/hantera" />,
+                    render: <Link href="/marknaden/bevakning/hantera" />,
                   },
                   {
                     id: "theme",
@@ -147,6 +134,7 @@ export default function PublicShell({ children }) {
               <Link href="/om-oss">Om OMXsum</Link>
               <Link href="/pro">Plus & Pro</Link>
               <Link href="/nyhetsbrev">Breven</Link>
+              <Link href="/terminal">Terminal</Link>
               <a href="https://blog.omxsum.com">Blogg</a>
             </nav>
             <Button
@@ -164,7 +152,7 @@ export default function PublicShell({ children }) {
           <Link
             key={href}
             href={href}
-            aria-current={active(pathname, href) ? "page" : undefined}
+            aria-current={isPrimaryNavigationActive(pathname, href) ? "page" : undefined}
           >
             <Icon aria-hidden="true" />
             <span>{label}</span>
@@ -184,11 +172,11 @@ export default function PublicShell({ children }) {
         />
       </Dialog>
       <Dialog
-        open={login}
-        onOpenChange={setLogin}
+        open={Boolean(login)}
+        onOpenChange={(open) => { if (!open) setLogin(null); }}
         title="Välkommen till OMXsum"
       >
-        <LogInModal redirectTo={pathname} />
+        <LogInModal redirectTo={login || pathname} />
       </Dialog>
     </div>
   );

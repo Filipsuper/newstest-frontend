@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { FiArrowRight, FiSun, FiMoon } from "react-icons/fi";
-import { Heading, Inline, Text } from "./ui/layout";
-import { letterExcerpt } from "../utils/letters";
+import { Heading, Inline, Stack, Text } from "./ui/layout";
+import { Label } from "./ui/Label";
+import { letterExcerpt, letterTakeaways } from "../utils/letters";
 import { newsDate } from "../utils/newsroom";
-import styles from "./workspace.module.css";
+import styles from "./letter-preview.module.css";
 
 export default function LetterPreview({ article }) {
   const evening = article?.isEveningLetter;
@@ -13,35 +14,38 @@ export default function LetterPreview({ article }) {
       ? "/kvallsbrevet"
       : "/morgonbrevet"
     : "/nyhetsbrev";
+  const takeaways = letterTakeaways(article);
   return (
-    <aside className={styles.letter} aria-label="Dagens brev">
-      <Inline className={styles.between}>
-        <span className={styles.letterMark}>
-          {evening ? (
-            <FiMoon aria-hidden="true" />
-          ) : (
-            <FiSun aria-hidden="true" />
-          )}
-        </span>
-        <Text as="span" size="xs" tone="secondary">
-          {article
-            ? newsDate(article.createdAt, {
-                hour: undefined,
-                minute: undefined,
-              })
-            : "Breven"}
-        </Text>
+    <Stack as="aside" gap={3} className={styles.letter} aria-label="Senaste brevet">
+      <Inline gap={2} className={styles.metadata}>
+        <Label tone="accent" icon={evening ? <FiMoon /> : <FiSun />}>
+          {article ? name : "Breven"}
+        </Label>
+        {article && (
+          <Text as="time" size="xs" tone="secondary" dateTime={article.createdAt}>
+            {newsDate(article.createdAt, {
+              year: "numeric",
+              hour: undefined,
+              minute: undefined,
+            })}
+          </Text>
+        )}
       </Inline>
-      <Text size="xs" tone="secondary">
-        {name}
-      </Text>
-      <Link href={href}>
-        <Heading>{article?.title || "Dagens börs, sammanfattad."}</Heading>
+      <Link href={href} className={styles.titleLink}>
+        <Heading size="subsection">{article?.title || "Dagens börs, sammanfattad."}</Heading>
       </Link>
-      <Text>
-        {letterExcerpt(article) || "Läs de senaste morgon- och kvällsbreven."}
-      </Text>
-      <Inline className={styles.between}>
+      {takeaways.length ? (
+        <Stack as="ul" gap={2} className={styles.takeaways} aria-label="Ur brevet">
+          {takeaways.map((takeaway, index) => (
+            <Text as="li" size="sm" key={index}>{takeaway}</Text>
+          ))}
+        </Stack>
+      ) : (
+        <Text size="sm" tone="secondary">
+          {letterExcerpt(article, 160) || "Läs de senaste morgon- och kvällsbreven."}
+        </Text>
+      )}
+      <Inline className={styles.actions}>
         <Link className={styles.textLink} href={href}>
           Läs brevet <FiArrowRight aria-hidden="true" />
         </Link>
@@ -49,6 +53,6 @@ export default function LetterPreview({ article }) {
           Få i mejlen
         </Link>
       </Inline>
-    </aside>
+    </Stack>
   );
 }

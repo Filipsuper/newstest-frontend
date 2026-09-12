@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { FiArrowDown, FiArrowRight, FiPause, FiPlay } from "react-icons/fi";
 import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
@@ -10,9 +10,9 @@ import {
   featuredNews,
   finiteNumber,
   newsDate,
-  pendingChanges,
-  refreshMarketObservations,
 } from "../utils/newsroom";
+import { reconcileNewsSnapshot } from "../utils/personalNews";
+import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { currentLetter, marketDateKey } from "../utils/letters";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
 import { Button } from "./ui/Button";
@@ -126,7 +126,6 @@ export default function MarketOverviewPage({
   const { isPlusUser } = useAuthContext();
   const [data, setData] = useState(overview);
   const [editions, setEditions] = useState(articles);
-  const [pending, setPending] = useState(null);
   const [paused, setPaused] = useState(false);
   const [error, setError] = useState(
     overview.unavailable ? "Marknadsläget kunde inte hämtas." : "",
@@ -136,7 +135,10 @@ export default function MarketOverviewPage({
     new Date(referenceTime || overview.generatedAt || 0).getTime(),
   );
   const [visibleItems, setVisibleItems] = useState(() => itemsFrom(overview));
+  const currentItems = useRef(visibleItems);
+  const [selectionItems, setSelectionItems] = useState(visibleItems);
   const [selectionTime, setSelectionTime] = useState(now);
+  const { listRef, captureAnchor } = useLiveScrollAnchor();
   useEffect(() => {
     if (paused) return;
     let active = true,
@@ -150,6 +152,7 @@ export default function MarketOverviewPage({
           signal: AbortSignal.timeout(15_000),
         });
         if (!active) return;
+        captureAnchor();
         setData(next);
         setNow(Date.now());
         setError(
@@ -157,29 +160,33 @@ export default function MarketOverviewPage({
             ? "Tillfälligt fördröjda data. Senaste tillgängliga uppgifter visas."
             : "",
         );
-        const incoming = itemsFrom(next);
-        if (!visibleItems.length) {
-          setVisibleItems(incoming);
+        const incoming = reconcileNewsSnapshot(currentItems.current, itemsFrom(next));
+        const contentChanged = changedFeedItems(currentItems.current, incoming, { showSummary: false }).length > 0
+          || currentItems.current.map(item => item.id).join() !== incoming.map(item => item.id).join();
+        currentItems.current = incoming;
+        setVisibleItems(incoming);
+        if (contentChanged) {
+          setSelectionItems(incoming);
           setSelectionTime(Date.now());
         }
-        else
-          setPending(pendingChanges(visibleItems, incoming).length ? incoming : null);
         if (count++ % 4 === 0) {
           const letters = await fetchAllArticles({
             signal: AbortSignal.timeout(15_000),
           });
-          if (active && Array.isArray(letters)) setEditions(letters);
+          if (active && Array.isArray(letters)) { captureAnchor(); setEditions(letters); }
         }
       } catch {
-        if (active)
+        if (active) {
+          captureAnchor();
           setError(
             "Uppdateringen misslyckades. Senaste tillgängliga uppgifter visas.",
           );
+        }
       } finally {
         busy = false;
       }
     }
-    if (retry || !visibleItems.length) refresh();
+    refresh();
     const timer = setInterval(refresh, 30_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
@@ -187,34 +194,16 @@ export default function MarketOverviewPage({
       clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [paused, retry, visibleItems]);
+  }, [paused, retry, captureAnchor]);
   const featured = useMemo(
-    () => featuredNews(visibleItems, selectionTime),
-    [visibleItems, selectionTime],
+    () => featuredNews(selectionItems, selectionTime),
+    [selectionItems, selectionTime],
   );
   const edition = currentLetter(editions, now);
-  const incomingItems = useMemo(() => itemsFrom(data), [data]);
-  const observedItems = useMemo(() => refreshMarketObservations(visibleItems, incomingItems), [visibleItems, incomingItems]);
-  const observedById = new Map(observedItems.map(item => [item.id, item]));
-  const selectionChanged = !pending && incomingItems.length > 0
-    && featured.map(item => item.id).join(",") !== featuredNews(incomingItems, now).map(item => item.id).join(",");
+  const observedById = new Map(visibleItems.map(item => [item.id, item]));
   const latest = visibleItems[0];
-  const pendingCount = pending
-    ? changedFeedItems(featured, featuredNews(pending, now), {
-        showSummary: false,
-      }).length
-    : 0;
-  const latestPendingCount = pending && !isPlusUser
-    ? changedFeedItems(visibleItems.slice(0, 12), pending.slice(0, 12)).length
-    : 0;
-  function applyPending() {
-    if (!pending) return;
-    setVisibleItems(pending);
-    setSelectionTime(now);
-    setPending(null);
-  }
   return (
-    <Container as="main" className={styles.workspace}>
+    <Container as="main" className={styles.workspace} ref={listRef}>
       <MarketWorkspaceNav foundation />
       <header className={styles.heading}>
         <Stack gap={2}>
@@ -281,18 +270,11 @@ export default function MarketOverviewPage({
               Se kursreaktioner <FiArrowRight aria-hidden="true" />
             </Link>
           </div>
-          {pendingCount > 0 && (
-            <Button
-              variant="secondary"
-              onClick={applyPending}
-            >
-              {pendingCount} nya eller uppdaterade nyheter
-            </Button>
-          )}
-          {selectionChanged && <Button variant="secondary" onClick={() => { setVisibleItems(incomingItems); setSelectionTime(now); }}>Uppdatera urval</Button>}
           <div className={styles.news}>
             {featured.length ? (
-              featured.map((item) => <NewsFeedItem key={item.id} item={observedById.get(item.id) ?? item} showSummary={false} />)
+              featured.map((item) => <div key={item.id} data-live-news-id={`featured:${item.id}`}>
+                <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary={false} />
+              </div>)
             ) : (
               <EmptyState
                 title="Inga större nyhetshändelser just nu"
@@ -303,7 +285,7 @@ export default function MarketOverviewPage({
         </section>
         <div className={styles.context}>
           <LetterPreview article={edition} />
-          <WatchPreview />
+          <WatchPreview paused={paused} />
         </div>
         <section
           id="senaste-nytt"
@@ -323,14 +305,11 @@ export default function MarketOverviewPage({
               <Text size="xs" tone="secondary">
                 Senaste i det publika urvalet · hela nyhetsflödet ingår i Plus
               </Text>
-              {latestPendingCount > 0 && (
-                <Button variant="secondary" onClick={applyPending}>
-                  {latestPendingCount} nya eller uppdaterade nyheter
-                </Button>
-              )}
               <div className={styles.news}>
-                {observedItems.slice(0, 12).map((item) => (
-                  <NewsFeedItem key={item.id} item={item} />
+                {visibleItems.slice(0, 12).map((item) => (
+                  <div key={item.id} data-live-news-id={`latest:${item.id}`}>
+                    <NewsFeedItem item={item} />
+                  </div>
                 ))}
               </div>
               {!visibleItems.length && (

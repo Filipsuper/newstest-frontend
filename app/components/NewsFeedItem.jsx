@@ -16,6 +16,7 @@ export default function NewsFeedItem({
   reason = null,
   showSummary = true,
   summaryPreview = false,
+  compact = false,
   onOpen,
 }) {
   const marketContext = newsMarketContext(item);
@@ -33,6 +34,7 @@ export default function NewsFeedItem({
   return (
     <NewsRow
       highlighted={highlighted}
+      compact={compact}
       company={showSymbol ? (item.company ?? item.symbol) : null}
       title={item.title}
       description={
@@ -55,30 +57,30 @@ export default function NewsFeedItem({
           >
             {newsDate(item.ts)}
           </time>
-          {mainTag && <NewsTypeLabel type={mainTag} />}
+          {!compact && mainTag && <NewsTypeLabel type={mainTag} />}
           {reaction.pct !== null && <span>{reaction.label}</span>}
           {reaction.version === 2 && reaction.pct === null && <span>{reaction.status}</span>}
-          {sessionVolume && <span title={`Bolagets kumulativa handel per ${newsDate(sessionVolume.at)}. Inte volym orsakad av nyheten.${sameTime && !session.baselineMature ? " Preliminärt jämförelseunderlag." : ""}`}>
+          {!compact && sessionVolume && <span title={`Bolagets kumulativa handel per ${newsDate(sessionVolume.at)}. Inte volym orsakad av nyheten.${sameTime && !session.baselineMature ? " Preliminärt jämförelseunderlag." : ""}`}>
             RVOL {volumeRatioLabel(sessionVolume.value)}{sameTime && !session.baselineMature ? "*" : ""} · {sameTime ? "samma tid" : "mot heldag"} · {sessionDateLabel(session)}
           </span>}
-          {!sessionVolume && reaction.scope !== "session" && reaction.version === 2 && ["measured", "missing_baseline"].includes(reaction.measurement?.status)
+          {!compact && !sessionVolume && reaction.scope !== "session" && reaction.version === 2 && ["measured", "missing_baseline"].includes(reaction.measurement?.status)
             && volume?.post?.status === "complete" && volume.baselineMature
             && Number.isFinite(volume.relativeToNormal) && (
             <span title="Volym under 30 hela minuter efter nyheten eller nästa öppning, jämfört med samma tid tidigare handelsdagar.">
               Volym {volumeRatioLabel(volume.relativeToNormal)} · 30 min
             </span>
           )}
-          {!sessionVolume && reaction.version === 1 && marketContext?.baselineMature && marketContext.rvolAtTime !== null && (
+          {!compact && !sessionVolume && reaction.version === 1 && marketContext?.baselineMature && marketContext.rvolAtTime !== null && (
             <span title={`Bolagets volym jämfört med normal volym vid samma tid. Data per ${newsDate(marketContext.asOf)}; inte volym orsakad av nyheten.`}>
               Volym {volumeRatioLabel(marketContext.rvolAtTime)} kl. {newsDate(marketContext.asOf, { day: undefined, month: undefined })}
             </span>
           )}
           {item.source && <span>{item.source}</span>}
           {reason && <span>{reason}</span>}
-          {(item.sourceCount ?? 0) > 1 && (
+          {!compact && (item.sourceCount ?? 0) > 1 && (
             <span>{item.sourceCount} källor</span>
           )}
-          {showSymbol && item.symbol && (
+          {!compact && showSymbol && item.symbol && (
             <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
               {item.symbol.replace(".ST", "")}
             </Link>
