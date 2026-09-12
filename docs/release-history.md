@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 9 September 2026, newest public revisions first.
+Release records through 13 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,53 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## Personal market workspace and automatic news — released
+
+Frontend `5485d6b` deployed after approval on 13 September 2026 Stockholm
+(`2026-09-12T23:17:54Z`). This release contains only the approved frontend work.
+
+- Marknaden owns overview, chronology and Bevakning. Old personal links redirect
+  with their query parameters intact. One compact company/topic/keyword editor
+  serves both the dialog and direct settings route; existing plan caps remain.
+- Incoming news appears automatically, with pause/resume, stable reading position
+  and quote-only ordering. The published letter leads the wider sidebar with
+  its full title and up to two real takeaways; two compact personal stories follow.
+- Release testing exposed interrupted Back/Forward restoring an unresolved
+  news-loading boundary. It now falls back after a three-second server grace
+  period to the existing bounded client reader and error/retry behavior. Normal
+  server-loaded readers retain their existing loading and interaction flow.
+- A clean, scoped checkout passed 129 unit tests, 88 Chromium checks, production
+  build, standalone PNG/AVIF optimization and an advisory audit with zero findings.
+  Tests cover responsive layouts, history recovery, preference limits, errors,
+  automatic updates, pause/resume, URL state and account boundaries. Fictional
+  fixtures were used locally; no production account/preferences writes were made.
+- The Linux ARM64 candidate and live container passed native/image checks:
+  Node 22.23.2, musl 1.2.6, Next 15.5.25, Sharp 0.35.4, libheif 1.23.2.
+  No baked environment files or local API URLs; preview-only routes remain 404.
+- Public home, market, company, letter and story routes return 200. Both canonical
+  personal routes return 200 with noindex; legacy routes return 308 preserving
+  repeated query values. Site/company/story OG images render at 1200×630.
+- Read-only live browser checks at 1280, 390 and 320px confirmed letter-first
+  layout, contained actions, no horizontal overflow, canonical guest redirects,
+  news-dialog Back navigation and no page errors or API writes. The real letter
+  measured 306px high at 1280/390px and 374px at 320px, with neither action clipped.
+
+Running image `d35c901a66ba`, zero restarts at verification. Rollback retains
+`7904830a8fa3` as `newsweb-frontend:rollback` and the immutable tag
+`newsweb-frontend:before-watch-5485d6ba7ee37b26546ae9936432a271deee6cf7`.
+The previous rollback image also retains a release-specific backup tag.
+
+Backend `5a431609db8c`, Terminal `af2079c43dd1`, MongoDB and nginx retain their
+pre-release container identities/start times/restart counts (nginx configuration
+was reloaded). The reaction worker remains active since `2026-09-10T11:48:32Z`,
+zero restarts. No backend, access, alert-delivery, ranking, favicon, data-retention,
+collector or worker changes were included. Unrelated local edits are preserved.
+
+Build capped at one CPU core, 1,400 MB RAM and 900 seconds. Post-release capacity:
+634 MB available RAM, 1,982 MB free swap, 5,784 MB free disk. No cache, image or
+data pruning. Local records: `/private/tmp/omxsum-watch-release.zRI88h/`;
+server records: `/tmp/omxsum-watch-5485d6ba7ee3.wCtfzD/`.
 
 ## Continuous news stock charts — released
 

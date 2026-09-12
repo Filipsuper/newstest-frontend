@@ -27,12 +27,12 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   section spacing and a shared, versioned site image with a news-led product
   preview and Morgonbrevet. Dedicated story/company/article images remain.
 - News-led Marknaden, a labelled public selection, Plus/Pro chronological
-  feed/search, buffered updates and a shared, source-linked news reader.
+  feed/search, automatic updates and a shared, source-linked news reader.
 - Compact featured headlines with AI detail in the reader; mobile/tablet
   filters wrap without hidden options and watchlist columns fit the viewport.
-- Shared news-row loaders, bounded requests and retryable errors. Update counts
-  reflect visible, deduplicated content after the initial snapshot, not internal
-  version/price changes, hidden candidates or AI-only changes in headline rows.
+- Shared news-row loaders, bounded requests and retryable errors. Incoming
+  news appears automatically; pause, reading position and quote-only ordering
+  are preserved. Interrupted news-dialog history has bounded client recovery.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
 - Dedicated news/company share images use Geist, matching percentage badges
@@ -41,6 +41,10 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Bevakning for companies, topics and keywords; inline following and
   account/device-local catch-up. Personal morning-letter blocks and previews
   already exist, including a first version of indirect industry matches.
+- Bevakning sits inside Marknaden, with a shared compact Bolag / Ämnen /
+  Nyckelord editor and redirects for old links. The published letter leads
+  the wider sidebar; two compact personal headlines follow, and tablets stack
+  earlier. Existing access boundaries and alert-delivery rules are unchanged.
 - News-led Aktier, polished screener and one scrollable company report with
   sticky contents, a flat opening chart and optional analytical depth.
 - Newsletter library, shared article reading, settings, company-first signup
@@ -50,29 +54,11 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `7163f29`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `5485d6b`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
-
-### Market workspace follow-through — release candidate
-
-- Bevakning lives inside Marknaden alongside Överblick and Nyhetsflöde;
-  legacy links redirect, and primary navigation is Marknaden / Aktier / Breven.
-- One compact preference editor provides Bolag / Ämnen / Nyckelord tabs,
-  selected chips, grouped topic search and the existing plan limits.
-- Incoming news appears automatically in the full feed, overview and personal
-  snapshots. Pause/resume, reading position, reader history, URL filters and
-  quote-only ordering are preserved, without a manual acceptance gate.
-- The published letter leads the supporting column for everyone, with its
-  full title and two supplied takeaways (excerpt fallback). Two compact
-  personal headlines and `Visa alla` follow; tablets stack earlier.
-- Frontend-only release: existing access and alert-delivery rules are unchanged.
-  The intercepted news loading state can recover through the existing bounded
-  client reader if Back/Forward abandons the original server response.
-  Build and live verification are pending; see the release history for the
-  deployed baseline. Unrelated local ranking/favicon/chart edits are excluded.
 
 ### 1. Improve news quality
 

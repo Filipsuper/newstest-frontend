@@ -15,8 +15,9 @@ the most widgets or the largest stock percentages.
 Three destinations: Marknaden (overview, chronology and personal Bevakning),
 Aktier (discovery/research, with Screener underneath), Breven (editions).
 The reader is a contextual destination reachable from all news surfaces.
-The navigation and automatic-update changes below are implemented locally on
-12 September, not yet deployed; the release history remains the live baseline.
+The navigation, automatic updates and letter-first layout below were released
+on 13 September 2026 (Stockholm), frontend `5485d6b`. Verification and rollback
+details are recorded in the release history.
 
 ## Architecture
 
