@@ -60,7 +60,7 @@ for (const width of [1440, 390, 320])
     const main = page.getByRole("main");
     await expect(main).toHaveCount(1);
     await expect(main.getByRole("heading", { level: 1 })).toHaveText(
-      "Förstå nyheterna.Följ dina bolag.",
+      "Förstå börsnyheterna.Följ dina bolag.",
     );
     await expect(
       page.getByRole("link", { name: "OMXsum 2.0 – startsida" }),
@@ -233,13 +233,13 @@ test("new landing signup retains the single confirmation dialog", async ({
   ).toBeFocused();
 });
 
-test("landing metadata and social image carry 2.0 without fabricated market figures", async ({
+test("landing metadata describes news and reactions; social image carries 2.0 without fabricated market figures", async ({
   page,
   request,
 }, testInfo) => {
   await setup(page);
   await page.goto("/");
-  await expect(page).toHaveTitle("OMXsum 2.0 – Börsnyheter med sammanhang");
+  await expect(page).toHaveTitle("Börsnyheter och kursreaktioner – följ dina bolag | OMXsum");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "https://omxsum.com",

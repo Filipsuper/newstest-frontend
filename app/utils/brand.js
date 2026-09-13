@@ -18,6 +18,6 @@ export const SITE_OG_IMAGE = {
   height: 630,
   alt: "OMXsum 2.0 – Förstå vad som driver börsen. Nyheter, kursreaktioner och Morgonbrevet.",
 };
-export const LANDING_HEADLINE = ["Förstå nyheterna.", "Följ dina bolag."];
+export const LANDING_HEADLINE = ["Förstå börsnyheterna.", "Följ dina bolag."];
 export const LANDING_DESCRIPTION =
   "Samla börsnyheterna, se aktiernas reaktioner och följ bolagen som berör dig. Börja med marknadsöversikten eller det kostnadsfria Morgonbrevet.";

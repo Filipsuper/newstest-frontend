@@ -9,7 +9,7 @@ import { BRAND_LABEL, LANDING_DESCRIPTION, SITE_OG_IMAGE } from "./utils/brand";
 
 export const dynamic = "force-dynamic";
 
-const title = `${BRAND_LABEL} – Börsnyheter med sammanhang`;
+const title = "Börsnyheter och kursreaktioner – följ dina bolag | OMXsum";
 const description = LANDING_DESCRIPTION;
 
 export const metadata = {

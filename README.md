@@ -96,6 +96,11 @@ together; the full feed remains server-gated.
 Company pages are the largest crawlable surface on the site, so the rules for
 them are explicit:
 
+- **Titles:** company pages use `<name> aktie (<ticker>) – kurs, nyheter och
+  rapporter | OMXsum`. Metadata streaming is disabled site-wide so titles,
+  canonical links and robots directives are present in the initial HTML head
+  for readers that do not execute JavaScript. Dynamic responses consequently
+  wait for metadata before sending their first HTML.
 - **Indexable:** every symbol in the tracked listing (`/feed/companies`). The
   overview — identity, description, chart, calendar, news — is public, so the
   page a visitor from search lands on is the page Google saw. Financials,

@@ -105,6 +105,9 @@ export async function generateMetadata({ params, searchParams }) {
     const missing = (Boolean(companies) && !listed) || overview.missing;
 
     const title = companyTitle(profile ?? listed, decoded);
+    const companyName = profile?.name ?? listed?.name ?? decoded.replace(".ST", "");
+    const ticker = profile?.nativeSymbol ?? listed?.nativeSymbol ?? decoded.replace(".ST", "");
+    const pageTitle = `${companyName} aktie (${ticker}) – kurs, nyheter och rapporter`;
     const description = `Kurs, finansiell utveckling, rapportkalender och bolagsnyheter för ${title}.`;
     // The share card follows the period in the link, so a shared move unfurls as
     // the move that was shared. Same URL the share modal previews.
@@ -119,11 +122,11 @@ export async function generateMetadata({ params, searchParams }) {
     };
 
     return {
-        title,
+        title: pageTitle,
         description,
         alternates: { canonical: `/aktie/${encodeURIComponent(decoded)}` },
-        openGraph: { title, description, type: "website", images: [image] },
-        twitter: { card: "summary_large_image", title, description, images: [image] },
+        openGraph: { title: pageTitle, description, type: "website", images: [image] },
+        twitter: { card: "summary_large_image", title: pageTitle, description, images: [image] },
         ...(missing ? { robots: { index: false, follow: false } } : {}),
     };
 }
