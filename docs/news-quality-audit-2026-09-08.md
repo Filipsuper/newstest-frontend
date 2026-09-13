@@ -1,7 +1,7 @@
 # Featured-news quality audit — 8 September 2026
 
-Status: approved for the scoped 13 September frontend release; deployment
-verification is recorded in [release history](release-history.md). This is a first
+Status: released as frontend `a22aa0c` on 13 September; deployment verification
+is recorded in [release history](release-history.md). This is a first
 selection-policy improvement, not a completed source-coverage or relevance evaluation.
 
 **Follow-up:** the price-independent policy and same-snapshot results below
@@ -100,7 +100,7 @@ or claims that a particular event caused a price change. `assessFeaturedNews`
 returns eligibility, topic and score penalties for offline inspection; the
 interface does not expose another distracting numerical importance score.
 
-## 13 September release candidate
+## 13 September release
 
 The current selector retains those editorial safeguards and adds the capped
 price/volume bonus described in the follow-up. It consumes the existing legacy

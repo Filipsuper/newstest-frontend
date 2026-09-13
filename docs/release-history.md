@@ -11,6 +11,53 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Circle favicon and featured-news selection — released
+
+Frontend `a22aa0c` deployed after approval on 13 September 2026 at
+`2026-09-13T09:06:07Z` (11:06 Stockholm). Only the two approved frontend features
+and supporting tests/documentation are included; the obsolete sparse-chart
+patch is excluded and preserved locally.
+
+- Public metadata now uses the brand-yellow circle: SVG, 32px transparent PNG
+  fallback and matching 180px touch icon. Existing social previews are unchanged.
+- Featured news uses a separate editorial selector with stronger freshness,
+  routine-follow-up/promotional penalties, soft topic/company diversity, a quality
+  floor and a capped price/RVOL attention bonus. Chronological feeds, personal
+  matching, access rules and Terminal ranking are unchanged.
+- The bonus still consumes legacy `reaction`/`marketContext`, not validated V2
+  measurements. Missing or stale signals add no bonus; this is not a V2 ranking
+  migration or a causal market-impact claim. The [audit](news-quality-audit-2026-09-08.md)
+  records the bounded public sample and remaining provenance/classification gaps.
+- Clean scoped checkout: 137 unit tests, 92 Chromium checks, production build,
+  standalone PNG/AVIF optimization and dependency audit with zero findings.
+  Fictional local fixtures verify behavior, not production source coverage.
+- The Linux ARM64 candidate and public container passed native/image checks:
+  Node 22.23.2, musl 1.2.6, Next 15.5.25, Sharp 0.35.4, libheif 1.23.2.
+  No local API URLs or baked environment files; preview routes remain 404.
+- Public home, market, company, letter and real story routes return 200.
+  Personal routes remain noindex; old redirects preserve repeated query values.
+  SVG metadata and both PNG icons have the expected dimensions, transparent
+  corners and exact accent color. Site/company/story OG images remain 1200×630.
+- Read-only live Chromium checks at 1280, 390 and 320px matched the five featured
+  IDs to this selector using the real public response received by the browser.
+  No response replacements, API writes or page errors. No horizontal overflow;
+  letter actions remain contained, and news-dialog Back navigation works.
+
+Running image `175dcfca7f71`, zero restarts at verification. The previous running
+image `d35c901a66ba` is retained as `newsweb-frontend:rollback` and
+`newsweb-frontend:before-ranking-a22aa0c2563af0677859bd44ac43aabc2f122ae9`.
+The older rollback image also retains its release-specific backup tag.
+
+Backend, Terminal, MongoDB and nginx retained their exact pre-release container
+identities/start times/restart counts; nginx configuration was reloaded. The
+reaction worker remains active since `2026-09-10T11:48:32Z`, zero restarts.
+No account, backend, worker, collector, cache, image or data-retention changes.
+
+Build capped at one CPU core, 1,400 MB RAM and 900 seconds. Post-release capacity:
+746 MB available RAM, 1,905 MB free swap, 6,783 MB free disk. Local records:
+`/private/tmp/omxsum-ranking-release.Ah22qO/`; server records:
+`/tmp/omxsum-ranking-a22aa0c2563a.qbusXA/`.
+
 ## Personal market workspace and automatic news — released
 
 Frontend `5485d6b` deployed after approval on 13 September 2026 Stockholm

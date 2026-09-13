@@ -64,7 +64,7 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ### 1. Improve news quality
 
-- Approved for release, **pending live verification**: first bounded public-candidate audit
+- **Released 13 September (`a22aa0c`):** first bounded public-candidate audit
   and a separate editorial selector for featured headlines. Strengthened
   freshness, downgraded routine financing/deal follow-ups and promotional
   context, and added soft topical breadth. Restored a capped, timestamped
@@ -178,7 +178,7 @@ Ideas to validate, not delivery commitments:
 
 Run alongside the product backlog, with scope and release verification per change.
 
-- Approved for release, **pending live verification**: plain yellow-circle favicon with SVG,
+- **Released 13 September (`a22aa0c`):** plain yellow-circle favicon with SVG,
   PNG fallback and matching touch icon; existing social previews are unchanged.
 - [x] **Dependencies/security:** released 9 September. Next.js 15.5.25,
   Sharp 0.35.4, PostCSS 8.5.28 and nanoid 3.3.18 clear the current dependency
