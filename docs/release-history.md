@@ -11,6 +11,37 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Homepage and company SEO metadata — released
+
+Frontend `52152e6` deployed after approval on 13 September 2026, verified at
+`2026-09-13T14:24:14Z` (16:24 Stockholm), alongside disabled Nordic price code.
+
+- New homepage title and "Förstå börsnyheterna" heading; company titles include
+  company/ticker, aktie, kurs, nyheter and rapporter. Canonical/social metadata
+  and robots directives are in the initial HTML head for all user agents.
+  Dynamic responses now wait for metadata before sending the first HTML.
+- Scoped release includes the user's SEO changes only; unrelated reaction-chart
+  edits and local generated files were preserved, not deployed.
+- 137 unit tests and the capped production image build passed. The local
+  fixture/browser run timed out against an unresponsive isolated frontend;
+  it is not counted as passing layout verification. Eight direct HTTP checks
+  against the built image passed for browser/Twitter agents: homepage, Volvo,
+  Hove, and an unknown company with noindex. Public home, Volvo and Marknaden
+  then returned HTTP 200 and the expected titles in their initial head.
+- Runtime native PNG generation passed (Next 15.5.25, Sharp 0.35.4,
+  libheif 1.23.2); no root environment files were baked into the runtime.
+- Image: `newsweb-frontend:seo-52152e6`,
+  `sha256:863a907c466c5d13aa35bb53a0a365c7c5e24ee621080c02b2dd7d093b40568b`.
+  Previous image retained as `newsweb-frontend:before-prices-seo-20260913`.
+- The first frontend switch stopped before replacement because the deployment
+  script used the wrong Compose filename. It was corrected to use the verified
+  `compose.yaml` and `compose.override.yaml`; the resumed switch passed.
+  Manifest, first-attempt/final state and logs remain at
+  `/root/omxsum-nordic/releases/prices-df5f419-seo-52152e6`.
+
+The Nordic code is installed but collection/display remains disabled. No
+database policy, price backfill, news worker, or unrelated UI change shipped.
+
 ## Circle favicon and featured-news selection — released
 
 Frontend `a22aa0c` deployed after approval on 13 September 2026 at
