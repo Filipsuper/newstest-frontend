@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
 
     const description = summaryExcerpt(article);
     const image = {
-        url: letterShareImageHref(id),
+        url: letterShareImageHref(id, { encoded: true }),
         width: 1200,
         height: 630,
         alt: `${article.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"} – ${article.title}`,

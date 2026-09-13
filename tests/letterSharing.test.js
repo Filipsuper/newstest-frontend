@@ -48,3 +48,11 @@ test("only the article artwork URL is versioned, preserving its title slug", () 
   assert.equal(url.pathname, "/article/R%C3%A4ntor-och-rapporter/opengraph-image");
   assert.equal(url.searchParams.get("v"), LETTER_OG_VERSION);
 });
+
+test("encoded metadata segments retain Swedish characters without double encoding", () => {
+  for (const title of ["Räntor-och-rapporter", "Upp-20%-på-börsen", "Literal-%20-text"]) {
+    assert.equal(letterShareImageHref(encodeURIComponent(title), { encoded: true }),
+      letterShareImageHref(title));
+  }
+  assert.ok(letterShareImageHref("bad%escape", { encoded: true }).includes("bad%25escape"));
+});

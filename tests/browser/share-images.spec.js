@@ -170,3 +170,15 @@ test("newsletter shares use current styling for morning, evening, long titles an
       id, "246,245,241", badge);
   }
 });
+
+test("Swedish newsletter slugs are encoded once in social-image metadata", async ({ request }) => {
+  for (const title of ["Räntor-och-rapporter", "Upp-20%-på-börsen"]) {
+    const path = `/article/${encodeURIComponent(title)}`;
+    const response = await request.get(path);
+    expect(response.status()).toBe(200);
+    const html = await response.text();
+    const image = new URL(html.match(/property="og:image" content="([^"]+)"/)[1].replaceAll("&amp;", "&"));
+    expect(image.pathname).toBe(`${path}/opengraph-image`);
+    expect((await request.get(`${image.pathname}${image.search}`)).status()).toBe(200);
+  }
+});
