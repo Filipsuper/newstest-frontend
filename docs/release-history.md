@@ -11,6 +11,57 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## News URLs, company SEO and newsletter sharing — released
+
+Frontend `37eb82904c0029b496b237b4ce415312c144b59f` deployed on 13 September,
+verified at `2026-09-13T15:35:34Z` (17:35 Stockholm). Pushed to `nextjs` and
+`codex/seo-news-urls-20260913` from a scoped release checkout. The user's original
+dirty worktree, unrelated reaction-chart changes and generated files were preserved.
+
+- New news links use `/nyhet/<headline>~<stable-id>`. Direct ID-only and outdated
+  headline links permanently redirect; metadata, copy/share and client dialog
+  links agree. Existing ID-only news image URLs still work.
+- Company titles are news-first, with matching descriptions and structured page
+  names. Quote/chart controls use `data-nosnippet`; news text stays available.
+- Newsletter images use bundled Geist, the public warm palette, readable
+  headlines, actual edition/date and signed badges with saved IG attribution.
+  The private production preview exposed double-encoding in Swedish article
+  image URLs; the corrected helper and regression tests shipped before cutover.
+- Validation: 146 unit tests passed. The first 12 metadata/URL/image browser
+  checks passed; a subsequent development run was mixed (10 passed, four failed,
+  including local script/loading failures and an early pre-hydration click).
+  These are not counted as passing tests. After the encoding fix and a fresh
+  dev cache, all three newsletter browser checks passed, including Swedish and
+  literal-percent route cases. The 600×315 morning/long-title previews were
+  inspected visually. The Linux production build passed with the existing
+  dependency lockfile, one CPU, 1,200 MB memory and 1,600 MB memory+swap caps.
+- Final built-image browser check passed using public data: overview, headline
+  navigation, dialog, Back, Forward, standalone reload and copied canonical URL;
+  zero page errors. This check explicitly waited for hydration before clicks.
+- Private and live HTTP checks passed: initial-head homepage/company metadata
+  for browser and Twitter agents, unknown-company noindex, market overview,
+  Freemelt legacy/stale redirects, canonical reader, and 1200×630 PNGs through
+  both news URL forms and the real Swedish-titled newsletter. News image bytes
+  matched through both URL forms.
+- Image: `newsweb-frontend:seo-37eb829`,
+  `sha256:db004801aae6f7878c5d12da848adc075740195594c7a7c0730cc4455f00f74b`.
+  Previous image retained as `newsweb-frontend:before-seo-37eb829`
+  (`sha256:863a907c466c5d13aa35bb53a0a365c7c5e24ee621080c02b2dd7d093b40568b`).
+- Deployment recreated only `frontend` through the verified `compose.yaml` and
+  `compose.override.yaml`, then reloaded nginx. Backend, Stonks and Mongo
+  container identities were unchanged; the Nordic price timer remained active.
+  No database policies, prices or worker configuration changed.
+- Source archive SHA-256:
+  `ebb29aaf75762e8aad8e1d3ed294c47079cf02c327a3496d12c587232d1724af`.
+  Build log, preview/browser proof, guarded rollout script and successful live
+  results are retained in `/root/omxsum-nordic/releases/seo-37eb829`.
+  The first rejected image was never served publicly and was removed; source
+  and evidence remain under the `seo-875dafb` release for reproducibility.
+
+The SEO release does not pause the separately activated four-stock Nordic
+price collector or enable public Nordic prices/RVOL. Search-engine recrawling
+and external social-preview caches remain outside deployment verification.
+
 ## Homepage and company SEO metadata — released
 
 Frontend `52152e6` deployed after approval on 13 September 2026, verified at

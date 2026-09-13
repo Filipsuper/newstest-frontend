@@ -35,6 +35,11 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   are preserved. Interrupted news-dialog history has bounded client recovery.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
+- Readable headline-based news URLs with stable IDs and permanent legacy/stale
+  redirects; news-led company metadata and snippet exclusions for quote controls.
+- Newsletter share images use the shared warm canvas, Geist and signed badges,
+  retaining the real edition/date and saved IG labels. Swedish URL encoding is
+  checked against the production image, not only ASCII fixtures.
 - Extracted report/transaction/amount fact blocks are paused in the reader;
   AI summaries, market reactions and original sources remain.
 - Dedicated news/company share images use Geist, matching percentage badges
@@ -56,7 +61,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `5485d6b`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `37eb829`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
