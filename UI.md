@@ -14,7 +14,7 @@ implementation and migration plan is in `docs/design-system.md`.
 - The new system is opt-in. Migrate a complete component or route, then remove
   its obsolete styles once no consumer remains. Do not globally alias the old
   palette to the new one; Terminal and unfinished routes must remain stable.
-- Reuse `Button`, `TextField`, `Select`, `Checkbox`, `Switch`, `Tabs`,
+- Reuse `Button`, `TextField`, `Select`, `Checkbox`, `Switch`, `Slider`, `Tabs`,
   `SegmentedControl`, `Menu`, `Dialog`, and `Tooltip`. Do not reimplement
   focus traps, menu keyboard navigation, or select behavior with click handlers.
 - Route navigation uses real links in `NavigationTabs`, with `aria-current`.
@@ -22,6 +22,14 @@ implementation and migration plan is in `docs/design-system.md`.
   use `SegmentedControl`; form values use `Select`; actions use `Menu`.
 - Components do not fetch data, calculate importance, or create alerts.
   Features compose them and retain the existing data/auth contracts.
+- Discrete importance choices use the shared Base UI Slider with named stops,
+  keyboard support and clickable 44px labels; never imply predicted price impact.
+- Company email preferences live in a collapsed section near the top of Bolag
+  inside the existing Bevakning editor. Keep drafts across refreshes and tabs,
+  save explicitly and require review after revision conflicts. Following and
+  newsletter choices stay separate. Free accounts get a quiet plan explanation.
+- Saved email preferences are not active delivery. While delivery is unavailable,
+  say `Mejlval sparade` / `Inga mejl skickas ännu`; never show `Mejl på`.
 - `Label` is a non-interactive content/edition label, distinct from a form
   label, a filter button, a status `Badge`, or a numeric `ChangeBadge`.
   `NewsTypeLabel` maps news vocabulary to Swedish text and a quiet icon.

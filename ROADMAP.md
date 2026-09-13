@@ -124,7 +124,21 @@ and compatible backend releases are in the release history, not pending tasks.
 Done when: an audited sample shows useful coverage and less duplication, with
 clear reasons for selection and no unsupported explanation of price causality.
 
-### 2. Connect newsletters to exact stories
+### 2. Company email alerts — preferences ready, delivery next
+
+- Preferences are implemented and approved for deployment. See the
+  [plan](docs/company-email-alerts.md) and [local verification](docs/company-email-alerts-verification.md).
+- Plus/Pro only, separate explicit opt-in, three importance levels, company
+  mutes and quiet hours inside the existing Bevakning editor. No automatic opt-in.
+- The pure policy is fixture-qualified only. Actual email delivery is not
+  implemented; saved settings must not be advertised as a live sending service.
+- [ ] Qualify the source and build a durable event/recipient ledger and outbox.
+- [ ] Implement the renderer, scoped unsubscribe/suppression, quiet-hour/DST
+  scheduling, provider budgets, retries and unknown-outcome handling.
+- [ ] Recheck authorization at send time and qualify a fake-transport run before
+  requesting approval for real sending. Keep existing newsletters unchanged.
+
+### 3. Connect newsletters to exact stories
 
 - [ ] Carry stable source story IDs through generated letter blocks.
 - [ ] Link supported briefing items to the existing canonical news reader,
@@ -135,7 +149,7 @@ clear reasons for selection and no unsupported explanation of price causality.
 Done when: a reader can go from a briefing item to its exact supporting event
 and back, on desktop and mobile, without losing reading position.
 
-### 3. Validate the acquisition and daily-return journey
+### 4. Validate the acquisition and daily-return journey
 
 - [ ] Test signup → confirmation → first followed company → relevant news →
   return visit with consenting test users. Onboarding itself is already shipped.

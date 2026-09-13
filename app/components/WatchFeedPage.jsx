@@ -8,6 +8,8 @@ import { personalMatchKinds, reconcileNewsSnapshot } from "../utils/personalNews
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { WatchWorkspaceNav } from "./WorkspaceNav";
 import WatchPreferencesButton from "./WatchPreferencesButton";
+import CompanyAlertStatus from "./CompanyAlertStatus";
+import CompanyAlertIntroduction from "./CompanyAlertIntroduction";
 import NewsFeedItem from "./NewsFeedItem";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import StockSearch from "./StockSearch";
@@ -113,13 +115,17 @@ export default function WatchFeedPage() {
           <Heading as="h1" size="page">Dina bevakningar</Heading>
           <Text size="sm" tone="secondary">Nyheterna som berör det du följer.</Text>
         </Stack>
-        <WatchPreferencesButton />
+        <Inline>
+          <CompanyAlertStatus />
+          <WatchPreferencesButton />
+        </Inline>
       </header>
       {user && !isGuestUser && <Inline className={styles.watchSummary}>
         <Text size="sm" tone="secondary">
           {user.watchlist?.length ?? 0} bolag · {user.topics?.length ?? 0} ämnen · {user.keywords?.length ?? 0} nyckelord
         </Text>
       </Inline>}
+      <CompanyAlertIntroduction user={user} />
       <section className={styles.section} aria-label="Personliga nyheter">
         {error && <EmptyState role="alert" title={error}
           action={<Button variant="secondary" onClick={() => setRetry(value => value + 1)}>Försök igen</Button>} />}

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiPlus, FiSearch, FiX } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
+import { useCompanyAlerts } from "../hooks/useCompanyAlerts";
+import { companyAlertsEnabled } from "../utils/companyAlerts";
+import CompanyAlertPreferences from "./CompanyAlertPreferences";
 import { fetchTopics, saveKeywords, saveTopics, setCompanyFollowing } from "../utils/api";
 import { getCompanies } from "../utils/companies";
 import { TOPIC_LABELS } from "../utils/topicLabels";
@@ -48,8 +51,10 @@ function SelectedChips({ label, values, itemLabel = (value) => value, removeLabe
 }
 
 /** Shared editor body, used both in the preference dialog and its direct route. */
-export default function WatchPreferencesEditor({ initialTab = "companies" }) {
+export default function WatchPreferencesEditor({ initialTab = "companies", initialSection }) {
   const { user, isGuestUser, refreshUser } = useAuthContext();
+  const alerts = useCompanyAlerts(user);
+  const [emailOpen, setEmailOpen] = useState(initialSection === "email");
   const pathname = usePathname();
   const [companies, setCompanies] = useState([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
@@ -202,7 +207,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies" }) {
   return (
     <Stack gap={4} className={styles.editor}>
       <Text size="xs" tone="secondary" role="status" className={styles.status}>
-        {busy ? "Sparar…" : message || "Dina val sparas direkt."}
+        {busy ? "Sparar…" : message || (companyAlertsEnabled() ? "Bolag, ämnen och nyckelord sparas direkt." : "Dina val sparas direkt.")}
       </Text>
       {error && <Text size="sm" role="alert" className={styles.error}>{error}</Text>}
       <Tabs defaultValue={initialTab}>
@@ -213,6 +218,11 @@ export default function WatchPreferencesEditor({ initialTab = "companies" }) {
         </TabList>
         <TabPanel value="companies">
           <Stack gap={4}>
+            {companyAlertsEnabled() && <details className={styles.emailSection} open={emailOpen}
+              onToggle={(event) => setEmailOpen(event.currentTarget.open)}>
+              <summary>Mejl om mina bolag</summary>
+              <CompanyAlertPreferences alerts={alerts} user={user} companies={companies} />
+            </details>}
             <SelectedChips
               label="Valda bolag" values={watchlist} busy={busy}
               itemLabel={(symbol) => companyNames.get(symbol) || symbol}
@@ -317,7 +327,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies" }) {
           </Stack>
         </TabPanel>
       </Tabs>
-      <Text size="xs" tone="secondary">Valen formar ditt nyhetsflöde. De aktiverar inga aviseringar.</Text>
+      {!companyAlertsEnabled() && <Text size="xs" tone="secondary">Valen formar ditt nyhetsflöde. De aktiverar inga aviseringar.</Text>}
     </Stack>
   );
 }

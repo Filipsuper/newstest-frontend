@@ -2,6 +2,7 @@
 export { Button, IconButton } from "./Button";
 export { TextField } from "./TextField";
 export { Select } from "./Select";
+export { Slider } from "./Slider";
 export { Checkbox, Switch } from "./Choices";
 export { SegmentedControl } from "./SegmentedControl";
 export { Tabs, TabList, Tab, TabPanel } from "./Tabs";

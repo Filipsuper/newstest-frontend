@@ -6,6 +6,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters, createPortalSession } from "../utils/api";
 import { useTheme } from "../providers/ThemeProvider";
 import LogInModal from "../modals/logInModal";
+import CompanyAlertStatus from "./CompanyAlertStatus";
 import { Button } from "./ui/Button";
 import { Switch } from "./ui/Choices";
 import { Dialog } from "./ui/overlays";
@@ -103,6 +104,7 @@ function AccountSettings({ user, refreshUser }) {
               <Text size="sm" tone="secondary">
                 Bolag, ämnen och nyckelord.
               </Text>
+              <CompanyAlertStatus />
             </Stack>
             <Button
               variant="secondary"

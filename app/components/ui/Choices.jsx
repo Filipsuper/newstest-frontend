@@ -35,11 +35,12 @@ export function Checkbox({ label, description, className, ...props }) {
 }
 
 export function Switch({ label, description, className, ...props }) {
+  const labelId = useId();
   const descriptionId = useId();
   return (
     <label className={cx(styles.choice, styles.switchChoice, className)}>
       <span>
-        <span className={styles.label}>{label}</span>
+        <span id={labelId} className={styles.label}>{label}</span>
         {description && (
           <span id={descriptionId} className={styles.choiceDescription}>
             {description}
@@ -48,6 +49,7 @@ export function Switch({ label, description, className, ...props }) {
       </span>
       <BaseSwitch.Root
         className={styles.switch}
+        aria-labelledby={labelId}
         aria-describedby={description ? descriptionId : undefined}
         {...props}
       >

@@ -10,6 +10,8 @@ export default function WatchPreferencesButton({
   children = "Anpassa bevakning",
   variant = "secondary",
   initialTab = "companies",
+  initialSection,
+  icon = <FiSliders aria-hidden="true" />,
   ...buttonProps
 }) {
   return (
@@ -18,13 +20,13 @@ export default function WatchPreferencesButton({
       className={styles.dialog}
       trigger={
         <Button variant={variant} {...buttonProps}>
-          <FiSliders aria-hidden="true" />
+          {icon}
           {children}
         </Button>
       }
       footer={<DialogClose render={<Button variant="secondary" />}>Klart</DialogClose>}
     >
-      <WatchPreferencesEditor initialTab={initialTab} />
+      <WatchPreferencesEditor initialTab={initialTab} initialSection={initialSection} />
     </Dialog>
   );
 }

@@ -16,6 +16,31 @@
   min-height: var(--ui-space-6);
 }
 
+.emailSection {
+  min-width: 0;
+  border-radius: var(--ui-radius-md);
+  padding: var(--ui-space-2) var(--ui-space-4);
+  background: var(--ui-inset);
+}
+
+.emailSection > summary {
+  min-height: var(--ui-control-md);
+  align-content: center;
+  cursor: pointer;
+  font-size: var(--ui-text-sm);
+  font-weight: 550;
+}
+
+.emailSection > summary:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+  border-radius: var(--ui-radius-sm);
+}
+
+.emailSection[open] > summary {
+  margin-bottom: var(--ui-space-3);
+}
+
 .error {
   color: var(--ui-negative);
 }

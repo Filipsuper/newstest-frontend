@@ -29,6 +29,7 @@ import {
   IconButton,
   SegmentedControl,
   Select,
+  Slider,
   Switch,
   Tab,
   TabList,
@@ -394,6 +395,7 @@ export default function DesignSystem() {
   const [sort, setSort] = useState("latest");
   const [checked, setChecked] = useState(true);
   const [enabled, setEnabled] = useState(false);
+  const [importance, setImportance] = useState(1);
   const [message, setMessage] = useState("");
   const [demoLoading, setDemoLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -761,6 +763,15 @@ export default function DesignSystem() {
                 </Stack>
               </Example>
             </div>
+            <Example title="Viktighetsnivå" name="Slider">
+              <Slider label="Exempel på viktighetsnivå" value={importance} onValueChange={setImportance}
+                description="Komponentexempel. Inga mejlval sparas och inga mejl skickas."
+                options={[
+                  { value: 0, label: "Fler relevanta nyheter" },
+                  { value: 1, label: "Viktiga nyheter" },
+                  { value: 2, label: "Bara det viktigaste" },
+                ]} />
+            </Example>
             <Example title="Etiketter" name="Label · NewsTypeLabel">
               <Stack gap={4}>
                 <Inline gap={2}>

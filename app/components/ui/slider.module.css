@@ -1,0 +1,108 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-family: var(--ui-font);
+}
+
+.label {
+  color: var(--ui-text);
+  font: 500 var(--ui-text-sm)/var(--ui-leading-body) var(--ui-font);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-control-md);
+  margin-inline: calc((100% - (var(--slider-stops) - 1) * var(--ui-space-2)) / (var(--slider-stops) * 2));
+  touch-action: pan-y;
+  user-select: none;
+  cursor: pointer;
+}
+
+.track {
+  width: 100%;
+  height: var(--ui-space-1);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-control-border);
+}
+
+.stop {
+  position: absolute;
+  top: 50%;
+  width: var(--ui-space-2);
+  height: var(--ui-space-2);
+  transform: translate(-50%, -50%);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text-secondary);
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+  width: var(--ui-control-md);
+  height: var(--ui-control-md);
+  border-radius: var(--ui-radius-pill);
+  cursor: grab;
+}
+
+.thumb::after {
+  content: "";
+  width: var(--ui-space-6);
+  height: var(--ui-space-6);
+  border: 3px solid var(--ui-surface);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-action);
+  box-shadow: 0 0 0 1px var(--ui-control-border);
+}
+
+.thumb:has(input:focus-visible) {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.thumb[data-dragging] {
+  cursor: grabbing;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(var(--slider-stops), minmax(0, 1fr));
+  gap: var(--ui-space-2);
+}
+
+.options .option {
+  min-width: 0;
+  min-height: var(--ui-control-md);
+  height: auto;
+  padding: var(--ui-space-2) var(--ui-space-1);
+  border-radius: var(--ui-radius-sm);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-body);
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--ui-text-secondary);
+}
+
+.options .option[aria-pressed="true"] {
+  color: var(--ui-text);
+  background: var(--ui-inset);
+  font-weight: 600;
+}
+
+.description {
+  margin: var(--ui-space-3) 0 0;
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-sm)/var(--ui-leading-body) var(--ui-font);
+}
+
+.root[data-disabled] .control {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.root[data-disabled] .thumb {
+  cursor: not-allowed;
+}
