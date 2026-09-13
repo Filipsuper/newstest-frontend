@@ -1,6 +1,13 @@
 export const BRAND_NAME = "OMXsum";
 export const BRAND_VERSION = "2.0";
 export const BRAND_LABEL = `${BRAND_NAME} ${BRAND_VERSION}`;
+export const SITE_ICONS = {
+  icon: [
+    { url: "/icon.png?v=20260908-circle", type: "image/png", sizes: "32x32" },
+    { url: "/favicon.svg?v=20260908-circle", type: "image/svg+xml", sizes: "any" },
+  ],
+  apple: [{ url: "/apple-icon.png?v=20260908-circle", type: "image/png", sizes: "180x180" }],
+};
 // Shared by company preview/download/metadata and dedicated news metadata.
 export const CONTENT_OG_VERSION = "4";
 // Version the URL when the artwork changes so social crawlers see a new asset.

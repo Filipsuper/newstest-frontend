@@ -35,6 +35,8 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   are preserved. Interrupted news-dialog history has bounded client recovery.
 - AI summaries/bullets, labelled observed reactions including completed +1h/+1d
   windows where available, canonical story links and social images.
+- Extracted report/transaction/amount fact blocks are paused in the reader;
+  AI summaries, market reactions and original sources remain.
 - Dedicated news/company share images use Geist, matching percentage badges
   and clearer spacing. News without a chart has a text-led layout; chart shares
   retain their selected period/moving averages and use readable axes.
@@ -62,6 +64,15 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ### 1. Improve news quality
 
+- Approved for release, **pending live verification**: first bounded public-candidate audit
+  and a separate editorial selector for featured headlines. Strengthened
+  freshness, downgraded routine financing/deal follow-ups and promotional
+  context, and added soft topical breadth. Restored a capped, timestamped
+  price/volume attention bonus following product feedback. See the
+  [8 September audit and remaining data gaps](docs/news-quality-audit-2026-09-08.md).
+- [ ] Migrate featured-ranking attention inputs to validated per-company
+  Reaction v2/session measurements. The initial selector uses legacy fields;
+  its bonus is not certified by V2 baseline/endpoint quality states.
 - **Live beta since 8 September:** [Reaction v2.2](docs/reaction-v2.md) worker and
   public read flag enabled after approval. News-first aligned price/volume KPIs,
   matching reader/chart/OG periods, personal multi-company preservation, exact
@@ -92,6 +103,9 @@ and compatible backend releases are in the release history, not pending tasks.
   the chart/optional-reader release; fictional examples do not prove coverage.
 - [ ] Evaluate a representative story sample for relevance, missing market/
   sector coverage and duplicate issuer notices; define measurable quality goals.
+- [ ] Correct upstream event/language classification and validate extracted
+  amounts/units. Review source/candidate coverage before treating the absence
+  of macro stories in one bounded response as a market-wide coverage result.
 - [ ] Improve event linking, including translated releases with different
   upstream identities. Do not merge stories just because headlines look alike.
 - [ ] Evaluate importance, observed reaction and personal relevance separately;
@@ -164,6 +178,8 @@ Ideas to validate, not delivery commitments:
 
 Run alongside the product backlog, with scope and release verification per change.
 
+- Approved for release, **pending live verification**: plain yellow-circle favicon with SVG,
+  PNG fallback and matching touch icon; existing social previews are unchanged.
 - [x] **Dependencies/security:** released 9 September. Next.js 15.5.25,
   Sharp 0.35.4, PostCSS 8.5.28 and nanoid 3.3.18 clear the current dependency
   audit. Linux ARM64 image/codec checks and live verification passed; see

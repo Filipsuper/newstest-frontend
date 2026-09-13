@@ -1,12 +1,11 @@
 import { storyToItem } from "./storyToItem.js";
 import {
-  curateMarketNews,
   eventClusterKey,
-  normalizedSymbol,
   uniqueNews,
 } from "./marketNewsRanking.js";
 import { TOPIC_LABELS } from "./topicLabels.js";
 import { newsSummary } from "./newsSummary.js";
+import { selectFeaturedNews } from "./featuredNewsRanking.js";
 import { retainReactionV2 } from "./reactionV2.js";
 import { retainCompanyContext } from "./companySession.js";
 
@@ -86,27 +85,8 @@ export function personalStoryToItem(story) {
   });
 }
 
-// These are administrative notices, not explanations for a day's share-price move.
-const ADMINISTRATIVE =
-  /invitation to|inbjudan till|notice (?:of|to attend)|kallelse till|financial calendar|finansiell kalender|number of shares and votes|antal aktier och röster/i;
 export function featuredNews(items, now, limit = 5) {
-  const ranked = curateMarketNews(items, { referenceTs: now });
-  const seen = new Set();
-  return ranked
-    .filter((item) => {
-      if (ADMINISTRATIVE.test(item.title ?? "")) return false;
-      if (
-        !Number.isFinite(item.ts) ||
-        item.ts > now ||
-        now - item.ts > 96 * 3600_000
-      )
-        return false;
-      const key = normalizedSymbol(item.symbol) || item.eventId || item.id;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit);
+  return selectFeaturedNews(items, now, limit);
 }
 // Refresh observations without accepting a new headline/version or moving rows.
 // Price/volume changes must not turn into "new or updated news" notifications.

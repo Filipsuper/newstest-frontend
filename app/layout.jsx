@@ -4,7 +4,7 @@ import "@fontsource-variable/geist";
 import "./styles/tokens.css";
 import Providers from "./providers";
 import SiteChrome from "./components/SiteChrome";
-import { BRAND_LABEL, SITE_OG_IMAGE } from "./utils/brand";
+import { BRAND_LABEL, SITE_ICONS, SITE_OG_IMAGE } from "./utils/brand";
 
 export const metadata = {
   metadataBase: new URL("https://omxsum.com"),
@@ -14,9 +14,7 @@ export const metadata = {
   },
   description:
     "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",
-  icons: {
-    icon: "/favicon-32x32.png",
-  },
+  icons: SITE_ICONS,
   openGraph: {
     title: "OMXsum – Svenska börsnyheter och marknadsbrev",
     description: "Svenska börsnyheter, aktiekurser, bolagsanalys och dagliga marknadsbrev.",

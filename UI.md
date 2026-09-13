@@ -95,6 +95,10 @@ desktop density or abbreviated interaction model.
 - Use the shared `brand.js` launch identity in the public header, homepage and
   homepage sharing image. Keep canonical URLs, organization identity and
   Terminal branding unchanged. The version is a quiet label, not a new logo.
+- Browser/app icons use a plain yellow circle in the brand accent, with SVG,
+  32px PNG fallback and 180px touch icon. Keep icon metadata in `SITE_ICONS`
+  and version the URLs when changing the artwork. Favicons are separate from
+  the detailed social previews; do not shrink those previews into tab icons.
 - Generic social previews use the shared versioned `SITE_OG_IMAGE`, including
   Marknaden and routes inheriting the root metadata. Keep the dedicated story,
   letter and company images. The 1200×630 site composition pairs a clear news
@@ -190,6 +194,16 @@ desktop density or abbreviated interaction model.
   relevance are different concepts. A story can be important before trading
   reacts. Routine insider notices and administrative invitations must not
   fill featured slots simply because the stock moved.
+- Featured selection uses editorial importance and freshness, with a penalty
+  for routine financing/deal follow-ups and promotional context. A capped
+  market-attention bonus may use timestamped post-publication price movement
+  and reliable volume context; never equate this with price causality.
+  Prefer topical breadth softly, not through
+  fixed quotas; avoid repeating a company and allow fewer than five stories
+  when candidates do not meet the quality floor. Keep this policy separate
+  from chronological feeds, personal matching and Terminal mover ranking.
+  Audit decisions with `assessFeaturedNews`; weights are editorial heuristics,
+  not a measured probability of a story moving a stock.
 - Daily RVOL and RVOL at time are different comparison periods and must not
   earn two bonuses for the same volume. Prefer mature, same-time RVOL; daily
   RVOL is a ranking fallback only at session close. Company/session context
