@@ -67,6 +67,11 @@ preview and backend test commands.
   `/marknaden/nyheter` is its Plus/Pro chronological news view with URL filters.
 - `/nyhet/<id>` is the public, shareable event reader. Client navigation opens
   a Base UI dialog; direct visits/reloads render a standalone reading page.
+  New links use `/nyhet/<headline>~<id>` with lowercase, hyphen-separated
+  words. The stable ID keeps identical or revised headlines resolvable.
+  Direct visits to ID-only or outdated headline URLs permanently redirect to
+  the current headline URL; canonical/OG page URLs and copied links agree.
+  Existing ID-only sharing-image URLs remain valid.
 - `/marknaden/bevakning` is the signed-in reader's matched news feed. Companies,
   topics and keywords share a compact editor available inline in a dialog and
   at `/marknaden/bevakning/hantera`; old `/bevakning` bookmarks redirect.
@@ -96,8 +101,10 @@ together; the full feed remains server-gated.
 Company pages are the largest crawlable surface on the site, so the rules for
 them are explicit:
 
-- **Titles:** company pages use `<name> aktie (<ticker>) – kurs, nyheter och
-  rapporter | OMXsum`. Metadata streaming is disabled site-wide so titles,
+- **Titles:** company pages use `<name> – nyheter, aktiekurs och rapporter |
+  OMXsum`, with a company-specific news description and visible news heading.
+  Quote/chart controls use `data-nosnippet` so search snippets can focus on
+  descriptive text and news. Metadata streaming is disabled site-wide so titles,
   canonical links and robots directives are present in the initial HTML head
   for readers that do not execute JavaScript. Dynamic responses consequently
   wait for metadata before sending their first HTML.

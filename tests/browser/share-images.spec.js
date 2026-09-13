@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { CONTENT_OG_VERSION } from "../../app/utils/brand";
+import { LETTER_OG_VERSION } from "../../app/utils/letterSharing";
 
 test("crawler images are versioned without changing canonical story or company URLs", async ({
   request,
@@ -28,7 +29,7 @@ test("crawler images are versioned without changing canonical story or company U
     const canonical = new URL(
       html.match(/rel="canonical" href="([^"]+)"/)[1].replaceAll("&amp;", "&"),
     );
-    expect(canonical.pathname).toBe(path.split("?")[0]);
+    expect(canonical.pathname).toBe(new URL(response.url()).pathname);
     expect(canonical.search).toBe("");
   }
 });
@@ -139,5 +140,33 @@ test("chart shares keep period, moving averages, intraday and honest missing-dat
       "23,25,22",
       badge,
     );
+  }
+});
+
+test("newsletter metadata refreshes its dedicated artwork and preserves its article URL", async ({ request }) => {
+  const response = await request.get("/article/fixture-letter", {
+    headers: { "user-agent": "Twitterbot/1.0" },
+  });
+  expect(response.status()).toBe(200);
+  const html = await response.text();
+  for (const tag of ["property=\"og:image\"", "name=\"twitter:image\""]) {
+    const raw = html.match(new RegExp(`${tag} content="([^"]+)"`))[1];
+    const image = new URL(raw.replaceAll("&amp;", "&"));
+    expect(image.pathname).toBe("/article/fixture-letter/opengraph-image");
+    expect(image.searchParams.get("v")).toBe(LETTER_OG_VERSION);
+  }
+  expect(html).toContain('rel="canonical" href="https://omxsum.com/article/fixture-letter"');
+});
+
+test("newsletter shares use current styling for morning, evening, long titles and missing quotes", async ({ page, request }, testInfo) => {
+  for (const [id, badge] of [
+    ["fixture-letter", "227,241,232"],
+    ["og-evening-letter", "250,233,229"],
+    ["og-long-letter", "238,237,232"],
+    ["empty-letter"],
+  ]) {
+    await renderCard({ page, request }, testInfo,
+      `/article/${id}/opengraph-image?v=${LETTER_OG_VERSION}`,
+      id, "246,245,241", badge);
   }
 });

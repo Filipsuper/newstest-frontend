@@ -43,7 +43,7 @@ export default function NewsFeedItem({
         ) : null
       }
       reaction={reaction.pct}
-      href={onOpen ? undefined : storyHref(item.id)}
+      href={onOpen ? undefined : storyHref(item.id, item.title)}
       onOpen={onOpen}
       reactionLabel={reaction.pct !== null ? reaction.label : reaction.status ?? "Nyhet"}
       metadata={

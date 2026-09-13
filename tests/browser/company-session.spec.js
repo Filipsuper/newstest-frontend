@@ -262,11 +262,11 @@ test("feed rows do not fetch stock charts before the reader opens", async ({ pag
     json: { items: selected, nextCursor: null, serverFilters: true },
   }));
   await page.goto("/marknaden/nyheter");
-  const row = page.locator("article").filter({ has: page.locator('a[href="/nyhet/session-preview-premarket"]') });
+  const row = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~session-preview-premarket"]') });
   await expect(badge(row, "Idag · mot föregående stängning: +10,0 %")).toBeVisible();
   await page.waitForLoadState("networkidle");
   expect(chartRequests).toHaveLength(0);
-  await row.locator('a[href="/nyhet/session-preview-premarket"]').click();
+  await row.locator('a[href^="/nyhet/"][href$="~session-preview-premarket"]').click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await continuousStockChart(reaction(dialog));

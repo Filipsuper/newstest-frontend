@@ -104,7 +104,7 @@ export default function StoryReader({
   const published = Number.isFinite(story.ts)
     ? new Date(story.ts).toISOString()
     : null;
-  const shareUrl = `https://omxsum.com${storyHref(storyId)}`;
+  const shareUrl = `https://omxsum.com${storyHref(storyId, hasStory ? story.title : "")}`;
   async function share(copy = false) {
     setShareError("");
     try {

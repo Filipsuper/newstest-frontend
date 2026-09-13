@@ -661,19 +661,20 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             {[profile.nativeSymbol ?? symbol, profile.segment?.replaceAll("_", " "), profile.sector].filter(Boolean).join(" · ")}
                         </Text>
                     </div>
-                    <FollowCompanyButton symbol={symbol} name={profile.name} />
+                    <span data-nosnippet=""><FollowCompanyButton symbol={symbol} name={profile.name} /></span>
                 </div>
-                <div className={styles.quote}>
+                <Text size="sm" tone="secondary">Följ nyheter om {companyName}, aktiens kursreaktioner och kommande rapporter.</Text>
+                <div className={styles.quote} data-nosnippet="">
                     <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${profile.currency === "SEK" || !profile.currency ? "kr" : profile.currency}`}</strong>
                     <ChangeBadge value={quote?.changePct} label="Dagsförändring" />
                     <span className={styles.quoteMeta}>Idag{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${profile.currency ?? "SEK"}`}</span>
                 </div>
-                <Text size="xs" tone="secondary">
+                <Text as="span" size="xs" tone="secondary" data-nosnippet="">
                     {quote?.quoteTime || quote?.dataAsOf ? `Kursuppdatering ${svDateTime(quote.quoteTime ?? quote.dataAsOf)}` : "Kurstidpunkt saknas"}
                     {quote?.delayed && " · Fördröjd kurs"}
                 </Text>
             </header>
-            <div className={styles.controls}>
+            <div className={styles.controls} data-nosnippet="">
                 <SegmentedControl label="Kursperiod" value={range} onValueChange={setRange} className={styles.ranges}
                     options={RANGES.map((option) => ({
                         value: option.id, label: option.label,
@@ -694,7 +695,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 </div>
             </div>
             {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${drivers.length ? styles.chartWithContext : ""}`}>
-            <div className="company-chart-main">
+            <div className="company-chart-main" data-nosnippet="">
             <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="group" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={renderedData} margin={{ top: 14, right: 0, bottom: 4, left: 4 }}>
@@ -778,7 +779,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                     <EventMarker
                                         {...props}
                                         items={row.events}
-                                        onOpenStory={(story) => router.push(storyHref(story.id), { scroll: false })}
+                                        onOpenStory={(story) => router.push(storyHref(story.id, story.title ?? story.headline), { scroll: false })}
                                     />
                                 )}
                             />
@@ -2310,7 +2311,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} news={initialData.news} reports={initialData.reports}
                 initialRange={initialRange} initialMovingAverages={initialMovingAverages} companyName={name} onQuoteChange={setQuote} />
         </ReportSection>
-        <ReportSection id="news" title="Nyheter & reaktioner">
+        <ReportSection id="news" title={`Nyheter om ${name}`}>
             <NewsSection data={initialData} mentions={mentions} />
         </ReportSection>
         <ReportSection id="financials" title="Finansiell utveckling" deferred={hasPlus}>

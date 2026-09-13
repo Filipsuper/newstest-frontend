@@ -36,10 +36,13 @@ const companyTitle = (profile, symbol) => (profile?.name
     ? `${profile.name} (${profile.nativeSymbol ?? symbol.replace(".ST", "")})`
     : symbol.replace(".ST", "").replaceAll("-", " "));
 
+const companySearchTitle = (name) => `${name} – nyheter, aktiekurs och rapporter`;
+const companyDescription = (title) => `Nyheter om ${title}, aktiekurs och kursreaktioner. Se vad som händer i bolaget och följ rapporter och kommande händelser på OMXsum.`;
+
 // Describes the company itself, not the quote. Prices change by the minute and
 // are never claimed as structured facts; identity, ticker, ISIN and profile are
 // stable and source-attributed.
-function companyStructuredData({ symbol, profile, title, description, generatedAt }) {
+function companyStructuredData({ symbol, profile, title, pageTitle, description, generatedAt }) {
     const pageUrl = `${SITE_URL}/aktie/${encodeURIComponent(symbol)}`;
     const company = {
         "@type": "Corporation",
@@ -72,7 +75,7 @@ function companyStructuredData({ symbol, profile, title, description, generatedA
                 "@type": "WebPage",
                 "@id": `${pageUrl}#webpage`,
                 url: pageUrl,
-                name: title,
+                name: pageTitle,
                 description,
                 inLanguage: "sv-SE",
                 isPartOf: { "@id": `${SITE_URL}/#website` },
@@ -106,9 +109,8 @@ export async function generateMetadata({ params, searchParams }) {
 
     const title = companyTitle(profile ?? listed, decoded);
     const companyName = profile?.name ?? listed?.name ?? decoded.replace(".ST", "");
-    const ticker = profile?.nativeSymbol ?? listed?.nativeSymbol ?? decoded.replace(".ST", "");
-    const pageTitle = `${companyName} aktie (${ticker}) – kurs, nyheter och rapporter`;
-    const description = `Kurs, finansiell utveckling, rapportkalender och bolagsnyheter för ${title}.`;
+    const pageTitle = companySearchTitle(companyName);
+    const description = companyDescription(title);
     // The share card follows the period in the link, so a shared move unfurls as
     // the move that was shared. Same URL the share modal previews.
     const range = SHAREABLE_RANGES.has(query?.range) ? query.range : "1y";
@@ -146,7 +148,8 @@ export default async function Page({ params, searchParams }) {
             symbol: decoded,
             profile: summary.profile,
             title,
-            description: `Kurs, finansiell utveckling, rapportkalender och bolagsnyheter för ${title}.`,
+            pageTitle: companySearchTitle(summary.profile.name ?? decoded.replace(".ST", "")),
+            description: companyDescription(title),
             generatedAt: overview.data?.generatedAt,
         })
         : null;

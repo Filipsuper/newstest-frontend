@@ -137,7 +137,7 @@ test("featured news stays compact while its reader retains AI prose and bullets"
     name: "Viktigast just nu",
     exact: true,
   });
-  const story = featured.locator('a[href="/nyhet/fixture-0"]');
+  const story = featured.locator('a[href^="/nyhet/"][href$="~fixture-0"]');
   await expect(story).toBeVisible();
   await expect(
     featured.getByText("AI-sammanfattning", { exact: true }),

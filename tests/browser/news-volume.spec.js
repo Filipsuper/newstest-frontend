@@ -16,7 +16,7 @@ for (const width of [320, 1440]) {
     await page.goto("/marknaden");
     const featured = page.getByRole("region", { name: "Viktigast just nu", exact: true });
     await expect(featured.getByText(/Volym 3,4× kl\./)).toHaveCount(1);
-    await featured.locator('a[href="/nyhet/fixture-0"]').click();
+    await featured.locator('a[href^="/nyhet/"][href$="~fixture-0"]').click();
     const dialog = page.getByRole("dialog");
     await dialog.getByText("Handelsvolym", { exact: true }).click();
     await expect(dialog.getByText("RVOL · mot normal heldag", { exact: true })).toBeVisible();
@@ -68,7 +68,7 @@ test("ranking-only changes keep the selection stable until new content arrives a
   await page.goto("/marknaden");
   const featured = page.getByRole("region", { name: "Viktigast just nu", exact: true });
   await expect(featured.locator("article").first()).toContainText("Höjer prognosen");
-  const replacement = featured.locator('a[href="/nyhet/fixture-10"]');
+  const replacement = featured.locator('a[href^="/nyhet/"][href$="~fixture-10"]');
   await expect(replacement).toHaveCount(0);
   let response = {
     ...snapshot, news: snapshot.news.map((story, i) => i === 10 ? { ...story, importance: 100 } : story),

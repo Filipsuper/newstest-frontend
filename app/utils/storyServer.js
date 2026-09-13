@@ -1,14 +1,16 @@
 import { cache } from "react";
 import { fetchStory } from "./api";
-import { validStoryId, normalizeStory, storyHref } from "./newsroom";
+import { normalizeStory, storyHref } from "./newsroom";
+import { storyIdFromPath } from "./storyUrls";
 import { CONTENT_OG_VERSION } from "./brand";
 
-export const loadStory = cache(async (id) => {
-  if (!validStoryId(id)) return { notFound: true };
+export const loadStory = cache(async (segment) => {
+  const id = storyIdFromPath(segment);
+  if (!id) return { notFound: true };
   try {
-    return { detail: await fetchStory(id) };
+    return { id, detail: await fetchStory(id) };
   } catch (error) {
-    return error.status === 404 ? { notFound: true } : { unavailable: true };
+    return error.status === 404 ? { id, notFound: true } : { id, unavailable: true };
   }
 });
 
@@ -26,9 +28,9 @@ export async function storyMetadata(id) {
     story.aiSummary?.text ||
     "Nyheten, källorna och aktiens utveckling kring publiceringen på OMXsum."
   ).slice(0, 240);
-  const url = `https://omxsum.com${storyHref(id)}`;
+  const url = `https://omxsum.com${storyHref(result.id, story.title)}`;
   const image = {
-    url: `${url}/opengraph-image?v=${CONTENT_OG_VERSION}`,
+    url: `https://omxsum.com${storyHref(result.id)}/opengraph-image?v=${CONTENT_OG_VERSION}`,
     width: 1200,
     height: 630,
     alt: story.title,

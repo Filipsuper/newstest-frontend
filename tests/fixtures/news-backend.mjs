@@ -247,6 +247,23 @@ const server = createServer(async (req, res) => {
       bulletPoints: null,
       omxChangePercentage: null,
     };
+  else if (path === "/api/data/og-evening-letter")
+    data = {
+      ...articles[0],
+      title: "Börsdagen i backspegeln – industrin backar när nya räntebesked sätter tonen",
+      createdAt: "2026-09-07T16:00:00Z",
+      isEveningLetter: true,
+      omxPrice: "2 583,40",
+      omxChangePercentage: "−1,2 %",
+    };
+  else if (path === "/api/data/og-long-letter")
+    data = {
+      ...articles[0],
+      title: "Rapporter och räntor inför börsdagen – industrins nya prognoser möter bankernas förväntningar medan energimarknaden och flera stora bolagsbesked får investerarna att tänka om",
+      createdAt: "2026-09-07T05:00:00Z",
+      omxPrice: "2 583,40",
+      omxChangePercentage: "0,0 %",
+    };
   else if (path.startsWith("/api/data/")) data = articles[0];
   else if (path === "/api/feed/topics")
     data = {

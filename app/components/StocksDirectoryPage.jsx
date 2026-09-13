@@ -36,7 +36,7 @@ function CompanyRow({ company, now, newsAvailable }) {
     </div>
     <div className={styles.story}>
       {story ? <>
-        <Link href={storyHref(story.id)} scroll={false} prefetch={false} className={styles.headline}>{story.title}</Link>
+        <Link href={storyHref(story.id, story.title)} scroll={false} prefetch={false} className={styles.headline}>{story.title}</Link>
         <Inline gap={2} className={styles.metadata}>
           {mainTag && <NewsTypeLabel type={mainTag} />}
           {story.source && <span>{story.source}</span>}

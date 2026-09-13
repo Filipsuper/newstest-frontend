@@ -12,21 +12,25 @@ export default function ShareArticleComponent({ title }) {
   const url = `https://omxsum.com${articleHref(title)}`;
   async function share(copy = false) {
     setError("");
+    setCopied(false);
+    const useNativeShare = !copy && typeof navigator.share === "function";
     try {
-      if (!copy && navigator.share) await navigator.share({ title, url });
+      if (useNativeShare) await navigator.share({ title, url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
       }
     } catch (error) {
       if (error.name !== "AbortError")
-        setError("Länken kunde inte kopieras. Använd länken nedan.");
+        setError(useNativeShare
+          ? "Delningen kunde inte öppnas. Kopiera länken eller använd den nedan."
+          : "Länken kunde inte kopieras. Använd länken nedan.");
     }
   }
   return (
     <div className={styles.share}>
       <Inline className={styles.shareActions}>
-        <Button variant="ghost" onClick={() => share()}>
+        <Button variant="secondary" onClick={() => share()}>
           <FiShare2 aria-hidden="true" />
           Dela brevet
         </Button>
@@ -36,7 +40,7 @@ export default function ShareArticleComponent({ title }) {
           ) : (
             <FiCopy aria-hidden="true" />
           )}
-          Kopiera länk
+          {copied ? "Länk kopierad" : "Kopiera länk"}
         </Button>
       </Inline>
       {copied && (

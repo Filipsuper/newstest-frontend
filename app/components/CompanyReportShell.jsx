@@ -153,7 +153,7 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
     </a>)}
   </nav>;
 
-  const context = <div className={styles.context}>
+  const context = <div className={styles.context} data-nosnippet="">
     <span className={styles.contextName} title={name}>{name}</span>
     <div className={styles.contextQuote}>
       <span>{quote?.price == null ? "Kurs saknas" : `${Number(quote.price).toLocaleString("sv-SE", { maximumFractionDigits: 2 })} ${currency === "SEK" ? "kr" : currency}`}</span>

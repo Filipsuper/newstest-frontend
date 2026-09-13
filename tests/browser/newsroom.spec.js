@@ -126,14 +126,14 @@ test("news rows and reader show AI prose and bullets, never the wire description
       detailRequests.push(request.url());
   });
   await page.goto("/marknaden/nyheter");
-  const row = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-0"]') });
+  const row = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~fixture-0"]') });
   await expect(row.getByText("AI-sammanfattning", { exact: true })).toBeVisible();
   await expect(row.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).getByRole("listitem")).toHaveCount(3);
   await expect(row).toContainText("Fiktiv AI-text.");
   await expect(row).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
-  const proseOnly = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-1"]') });
+  const proseOnly = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~fixture-1"]') });
   await expect(proseOnly.getByRole("list")).toHaveCount(0);
-  const missing = page.locator("article").filter({ has: page.locator('a[href="/nyhet/fixture-2"]') });
+  const missing = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~fixture-2"]') });
   await expect(missing.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
   await expect(missing).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
   expect(detailRequests).toEqual([]);
@@ -174,7 +174,7 @@ for (const width of [320, 1440]) {
     };
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/marknaden/nyheter");
-    await page.locator('a[href="/nyhet/fixture-0"]').first().click();
+    await page.locator('a[href^="/nyhet/"][href$="~fixture-0"]').first().click();
     const dialogReader = page.getByRole("dialog").locator("article").first();
     await expect(dialogReader.locator("[data-reading]")).toContainText("Fiktiv AI-text.");
     await expectNoExtractedFacts(dialogReader);
@@ -444,6 +444,8 @@ test("direct story has social metadata, missing data is not zero, and OG variant
   context,
 }, testInfo) => {
   await page.goto("/nyhet/missing-data");
+  const canonicalUrl = `https://omxsum.com${new URL(page.url()).pathname}`;
+  expect(canonicalUrl).toMatch(/\/nyhet\/[a-z0-9-]+~missing-data$/);
   await expect(
     page.getByText("Inväntar kursdata", { exact: true }),
   ).toBeVisible();
@@ -453,12 +455,12 @@ test("direct story has social metadata, missing data is not zero, and OG variant
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://omxsum.com/nyhet/missing-data",
+    canonicalUrl,
   );
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("button", { name: "Kopiera länk", exact: true }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    "https://omxsum.com/nyhet/missing-data",
+    canonicalUrl,
   );
   for (const id of ["fixture-0", "fixture-1", "missing-data", "long-title"]) {
     const response = await request.get(`/nyhet/${id}/opengraph-image`);
@@ -582,7 +584,7 @@ test("company chart introduces a continuous news-led report, including without p
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/aktie/NORD.TEST");
   const heading = page.getByRole("heading", {
-    name: "Nyheter & reaktioner",
+    name: "Nyheter om Norden Industri",
   });
   await expect(heading).toBeVisible();
   const chart = page.getByRole("group", {
@@ -604,7 +606,7 @@ test("company chart introduces a continuous news-led report, including without p
   await expect(page).toHaveURL(/\/aktie\/NORD.TEST$/);
   await page.goto("/aktie/FJALL.TEST");
   await expect(
-    page.getByRole("heading", { name: "Nyheter & reaktioner" }),
+    page.getByRole("heading", { name: "Nyheter om Fjäll Energi" }),
   ).toBeVisible();
   await expect(
     page.locator("main:visible").getByText("Ingen historisk kursdata är tillgänglig ännu."),

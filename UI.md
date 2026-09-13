@@ -255,7 +255,8 @@ desktop density or abbreviated interaction model.
   bounded requests end in a retryable error, not endless solid blocks.
   Keep reading position stable. URL-backed filters survive sharing/reload.
   Only show older-page navigation when the source supplies a real cursor.
-- Story links use canonical `/nyhet/[id]` URLs. Normal client navigation opens
+- Story links use canonical `/nyhet/<headline>~<id>` URLs, retaining the stable
+  ID while legacy ID-only and outdated headline links redirect. Normal client navigation opens
   a Base UI dialog; direct visits and reload open the full reader. Back closes
   the dialog, Forward reopens it, and returning retains the source page.
 - Reader hierarchy: headline/source → AI summary → aligned reaction KPIs/chart →
@@ -369,6 +370,10 @@ desktop density or abbreviated interaction model.
   No emoji sentiment dashboard or current chart inserted into an old article.
 - The legacy letter quote fields are sourced from IG Sverige30. Label them as
   saved broker data, not verified cash-index data or a live price.
+- Newsletter share images use the same warm canvas, Geist, brand lockup and
+  signed change badges as news sharing. Keep the actual edition and Stockholm
+  publication date visible; saved IG figures retain their source label. Missing
+  figures stay absent. Version the artwork URL without changing article links.
 - Inline company previews use the shared keyboard-aware Tooltip; the company
   link remains usable by touch without opening a preview. Never put article
   headings inside paragraphs or render raw source HTML.

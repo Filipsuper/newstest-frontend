@@ -26,7 +26,7 @@ test("compact discovery is company-first, uses shared palette and does not fetch
   expect((await row.boundingBox()).y).toBeLessThan(520);
   expect((await row.boundingBox()).height).toBeLessThan(150);
   await expect(row.getByRole("link", { name: "Norden Industri", exact: true })).toHaveAttribute("href", "/aktie/NORD.TEST");
-  await expect(row.locator('a[href="/nyhet/fixture-0"]')).toBeVisible();
+  await expect(row.locator('a[href^="/nyhet/"][href$="~fixture-0"]')).toBeVisible();
   await expect(row.locator('[aria-label^="Dagsförändring"]')).toBeVisible();
   await expect(row).not.toContainText("Fiktiv AI-text");
   await expect(row.locator(".stock-profile")).toHaveCount(0);
@@ -54,7 +54,7 @@ test("filters, report choice and story dialog roundtrip through URL without losi
   await page.reload();
   await expect(page.getByRole("button", { name: "Rapporter", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("searchbox", { name: "Sök bolag eller ticker", exact: true })).toHaveValue("nord");
-  const story = resultList(page).locator('a[href="/nyhet/fixture-0"]');
+  const story = resultList(page).locator('a[href^="/nyhet/"][href$="~fixture-0"]');
   await story.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("dialog").getByText("AI-sammanfattning", { exact: true }).first()).toBeVisible();
@@ -150,7 +150,7 @@ test("small screens reflow without clipped headlines or nested vertical scrollin
     }
     expect((await list.getByRole("button").first().boundingBox()).height).toBeGreaterThanOrEqual(44);
     await list.getByRole("listitem").last().scrollIntoViewIfNeeded();
-    const story = list.locator('a[href="/nyhet/fixture-2"]');
+    const story = list.locator('a[href^="/nyhet/"][href$="~fixture-2"]');
     const scroll = await page.evaluate(() => scrollY);
     await story.click();
     await expect(page.getByRole("dialog")).toBeVisible();

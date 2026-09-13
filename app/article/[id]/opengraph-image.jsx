@@ -1,91 +1,63 @@
 import { ImageResponse } from "next/og";
 import { getArticle } from "../../utils/api";
-import { summaryExcerpt } from "../../utils/stripSummaryMarkup";
+import { letterShareContent } from "../../utils/letterSharing";
+import { loadOgFonts } from "../../og/_shared/fonts";
+import { OgBrand, OgCanvas, OgChangeBadge } from "../../og/_shared/elements";
+import { OG_SIZE, ogThemes } from "../../og/_shared/theme";
 
+export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Omxsum - Dagliga marknadssummeringar";
+export const alt = "OMXsum – Morgonbrevet och Kvällsbrevet";
+const colors = ogThemes.light;
 
 export default async function Image({ params }) {
-    const { id } = await params;
-    let article = null;
-    try {
-        article = await getArticle(id);
-    } catch (error) {
-        article = null;
-    }
+  const { id } = await params;
+  const article = await getArticle(id).catch(() => null);
+  const { title, excerpt, edition, date, quote, change } = letterShareContent(article);
 
-    const title = article?.title || "Omxsum";
-    const excerpt = article ? summaryExcerpt(article, 220) : "Dagliga marknadssummeringar";
-    const omxPrice = article?.omxPrice;
-    const omxChangePercentage = article?.omxChangePercentage || "";
-    const isNegative = omxChangePercentage.trim().startsWith("-");
-    const letterType = article?.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet";
-
-    return new ImageResponse(
-        (
-            <div
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    backgroundColor: "#151616",
-                    color: "#f3f3ef",
-                    padding: "60px 70px",
-                    fontFamily: "serif",
-                }}
-            >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", fontSize: 44, fontStyle: "italic", fontWeight: 900 }}>
-                        Omxsum
-                    </div>
-                    <div
-                        style={{
-                            display: "flex",
-                            fontSize: 26,
-                            color: article?.isEveningLetter ? "#e5bd5c" : "#86a5ef",
-                            border: `2px solid ${article?.isEveningLetter ? "#e5bd5c" : "#86a5ef"}`,
-                            padding: "6px 18px",
-                        }}
-                    >
-                        {letterType}
-                    </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            fontSize: 58,
-                            fontWeight: 900,
-                            fontStyle: "italic",
-                            lineHeight: 1.15,
-                            marginBottom: 28,
-                        }}
-                    >
-                        {title.length > 90 ? title.slice(0, 89) + "…" : title}
-                    </div>
-                    <div style={{ display: "flex", fontSize: 28, color: "#989b97", lineHeight: 1.4 }}>
-                        {excerpt}
-                    </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", fontSize: 26, color: "#989b97" }}>omxsum.com</div>
-                    {omxPrice ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 30 }}>
-                            <span style={{ color: "#989b97" }}>OMXS30</span>
-                            <span style={{ fontWeight: 700 }}>{omxPrice}</span>
-                            <span style={{ color: isNegative ? "#ef716a" : "#62ca88" }}>
-                                {omxChangePercentage}
-                            </span>
-                        </div>
-                    ) : null}
-                </div>
+  return new ImageResponse(
+    (
+      <OgCanvas>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, height: 40 }}>
+          <OgBrand />
+          <div style={{ display: "flex", fontSize: 24, color: colors.accent }}>
+            {edition}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", gap: 16, paddingTop: 24, paddingBottom: 24 }}>
+          {date && (
+            <div style={{ display: "flex", fontSize: 24, color: colors.secondary }}>
+              {date}
             </div>
-        ),
-        { ...size }
-    );
+          )}
+          <div style={{ display: "flex", fontSize: title.length > 110 ? 48 : 58, fontWeight: 600, lineHeight: 1.12, letterSpacing: -1.5 }}>
+            {title}
+          </div>
+          {excerpt && (
+            <div style={{ display: "flex", fontSize: 28, color: colors.secondary, lineHeight: 1.4 }}>
+              {excerpt}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexShrink: 0, gap: 24 }}>
+          <div style={{ display: "flex", fontSize: 24, color: colors.secondary }}>
+            omxsum.com
+          </div>
+          {(quote || change !== null) && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+              <div style={{ display: "flex", fontSize: 20, color: colors.secondary }}>
+                Sverige30 · IG, sparat i brevet
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {quote && <div style={{ display: "flex", fontSize: 30, fontWeight: 600 }}>{quote}</div>}
+                {change !== null && <OgChangeBadge value={change} />}
+              </div>
+            </div>
+          )}
+        </div>
+      </OgCanvas>
+    ),
+    { ...OG_SIZE, fonts: await loadOgFonts() },
+  );
 }

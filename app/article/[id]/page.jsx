@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import ArticleComponent from "../../components/ArticleComponent";
 import { getArticle } from "../../utils/api";
 import { summaryExcerpt } from "../../utils/stripSummaryMarkup";
+import { letterShareImageHref } from "../../utils/letterSharing";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,12 @@ export async function generateMetadata({ params }) {
     }
 
     const description = summaryExcerpt(article);
+    const image = {
+        url: letterShareImageHref(id),
+        width: 1200,
+        height: 630,
+        alt: `${article.isEveningLetter ? "Kvällsbrevet" : "Morgonbrevet"} – ${article.title}`,
+    };
 
     return {
         title: article.title,
@@ -28,14 +35,16 @@ export async function generateMetadata({ params }) {
             title: article.title,
             description,
             url: `https://omxsum.com/article/${id}`,
-            siteName: "Omxsum",
+            siteName: "OMXsum",
             type: "article",
             publishedTime: article.createdAt,
+            images: [image],
         },
         twitter: {
             card: "summary_large_image",
             title: article.title,
             description,
+            images: [image],
         },
     };
 }

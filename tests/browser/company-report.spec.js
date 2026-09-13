@@ -68,7 +68,7 @@ test("legacy links, section reload and reader Back/Forward preserve chart and re
   await expect(page).toHaveURL(/range=6m&ma=50#news$/);
   await belowChrome(page, "news");
   await expect(page.getByRole("button", { name: "6 mån", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const article = page.locator('#news article a[href="/nyhet/fixture-3"]');
+  const article = page.locator('#news article a[href^="/nyhet/"][href$="~fixture-3"]');
   await article.scrollIntoViewIfNeeded();
   await article.focus();
   const position = await page.evaluate(() => scrollY);
@@ -122,8 +122,8 @@ for (const width of [320, 390, 820]) test(`mobile ${width}: contents sheet jumps
 test("news is bounded, chronological and deduplicated; intraday loading has no synthetic curve", async ({ page }) => {
   await page.goto("/aktie/MANY.TEST#news");
   await expect(page.locator("#news article")).toHaveCount(6);
-  await expect(page.locator('#news a[href="/nyhet/fixture-0"]')).toHaveCount(1);
-  await expect(page.locator('#news a[href="/nyhet/duplicate-release"]')).toHaveCount(0);
+  await expect(page.locator('#news a[href^="/nyhet/"][href$="~fixture-0"]')).toHaveCount(1);
+  await expect(page.locator('#news a[href^="/nyhet/"][href$="~duplicate-release"]')).toHaveCount(0);
   await expect(page.locator("#news article").first()).toContainText("Fiktiv AI-text");
   await expect(page.locator("#news article").first().getByRole("listitem")).toHaveCount(3);
   await page.getByRole("button", { name: "Visa fler nyheter" }).click();

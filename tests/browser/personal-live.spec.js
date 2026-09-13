@@ -162,7 +162,7 @@ test("the overview refreshes its featured headline and personal preview automati
   await expect.poll(() => state.overviewReads).toBeGreaterThan(0);
   const original = featured.locator('article a[href^="/nyhet/"]').first();
   await expect(original).toBeVisible();
-  const id = (await original.getAttribute("href")).split("/").at(-1);
+  const id = (await original.getAttribute("href")).split("~").at(-1);
   const headline = "Fiktivt bolag höjer helårsprognosen efter stark orderingång";
   state.overview = {
     ...state.overview,
@@ -177,7 +177,7 @@ test("the overview refreshes its featured headline and personal preview automati
   await expect.poll(() => state.overviewReads).toBeGreaterThan(before.market);
   await expect.poll(() => state.personalReads).toBeGreaterThan(before.personal);
   // A news link's accessible name includes its company before the headline.
-  const updatedStory = featured.locator(`a[href="/nyhet/${id}"]`);
+  const updatedStory = featured.locator(`a[href^="/nyhet/"][href$="~${id}"]`);
   await expect(updatedStory).toBeVisible();
   await expect(updatedStory).toContainText(headline);
   await expect(personal.locator("article")).toHaveCount(2);

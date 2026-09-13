@@ -203,12 +203,12 @@ test("the real chronological feed opens the same v2 measurement in its URL-backe
   const story = previewStories()[0];
   await page.route(/\/api\/feed\/news\?/, route => route.fulfill({ json: { items: [story], nextCursor: null, serverFilters: true } }));
   await page.goto("/marknaden/nyheter");
-  const row = page.locator("article").filter({ has: page.locator(`a[href="/nyhet/${story.id}"]`) });
+  const row = page.locator("article").filter({ has: page.locator(`a[href^="/nyhet/"][href$="~${story.id}"]`) });
   await expect(badge(row, "1 tim efter nyheten: +4,2 %")).toBeVisible();
-  await row.locator(`a[href="/nyhet/${story.id}"]`).click();
+  await row.locator(`a[href^="/nyhet/"][href$="~${story.id}"]`).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(badge(reaction(page), "1 tim efter nyheten: +4,2 %")).toBeVisible();
-  await expect(page).toHaveURL(/\/nyhet\/reaction-preview-positive$/);
+  await expect(page).toHaveURL(/\/nyhet\/[a-z0-9-]+~reaction-preview-positive$/);
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/marknaden\/nyheter$/);
   await expect(badge(row, "1 tim efter nyheten: +4,2 %")).toBeVisible();
@@ -268,9 +268,9 @@ test("personalized news uses the same v2 badge as the canonical reader", async (
     stories: [{ ...story, viaWatchlist: true }], matchedCount: 1, hasPrefs: true, sinceHours: 48,
   } }));
   await page.goto("/bevakning");
-  const row = page.locator("article").filter({ has: page.locator('a[href="/nyhet/reaction-preview-positive"]') });
+  const row = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~reaction-preview-positive"]') });
   await expect(badge(row, "1 tim efter nyheten: +4,2 %")).toBeVisible();
-  await row.locator('a[href="/nyhet/reaction-preview-positive"]').click();
+  await row.locator('a[href^="/nyhet/"][href$="~reaction-preview-positive"]').click();
   await expect(badge(reaction(page), "1 tim efter nyheten: +4,2 %")).toBeVisible();
 });
 

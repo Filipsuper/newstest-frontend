@@ -9,10 +9,7 @@ import { selectFeaturedNews } from "./featuredNewsRanking.js";
 import { retainReactionV2 } from "./reactionV2.js";
 import { retainCompanyContext } from "./companySession.js";
 
-export const validStoryId = (id) =>
-  /^[A-Za-z0-9_-]{1,80}$/.test(String(id ?? ""));
-export const storyHref = (id) =>
-  validStoryId(id) ? `/nyhet/${encodeURIComponent(id)}` : null;
+export { validStoryId, storyHref } from "./storyUrls.js";
 export const safeSourceUrl = (value) => {
   try {
     const url = new URL(value);

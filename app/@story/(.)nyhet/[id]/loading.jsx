@@ -6,9 +6,11 @@ import { Dialog } from "../../../components/ui/overlays";
 import { Skeleton } from "../../../components/ui/data";
 import { Stack } from "../../../components/ui/layout";
 import styles from "../../../components/story-reader.module.css";
+import { storyIdFromPath } from "../../../utils/storyUrls";
 
 export default function Loading() {
   const { id } = useParams();
+  const storyId = storyIdFromPath(id);
   const router = useRouter();
   const [recoveryId, setRecoveryId] = useState(null);
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function Loading() {
   }, [id]);
   // History may restore this boundary after its original RSC request was
   // abandoned. The reader has its own bounded fetch and retry state.
-  if (recoveryId === id) return <StoryDialog storyId={id} />;
+  if (recoveryId === id && storyId) return <StoryDialog storyId={storyId} />;
   return (
     <Dialog
       open
