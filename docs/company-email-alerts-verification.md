@@ -15,8 +15,10 @@ all 52 checks successfully. Source repositories/databases were not removed.
 The production build can opt in with the new Docker build argument
 `NEXT_PUBLIC_COMPANY_ALERTS_ENABLED=true`; its default remains false. The backend
 preference flag is independent, and actual alert delivery remains hard-disabled.
-The [release history](release-history.md) records the final deployed revisions
-and live checks once deployment succeeds. The following is the original local
+Preferences were deployed as frontend `1edbcf2` and backend `f7e4f70` on
+13 September 2026. Production preferences flags are enabled; actual alert delivery
+remains disabled. The [release history](release-history.md) records the final
+deployed revisions and successful live checks. The following is the original local
 implementation verification record, not a claim that the old baseline is deployed.
 
 13 September 2026. Local implementation only. Nothing committed, pushed,

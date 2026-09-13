@@ -11,6 +11,60 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Company email preferences — released; delivery remains off
+
+Frontend `1edbcf222706f67c39731b2fa3033bf287d6e58f` and backend
+`f7e4f700a186282f897d995b0422343aacdd1aa7` were deployed after approval on
+13 September 2026, verified at `2026-09-13T21:08:16Z` (23:08 Stockholm).
+
+- Bevakning and account settings expose the same compact email editor:
+  explicit opt-in, three importance levels, company mutes and quiet hours.
+  Following and newsletter subscriptions remain independent.
+- The backend enforces verified Plus/Pro access, company caps, revision conflicts,
+  prospective boundaries and explicit resumption after safety pauses.
+- **Preferences only:** no source worker, outbox, email transport or actual alert
+  sends. `delivery.available` is hardcoded false. The UI says saved choices,
+  not active delivery; the material-news policy remains fixture-qualified.
+- The release preserves live frontend `37eb829` and backend `0a31aaa` fixes.
+  Unrelated dirty development edits and the local-only bind-host override were
+  excluded. The previously server-only backend fixes were preserved on GitHub.
+- Rebased verification: 154 frontend unit tests, 282 backend tests (one optional
+  Mongo test skipped), 52 Chromium checks and zero dependency-audit findings.
+  Earlier ENOSPC runs were retried after approved temporary-build cleanup.
+- Both Linux ARM64 candidates passed environment-leak checks. Frontend native
+  PNG/AVIF optimization and 1200×630 OG rendering passed with Next 15.5.25,
+  Sharp 0.35.4 and libheif 1.23.2. Preview-only routes remain unavailable.
+- Public market, company, manager and API routes return 200; unauthenticated
+  email preferences return 401 with no-store. The personal manager remains
+  noindex. Read-only live Chromium checks at 1280/390/320px passed with no
+  horizontal overflow, page errors or attempted account writes.
+- The first swap was automatically rolled back because its checker incorrectly
+  used loopback: Compose's standalone frontend binds its container hostname.
+  That verifier and curl's retry-to-/dev/null behavior were corrected; the same
+  immutable images then passed and were deployed. No application rebuild or
+  production account write was needed to resolve the check.
+
+Frontend image `070b7c861432` started at `21:08:10Z`; backend `dcd291d688b8`
+at `21:08:01Z`, both zero restarts at final verification. Exact previous images
+`db004801aae6` and `5a431609db8c` remain tagged as rollback and release-specific
+backups; older rollback tags are also retained. MongoDB, Terminal, nginx container
+identity and the reaction worker remained unchanged; nginx was only reloaded.
+
+Frontend builds for this feature must keep
+`--build-arg NEXT_PUBLIC_COMPANY_ALERTS_ENABLED=true` (Docker default is false).
+The backend compose override retains `REACTION_V2_UI_ENABLED=true` and adds
+`COMPANY_ALERTS_PREFERENCES_ENABLED=true`. Neither flag enables email delivery.
+
+Sequential builds used one CPU, 1400 MiB RAM/no build swap and 900-second limits.
+After release: 990 MiB available RAM, 2134 MiB free swap, 2771 MiB free server disk.
+About 1.9 GiB of approved local temporary build output was removed; it is
+regenerable. No source repository, database, server image or production cache
+was pruned. Temporary candidate containers and the deployment lock were removed.
+
+Records: local `/private/tmp/omxsum-alert-release.AEBWgv/`; server build/initial
+attempt `/tmp/omxsum-alert-release.GOMZ8r/`; final retry
+`/tmp/omxsum-alert-retry.V4fnbN/`.
+
 ## News URLs, company SEO and newsletter sharing — released
 
 Frontend `37eb82904c0029b496b237b4ce415312c144b59f` deployed on 13 September,

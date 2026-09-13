@@ -1,21 +1,23 @@
 # Company email alerts — implementation plan
 
-13 September 2026. **Preferences implemented locally; delivery is not implemented
-or deployed. No real alert sends.** A pure, fixture-only policy foundation is also
+13 September 2026. **Preferences deployed; delivery is not implemented or enabled.
+No real alert sends.** Frontend `1edbcf2` and backend `f7e4f70` are live;
+see the [release record](release-history.md). A pure, fixture-only policy foundation is also
 present; this is not completion of the event/outbox or delivery phases. The broader
-news audit remains on hold. This document does not authorize deployment,
-production data access, provider changes or a mailing test.
+news audit remains on hold. This release does not authorize provider activation,
+historical backfills or a real mailing test.
 
-## Local implementation status
+## Implementation and release status
 
 The backend work is isolated in the new `backend-alerts` checkout, branch
 `codex/company-email-alerts`, based on clean revision `f321110`. It does not adopt
 the unrelated dirty feed/serializer work from the originally inspected checkout.
-The matching frontend changes are local to `site`; neither side has been deployed.
+The release used clean candidates preserving live frontend `37eb829` and backend
+`0a31aaa` fixes. Development worktrees remain separate and were not reset.
 The [local verification record](company-email-alerts-verification.md) describes
 the isolated build, fixture tests, flags and preview prerequisites.
 
-- [x] **Phase 1 — local preferences API/model:** authenticated GET/PUT
+- [x] **Phase 1 — released preferences API/model:** authenticated GET/PUT
   `/api/user/company-alerts`, explicit opt-in, defaults off/`important`, company
   mutes, validated quiet-hour/time-zone preferences and fixed two-minute/five-minute
   batching metadata. Account verification and server-side Plus/Pro entitlement
@@ -24,7 +26,7 @@ the isolated build, fixture tests, flags and preview prerequisites.
   billing-webhook plan changes. Stored consent/address bindings, prospective
   eligibility boundaries and safety pauses require explicit resumption after
   verification/entitlement/over-cap recovery. They do not create a send queue.
-- [x] **Phase 1 — local frontend:** compact email status/action in the existing
+- [x] **Phase 1 — released frontend:** compact email status/action in the existing
   Bevakning editor, shared Base UI three-stop `Slider`, company mutes, quiet-hour
   details and explicit `Spara mejlval` with conflict/error handling. Settings uses
   the same resource; follows and Morgonbrevet remain separate. Saved preferences
@@ -46,8 +48,10 @@ the isolated build, fixture tests, flags and preview prerequisites.
   retries/unknown-outcome reconciliation and separately approved release/canary.
 
 `NEXT_PUBLIC_COMPANY_ALERTS_ENABLED` and `COMPANY_ALERTS_PREFERENCES_ENABLED` both
-default off and require the literal value `true` to expose their respective local
-UI/API. Enabling preferences does not enable delivery; no alert worker, transport
+default off in code and require the literal value `true` to expose their
+UI/API. Both are enabled for production preferences. Future frontend image
+builds must retain `--build-arg NEXT_PUBLIC_COMPANY_ALERTS_ENABLED=true`.
+Enabling preferences does not enable delivery; no alert worker, transport
 or provider call is implemented. Quiet hours and batching are saved/displayed
 settings, not a running scheduler. Local implementation and fixture verification
 must not be described as a shipped plan benefit or end-to-end delivery acceptance.

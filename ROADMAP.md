@@ -61,7 +61,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `37eb829`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `1edbcf2`; backend: `f7e4f70`; newsletter renderer: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
@@ -126,7 +126,7 @@ clear reasons for selection and no unsupported explanation of price causality.
 
 ### 2. Company email alerts — preferences ready, delivery next
 
-- Preferences are implemented and approved for deployment. See the
+- **Preferences released 13 September (`1edbcf2` / `f7e4f70`).** See the
   [plan](docs/company-email-alerts.md) and [local verification](docs/company-email-alerts-verification.md).
 - Plus/Pro only, separate explicit opt-in, three importance levels, company
   mutes and quiet hours inside the existing Bevakning editor. No automatic opt-in.

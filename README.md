@@ -58,6 +58,11 @@ preview and backend test commands.
   **runtime**. On the VPS, point it straight at the backend
   (e.g. `http://localhost:8000/api` or `http://172.17.0.1:8000/api` from inside
   Docker) so SSR doesn't round-trip through nginx.
+- `NEXT_PUBLIC_COMPANY_ALERTS_ENABLED` — email-preferences UI build flag. Production
+  releases must pass `--build-arg NEXT_PUBLIC_COMPANY_ALERTS_ENABLED=true` to Docker;
+  its default is false. The backend separately requires
+  `COMPANY_ALERTS_PREFERENCES_ENABLED=true`. These expose saved preferences only;
+  actual alert delivery remains disabled. See `docs/company-email-alerts.md`.
 
 ## Public-site information architecture
 
