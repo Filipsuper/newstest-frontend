@@ -3,12 +3,11 @@ import CompanyPage from "../../components/CompanyPage";
 import { fetchCompanyList, fetchCompanyMentions, fetchCompanyOverview } from "../../utils/api";
 import { cookies } from "next/headers";
 import { CONTENT_OG_VERSION as SHARE_CARD_VERSION } from "../../utils/brand";
+import { companyChartRange } from "../../utils/companyChartRanges";
 
 const SITE_URL = "https://omxsum.com";
 
 const cleanSymbol = (value) => decodeURIComponent(value).toUpperCase();
-
-const SHAREABLE_RANGES = new Set(["1d", "6m", "1y", "3y", "5y"]);
 
 const cleanMovingAverages = (value) => String(Array.isArray(value) ? value[0] : value ?? "")
     .split(",")
@@ -113,7 +112,7 @@ export async function generateMetadata({ params, searchParams }) {
     const description = companyDescription(title);
     // The share card follows the period in the link, so a shared move unfurls as
     // the move that was shared. Same URL the share modal previews.
-    const range = SHAREABLE_RANGES.has(query?.range) ? query.range : "1y";
+    const range = companyChartRange(query?.range).id;
     const movingAverages = cleanMovingAverages(query?.ma);
     const movingAverageQuery = movingAverages ? `&ma=${encodeURIComponent(movingAverages)}` : "";
     const image = {

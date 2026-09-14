@@ -353,6 +353,7 @@ const server = createServer(async (req, res) => {
     const empty = path.includes("NORDIC-EMPTY");
     data = { symbol: empty ? "NORDIC-EMPTY.TEST" : "NORDIC.TEST", updateMode: "snapshot", timezone: "Europe/Oslo",
       previousClose: 120, previous: [],
+      previousFull: empty ? [] : Array.from({ length: 24 }, (_, n) => ({ time: base - 86400_000 + n * 300_000, close: 119 + n / 24, volume: 80 })),
       current: empty ? [] : Array.from({ length: 12 }, (_, n) => ({ time: base + n * 300_000, close: 124 + n / 10, volume: 120 })),
       quote: empty ? null : { price: 125.1, change: 5.1, changePct: 4.25, currency: "NOK", quoteTime: base + 11 * 300_000,
         source: "yahoo-chart-snapshot", updateMode: "snapshot", fresh: false },
@@ -361,6 +362,7 @@ const server = createServer(async (req, res) => {
     data = {
       previousClose: 100,
       previous: Array.from({ length: 12 }, (_, n) => ({ time: base - 86400_000 + n * 300_000, close: 99 + n / 12, volume: 10_000 })),
+      previousFull: Array.from({ length: 48 }, (_, n) => ({ time: base - 86400_000 - (36 - n) * 300_000, close: 96 + n / 12, volume: 10_000 })),
       current: Array.from({ length: 12 }, (_, n) => ({ time: base + n * 300_000, close: 100 + n / 10, volume: 12_000 })),
       quote: { price: 101.1, quoteTime: base + 11 * 300_000, fresh: false },
     };

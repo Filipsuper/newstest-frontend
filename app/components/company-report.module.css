@@ -157,8 +157,8 @@
   .quote > strong { font-size: var(--ui-text-xl); }
   .identityTop { flex-wrap: wrap; }
   .controls { gap: var(--ui-space-2); }
-  .ranges { width: 100%; justify-content: space-between; }
-  .ranges button { flex: 1; padding-inline: var(--ui-space-2); }
+  .ranges { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ranges button { min-width: 0; padding-inline: var(--ui-space-1); }
   .actions { margin-left: auto; }
   .report :global(.company-chart) { height: 240px; }
   .loadingChart { height: 240px; }

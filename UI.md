@@ -549,6 +549,13 @@ desktop density or abbreviated interaction model.
 - Historical daily data remains the company-page default. News stock charts may
   use the existing seven-day tick cache for their publication session, with
   stored minute candles as fallback. Advanced tick controls remain in Terminal.
+- Company chart periods share one definition with URL metadata and OG images:
+  1 day, 2 days, 1 week, 1 month, 6 months, 1/3/5 years. The 2-day view uses all
+  stored observations from the latest two trading sessions, not the 1-day
+  view's short previous-session context. Week/month use 5/22 stored daily bars.
+  Show missing previous-session data explicitly; never fabricate candles.
+  On phones, keep the eight full labels in a four-column, two-row shared
+  SegmentedControl with 44px targets. Two-day intraday axes include the date.
 - OMXsum yellow is the primary stock line; comparisons and moving averages are
   quieter and opt-in.
 - Tooltips identify date, exact value, unit, and whether data is reported,

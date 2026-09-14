@@ -2,6 +2,8 @@ import { ImageResponse } from "next/og";
 import { loadOgFonts } from "../_shared/fonts";
 import { OgBrand, OgCanvas, OgChangeBadge } from "../_shared/elements";
 import { OG_SIZE, ogThemes, ogDate, previewText } from "../_shared/theme";
+import { companyChartRange, companyIntradayRows, companyIntradayBaseline, companyIntradayTick } from "../../utils/companyChartRanges";
+import { companyPriceCurrency } from "../../utils/companyPriceUpdates";
 
 // The share card for a stock's move. Rendered as a route handler rather than an
 // opengraph-image convention because it has to vary by ?range= — the share
@@ -11,14 +13,6 @@ import { OG_SIZE, ogThemes, ogDate, previewText } from "../_shared/theme";
 export const runtime = "nodejs";
 
 const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
-
-const RANGES = {
-  "1d": { label: "1 dag", intraday: true },
-  "6m": { label: "6 månader", sessions: 130 },
-  "1y": { label: "1 år", sessions: 260 },
-  "3y": { label: "3 år", sessions: 780 },
-  "5y": { label: "5 år", sessions: 1300 },
-};
 
 const SIZE = OG_SIZE;
 // Plot plus the right-hand price gutter and bottom date axis, matching the
@@ -43,13 +37,6 @@ const svDecimal = (value, digits = 1) =>
   });
 
 const svDate = (value) => ogDate(value);
-const svTime = (value) =>
-  new Date(value).toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
 function movingAverage(rows, window) {
   let sum = 0;
   return rows.map((row, index) => {
@@ -144,7 +131,7 @@ function monotonePath(rows, key, x, y) {
 function chartSvg(
   rows,
   movingAverages,
-  { intraday = false, previousClose = null, live = false } = {},
+  { intraday = false, previousClose = null, live = false, rangeId = "1d", timezone } = {},
 ) {
   const width = CHART.width - CHART.axis;
   const height = CHART.height - CHART.xAxis;
@@ -220,7 +207,7 @@ function chartSvg(
   const ma200Line =
     !intraday && movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
   const firstCurrentIndex = intraday
-    ? rows.findIndex((row) => row.currentPrice != null)
+    ? rows.findIndex((row) => row.session === "current")
     : -1;
   const lastLiveIndex = intraday
     ? rows.findLastIndex((row) => row.currentPrice != null)
@@ -247,7 +234,7 @@ function chartSvg(
     uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
     labels: ticks.map((value) => ({ value, top: y(value) })),
     dateLabels: labelIndexes.map((index) => ({
-      value: intraday ? svTime(rows[index].date) : svDate(rows[index].date),
+      value: intraday ? companyIntradayTick(rows[index].date, rangeId, timezone) : svDate(rows[index].date),
       left: x(index),
       edge:
         index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle",
@@ -280,10 +267,10 @@ export async function GET(request) {
   const symbol = String(searchParams.get("symbol") ?? "")
     .toUpperCase()
     .slice(0, 20);
-  const rangeId = RANGES[searchParams.get("range")]
-    ? searchParams.get("range")
-    : "1y";
-  const range = RANGES[rangeId];
+  const range = companyChartRange(searchParams.get("range"));
+  const rangeId = range.id;
+  const rangeLabel = range.shareLabel ?? range.label;
+  const dateLabelWidth = rangeId === "2d" ? 190 : 110;
   const movingAverageValues = new Set(
     String(searchParams.get("ma") ?? "").split(","),
   );
@@ -301,6 +288,9 @@ export async function GET(request) {
     : [null, null];
   const profile = data?.summary?.profile;
   const quote = intraday?.quote ?? data?.summary?.quote;
+  const currency = companyPriceCurrency(profile, quote);
+  const currencyLabel = currency === "SEK" ? "kr" : currency;
+  const sourceName = data?.chart?.sourceName ?? quote?.sourceName;
 
   const name =
     profile?.name ?? symbol.replace(".ST", "").replaceAll("-", " ") ?? "Omxsum";
@@ -311,30 +301,9 @@ export async function GET(request) {
   let chartOptions = {};
 
   if (range.intraday) {
-    const previous = (intraday?.previous ?? []).filter(
-      (bar) => bar?.close != null,
-    );
-    const current = (intraday?.current ?? []).filter(
-      (bar) => bar?.close != null,
-    );
-    visible = [
-      ...previous.map((bar) => ({
-        ...bar,
-        date: bar.time,
-        session: "previous",
-        previousPrice: bar.close,
-        currentPrice: null,
-      })),
-      ...current.map((bar) => ({
-        ...bar,
-        date: bar.time,
-        session: "current",
-        previousPrice: null,
-        currentPrice: bar.close,
-      })),
-    ];
-    closes = current.map((bar) => bar.close);
-    first = intraday?.previousClose;
+    visible = companyIntradayRows(intraday, rangeId);
+    closes = visible.filter(row => row.currentPrice != null).map(row => row.close);
+    first = companyIntradayBaseline(intraday, rangeId);
     last = closes.at(-1);
     movingAverages.ma50 = false;
     movingAverages.ma200 = false;
@@ -342,6 +311,8 @@ export async function GET(request) {
       intraday: true,
       previousClose: intraday?.previousClose,
       live: intraday?.quote?.fresh === true,
+      rangeId,
+      timezone: intraday?.timezone,
     };
   } else {
     const bars = (data?.chart?.bars ?? []).filter((bar) => bar?.close != null);
@@ -415,11 +386,11 @@ export async function GET(request) {
             </div>
             {quote?.price != null && (
               <div style={{ display: "flex", fontSize: 48 }}>
-                {svDecimal(quote.price, 2)} kr
+                {svDecimal(quote.price, 2)} {currencyLabel}
               </div>
             )}
             <div style={{ display: "flex", fontSize: 26, color: MUTED }}>
-              Kurshistorik saknas för {range.label.toLowerCase()}
+              Kurshistorik saknas för {rangeLabel.toLowerCase()}
             </div>
           </div>
           <div
@@ -431,7 +402,7 @@ export async function GET(request) {
             }}
           >
             <span>Nyheterna. Bolaget. Sammanhanget.</span>
-            <span>omxsum.com</span>
+            <span>{sourceName ?? "omxsum.com"}</span>
           </div>
         </OgCanvas>
       ),
@@ -506,10 +477,10 @@ export async function GET(request) {
           >
             {quote?.price == null
               ? "Kurs saknas"
-              : `${svDecimal(quote.price, 2)} kr`}
+              : `${svDecimal(quote.price, 2)} ${currencyLabel}`}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{ fontSize: 24, color: MUTED }}>{range.label}</span>
+            <span style={{ fontSize: 24, color: MUTED }}>{rangeLabel}</span>
             <OgChangeBadge value={returnPct} theme="dark" />
           </div>
         </div>
@@ -559,10 +530,10 @@ export async function GET(request) {
                   label.edge === "start"
                     ? label.left
                     : label.edge === "end"
-                      ? label.left - 110
-                      : label.left - 55,
+                      ? label.left - dateLabelWidth
+                      : label.left - dateLabelWidth / 2,
                 top: CHART.height - CHART.xAxis + 10,
-                width: 110,
+                width: dateLabelWidth,
                 justifyContent:
                   label.edge === "start"
                     ? "flex-start"
@@ -617,7 +588,7 @@ export async function GET(request) {
                 <span>MA200</span>
               </div>
             )}
-            {!chart.hasMa50 && !chart.hasMa200 && <span>omxsum.com</span>}
+            {!chart.hasMa50 && !chart.hasMa200 && <span>{sourceName ?? "omxsum.com"}</span>}
           </div>
         </div>
       </OgCanvas>
