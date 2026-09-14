@@ -27,6 +27,7 @@ for (const width of [320, 390, 1440]) test(`short periods stay usable and match 
   await expect(controls.getByRole("button", { name: "2 dagar", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".company-chart-loading")).toHaveAttribute("aria-hidden", "true");
   await expect(page.locator(".company-chart .recharts-bar-rectangle")).toHaveCount(36);
+  await expect(page.locator(".company-chart .recharts-cartesian-grid")).toHaveCount(0);
   expect(await controls.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (width < 700) {
@@ -45,6 +46,7 @@ for (const width of [320, 390, 1440]) test(`short periods stay usable and match 
     await controls.getByRole("button", { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`range=${range}$`));
     await expect(page.locator(".company-chart .recharts-bar-rectangle")).toHaveCount(points);
+    await expect(page.locator(".company-chart .recharts-cartesian-grid")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Jämför med OMXSPI", exact: true })).toBeVisible();
   }
   await page.reload();

@@ -720,7 +720,6 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                 </linearGradient>
                             ))}
                         </defs>
-                        <CartesianGrid stroke="var(--company-grid-line)" strokeDasharray="2 6" />
                         <XAxis dataKey="date" tickFormatter={(value) => isIntraday ? companyIntradayTick(value, range, intraday?.timezone) : svDate(value, true)} minTickGap={58} axisLine={false} tickLine={false} />
                         <YAxis
                             yAxisId="price"

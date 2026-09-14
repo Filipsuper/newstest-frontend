@@ -27,7 +27,6 @@ const BLUE = "#86a5ef";
 const MUTED_LINE = colors.secondary;
 const VOLUME = "rgba(235, 196, 103, 0.11)";
 const MUTED_VOLUME = "rgba(173, 179, 165, 0.08)";
-const GRID = colors.line;
 const MUTED = colors.secondary;
 
 const svDecimal = (value, digits = 1) =>
@@ -46,7 +45,7 @@ function movingAverage(rows, window) {
   });
 }
 
-// Round gridline values over [min, max], the way the chart's "auto" domain does.
+// Round price-axis labels over [min, max], like the chart's "auto" domain.
 function niceTicks(min, max, count = 4) {
   const span = max - min || 1;
   const rough = span / count;
@@ -173,12 +172,6 @@ function chartSvg(
     .join("");
 
   const ticks = niceTicks(min, max);
-  const horizontals = ticks
-    .map(
-      (value) =>
-        `<line x1="0" y1="${y(value).toFixed(1)}" x2="${width}" y2="${y(value).toFixed(1)}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`,
-    )
-    .join("");
   const labelIndexes = Array.from(
     new Set(
       [0, 1, 2, 3, 4].map((index) =>
@@ -186,12 +179,6 @@ function chartSvg(
       ),
     ),
   );
-  const verticals = labelIndexes
-    .map(
-      (index) =>
-        `<line x1="${x(index).toFixed(1)}" y1="0" x2="${x(index).toFixed(1)}" y2="${height}" stroke="${GRID}" stroke-width="1" stroke-dasharray="2 6"/>`,
-    )
-    .join("");
 
   const priceLine = monotonePath(
     rows,
@@ -222,7 +209,7 @@ function chartSvg(
       : "";
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-        ${horizontals}${verticals}${volumeBars}${sessionDivider}
+        ${volumeBars}${sessionDivider}
         ${previousLine ? `<path d="${previousLine}" fill="none" stroke="${MUTED_LINE}" stroke-opacity="0.62" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
         <path d="${priceLine}" fill="none" stroke="${YELLOW}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
         ${ma50Line ? `<path d="${ma50Line}" fill="none" stroke="${BLUE}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ""}

@@ -29,6 +29,8 @@ the previous full series, and incoming live observations no longer trim away
 the morning once a 700-point tail is reached. Stored OHLC/volume is not rewritten.
 
 The Base UI controls use a 4×2 layout on phones and existing desktop styling.
+The price plot and matching OG image are grid-free; axes, volume and the
+intraday session divider remain. Other financial-chart grids are unchanged.
 Intraday labels show venue-local time; two-day labels also include dates. Native
 currencies are preserved in tooltips and share images, with Yahoo attribution.
 No access, alerts, registry, reaction or RVOL behavior changes.

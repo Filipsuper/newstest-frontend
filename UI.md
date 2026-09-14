@@ -523,6 +523,8 @@ desktop density or abbreviated interaction model.
   and source timestamps remain supporting information.
 - The opening price chart sits directly on the page canvas. Do not wrap it in
   a raised card, outline, shadow, or rounded container.
+- Keep the price plot and matching share image grid-free. Retain price/date
+  axes, volume and meaningful session dividers; other analytical charts are separate.
 - One continuous document contains Översikt, Nyheter & reaktioner, Finansiellt,
   Estimat, Värdering, Insyn & ägare, Blankning and Kalender. Desktop contents
   stay sticky on the left; mobile uses a sticky, touch-sized contents sheet.
