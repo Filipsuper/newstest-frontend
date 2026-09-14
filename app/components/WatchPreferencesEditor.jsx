@@ -218,11 +218,10 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
         </TabList>
         <TabPanel value="companies">
           <Stack gap={4}>
-            {companyAlertsEnabled() && <details className={styles.emailSection} open={emailOpen}
-              onToggle={(event) => setEmailOpen(event.currentTarget.open)}>
-              <summary>Mejlval</summary>
-              <CompanyAlertPreferences alerts={alerts} user={user} companies={companies} />
-            </details>}
+            {companyAlertsEnabled() && <section className={styles.emailSection} aria-label="Mejlbevakning">
+              <CompanyAlertPreferences alerts={alerts} user={user} companies={companies}
+                collapsible open={emailOpen} onOpenChange={setEmailOpen} />
+            </section>}
             <SelectedChips
               label="Valda bolag" values={watchlist} busy={busy}
               itemLabel={(symbol) => companyNames.get(symbol) || symbol}

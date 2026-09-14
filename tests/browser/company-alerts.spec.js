@@ -27,8 +27,7 @@ async function setup(page, overrides = {}) {
         const body = route.request().postDataJSON(); state.puts.push(body);
         if (state.putStatus !== 200) return route.fulfill({ status: state.putStatus, json: { error: "fictional failure" } });
         state.resource = { ...state.resource, ...body, revision: state.resource.revision + 1,
-          delivery: { available: state.resource.delivery.available,
-            status: body.enabled ? state.resource.delivery.available ? "active" : "service_paused" : "off" } };
+          delivery: { available: state.resource.delivery.available, status: body.enabled ? (state.resource.delivery.available ? "active" : "service_paused") : "off" } };
         // Capture the committed write before delaying its network response.
         const response = { status: state.status, json: structuredClone(state.resource) };
         if (state.putDelayed) await state.putDelayed;
@@ -57,8 +56,46 @@ async function setup(page, overrides = {}) {
 
 async function openSettings(page) {
   await page.goto("/marknaden/bevakning/hantera");
-  await page.locator("summary", { hasText: /^Mejlval$/ }).click();
-  return page.locator("details").filter({ has: page.locator("summary", { hasText: /^Mejlval$/ }) }).first();
+  const panel = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  await panel.getByRole("button", { name: "Mejl om mina bolag", exact: true }).click();
+  return panel;
+}
+
+for (const width of [320, 390, 1280]) {
+  test(`collapsed email header can enable and disable alerts at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    const state = await setup(page);
+    state.resource.delivery.available = true;
+    await page.goto('/marknaden/bevakning/hantera');
+    const panel = page.getByRole('region', { name: 'Mejlbevakning', exact: true });
+    const disclosure = panel.getByRole('button', { name: 'Mejl om mina bolag', exact: true });
+    const toggle = panel.getByRole('switch', { name: 'Mejl om mina bolag', exact: true });
+    await expect(toggle).toBeVisible();
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel.getByRole('slider')).toBeHidden();
+    await toggle.click();
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    expect(state.puts).toHaveLength(0);
+    await panel.getByRole('button', { name: 'Spara mejlval', exact: true }).click();
+    await expect.poll(() => state.puts.length).toBe(1);
+    expect(state.puts[0]).toMatchObject({ enabled: true, importanceLevel: 'important', mutedSymbols: [] });
+    await expect(toggle).toBeChecked();
+    await panel.screenshot({ path: testInfo.outputPath(`collapsed-${width}.png`) });
+    await disclosure.focus(); await page.keyboard.press('Enter');
+    await expect(panel.getByRole('slider')).toBeVisible();
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    await panel.screenshot({ path: testInfo.outputPath(`expanded-${width}.png`) });
+    await disclosure.click();
+    await toggle.click();
+    await panel.getByRole('button', { name: 'Ångra', exact: true }).click();
+    await expect(toggle).toBeChecked();
+    await toggle.click();
+    await panel.getByRole('button', { name: 'Spara mejlval', exact: true }).click();
+    await expect.poll(() => state.puts.length).toBe(2);
+    expect(state.puts[1].enabled).toBe(false);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(state.errors).toEqual([]);
+  });
 }
 
 for (const width of [390, 1280]) test(`active production pilot uses compact Settings at ${width}px`, async ({ page }, testInfo) => {
@@ -100,7 +137,7 @@ test("Plus explicit save, keyboard levels, reload and stop preserve newsletter/f
   expect(state.user.watchlist).toEqual(["NORD.TEST", "BANK.TEST"]);
   await expect(panel).not.toContainText("Mejl på");
   await page.reload();
-  await page.locator("summary", { hasText: /^Mejlval$/ }).click();
+  await panel.getByRole("button", { name: "Mejl om mina bolag", exact: true }).click();
   await expect(enabled).toBeChecked();
   await expect(slider).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
   await enabled.click();
@@ -258,10 +295,10 @@ test("draft survives collapsing settings and switching preference tabs", async (
   const state = await setup(page);
   const panel = await openSettings(page);
   await panel.getByRole("button", { name: "Bara det viktigaste", exact: true }).click();
-  await panel.locator("summary", { hasText: /^Mejlval$/ }).click();
+  await panel.getByRole("button", { name: "Mejl om mina bolag", exact: true }).click();
   await page.getByRole("tab", { name: /^Nyckelord/ }).click();
   await page.getByRole("tab", { name: /^Bolag/ }).click();
-  await panel.locator("summary", { hasText: /^Mejlval$/ }).click();
+  await panel.getByRole("button", { name: "Mejl om mina bolag", exact: true }).click();
   await expect(panel.getByRole("slider")).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
   await expect(panel.getByText("Du har osparade mejlval.", { exact: true })).toBeVisible();
   expect(state.puts).toHaveLength(0);

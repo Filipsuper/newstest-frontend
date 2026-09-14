@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import LogInModal from "../modals/logInModal";
 import { COMPANY_ALERT_LEVELS, companyAlertDraft } from "../utils/companyAlerts";
 import { Button } from "./ui/Button";
@@ -49,7 +50,7 @@ function RouteAction({ href, children }) {
 }
 
 /** Draft-only editor; the owning hook supplies authenticated snapshots and writes. */
-export default function CompanyAlertPreferences({ alerts, user, companies = [], view = "watch" }) {
+export default function CompanyAlertPreferences({ alerts, user, companies = [], view = "watch", collapsible = false, open = true, onOpenChange }) {
   const settingsView = view === "settings";
   const identity = user?.email?.toLowerCase() || "";
   const identityRef = useRef(identity);
@@ -64,6 +65,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [timeErrors, setTimeErrors] = useState({});
   const statusId = useId();
+  const bodyId = useId();
   const busy = submitting || alerts.saving;
   const currentEdit = edit?.identity === identity ? edit : null;
   const draft = currentEdit?.draft;
@@ -71,6 +73,22 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   const saveError = failure || (alerts.saveError !== dismissedError ? alerts.saveError : null);
   const conflict = saveError?.status === 409;
   const newerSnapshot = Boolean(resource && currentEdit && resource.revision !== currentEdit.base.revision);
+
+  function frame(content, toggle = null, footer = null) {
+    return <Stack gap={collapsible && !open && !footer ? 0 : 4} className={styles.root}
+      aria-label="Mejlval" aria-busy={busy || alerts.loading || undefined}>
+      {collapsible && <div className={styles.header}>
+        <Button variant="ghost" className={styles.disclosure} aria-expanded={open}
+          aria-controls={bodyId} onClick={() => onOpenChange(!open)}>
+          {open ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />}
+          Mejl om mina bolag
+        </Button>
+        {toggle}
+      </div>}
+      <div id={bodyId} hidden={collapsible && !open}>{content}</div>
+      {footer}
+    </Stack>;
+  }
 
   useEffect(() => {
     setFailure(null);
@@ -180,7 +198,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   }
 
   if (!user || (identity && !draft && alerts.loading)) {
-    return (
+    return frame(
       <Stack gap={3} className={styles.root} role="status" aria-label="Hämtar mejlval">
         <Text size="sm" tone="secondary">Hämtar mejlval…</Text>
         <Skeleton className={styles.loadingLine} />
@@ -190,7 +208,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   }
 
   if (!identity) {
-    return (
+    return frame(
       <Stack gap={2} className={styles.root}>
         <Text size="sm" tone="secondary">Mejlbevakning förbereds för Plus och Pro. Logga in för att hantera dina val.</Text>
         <Inline><RouteAction href="/settings">Logga in</RouteAction></Inline>
@@ -199,7 +217,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   }
 
   if (!draft || !resource) {
-    return (
+    return frame(
       <Stack gap={2} className={styles.root}>
         <Text size="sm" role={alerts.loading ? "status" : "alert"}>
           {alerts.loading ? "Hämtar mejlval…" : alerts.error?.message || "Mejlvalen är inte tillgängliga just nu."}
@@ -254,7 +272,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   );
 
   if (!resource.entitlement.eligible) {
-    return (
+    return frame(
       <Stack gap={2} className={styles.root}>
         <Inline><Label>Plus</Label><Text size="sm">{resource.delivery.available
           ? "Viktiga nyheter om dina bolag, direkt i mejlen"
@@ -270,7 +288,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   }
 
   if (!settingsView && !followed.length && !draft.enabled && !currentEdit.base.enabled && !dirty) {
-    return (
+    return frame(
       <Stack gap={2} className={styles.root}>
         <Text size="sm">Följ ett bolag för att välja mejlbevakning.</Text>
         <Inline><RouteAction href="/marknaden/bevakning/hantera">Välj bolag</RouteAction></Inline>
@@ -280,21 +298,24 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
     );
   }
 
-  return (
-    <Stack gap={4} className={styles.root} aria-label="Mejlval" aria-busy={busy || alerts.loading || undefined}>
-      <Stack gap={2}>
-        <Switch
-          label="Mejl om mina bolag"
-          checked={draft.enabled}
-          disabled={busy || (!draft.enabled && blockedEnable)}
-          aria-describedby={!resource.delivery.available ? statusId : undefined}
-          onCheckedChange={(enabled) => update({ enabled })}
-        />
+  const toggle = <Switch
+    label="Mejl om mina bolag"
+    className={collapsible ? styles.headerSwitch : undefined}
+    checked={draft.enabled}
+    disabled={busy || (!draft.enabled && blockedEnable)}
+    aria-describedby={!resource.delivery.available ? statusId : undefined}
+    onCheckedChange={(enabled) => update({ enabled })}
+  />;
+
+  return frame(
+    <Stack gap={4}>
+      {(!collapsible || settingsView || !resource.delivery.available) && <Stack gap={2}>
+        {!collapsible && toggle}
         {settingsView && <Text size="sm" tone="secondary" className={styles.wrap}>
           {resource.verified ? "Till bekräftad mejladress:" : "Kontots mejladress:"} {resource.destination}
         </Text>}
         {!resource.delivery.available && <Text id={statusId} size="xs" tone="secondary">Inga mejl skickas ännu.</Text>}
-      </Stack>
+      </Stack>}
 
       {!resource.verified && (
         <Stack gap={1}>
@@ -377,7 +398,11 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
         </Stack>
       </details>}
 
+    </Stack>,
+    toggle,
+    (!collapsible || open || dirty || busy || alerts.error || newerSnapshot || saveError || message) ? <Stack gap={3}>
       {feedback}
+      {(!collapsible || open || dirty || busy) &&
       <Stack gap={2}>
         <Inline>
           <Button loading={busy} disabled={!dirty || alerts.loading || Boolean(alerts.error) || newerSnapshot || conflict || (draft.enabled && blockedEnable)} onClick={() => save()}>
@@ -388,13 +413,13 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
         {(alerts.loading || dirty) && <Text size="sm" tone="secondary" role="status">
           {alerts.loading ? "Uppdaterar sparade mejlval…" : "Du har osparade mejlval."}
         </Text>}
-        <Inline>
+        {(!collapsible || open) && <Inline>
           <Button variant="ghost" nativeButton={false} role="link" disabled={dirty || busy}
             render={<Link href={settingsView ? "/marknaden/bevakning/hantera?section=email" : "/settings#company-email"} />}>
             {settingsView ? `Bolagsval · ${alertCount} av ${followed.length} valda →` : "Fler mejlinställningar →"}
           </Button>
-        </Inline>
-      </Stack>
-    </Stack>
+        </Inline>}
+      </Stack>}
+    </Stack> : null
   );
 }

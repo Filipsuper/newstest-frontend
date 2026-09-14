@@ -4,6 +4,42 @@
   font-family: var(--ui-font);
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
+.header .disclosure {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  padding-inline: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.disclosure svg {
+  flex-shrink: 0;
+}
+
+.header .headerSwitch {
+  flex-shrink: 0;
+  width: auto;
+  min-height: var(--ui-control-md);
+}
+
+/* Keep the shared Switch's accessible name without repeating the header. */
+.headerSwitch > span:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .root > *,
 .root label > span {
   min-width: 0;
