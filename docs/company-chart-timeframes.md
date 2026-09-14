@@ -1,6 +1,7 @@
 # Company chart timeframes
 
-Implemented locally after the 14 September Nordic-price release. Not deployed.
+Released 14 September 2026, verified at `2026-09-14T13:42:56Z` (15:42 Stockholm).
+Runtime revisions: frontend `d012a76`, backend `ed252c3`. Stonks is unchanged.
 
 `app/utils/companyChartRanges.js` defines the same periods for the company
 chart, metadata and generated share image. The existing one-year default and
@@ -47,4 +48,21 @@ No access, alerts, registry, reaction or RVOL behavior changes.
   desktop report test expects exactly one insiders request but observed two
   in development. The same assertion failed on clean baseline `1108712` in
   `/private/tmp/omxsum-timeframes-baseline.oWYUZj`; it was not changed here.
-- No production build, push, deployment, collector or production-data write.
+- Production builds passed with one CPU, 1200 MB memory and 1600 MB memory+swap
+  limits; both release branches were pushed. Backend deployed before frontend.
+- Live full-previous/current session counts: Volvo 493/403, Hove 33/18,
+  Novo Nordisk B 476/391, Scanfil 20/17 and Zaptec 157/187. These are observed
+  stored rows, not a certification of complete intraday coverage.
+- Read-only live Chromium checks passed at 1440/390/320px: eight controls,
+  44px mobile targets, 4×2 mobile layout, no horizontal overflow or page errors,
+  no chart grid, five weekly and 22 monthly daily bars. All three selected
+  periods survived OG metadata and generated valid 1200×630 PNGs; live desktop,
+  mobile and two-day share screenshots were visually inspected.
+- Homepage, market page and Swedish/Nordic company routes passed. News,
+  universe, live-engine and reaction worker PIDs, plus Stonks/Mongo/nginx
+  container IDs stayed unchanged; nginx was reloaded and the Nordic collection
+  timer stayed active. No database writes, pruning or configuration changes.
+
+Release evidence: `/root/omxsum-nordic/releases/charts-ed252c3-d012a76/`.
+Frontend image `f0b899b35c00`, backend `24cb04908eb3`; exact preceding images
+are retained under each service's `before-charts-ed252c3-d012a76` tag.

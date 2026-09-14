@@ -84,8 +84,9 @@ and compatible backend releases are in the release history, not pending tasks.
 
 Details: [Nordic company-price integration](docs/nordic-company-prices.md).
 
-Local chart follow-up (not deployed): 2-day, 1-week and 1-month periods, shared
-URL/OG behavior and a mobile 4×2 selector. Backend `previousFull` must ship first.
+Released 14 September (`d012a76` / backend `ed252c3`): 2-day, 1-week and 1-month
+periods, shared URL/OG behavior, grid-free plots and a mobile 4×2 selector.
+The additive backend `previousFull` contract shipped before the frontend.
 See [timeframe contract and verification](docs/company-chart-timeframes.md).
 
 ### 1. Improve news quality

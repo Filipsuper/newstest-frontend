@@ -11,6 +11,38 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Company chart periods and grid-free plots — released
+
+Verified at `2026-09-14T13:42:56Z` (15:42 Stockholm). Runtime revisions:
+frontend `d012a76`, backend `ed252c3`. Stonks and database policies are unchanged.
+
+- Added two trading sessions, one week (five stored daily bars) and one month
+  (22 bars), using one shared chart/metadata/OG period definition. The additive
+  full-previous-session API shipped first; existing one-day behavior is retained.
+- Removed the opening price-chart and share-image grids, retaining axes,
+  volume and the session divider. Mobile controls use a touch-sized 4×2 layout.
+- 165 frontend and 340 backend unit tests passed (two optional backend tests
+  skipped), plus five targeted local Chromium cases. Both bounded production
+  builds passed without baked environment files. The existing alert UI build
+  flag remains enabled; this does not enable email delivery.
+- Live API checks passed for Volvo, Hove, Novo Nordisk B, Scanfil and Zaptec.
+  Public homepage, market and company routes returned 200. Read-only live
+  Chromium checks at 1440/390/320px verified period switching, actual chart
+  row counts, no grid, no overflow and zero page errors. All three new OG
+  periods returned 1200×630 PNGs with correct metadata; previews inspected.
+- Existing news/universe/live/reaction worker PIDs and Stonks/Mongo/nginx
+  container IDs stayed unchanged; nginx was reloaded. Nordic collection
+  remains active. No database write, pruning or runtime flag change.
+
+Images: frontend `f0b899b35c00`, backend `24cb04908eb3`. Exact predecessor
+images retain `before-charts-ed252c3-d012a76` tags in their respective image
+repositories. About 2.3 GiB server disk remained free after release.
+Source hashes, bounded build logs and rollback/verification evidence:
+`/root/omxsum-nordic/releases/charts-ed252c3-d012a76/`.
+
+See the [timeframe contract](company-chart-timeframes.md) for data semantics
+and the unrelated, reproduced development-only insiders-request test failure.
+
 ## Nordic company prices — released
 
 Verified at `2026-09-14T13:01:26Z` (15:01 Stockholm). Runtime revisions:
