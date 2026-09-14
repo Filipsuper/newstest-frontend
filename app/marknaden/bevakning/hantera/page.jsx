@@ -6,6 +6,7 @@ export const metadata = {
     robots: { index: false },
 };
 
-export default function Page() {
-    return <WatchlistPage />;
+export default async function Page({ searchParams }) {
+    const params = await searchParams;
+    return <WatchlistPage initialSection={params?.section === "email" ? "email" : undefined} />;
 }

@@ -10,6 +10,7 @@
   display: grid;
   gap: var(--ui-space-4);
   min-width: 0;
+  scroll-margin-top: calc(var(--ui-space-16) + var(--ui-space-4));
 }
 .rows {
   display: grid;

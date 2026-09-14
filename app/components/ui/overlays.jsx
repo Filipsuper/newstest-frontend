@@ -1,5 +1,6 @@
 "use client";
 
+import { useId, useState } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
@@ -103,17 +104,22 @@ export function Menu({ trigger, items, label }) {
   );
 }
 
-export function Tooltip({ trigger, children }) {
+export function Tooltip({ trigger, children, touchable = false }) {
+  const [open, setOpen] = useState(false);
+  const descriptionId = useId();
   return (
     <BaseTooltip.Provider delay={350}>
-      <BaseTooltip.Root>
-        <BaseTooltip.Trigger render={trigger} />
+      <BaseTooltip.Root open={open} onOpenChange={setOpen} disabled={trigger.props.disabled}>
+        <BaseTooltip.Trigger render={trigger}
+          aria-describedby={[trigger.props["aria-describedby"], open ? descriptionId : null].filter(Boolean).join(" ") || undefined}
+          closeOnClick={!touchable}
+          onClick={touchable ? () => setOpen(true) : undefined} />
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner
             className={styles.tooltipPositioner}
             sideOffset={8}
           >
-            <BaseTooltip.Popup className={styles.tooltip}>
+            <BaseTooltip.Popup id={descriptionId} role="tooltip" className={styles.tooltip}>
               {children}
             </BaseTooltip.Popup>
           </BaseTooltip.Positioner>

@@ -3,12 +3,14 @@
 import { useId } from "react";
 import { Slider as BaseSlider } from "@base-ui/react/slider";
 import { Button } from "./Button";
+import { Tooltip } from "./overlays";
 import styles from "./slider.module.css";
 
 /** Discrete presentation control. Values and explanations belong to its caller. */
 export function Slider({ label, value, onValueChange, options, description, disabled = false }) {
   const descriptionId = useId();
   const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+  const selectedDescription = description || options[selectedIndex]?.description;
 
   return (
     <BaseSlider.Root
@@ -36,13 +38,14 @@ export function Slider({ label, value, onValueChange, options, description, disa
         </BaseSlider.Track>
         <BaseSlider.Thumb
           className={styles.thumb}
-          aria-describedby={description ? descriptionId : undefined}
+          aria-label={label}
+          aria-describedby={selectedDescription ? descriptionId : undefined}
           getAriaValueText={(_, index) => options[index].label}
         />
       </BaseSlider.Control>
       <div className={styles.options}>
-        {options.map((option, index) => (
-          <Button
+        {options.map((option, index) => {
+          const button = <Button
             key={option.value}
             variant="ghost"
             className={styles.option}
@@ -51,10 +54,13 @@ export function Slider({ label, value, onValueChange, options, description, disa
             onClick={() => onValueChange(option.value)}
           >
             {option.label}
-          </Button>
-        ))}
+          </Button>;
+          return option.description
+            ? <Tooltip key={option.value} trigger={button} touchable>{option.description}</Tooltip>
+            : button;
+        })}
       </div>
-      {description && <p id={descriptionId} className={styles.description}>{description}</p>}
+      {selectedDescription && <p id={descriptionId} className={description ? styles.description : styles.srOnly}>{selectedDescription}</p>}
     </BaseSlider.Root>
   );
 }

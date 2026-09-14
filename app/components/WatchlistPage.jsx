@@ -7,7 +7,7 @@ import { Container, Heading } from "./ui/layout";
 import styles from "./workspace.module.css";
 import preferences from "./watch-preferences.module.css";
 
-export default function WatchlistPage() {
+export default function WatchlistPage({ initialSection }) {
   return (
     <Container as="main" className={styles.workspace}>
       <WatchWorkspaceNav />
@@ -18,7 +18,7 @@ export default function WatchlistPage() {
         </Link>
       </header>
       <div className={preferences.pageEditor}>
-        <WatchPreferencesEditor />
+        <WatchPreferencesEditor initialSection={initialSection} />
       </div>
     </Container>
   );

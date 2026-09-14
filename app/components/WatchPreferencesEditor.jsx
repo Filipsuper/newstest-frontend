@@ -220,7 +220,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
           <Stack gap={4}>
             {companyAlertsEnabled() && <details className={styles.emailSection} open={emailOpen}
               onToggle={(event) => setEmailOpen(event.currentTarget.open)}>
-              <summary>Mejl om mina bolag</summary>
+              <summary>Mejlval</summary>
               <CompanyAlertPreferences alerts={alerts} user={user} companies={companies} />
             </details>}
             <SelectedChips

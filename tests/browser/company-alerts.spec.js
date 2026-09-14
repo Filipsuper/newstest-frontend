@@ -27,7 +27,8 @@ async function setup(page, overrides = {}) {
         const body = route.request().postDataJSON(); state.puts.push(body);
         if (state.putStatus !== 200) return route.fulfill({ status: state.putStatus, json: { error: "fictional failure" } });
         state.resource = { ...state.resource, ...body, revision: state.resource.revision + 1,
-          delivery: { available: false, status: body.enabled ? "service_paused" : "off" } };
+          delivery: { available: state.resource.delivery.available,
+            status: body.enabled ? state.resource.delivery.available ? "active" : "service_paused" : "off" } };
         // Capture the committed write before delaying its network response.
         const response = { status: state.status, json: structuredClone(state.resource) };
         if (state.putDelayed) await state.putDelayed;
@@ -56,9 +57,30 @@ async function setup(page, overrides = {}) {
 
 async function openSettings(page) {
   await page.goto("/marknaden/bevakning/hantera");
-  await page.locator("summary", { hasText: /^Mejl om mina bolag$/ }).click();
-  return page.locator("details").filter({ has: page.locator("summary", { hasText: /^Mejl om mina bolag$/ }) }).first();
+  await page.locator("summary", { hasText: /^Mejlval$/ }).click();
+  return page.locator("details").filter({ has: page.locator("summary", { hasText: /^Mejlval$/ }) }).first();
 }
+
+for (const width of [390, 1280]) test(`active production pilot uses compact Settings at ${width}px`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 900 });
+  const state = await setup(page, { plan: "premium" });
+  state.resource.enabled = true;
+  state.resource.delivery = { available: true, status: "active" };
+  await page.goto("/settings#company-email");
+  const panel = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  await expect(panel.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).toBeChecked();
+  await expect(page.getByText(/Ett separat val från vilka bolag|Du kan spara dina mejlval|Inga mejl skickas ännu|Rutinmeddelanden, som kallelser/)).toHaveCount(0);
+  await expect(panel.getByLabel("Från", { exact: true })).not.toBeVisible();
+  await expect(panel.getByRole("link", { name: /^Bolagsval/ })).toBeVisible();
+  await panel.getByRole("button", { name: "Bara det viktigaste", exact: true }).click();
+  await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
+  await expect(panel.getByText("Dina mejlval har sparats.", { exact: true })).toBeVisible();
+  expect(state.puts.at(-1).importanceLevel).toBe("major");
+  expect(state.puts.at(-1).enabled).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await panel.screenshot({ path: testInfo.outputPath(`active-settings-${width}.png`) });
+  expect(state.errors).toEqual([]);
+});
 
 test("Plus explicit save, keyboard levels, reload and stop preserve newsletter/follows", async ({ page }) => {
   const state = await setup(page);
@@ -78,7 +100,7 @@ test("Plus explicit save, keyboard levels, reload and stop preserve newsletter/f
   expect(state.user.watchlist).toEqual(["NORD.TEST", "BANK.TEST"]);
   await expect(panel).not.toContainText("Mejl på");
   await page.reload();
-  await page.locator("summary", { hasText: /^Mejl om mina bolag$/ }).click();
+  await page.locator("summary", { hasText: /^Mejlval$/ }).click();
   await expect(enabled).toBeChecked();
   await expect(slider).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
   await enabled.click();
@@ -96,6 +118,83 @@ test("free users see a quiet Plus/Pro explanation, never an actionable delivery 
   await expect(panel.getByRole("switch")).toHaveCount(0);
   expect(state.puts).toHaveLength(0);
   expect(state.errors).toEqual([]);
+});
+
+test("compact editor keeps explanations on demand with keyboard and hover help", async ({ page }) => {
+  const state = await setup(page);
+  const panel = await openSettings(page);
+  await expect(panel).not.toContainText("Ett separat val");
+  await expect(panel).not.toContainText(state.user.email);
+  await expect(panel.getByText("Inga mejl skickas ännu.", { exact: true })).toBeVisible();
+  const major = panel.getByRole("button", { name: "Bara det viktigaste", exact: true });
+  await major.hover();
+  await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
+  expect(state.puts).toHaveLength(0);
+  await page.mouse.move(0, 0);
+  await panel.getByRole("slider").focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("tooltip")).toContainText("Fler affärsnyheter");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await expect(panel.getByRole("slider")).toHaveAttribute("aria-valuetext", "Viktiga nyheter");
+});
+
+test("level details open on touch inside the existing modal", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await context.newPage();
+  try {
+    const state = await setup(page);
+    await page.goto("/marknaden/bevakning");
+    await page.getByRole("button", { name: "Välj mejlbevakning", exact: true }).tap();
+    const dialog = page.getByRole("dialog", { name: "Anpassa bevakning", exact: true });
+    await dialog.getByRole("button", { name: "Bara det viktigaste", exact: true }).tap();
+    await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
+    await expect(dialog.getByRole("slider")).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
+    await page.screenshot({ path: "test-results/company-alerts-touch-help.png" });
+    await dialog.locator("summary", { hasText: /^Bolagsval/ }).tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    expect(state.puts).toHaveLength(0);
+    expect(state.errors).toEqual([]);
+  } finally { await context.close(); }
+});
+
+test("settings retain invalid quiet-hour drafts and keep other alert fields", async ({ page }) => {
+  const state = await setup(page);
+  state.resource.mutedSymbols = ["BANK.TEST"];
+  state.resource.importanceLevel = "major";
+  await page.goto("/settings#company-email");
+  const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
+  await settings.getByLabel("Från", { exact: true }).fill("07:00");
+  await settings.getByRole("button", { name: "Spara mejlval", exact: true }).click();
+  await expect(settings.getByText("Välj en annan sluttid, eller stäng av tysta timmar.", { exact: true })).toBeVisible();
+  expect(state.puts).toHaveLength(0);
+  await settings.getByLabel("Från", { exact: true }).fill("21:00");
+  await settings.getByRole("button", { name: "Spara mejlval", exact: true }).click();
+  await expect.poll(() => state.puts.length).toBe(1);
+  expect(state.puts[0]).toMatchObject({ mutedSymbols: ["BANK.TEST"], importanceLevel: "major", quietHours: { start: "21:00" } });
+});
+
+test("email settings remain accessible on mobile before any companies are followed", async ({ page }, testInfo) => {
+  const state = await setup(page, { watchlist: [] });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/settings#company-email");
+  const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  await expect(settings.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).toBeDisabled();
+  await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
+  await expect(settings.getByLabel("Från", { exact: true })).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    if (theme === "dark") {
+      await page.getByRole("button", { name: "Växla tema", exact: true }).click();
+      await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))));
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
+    const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(audit.violations).toEqual([]);
+    await settings.screenshot({ path: testInfo.outputPath(`settings-${theme}.png`) });
+  }
+  expect(state.puts).toHaveLength(0);
 });
 
 test("failed preferences are unavailable with retry, not an off setting or paywall", async ({ page }) => {
@@ -159,10 +258,10 @@ test("draft survives collapsing settings and switching preference tabs", async (
   const state = await setup(page);
   const panel = await openSettings(page);
   await panel.getByRole("button", { name: "Bara det viktigaste", exact: true }).click();
-  await panel.locator("summary", { hasText: /^Mejl om mina bolag$/ }).click();
+  await panel.locator("summary", { hasText: /^Mejlval$/ }).click();
   await page.getByRole("tab", { name: /^Nyckelord/ }).click();
   await page.getByRole("tab", { name: /^Bolag/ }).click();
-  await panel.locator("summary", { hasText: /^Mejl om mina bolag$/ }).click();
+  await panel.locator("summary", { hasText: /^Mejlval$/ }).click();
   await expect(panel.getByRole("slider")).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
   await expect(panel.getByText("Du har osparade mejlval.", { exact: true })).toBeVisible();
   expect(state.puts).toHaveLength(0);
@@ -191,12 +290,23 @@ test("company mutes and quiet hours save separately without unfollowing", async 
   const panel = await openSettings(page);
   await panel.locator("summary", { hasText: /^Bolagsval/ }).click();
   await panel.getByRole("switch", { name: "Norden Industri", exact: true }).click();
-  await panel.locator("summary", { hasText: /^Tysta timmar/ }).click();
-  await panel.getByLabel("Från", { exact: true }).fill("21:00");
-  await panel.getByLabel("Till", { exact: true }).fill("08:00");
+  await expect(panel.locator("summary", { hasText: /^Tysta timmar/ })).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: "Fler mejlinställningar →" })).toBeDisabled();
   await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
   await expect.poll(() => state.puts.length).toBe(1);
-  expect(state.puts[0]).toMatchObject({ mutedSymbols: ["NORD.TEST"], quietHours: { enabled: true, start: "21:00", end: "08:00" } });
+  expect(state.puts[0]).toMatchObject({ mutedSymbols: ["NORD.TEST"], quietHours: { enabled: true, start: "22:00", end: "07:00" } });
+  await panel.getByRole("link", { name: "Fler mejlinställningar →" }).click();
+  const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  await expect(settings.getByText(/Till bekräftad mejladress:/)).toBeVisible();
+  await expect(settings.getByRole("heading", { name: "Mejlbevakning" })).toBeInViewport();
+  await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
+  await settings.getByLabel("Från", { exact: true }).fill("21:00");
+  await settings.getByLabel("Till", { exact: true }).fill("08:00");
+  await settings.getByRole("button", { name: "Spara mejlval", exact: true }).click();
+  await expect.poll(() => state.puts.length).toBe(2);
+  expect(state.puts[1]).toMatchObject({ mutedSymbols: ["NORD.TEST"], quietHours: { enabled: true, start: "21:00", end: "08:00" } });
+  await settings.getByRole("link", { name: /^Bolagsval/ }).click();
+  await expect(page.getByRole("slider")).toBeVisible();
   expect(state.user.watchlist).toEqual(["NORD.TEST", "BANK.TEST"]);
 });
 
@@ -359,7 +469,6 @@ test("email choices pass automated accessibility checks in both themes", async (
   const state = await setup(page);
   const panel = await openSettings(page);
   await panel.locator("summary", { hasText: /^Bolagsval/ }).click();
-  await panel.locator("summary", { hasText: /^Tysta timmar/ }).click();
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") {
       await page.getByRole("button", { name: "Växla tema", exact: true }).click();

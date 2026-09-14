@@ -66,7 +66,7 @@ test("settings switches use the keyboard, persist theme, and save mail preferenc
   await morning.click();
   expect(writes).toBe(0);
   await page.getByRole("button", { name: "Spara brevval" }).click();
-  await expect(page.locator("main").getByRole("alert")).toContainText(
+  await expect(page.getByRole("region", { name: "Nyhetsbrev i mejlen" }).getByRole("alert")).toContainText(
     "Dina ändringar finns kvar",
   );
   await expect(morning).not.toBeChecked();
@@ -109,7 +109,7 @@ test("settings has a guest login and a recoverable billing failure", async ({
   await page.reload();
   const manage = page.getByRole("button", { name: /Hantera prenumeration/ });
   await manage.click();
-  await expect(page.locator("main").getByRole("alert")).toContainText(
+  await expect(page.getByRole("region", { name: "Prenumeration", exact: true }).getByRole("alert")).toContainText(
     "Prenumerationen kunde inte öppnas",
   );
   await expect(manage).toBeEnabled();
