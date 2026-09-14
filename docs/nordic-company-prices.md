@@ -1,4 +1,4 @@
-# Nordic company prices — local integration, 14 September 2026
+# Nordic company prices — deployed 14 September 2026
 
 Uses the same company page, Base UI range controls, flat chart, ChangeBadge,
 Geist typography and source metadata as Swedish stocks. No new chart component
@@ -23,8 +23,10 @@ Verified with 159 frontend unit tests and three new Chromium cases at 390px and
 no page overflow, explicit empty state and preserved Swedish stream setup.
 The browser cases use fictional fixtures; screenshots were visually inspected.
 
-This is not deployed. Deploy the compatible Stonks API additions and backend
-bridge together with this frontend before enabling the four display policies.
+Deployed and verified at 13:01 UTC, with all four display policies enabled after
+the attribution-capable frontend was live. Public summary, daily, intraday and
+stock-page checks passed for each pilot; Hove's rendered daily/intraday UI was
+also checked. See [release history](release-history.md#nordic-company-prices--released).
 Production collection remains unchanged. The owner confirmed attribution-based
-Yahoo use; this implementation does not assert independent rights verification.
+Yahoo use; the stored rights status remains unverified, not independently certified.
 Freetrailer, Nordic RVOL and event reactions remain outside the display rollout.

@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 13 September 2026, newest public revisions first.
+Release records through 14 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,44 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## Nordic company prices — released
+
+Verified at `2026-09-14T13:01:26Z` (15:01 Stockholm). Runtime revisions:
+frontend `f591718`, backend `151b06d`, Stonks `5ccf702` applied as an additive
+API patch to the deployed compatibility source. The dirty Stonks checkout was
+not replaced. Existing alert/SEO work and the company-alert frontend build flag
+were preserved. This release did not change alert delivery settings.
+
+- Enabled only existing display policies for Hove, Novo Nordisk B, Scanfil and
+  Zaptec, with a transactional exact-target backup and reversible image cutover.
+  Owner attribution-based approval is recorded without claiming independently
+  verified provider rights. Freetrailer, discovery scope, legacy ingestion,
+  Nordic RVOL and event reactions remain unchanged.
+- Public stock pages show native DKK/EUR/NOK, Yahoo Finance attribution and a
+  potential-delay notice. Visible-page snapshots poll every five minutes and
+  preserve trade time separately from the collector's last successful check.
+- All four public overview/intraday routes, daily/minute APIs, previous-close
+  references and rendered source labels passed. Daily history counts were
+  248/248/250/250; today's chart point counts were 18/360/16/181 respectively.
+  Sparse trades are not presented as a verified complete volume record.
+- Swedish Volvo quotes, news, homepage and market routes passed. Hove's live
+  daily and intraday chart was inspected in-browser. Earlier fixture coverage:
+  159 frontend unit checks, three desktop/mobile Chromium cases, 339 backend
+  tests (two optional skipped), 37 Nordic API tests and TypeScript passed.
+- All three production builds passed, bounded to one CPU, 1200 MB memory and
+  1600 MB memory+swap. News, universe, live-engine and reaction worker PIDs stayed
+  unchanged; Nordic collection timer stayed active. No database/image/cache
+  pruning. Server disk had approximately 2.9 GiB free afterward.
+
+Images: frontend `17dc24caedc4`, backend `cfc4b80b91ec`, Stonks `ee32c2d6533f`.
+Exact predecessor images are tagged `before-nordic-display-20260914` in their
+respective repositories. Source hashes, rollout results and policy backups:
+`/root/omxsum-nordic/releases/display-5ccf702-151b06d-f591718/`.
+
+Still pending: final-session qualification, missing historical daily rows and
+minute/day volume reconciliation. This intraday launch is not certification of
+historical coverage, realtime delivery or Nordic backtesting readiness.
 
 ## Company email preferences — released; delivery remains off
 
