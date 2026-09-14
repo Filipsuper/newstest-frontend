@@ -35,6 +35,7 @@ import { SegmentedControl } from "./ui/SegmentedControl";
 import CompanyReportShell, { ReportSection } from "./CompanyReportShell";
 import styles from "./company-report.module.css";
 import { fetchCompanyIntraday, fetchCompanyProfiles, fetchInsiders, fetchShorts, fetchValuation } from "../utils/api";
+import { companyPriceCurrency, pollCompanySnapshots } from "../utils/companyPriceUpdates";
 import { tagLabel } from "../utils/newsTags";
 import CompanyProfileRadar from "./CompanyProfileRadar";
 
@@ -454,6 +455,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const [intradayError, setIntradayError] = useState("");
     const [intradayLive, setIntradayLive] = useState(false);
     const lastLiveTickRef = useRef(null);
+    const snapshotOnly = Boolean(summary?.priceCapabilities);
 
     const markers = useMemo(() => buildEventMarkers({
         calendar: summary?.calendar,
@@ -504,6 +506,22 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     }, [chart, range, markers, showEvents]);
 
     useEffect(() => {
+        if (snapshotOnly) {
+            setIntradayLive(false);
+            setIntraday(null);
+            setIntradayError("");
+            // The five-stock pilot has no tick subscription. Poll the same
+            // chart contract on every range so the header quote also updates.
+            if (summary.priceCapabilities.minute?.status !== "supported") return undefined;
+            return pollCompanySnapshots({
+                load: () => fetchCompanyIntraday(symbol),
+                onData: (payload) => {
+                    setIntraday(payload);
+                    setIntradayError(payload.current?.length ? "" : "Kursdata saknas för perioden.");
+                },
+                onError: () => setIntradayError("Kunde inte uppdatera kursen."),
+            });
+        }
         if (range !== "1d") {
             setIntradayLive(false);
             return undefined;
@@ -600,7 +618,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
             source?.close();
             clearInterval(staleTimer);
         };
-    }, [range, symbol]);
+    }, [range, symbol, snapshotOnly, summary.priceCapabilities]);
 
     const intradayData = useMemo(() => [
         ...(intraday?.previous ?? []).map((row) => ({
@@ -630,7 +648,11 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const firstIntradayPoint = intradayData.find((row) => row.currentPrice != null);
     const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
     const profile = summary.profile;
-    const quote = useMemo(() => isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote, [isIntraday, intraday?.quote, summary.quote]);
+    const quote = useMemo(() => {
+        if (snapshotOnly && intraday) return intraday.quote ? { ...summary.quote, ...intraday.quote } : null;
+        return isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote;
+    }, [isIntraday, snapshotOnly, intraday, summary.quote]);
+    const priceCurrency = companyPriceCurrency(profile, quote);
     useEffect(() => { onQuoteChange?.(quote); }, [quote, onQuoteChange]);
     const loadingIntraday = isIntraday && !data.length;
     const placeholderPrice = Number(quote?.price ?? dailyData.at(-1)?.close ?? 1);
@@ -665,20 +687,23 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 </div>
                 <Text size="sm" tone="secondary">Följ nyheter om {companyName}, aktiens kursreaktioner och kommande rapporter.</Text>
                 <div className={styles.quote} data-nosnippet="">
-                    <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${profile.currency === "SEK" || !profile.currency ? "kr" : profile.currency}`}</strong>
+                    <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${priceCurrency === "SEK" ? "kr" : priceCurrency}`}</strong>
                     <ChangeBadge value={quote?.changePct} label="Dagsförändring" />
-                    <span className={styles.quoteMeta}>Idag{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${profile.currency ?? "SEK"}`}</span>
+                    <span className={styles.quoteMeta}>{snapshotOnly && quote?.quoteTime ? svDate(quote.quoteTime) : "Idag"}{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${priceCurrency}`}</span>
                 </div>
                 <Text as="span" size="xs" tone="secondary" data-nosnippet="">
                     {quote?.quoteTime || quote?.dataAsOf ? `Kursuppdatering ${svDateTime(quote.quoteTime ?? quote.dataAsOf)}` : "Kurstidpunkt saknas"}
                     {quote?.delayed && " · Fördröjd kurs"}
+                    {(quote?.source?.startsWith("yahoo") || chart?.sourceName === "Yahoo Finance") && <> · Källa: <a href="https://finance.yahoo.com/" target="_blank" rel="noreferrer">Yahoo Finance</a></>}
+                    {snapshotOnly && quote?.price != null && " · Kan vara fördröjd"}
                 </Text>
             </header>
             <div className={styles.controls} data-nosnippet="">
                 <SegmentedControl label="Kursperiod" value={range} onValueChange={setRange} className={styles.ranges}
                     options={RANGES.map((option) => ({
                         value: option.id, label: option.label,
-                        disabled: !option.intraday && (chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15),
+                        disabled: option.intraday ? snapshotOnly && summary.priceCapabilities.minute?.status !== "supported"
+                            : (chart?.bars?.length ?? 0) < Math.min(option.sessions * 0.75, option.sessions - 15),
                     }))} />
                 <div className={styles.actions}>
                     <ShareMoveButton symbol={symbol} companyName={companyName} range={range} ma50={!isIntraday && ma50} ma200={!isIntraday && ma200} />
@@ -2306,7 +2331,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
     const sharesOutstanding = [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]
         .flatMap(periods => [...(periods ?? [])].reverse()).find(period => period.sharesOutstanding)?.sharesOutstanding ?? null;
     const research = (children) => hasPlus ? <div className={styles.research}>{children}</div> : <PlusSectionGate companyName={name} />;
-    return <CompanyReportShell symbol={symbol} name={name} quote={quote} currency={summary.profile.currency} hasPlus={hasPlus} initialTab={initialTab}>
+    return <CompanyReportShell symbol={symbol} name={name} quote={quote} currency={companyPriceCurrency(summary.profile, quote)} hasPlus={hasPlus} initialTab={initialTab}>
         <ReportSection id="overview">
             <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} news={initialData.news} reports={initialData.reports}
                 initialRange={initialRange} initialMovingAverages={initialMovingAverages} companyName={name} onQuoteChange={setQuote} />

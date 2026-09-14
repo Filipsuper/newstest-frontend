@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 13 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 14 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -66,6 +66,22 @@ Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
+
+### Nordic price pilot — next scoped release
+
+- **Implemented locally, not deployed:** reuse the existing company chart for
+  Hove, Novo Nordisk B, Scanfil and Zaptec. Snapshot polling replaces unsupported
+  streams, with Yahoo attribution, native currency and the previous daily close.
+  Swedish streaming remains unchanged; desktop/mobile and API tests pass.
+- Production collection is running and the first intraday audit confirms current
+  session prices and consistent prior-close comparisons. Display remains off.
+- [ ] Deploy the scoped Stonks/backend/frontend changes and enable the four
+  display policies. Preserve current company-email changes and access rules.
+- [ ] Verify final-session collection, investigate missing historical daily rows
+  and reconcile minute/day volumes before enabling Nordic RVOL or news reactions.
+  Freetrailer remains held separately for mapping/history qualification.
+
+Details: [Nordic company-price integration](docs/nordic-company-prices.md).
 
 ### 1. Improve news quality
 

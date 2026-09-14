@@ -343,6 +343,20 @@ const server = createServer(async (req, res) => {
       } : null,
       access: { plus: symbol !== "FREE.TEST" },
     };
+    if (["NORDIC.TEST", "NORDIC-EMPTY.TEST"].includes(symbol)) {
+      data.summary.profile.tradingCurrency = "NOK";
+      data.summary.priceCapabilities = { quote: { status: "supported" }, minute: { status: "supported" }, daily: { status: "supported" } };
+      data.summary.quote = { ...data.summary.quote, quoteTime: base, source: "yahoo-chart-snapshot", updateMode: "snapshot" };
+      data.chart.sourceName = "Yahoo Finance";
+    }
+  } else if (["/api/feed/company/NORDIC.TEST/intraday", "/api/feed/company/NORDIC-EMPTY.TEST/intraday"].includes(path)) {
+    const empty = path.includes("NORDIC-EMPTY");
+    data = { symbol: empty ? "NORDIC-EMPTY.TEST" : "NORDIC.TEST", updateMode: "snapshot", timezone: "Europe/Oslo",
+      previousClose: 120, previous: [],
+      current: empty ? [] : Array.from({ length: 12 }, (_, n) => ({ time: base + n * 300_000, close: 124 + n / 10, volume: 120 })),
+      quote: empty ? null : { price: 125.1, change: 5.1, changePct: 4.25, currency: "NOK", quoteTime: base + 11 * 300_000,
+        source: "yahoo-chart-snapshot", updateMode: "snapshot", fresh: false },
+    };
   } else if (path === "/api/feed/company/OG-INTRA.TEST/intraday") {
     data = {
       previousClose: 100,

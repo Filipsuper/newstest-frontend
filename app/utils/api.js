@@ -139,7 +139,7 @@ export async function fetchCompanyOverview(symbol, cookieHeader = "") {
 export async function fetchCompanyIntraday(symbol) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/intraday`,
-        { cache: "no-store", credentials: "include" },
+        { cache: "no-store", credentials: "include", signal: AbortSignal.timeout(15_000) },
     );
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "Kunde inte hämta intradagsdata");
