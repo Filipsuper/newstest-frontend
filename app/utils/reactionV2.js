@@ -60,6 +60,24 @@ export function legacyReactionMatches(story, symbol = story.symbol ?? story.comp
   return story.reaction?.symbol ? story.reaction.symbol === symbol
     : symbols.size === 1 && symbols.has(symbol);
 }
+function rowAvailability(measurement, window, now) {
+  // A future closing window cannot hide a baseline/coverage failure now.
+  if (measurement?.status === "missing_baseline") return "Kurs före nyheten saknas";
+  if (measurement?.status === "unsupported_market") return "Kursdata saknas för marknaden";
+  if (measurement?.status === "waiting_for_session") {
+    const opens = reactionTime(measurement.session?.open);
+    return opens !== null && now < opens ? "Inväntar börsöppning" : "Kursdata saknas";
+  }
+  if (window?.status === "pending") {
+    const target = reactionTime(window.targetAt);
+    const blocked = Object.values(measurement?.windows ?? {}).some(value => {
+      const at = reactionTime(value?.targetAt);
+      return at !== null && at <= now && !["pending", "complete"].includes(value.status);
+    });
+    if (!blocked && target !== null && now < target) return "Inväntar mätperiod";
+  }
+  return "Kursdata saknas";
+}
 export function rowReaction(story, symbol = story.symbol ?? story.companies?.[0]?.symbol, now = Date.now()) {
   const v2 = reactionV2For(story);
   const companySession = companySessionFor(story, symbol, now);
@@ -73,11 +91,11 @@ export function rowReaction(story, symbol = story.symbol ?? story.companies?.[0]
     pct: companySession.fields.changePct.value, label: `${sessionDateLabel(companySession, now)} · mot föregående stängning`,
     asOf: companySession.fields.changePct.at,
   };
-  if (!v2) return { version: 1, scope: "event", companySession, pct: eventPct, label: "Sedan publicering" };
+  if (!v2) return { version: 1, scope: "event", companySession, pct: eventPct, label: "Sedan publicering",
+    ...(eventPct === null ? { status: "Kursdata saknas" } : {}) };
   return { version: 2, scope: "event", companySession, pct: eventPct,
     label: reactionPeriodLabel(key, measurement), measurement, period: key,
-    status: measurement?.status === "waiting_for_session" ? "Inväntar börsöppning"
-      : window?.status === "pending" ? "Inväntar mätperiod" : "Kursdata saknas" };
+    status: rowAvailability(measurement, window, now) };
 }
 export function retainReactionV2(previous, next) {
   if (previous?.id !== next?.id || (previous?.version ?? 1) !== (next?.version ?? 1)

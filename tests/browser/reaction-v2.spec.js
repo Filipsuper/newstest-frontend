@@ -6,6 +6,9 @@ import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
 test.use({ reducedMotion: "reduce" });
 
 test.beforeEach(async ({ page }) => {
+  // These dated fixtures use the seven-day tick-cache chart contract.
+  // Keep their clock fixed so a valid sample does not expire with wall time.
+  await page.clock.setFixedTime(new Date("2026-09-08T15:35:00Z"));
   await page.addInitScript(() => { window.EventSource = class extends EventTarget { close() {} }; });
   await page.route("**/*", async route => {
     const url = new URL(route.request().url());
@@ -245,7 +248,7 @@ test("reaction filtering and refresh use v2 without automatic reordering or fals
 });
 
 test("an open reader refreshes its latest measurement without a manual details click", async ({ page, request }) => {
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-09-08T15:35:00Z") });
   const detail = await (await request.get("http://127.0.0.1:8100/api/feed/news/reaction-preview-positive")).json();
   await page.goto("/nyhet/reaction-preview-positive");
   const data = detail.story.reactionV2;

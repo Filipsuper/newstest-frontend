@@ -1,5 +1,31 @@
 # Continuous stock charts and optional company/session readers
 
+## 15 September follow-up — local, not deployed
+
+The missing-data investigation confirmed that the optional reader still had no
+active snapshot producer. ChargePanel had a valid daily close and current quote,
+but a missing V2 minute baseline. Four Nordic examples (DSV, Unlimit, HKFoods,
+Circio) were outside the active price pilot and had no stored prices.
+
+The producer follow-up now lives in the workspace `reaction-producer` checkout,
+branch `codex/reaction-session-coverage`; see its
+`docs/company-session-recovery-2026-09-15.md`. It supplies atomic session context
+from stored quotes/completed minutes, an exact prior-session daily close and
+separately timestamped raw volume. A dry-run-default CLI and opt-in timer are
+included. Same-time RVOL remains unavailable until its sparse-minute baselines
+are qualified; daily RVOL requires all 20 prior sessions.
+
+This frontend follow-up fixes row availability: missing baselines take priority
+over a pending future close, elapsed waiting states stop saying an opening is
+still ahead, and missing payloads explicitly say `Kursdata saknas`. Valid daily
+fallback still says `Idag · mot föregående stängning`; it is not a V2 outcome.
+
+Release/activation, a wider stored-input benchmark, Nordic coverage expansion
+and a versioned archived daily-baseline rule remain separate. No production
+data, collector policies, email settings or reaction archives were changed.
+
+## Original reader release
+
 9 September 2026. **Released: charts and optional context readers only.
 Producer activation is not included.** Backend `bdc2809` and frontend `7163f29`
 follow the separately released dependency-security patch. This release includes

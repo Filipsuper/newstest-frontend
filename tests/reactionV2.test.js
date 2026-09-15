@@ -40,7 +40,30 @@ test("visible volume facts use the latest complete window and preserve real zero
 });
 test("missing v2 observation is not zero and does not borrow a legacy percentage", () => {
   assert.equal(rowReaction(storyToItem(previewStories()[4])).pct, null);
-  assert.equal(rowReaction(storyToItem(previewStories()[3])).status, "Inväntar börsöppning");
+  assert.equal(rowReaction(storyToItem(previewStories()[3]), undefined, Date.parse("2026-09-08T06:45:00Z")).status, "Inväntar börsöppning");
+});
+test("missing baseline takes precedence over a pending close", () => {
+  const story = storyToItem(previewStories()[0]);
+  const measurement = story.reactionV2.measurements[0];
+  measurement.status = "missing_baseline";
+  for (const key of ["m1", "m5", "m15", "h1"]) measurement.windows[key].status = "missing_baseline";
+  assert.equal(rowReaction(story).status, "Kurs före nyheten saknas");
+  assert.equal(rowReaction(story).pct, null);
+});
+test("a stale waiting result does not promise a future opening or period", () => {
+  const story = storyToItem(previewStories()[3]);
+  assert.equal(rowReaction(story, undefined, Date.parse("2026-09-08T12:00:00Z")).status, "Kursdata saknas");
+  const measurement = story.reactionV2.measurements[0];
+  measurement.status = "measured";
+  for (const window of Object.values(measurement.windows)) window.targetAt = "2026-09-08T08:00:00Z";
+  assert.equal(rowReaction(story, undefined, Date.parse("2026-09-08T12:00:00Z")).status, "Kursdata saknas");
+});
+test("missing observations have an explicit status even without a V2 payload", () => {
+  const story = storyToItem(previewStories()[0]);
+  delete story.reactionV2;
+  delete story.reaction;
+  assert.equal(rowReaction(story).status, "Kursdata saknas");
+  assert.equal(rowReaction(story).pct, null);
 });
 test("older APIs keep their existing presentation", () => {
   const story = storyToItem(previewStories()[0]); delete story.reactionV2;
