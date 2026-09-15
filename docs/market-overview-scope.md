@@ -20,6 +20,13 @@ were pruned. Approximately 2.6 GiB disk space remained after release.
 
 ## Scope
 
+Follow-up implemented locally, not yet deployed: all four widgets share
+`MarketQuote`; Brent displays real five-minute session points from the existing
+provider response. Removed the market-breadth row and global quote-time footer.
+Only frontend and backend need releasing for this follow-up; retain the running
+Market API image. Session bounds follow the futures provider, including overnight
+trading. Missing/invalid points are never zero-filled or fabricated.
+
 - Frontend: `site` (also staged against the current release checkout).
 - Backend: `backend-market`, a clean worktree based on production `ed252c3`.
   Do not substitute the older, dirty `backend-alerts` checkout when releasing this change.

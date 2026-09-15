@@ -102,19 +102,6 @@
   width: 72px;
   height: 24px;
 }
-.breadth {
-  grid-column: 1 / -1;
-  background: transparent;
-  padding: 0;
-}
-.oilQuote {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ui-space-2);
-  font-variant-numeric: tabular-nums;
-}
-.oilTime { flex-basis: 100%; }
 .textLink {
   display: inline-flex;
   align-items: center;
@@ -229,11 +216,6 @@
   .pulse {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .breadth {
-    grid-column: 1 / -1;
-    background: transparent;
-    padding-block: 0;
-  }
 }
 @media (max-width: 960px) {
   .marketGrid {
@@ -263,14 +245,8 @@
     flex-wrap: nowrap;
     align-items: flex-start;
   }
-  .oilTime { flex-basis: auto; }
   .indexChart {
     display: none;
-  }
-  .breadth {
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding-inline: 0;
   }
   .heading {
     padding-block: var(--ui-space-6) var(--ui-space-4);

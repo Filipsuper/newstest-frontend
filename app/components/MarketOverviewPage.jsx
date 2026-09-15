@@ -17,7 +17,8 @@ import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { currentLetter, marketDateKey } from "../utils/letters";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
 import { Button } from "./ui/Button";
-import { ChangeBadge, EmptyState } from "./ui/data";
+import { EmptyState } from "./ui/data";
+import MarketQuote from "./MarketQuote";
 import { Container, Heading, Inline, Stack, Text, cx } from "./ui/layout";
 import NewsFeedItem from "./NewsFeedItem";
 import LetterPreview from "./LetterPreview";
@@ -49,19 +50,6 @@ function MarketStrip({ overview }) {
         const index = (overview.benchmarks ?? []).find(
           (item) => item.id === id,
         );
-        const values = (index?.session?.points ?? [])
-          .filter(
-            (point) => Array.isArray(point) && finiteNumber(point[1]) !== null,
-          )
-          .map((point) => Number(point[1]));
-        const min = Math.min(...values),
-          max = Math.max(...values);
-        const path = values
-          .map(
-            (value, i) =>
-              `${i ? "L" : "M"}${(i / Math.max(values.length - 1, 1)) * 72},${22 - ((value - min) / (max - min || 1)) * 20}`,
-          )
-          .join(" ");
         const bars = (index?.bars ?? []).filter(
           (bar) => finiteNumber(bar.close) !== null,
         );
@@ -76,65 +64,16 @@ function MarketStrip({ overview }) {
           index?.session?.date ||
           bars.at(-1)?.date ||
           marketDateKey(bars.at(-1)?.time);
-        return (
-          <div key={id} className={styles.index}>
-            <div className={styles.indexText}>
-              <strong>{name}</strong>
-              <small>{session || "Kursdata saknas"}</small>
-            </div>
-            <ChangeBadge value={change} label={`${name}, senaste session`} />
-            {values.length > 1 && (
-              <svg
-                viewBox="0 0 72 24"
-                className={styles.indexChart}
-                role="img"
-                aria-label={`${name}, kursförlopp ${session}`}
-              >
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={
-                    change < 0 ? "var(--ui-negative)" : "var(--ui-positive)"
-                  }
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </div>
-        );
+        return <MarketQuote key={id} name={name} subtitle={session || "Kursdata saknas"}
+          change={change} points={index?.session?.points} period={session || "senaste session"} />;
       })}
-      <div className={styles.index} aria-label="Brentolja">
-        <div className={styles.indexText}>
-          <strong>Brentolja</strong>
-          <small>Termin · USD/fat</small>
-        </div>
-        <div className={styles.oilQuote}>
-          <strong>{oilPrice !== null ? oilPrice.toLocaleString("sv-SE", {
-            minimumFractionDigits: 2, maximumFractionDigits: 2,
-          }) : "—"}</strong>
-          {oilPrice !== null && <ChangeBadge value={finiteNumber(oil?.changePct)}
-            label="Brentolja, mot föregående stängning" />}
-        </div>
-        <small className={styles.oilTime}>
-          {oilPrice !== null && oil?.asOf
-            ? `${newsDate(oil.asOf)} · Yahoo${oil.refreshFailed ? " · Uppdatering fördröjd" : ""}`
-            : "Kursdata saknas"}
-        </small>
-      </div>
-      <div className={cx(styles.index, styles.breadth)}>
-        <div className={styles.indexText}>
-          <strong>Stockholmsbörsen</strong>
-          <small>{overview.sessionDate || "Senaste session"}</small>
-        </div>
-        <Text size="xs" tone="secondary">
-          {finiteNumber(overview.breadth?.rising) !== null &&
-          finiteNumber(overview.breadth?.falling) !== null
-            ? `${overview.breadth.rising} stiger · ${overview.breadth.falling} faller`
-            : "Marknadsbredd saknas"}
-        </Text>
-      </div>
+      <MarketQuote name="Brentolja" subtitle={oilPrice !== null
+        ? `${oilPrice.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD/fat`
+        : "Kursdata saknas"}
+        change={finiteNumber(oil?.changePct)} points={oil?.session?.points}
+        chartLabel={`senaste handelspass${oil?.session?.asOf ? ` · ${newsDate(oil.session.asOf)}` : ""}`}
+        period={`mot föregående stängning${oil?.asOf ? ` · ${newsDate(oil.asOf)}` : ""}`}
+        details={`Brenttermin · Yahoo Finance${oil?.asOf ? ` · ${newsDate(oil.asOf)}` : ""}${oil?.refreshFailed ? " · Uppdatering fördröjd" : ""}`} />
     </section>
   );
 }
@@ -271,12 +210,6 @@ export default function MarketOverviewPage({
         </Inline>
       )}
       <MarketStrip overview={data} />
-      {data.dataAsOf && (
-        <Text size="xs" tone="secondary">
-          Kurser per {newsDate(data.dataAsOf)}
-          {data.verifiedRealtime ? " · Verifierad realtid" : ""}
-        </Text>
-      )}
       <div className={styles.marketGrid}>
         <section
           className={cx(styles.section, styles.featured)}
