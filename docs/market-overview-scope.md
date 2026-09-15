@@ -20,12 +20,18 @@ were pruned. Approximately 2.6 GiB disk space remained after release.
 
 ## Scope
 
-Follow-up implemented locally, not yet deployed: all four widgets share
+Follow-up deployed on 2026-09-15 at 20:38 UTC: all four widgets share
 `MarketQuote`; Brent displays real five-minute session points from the existing
 provider response. Removed the market-breadth row and global quote-time footer.
-Only frontend and backend need releasing for this follow-up; retain the running
-Market API image. Session bounds follow the futures provider, including overnight
+Frontend `796f339` and backend `928ac7c` are live; the running Market API image
+was unchanged. Session bounds follow the futures provider, including overnight
 trading. Missing/invalid points are never zero-filled or fabricated.
+Live checks verified 96 real Brent points, identical desktop widget geometry,
+removed breadth/footer text and no page overflow/errors at 320/390/1280px.
+Rollout evidence: `/root/omxsum-market/releases/brent-layout-20260915/`.
+Previous frontend/backend images retain `before-brent-layout-20260915` tags.
+Only this build's new intermediate layers were removed; data volumes and
+pre-existing images were retained. About 2.4 GiB remained free afterward.
 
 - Frontend: `site` (also staged against the current release checkout).
 - Backend: `backend-market`, a clean worktree based on production `ed252c3`.
