@@ -1,6 +1,16 @@
 # Continuous stock charts and optional company/session readers
 
-## 15 September follow-up — local, not deployed
+## 15 September follow-up — deployed
+
+Frontend `0de1467` went live at 15:41:45 UTC, preserving the newer Nordic and
+company-chart releases. Producer `e15b4f0` is active in an isolated release, with
+an opt-in service now enabled for the existing Swedish screener universe: 869
+rows, refreshed two minutes after each completed run. ChargePanel's public
+response now supplies its daily −5.485% context. Missing fields stay missing.
+Backend, V2 archives and email policy were unchanged. The wider Nordic coverage
+and qualified same-time volume work remain outstanding.
+
+### Investigation and implementation notes
 
 The missing-data investigation confirmed that the optional reader still had no
 active snapshot producer. ChargePanel had a valid daily close and current quote,
@@ -20,9 +30,9 @@ over a pending future close, elapsed waiting states stop saying an opening is
 still ahead, and missing payloads explicitly say `Kursdata saknas`. Valid daily
 fallback still says `Idag · mot föregående stängning`; it is not a V2 outcome.
 
-Release/activation, a wider stored-input benchmark, Nordic coverage expansion
-and a versioned archived daily-baseline rule remain separate. No production
-data, collector policies, email settings or reaction archives were changed.
+Release, Swedish benchmark and activation are complete as recorded above.
+Nordic coverage expansion and a versioned archived daily-baseline rule remain
+separate. Collector policies, email settings and reaction archives were not changed.
 
 ## Original reader release
 

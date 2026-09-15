@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 14 September 2026, newest public revisions first.
+Release records through 15 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,31 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## News daily-price context and missing-data states — released
+
+Frontend `0de1467`, image `d8255d03f8ab`, deployed at 15:41:45 UTC on
+15 September. Preserves the Nordic prices and grid-free company-chart changes.
+No backend or market-data container restart, email policy or V2 archive change.
+
+- Producer `e15b4f0` runs from an isolated release. The ChargePanel pilot passed
+  before activation across 869 existing Swedish screener stocks. The timer runs
+  two minutes after each completion; repeated runs took roughly 12 seconds.
+- Daily movement is explicit context, not a replacement archived news reaction.
+  Field clocks are independent; stale/missing volume is not freshened by price.
+  Nordic coverage expansion and qualified same-time RVOL remain follow-ups.
+- Latest audited cycle: 764 available prices, 837 prior daily closes, 561 raw
+  volume totals and 555 daily RVOL values. These are dated quality counts.
+- Candidate/public routes returned 200. Live mobile inspection confirmed
+  ChargePanel's `Idag · mot föregående stängning: −5,5 %` badge and no page
+  overflow; desktop market overview passed. 168 frontend unit checks and 118
+  producer/regression checks passed during release preparation.
+- Removed only this deployment's unused intermediate build images, recovering
+  about 1.9 GiB; 3,275 MiB free afterward. Previous image retained as
+  `newsweb-frontend:before-reaction-context-0de1467`.
+
+See [session recovery](news-data-consistency-next.md) for the contract and the
+producer repository's `docs/company-session-recovery-2026-09-15.md` for operations.
 
 ## Company chart periods and grid-free plots — released
 
