@@ -23,6 +23,7 @@ function genericStockChart(story, symbol, unavailable = false) {
 const companies = [
   {
     name: "Norden Industri",
+    exchangeMic: "XSTO",
     symbol: "NORD.TEST",
     nativeSymbol: "NORD",
     segment: "LARGE_CAP",
@@ -32,6 +33,7 @@ const companies = [
   },
   {
     name: "Skärgården Teknik",
+    exchangeMic: "XSTO",
     symbol: "SKAR.TEST",
     nativeSymbol: "SKAR",
     segment: "MID_CAP",
@@ -41,6 +43,7 @@ const companies = [
   },
   {
     name: "Fjäll Energi",
+    exchangeMic: "XSTO",
     symbol: "FJALL.TEST",
     nativeSymbol: "FJALL",
     segment: "SMALL_CAP",

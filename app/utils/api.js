@@ -82,13 +82,14 @@ export async function addEmail(mail, website) {
     }
 }
 
-export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, limit = 60 } = {}) {
+export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, market, limit = 60 } = {}) {
     const params = new URLSearchParams();
     if (symbol) params.set("symbol", symbol);
     if (symbols?.length) params.set("symbols", symbols.join(","));
     if (q) params.set("q", q);
     if (cursor) params.set("cursor", cursor);
     if (category && category !== "all") params.set("category", category);
+    if (market === "se") params.set("market", "se");
     params.set("limit", limit);
     try {
         const res = await fetch(`${API_URL}/feed/news?${params}`, {

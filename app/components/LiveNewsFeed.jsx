@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { FiPause, FiPlay, FiSearch, FiX } from "react-icons/fi";
 import { fetchLiveFeed } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
+import { isSwedishNews } from "../utils/swedishNews";
 import {
   changedFeedItems,
   mergeFeed,
@@ -70,6 +71,7 @@ const reactionRanking = (rows) => rows
 
 export default function LiveNewsFeed({
   compact = false,
+  market,
   paused: parentPaused = false,
 }) {
   const params = useSearchParams();
@@ -97,7 +99,7 @@ export default function LiveNewsFeed({
   const latest = useRef(new Map());
   const { captureAnchor, listRef } = useLiveScrollAnchor();
   const isPaused = paused || parentPaused;
-  const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser]);
+  const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser, market]);
   const ready = items !== null && loadedFor === requestKey;
 
   function navigate(next) {
@@ -122,12 +124,13 @@ export default function LiveNewsFeed({
     setError("");
     setCursor(null);
     setLoadingMore(false);
-    fetchLiveFeed({ q: activeQuery, category, limit: 100 })
+    fetchLiveFeed({ q: activeQuery, category, market, limit: 100 })
       .then((data) => {
         if (version !== generation.current) return;
         if (!Array.isArray(data?.items))
           throw new Error(data?.error || "Nyheterna kunde inte hämtas");
-        const rows = mergeFeed([], acceptVersions(data.items.map(storyToItem), latest.current));
+        const rows = mergeFeed([], acceptVersions(data.items.map(storyToItem), latest.current)
+          .filter(item => market !== "se" || isSwedishNews(item)));
         current.current = rows;
         setItems(rows);
         setReactionOrder(reactionRanking(rows));
@@ -141,7 +144,7 @@ export default function LiveNewsFeed({
     return () => {
       generation.current++;
     };
-  }, [activeQuery, category, retry, isPlusUser]);
+  }, [activeQuery, category, retry, isPlusUser, market]);
 
   useEffect(() => {
     if (reactions) {
@@ -165,10 +168,11 @@ export default function LiveNewsFeed({
       const currentById = new Map(current.current.map((item) => [item.id, item]));
       const eligible = admitted.filter(
         (item) =>
-          currentById.has(item.id) || category === "all" ||
+          (currentById.has(item.id) || market !== "se" || isSwedishNews(item)) &&
+          (currentById.has(item.id) || category === "all" ||
             item.labels?.some((tag) =>
               FILTERS.find((filter) => filter.id === category)?.tags?.includes(tag),
-            ),
+            )),
       );
       if (!eligible.length) return;
       const rows = mergeFeed(current.current, eligible);
@@ -199,7 +203,7 @@ export default function LiveNewsFeed({
       if (!active || refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
       try {
-        const data = await fetchLiveFeed({ category, limit: 100 });
+        const data = await fetchLiveFeed({ category, market, limit: 100 });
         if (active && document.visibilityState !== "hidden" && Array.isArray(data?.items)) accept(data.items.map(storyToItem));
       } catch { /* Retain observed data and its original timestamp on failure. */ }
       finally { refreshing = false; }
@@ -242,7 +246,7 @@ export default function LiveNewsFeed({
       source?.close();
       document.removeEventListener("visibilitychange", connect);
     };
-  }, [isPlusUser, ready, activeQuery, category, isPaused, retry]);
+  }, [isPlusUser, ready, activeQuery, category, isPaused, retry, market]);
 
   async function loadOlder() {
     if (!cursor || loadingMore) return;
@@ -253,6 +257,7 @@ export default function LiveNewsFeed({
       const data = await fetchLiveFeed({
         q: activeQuery,
         category,
+        market,
         cursor,
         limit: 100,
       });
@@ -278,6 +283,7 @@ export default function LiveNewsFeed({
     const order = new Map(reactionOrder.map((id, index) => [id, index]));
     const filtered = rows.filter(
       (item) =>
+        (market !== "se" || isSwedishNews(item)) &&
         (!filter.tags ||
           item.labels?.some((tag) => filter.tags.includes(tag))) &&
         (!reactions || order.has(item.id)),

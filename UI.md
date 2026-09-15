@@ -186,6 +186,13 @@ desktop density or abbreviated interaction model.
   extended reading/search destination, not another product.
 - Index widgets are a compact strip, not a dominant 2×2 dashboard. Show
   OMXSPI, OMXS30 and S&P 500, honest session dates and small actual sparklines.
+  Brent futures share the strip with an absolute USD/fat price, provider quote
+  time and previous-close change. Never call a futures quote spot or realtime.
+  Four compact widgets wrap into two columns on phones; breadth sits below.
+  Overview selections and the latest-news preview use Swedish-listed companies
+  (including cross-border stories) plus unassigned Riksbank releases, not a
+  headline-language test. Apply scope before the API limit and to live frames.
+  Full news, personal watchlists, company pages and ingestion stay unchanged.
   Transparent market-breadth counts replace the composite Marknadston score.
 - On desktop, selected news is the primary column and the letter/watchlist
   form a contextual column. On mobile the order is selected news, compact

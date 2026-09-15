@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FiArrowDown, FiArrowRight, FiPause, FiPlay } from "react-icons/fi";
 import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
 import { storyToItem } from "../utils/storyToItem";
+import { isSwedishNews } from "../utils/swedishNews";
 import {
   changedFeedItems,
   chronologicalNews,
@@ -31,11 +32,13 @@ const itemsFrom = (data) =>
       ...(Array.isArray(data.news) ? data.news : (data.news?.items ?? [])),
       ...(data.moverNews ?? []),
     ]
-      .filter((story) => story?.headline && story?.id)
+      .filter((story) => story?.headline && story?.id && isSwedishNews(story))
       .map(storyToItem),
   );
 
 function MarketStrip({ overview }) {
+  const oil = overview.commodities?.find(item => item.id === "brent");
+  const oilPrice = finiteNumber(oil?.price);
   return (
     <section className={styles.pulse} aria-label="Marknadsläge">
       {[
@@ -102,6 +105,24 @@ function MarketStrip({ overview }) {
           </div>
         );
       })}
+      <div className={styles.index} aria-label="Brentolja">
+        <div className={styles.indexText}>
+          <strong>Brentolja</strong>
+          <small>Termin · USD/fat</small>
+        </div>
+        <div className={styles.oilQuote}>
+          <strong>{oilPrice !== null ? oilPrice.toLocaleString("sv-SE", {
+            minimumFractionDigits: 2, maximumFractionDigits: 2,
+          }) : "—"}</strong>
+          {oilPrice !== null && <ChangeBadge value={finiteNumber(oil?.changePct)}
+            label="Brentolja, mot föregående stängning" />}
+        </div>
+        <small className={styles.oilTime}>
+          {oilPrice !== null && oil?.asOf
+            ? `${newsDate(oil.asOf)} · Yahoo${oil.refreshFailed ? " · Uppdatering fördröjd" : ""}`
+            : "Kursdata saknas"}
+        </small>
+      </div>
       <div className={cx(styles.index, styles.breadth)}>
         <div className={styles.indexText}>
           <strong>Stockholmsbörsen</strong>
@@ -299,7 +320,7 @@ export default function MarketOverviewPage({
             </Link>
           </div>
           {isPlusUser ? (
-            <LiveNewsFeed compact paused={paused} />
+            <LiveNewsFeed compact market="se" paused={paused} />
           ) : (
             <>
               <Text size="xs" tone="secondary">
