@@ -1,6 +1,22 @@
 # Swedish market overview and Brent oil
 
-Implemented locally on 2026-09-15; not deployed.
+Deployed and verified on 2026-09-15 at 20:11 UTC.
+
+Runtime revisions: frontend `3082037`, backend `e4c404d`, Market API
+`24870c0` applied to the exact live-compatible `5ccf702` release source.
+The older dirty `/root/stonks` checkout was not replaced. The new Market API
+build source and rollout logs are retained at
+`/root/omxsum-market/releases/swedish-oil-20260915/`.
+
+Production checks returned 100 Swedish-scoped overview stories and seven mover
+stories; the unrestricted 100-story API sample still included 66 foreign stories.
+Brent had a valid USD quote and source timestamp. Nordic Hove and Swedish Volvo
+instrument reads remained available. Browser checks at 320/390/1280px passed
+without horizontal overflow or page errors. All three app containers are healthy;
+Mongo was not restarted and the reaction service/session timer remain active.
+Rollback images are tagged `before-swedish-oil-20260915`. Only this deployment's
+new intermediate build layers were removed; no existing images or data volumes
+were pruned. Approximately 2.6 GiB disk space remained after release.
 
 ## Scope
 
