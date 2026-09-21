@@ -1,6 +1,6 @@
 # News-first feed loading — September 21, 2026
 
-Implemented locally; not deployed by this change.
+Deployed and verified on September 21, 2026 at 14:02 UTC.
 
 ## Request contract
 
@@ -52,8 +52,39 @@ Baseline production measurements before changes were 2.8–4.1 seconds for 100
 upstream stories versus 0.8 seconds for 12. Post-deploy latency must be measured
 again; local fixture tests are not production performance measurements.
 
-Local verification: 199 frontend unit tests; 352 backend tests passed, two
+Isolated release verification: 172 frontend unit tests; 352 backend tests passed, two
 opt-in integration tests skipped; 41 Market API/cache tests; 13 Chromium
 interaction tests including 390px/1440px scroll preservation. Market API
 TypeScript check passed. Backend tests use a fictional unused OpenAI key for
 the existing module-initialization requirement, not a live provider key.
+
+## Production release
+
+- Frontend: `c7adcf77e9835db88693fa0f891daa24f5f0c1d0`.
+- Backend: `29b425d266c6f90919c3d86eab5b9a550fbe60b0`.
+- Market API: `e789802008ba9f1530837d3f8270aeaf15ed0faa` applied to
+  the existing Swedish/oil compatible source. Retained its financial-source
+  selection; did not build from the unrelated working Terminal checkout.
+- Release artifacts and rollback IDs:
+  `/root/omxsum-market/releases/feed-performance-20260921`.
+  Current images were tagged `before-feed-performance-20260921` before rollout.
+
+Measured server-local HTTP samples (not browser end-to-end page timings):
+
+- Before: legacy 100-story Market API request 2598 ms; 20 stories 832–962 ms.
+- After: 20 deferred Market API stories 76–145 ms. Default reaction-bearing
+  request 613 ms cold, 82 ms warm; default clients remain compatible.
+- Authenticated frontend feed endpoint: 20 headlines in 99 ms; next page
+  169 ms, 20 distinct older stories.
+- Observation endpoint: 20 story observations in 74 ms, all with metric/context
+  data. Repeat with fingerprints: 33 ms, zero changed observations.
+- Unauthorized observation access was rejected. Public authenticated SSE
+  connected and delivered bytes. Homepage, market, news, directory and company
+  listing returned HTTP 200. Three application containers had zero restarts;
+  MongoDB retained its container identity and start time.
+
+Builds ran sequentially with CPU/memory limits. About 36 GB remained free;
+no build-cache pruning, database changes or account changes were made.
+Existing backend dependency audit findings (19: four moderate, 12 high,
+three critical) remain a separate security-maintenance follow-up; dependencies
+were not changed by this release.
