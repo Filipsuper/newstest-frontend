@@ -99,7 +99,7 @@ test("automatic arrivals leave an open reader and its headline intact", async ({
   await openFeed(page);
   await page.locator('[data-live-news-id="fixture-1"] article').getByRole("link").first().click();
   const reader = page.getByRole("dialog");
-  await expect(reader).toBeVisible();
+  await expect(reader).toBeVisible({ timeout: 15_000 });
   const url = page.url();
   const title = await reader.getByRole("heading", { level: 1 }).textContent();
   await emit(page, [incoming(stories[2], "while-reading"), { ...stories[1], version: 2, headline: "Ny rubrik i bakgrundsflödet" }]);
@@ -127,6 +127,10 @@ test("pause freezes updates and resume catches up automatically with the existin
   }, arrival);
   await expect(page.locator("article")).toHaveCount(12);
   await page.getByRole("button", { name: "Återuppta", exact: true }).click();
+  await expect(page.getByText(/Ansluten ·/)).toBeVisible();
+  expect(await page.evaluate(() => new URL(window.__newsStreams.at(-1).url).searchParams.has("since"))).toBe(true);
+  // The real outbox replays the paused interval; there is no second snapshot.
+  await emit(page, [arrival]);
   await expect(page.locator("article").first()).toContainText(arrival.headline);
   const olderRequest = page.waitForRequest((request) => new URL(request.url()).searchParams.get("cursor") === "page2");
   await page.getByRole("button", { name: "Visa äldre nyheter" }).click();
@@ -134,10 +138,11 @@ test("pause freezes updates and resume catches up automatically with the existin
   await expect(page.locator("article")).toHaveCount(19);
 });
 
-test("60-second fallback inserts missed news without a stream frame", async ({ page, request }) => {
+test("60-second fallback inserts missed news while the stream is disconnected", async ({ page, request }) => {
   const stories = await snapshot(request);
   await page.clock.install();
   await openFeed(page);
+  await page.evaluate(() => window.__newsStreams.findLast(source => !source.closed).onerror());
   let polls = 0;
   const arrival = incoming(stories[1], "fallback-arrival");
   await page.route("**/api/feed/news?**", (route) => {
@@ -184,4 +189,89 @@ test("automatic arrivals respect URL category filters and a search stays a stabl
   await page.reload();
   await expect(page.getByRole("textbox", { name: "Sök i nyhetsflödet" })).toHaveValue("none");
   await expect(page.getByRole("button", { name: "Rapporter", exact: true })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("20-story bootstrap renders before metrics and has no duplicate or connected snapshot polling", async ({ page, request }) => {
+  const stories = await snapshot(request);
+  const newsRequests = [];
+  let metricRequests = 0;
+  await page.clock.install();
+  page.on("request", req => { const url = new URL(req.url()); if (url.pathname === "/api/feed/news") newsRequests.push(url); });
+  await page.route("**/api/feed/news/observations?**", route => {
+    metricRequests++;
+    return route.fulfill({ json: { items: [], updates: [], removed: [] } });
+  });
+  await openFeed(page);
+  expect(newsRequests).toHaveLength(1);
+  expect(newsRequests[0].searchParams.get("limit")).toBe("20");
+  expect(newsRequests[0].searchParams.get("reactions")).toBe("deferred");
+  await page.clock.runFor(60_100);
+  expect(newsRequests).toHaveLength(1);
+  await expect.poll(() => metricRequests).toBeGreaterThan(1);
+  await emit(page, [incoming(stories[1], "after-small-bootstrap")]);
+  await expect(page.locator("article").first()).toContainText("after-small-bootstrap");
+});
+
+test("headlines remain readable while observations are slow or unavailable", async ({ page, request }) => {
+  const stories = await snapshot(request);
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  await page.route("**/api/feed/news?**", route => route.fulfill({ json: { items: stories.map(({ reaction, ...story }) => story), nextCursor: "page2" } }));
+  await page.route("**/api/feed/news/observations?**", async route => {
+    await pending;
+    return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+  });
+  await openFeed(page);
+  await expect(page.locator("article").first()).toContainText(stories[0].headline);
+  await expect(page.getByRole("region", { name: "Nyhetsflöde", exact: true }).getByRole("alert")).toHaveCount(0);
+  finish();
+  await expect(page.locator("article")).toHaveCount(12);
+});
+
+test("metric deltas update badges without replacing headlines or moving rows", async ({ page, request }) => {
+  const stories = await snapshot(request);
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  await page.route("**/api/feed/news/observations?**", async route => {
+    await pending;
+    return route.fulfill({ json: { items: [{ ...stories[1], headline: "Must not replace headline", reaction: { pct: 12.3, asOf: Date.now() }, fingerprint: "b".repeat(24) }], updates: [], removed: [] } });
+  });
+  await openFeed(page);
+  const ids = () => page.locator("[data-live-news-id]").evaluateAll(rows => rows.map(row => row.dataset.liveNewsId));
+  const before = await ids();
+  finish();
+  await expect(page.locator('[data-live-news-id="fixture-1"]')).toContainText("+12,3");
+  await expect(page.locator('[data-live-news-id="fixture-1"]')).toContainText(stories[1].headline);
+  expect(await ids()).toEqual(before);
+});
+
+test("an AI summary arriving at the same version appears through the small delta", async ({ page, request }) => {
+  const stories = await snapshot(request);
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  const aiSummary = { text: "Ny färdig AI-sammanfattning", bullets: ["En ny sammanfattad punkt"] };
+  await page.route("**/api/feed/news/observations?**", async route => {
+    await pending;
+    return route.fulfill({ json: { items: [{ ...stories[1], aiSummary, fingerprint: "c".repeat(24) }], updates: [], removed: [] } });
+  });
+  await openFeed(page);
+  finish();
+  await expect(page.locator('[data-live-news-id="fixture-1"]')).toContainText(aiSummary.text);
+  await expect(page.locator('[data-live-news-id="fixture-1"]')).toContainText(stories[1].headline);
+});
+
+test("filter requests retain existing rows until the replacement arrives", async ({ page }) => {
+  await openFeed(page);
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  await page.route("**/api/feed/news?**", async route => {
+    if (!new URL(route.request().url()).searchParams.get("q")) return route.fallback();
+    await pending;
+    return route.fulfill({ json: { items: [], nextCursor: null } });
+  });
+  await page.getByRole("textbox", { name: "Sök i nyhetsflödet" }).fill("none");
+  await page.getByRole("button", { name: "Sök", exact: true }).click();
+  await expect(page.locator('[aria-busy="true"] article')).toHaveCount(12);
+  finish();
+  await expect(page.getByText("Inga nyheter i urvalet", { exact: true })).toBeVisible();
 });

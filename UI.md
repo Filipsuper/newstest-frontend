@@ -266,6 +266,13 @@ desktop density or abbreviated interaction model.
   acceptance button. Preserve the visible story's screen position when rows
   arrive above it, and leave an open reader undisturbed. Offer pause/resume;
   resuming catches up automatically without discarding the visible snapshot.
+  The full feed loads 20 stories (12 displayed in the overview preview), then
+  requests metrics independently for up to 20 visible rows. Headlines never
+  wait for price calculations. Observation deltas refresh every 30 seconds
+  while visible; a short server cache preserves exact versions/source times.
+  Initial stream replay starts before the snapshot; opening a connection does
+  not trigger a duplicate snapshot. Poll a small news batch only while the
+  stream is disconnected. Keep existing rows visible while filters load.
   The full feed uses streaming plus fallback polling; overview and personal
   snapshots refresh every 30 seconds while visible. Do not imply browser push
   delivery or instantaneous streaming on snapshot-only surfaces.

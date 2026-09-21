@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchLiveFeed, fetchPersonalFeed } from "../app/utils/api.js";
+import { fetchLiveFeed, fetchPersonalFeed, fetchFeedObservations } from "../app/utils/api.js";
 
 test("initial and catch-up news requests are bounded, uncached and retain credentials", async (t) => {
   const durations = [];
@@ -15,8 +15,23 @@ test("initial and catch-up news requests are bounded, uncached and retain creden
     assert.ok(options.signal instanceof AbortSignal);
     return Response.json({ items: [], nextCursor: null });
   });
-  assert.deepEqual(await fetchLiveFeed({ limit: 100 }), { items: [], nextCursor: null });
+  assert.deepEqual(await fetchLiveFeed(), { items: [], nextCursor: null });
   assert.deepEqual(durations, [15000]);
+});
+
+test("first page is 20 deferred stories and observation requests contain only displayed references", async (t) => {
+  const urls = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    urls.push(new URL(url, "http://test.local"));
+    assert.equal(options.credentials, "include");
+    return Response.json({ items: [] });
+  });
+  await fetchLiveFeed();
+  assert.equal(urls[0].searchParams.get("limit"), "20");
+  assert.equal(urls[0].searchParams.get("reactions"), "deferred");
+  await fetchFeedObservations({ stories: [{ id: "one", version: 3 }], known: new Map([["one", "a".repeat(24)]]) });
+  assert.equal(urls[1].searchParams.get("stories"), "one:3");
+  assert.equal(urls[1].searchParams.get("known"), `one:${"a".repeat(24)}`);
 });
 
 test("an HTTP failure with an items array is still a failed news load", async (t) => {

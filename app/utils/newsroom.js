@@ -93,9 +93,9 @@ export function refreshMarketObservations(items, incoming) {
     const next = latest.get(item.id);
     if (!next || next.ts !== item.ts || (next.version ?? 1) !== (item.version ?? 1)
       || next.symbol !== item.symbol) return item;
-    const reaction = Number.isFinite(next.reaction?.asOf) && next.reaction.asOf < (item.reaction?.asOf ?? 0)
+    const reaction = next.reaction === undefined || (Number.isFinite(next.reaction?.asOf) && next.reaction.asOf < (item.reaction?.asOf ?? 0))
       ? item.reaction : next.reaction ?? null;
-    const marketContext = Number.isFinite(next.marketContext?.asOf) && next.marketContext.asOf < (item.marketContext?.asOf ?? 0)
+    const marketContext = next.marketContext === undefined || (Number.isFinite(next.marketContext?.asOf) && next.marketContext.asOf < (item.marketContext?.asOf ?? 0))
       ? item.marketContext : next.marketContext ?? null;
     return { ...item, reaction, marketContext, reactionV2: retainReactionV2(item, next), companyContext: retainCompanyContext(item, next) };
   });
@@ -115,7 +115,11 @@ export function mergeFeed(items, incoming) {
     const aiSummary = newsSummary(item.aiSummary)
       || ((existing?.version ?? 1) === (item.version ?? 1)
         ? newsSummary(existing?.aiSummary) : null);
-    byId.set(item.id, { ...existing, ...item, aiSummary, reactionV2: retainReactionV2(existing, item), companyContext: retainCompanyContext(existing, item) });
+    const sameVersion = existing && (existing.version ?? 1) === (item.version ?? 1) && existing.ts === item.ts && existing.symbol === item.symbol;
+    byId.set(item.id, { ...existing, ...item, aiSummary,
+      reaction: item.reaction === undefined && sameVersion ? existing.reaction : item.reaction,
+      marketContext: item.marketContext === undefined && sameVersion ? existing.marketContext : item.marketContext,
+      reactionV2: retainReactionV2(existing, item), companyContext: retainCompanyContext(existing, item) });
   }
   return chronologicalNews([...byId.values()]);
 }

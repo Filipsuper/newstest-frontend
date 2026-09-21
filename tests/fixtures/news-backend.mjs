@@ -381,6 +381,9 @@ const server = createServer(async (req, res) => {
       nextCursor: url.searchParams.has("cursor") ? null : "page2",
       serverFilters: true,
     };
+  } else if (path === "/api/feed/news/observations") {
+    // Default fixture stays unchanged; focused tests supply versioned deltas.
+    data = { items: [], updates: [], removed: [] };
   } else if (path.startsWith("/api/feed/news/") && path.endsWith("/chart")) {
     const id = path.split("/").at(-2), symbol = url.searchParams.get("symbol");
     const sample = [...previewStories(), ...sessionPreviewStories()].find(story => story.id === id);

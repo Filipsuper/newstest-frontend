@@ -21,7 +21,7 @@ export default defineConfig({
         process.env.PLAYWRIGHT_START_CMD ||
         "npm run dev -- --hostname 127.0.0.1 --port 3111",
       url: `${process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3111"}/designsystem`,
-      env: { API_URL: "http://127.0.0.1:8100/api" },
+      env: { API_URL: "http://127.0.0.1:8100/api", NEXT_PUBLIC_API_URL: "http://127.0.0.1:8100/api" },
       reuseExistingServer:
         Boolean(process.env.PLAYWRIGHT_BASE_URL) && !process.env.CI,
       timeout: 120000,

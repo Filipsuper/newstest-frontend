@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FiPause, FiPlay, FiSearch, FiX } from "react-icons/fi";
-import { fetchLiveFeed } from "../utils/api";
-import { storyToItem } from "../utils/storyToItem";
+import { fetchLiveFeed, fetchFeedObservations } from "../utils/api";
+import { feedStoryToItem as storyToItem, matchingObservations } from "../utils/feedObservations";
 import { isSwedishNews } from "../utils/swedishNews";
 import {
   changedFeedItems,
@@ -97,10 +97,17 @@ export default function LiveNewsFeed({
   const generation = useRef(0);
   const current = useRef([]);
   const latest = useRef(new Map());
+  const fingerprints = useRef(new Map());
+  const lastMetricBatch = useRef({ key: "", at: 0 });
+  const streamSince = useRef(Date.now());
+  const streamCursor = useRef(null);
+  const applyLive = useRef(null);
+  const previousShown = useRef([]);
   const { captureAnchor, listRef } = useLiveScrollAnchor();
   const isPaused = paused || parentPaused;
   const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser, market]);
   const ready = items !== null && loadedFor === requestKey;
+  const measurementKey = (items ?? []).map(item => `${item.id}:${item.version ?? 1}`).join(",");
 
   function navigate(next) {
     const search = new URLSearchParams(window.location.search);
@@ -116,33 +123,42 @@ export default function LiveNewsFeed({
   useEffect(() => {
     if (!isPlusUser) return;
     const version = ++generation.current;
-    setItems(null);
-    current.current = [];
-    latest.current = new Map();
-    observations.current = new Map();
-    setReactionOrder([]);
     setError("");
     setCursor(null);
     setLoadingMore(false);
-    fetchLiveFeed({ q: activeQuery, category, market, limit: 100 })
-      .then((data) => {
-        if (version !== generation.current) return;
-        if (!Array.isArray(data?.items))
-          throw new Error(data?.error || "Nyheterna kunde inte hämtas");
-        const rows = mergeFeed([], acceptVersions(data.items.map(storyToItem), latest.current)
-          .filter(item => market !== "se" || isSwedishNews(item)));
-        current.current = rows;
-        setItems(rows);
-        setReactionOrder(reactionRanking(rows));
-        setLoadedFor(requestKey);
-        setCursor(data.nextCursor || null);
-      })
-      .catch(() => {
-        if (version === generation.current)
-          setError("Nyheterna kunde inte hämtas. Försök igen.");
-      });
+    const controller = new AbortController();
+    streamSince.current = Date.now();
+    streamCursor.current = null;
+    // Deferring until the committed mount avoids issuing a second bootstrap
+    // during React's development setup/cleanup check.
+    const bootstrap = setTimeout(() => {
+      fetchLiveFeed({ q: activeQuery, category, market, limit: 20, signal: controller.signal })
+        .then((data) => {
+          if (version !== generation.current) return;
+          if (!Array.isArray(data?.items))
+            throw new Error(data?.error || "Nyheterna kunde inte hämtas");
+          if (Number.isFinite(data.streamSince)) streamSince.current = data.streamSince;
+          latest.current = new Map();
+          observations.current = new Map();
+          fingerprints.current = new Map();
+          lastMetricBatch.current = { key: "", at: 0 };
+          const rows = mergeFeed([], acceptVersions(data.items.map(storyToItem), latest.current)
+            .filter(item => market !== "se" || isSwedishNews(item)));
+          current.current = rows;
+          setItems(rows);
+          setReactionOrder(reactionRanking(rows));
+          setLoadedFor(requestKey);
+          setCursor(data.nextCursor || null);
+        })
+        .catch(() => {
+          if (version === generation.current)
+            setError("Nyheterna kunde inte hämtas. Försök igen.");
+        });
+    }, 0);
     return () => {
       generation.current++;
+      clearTimeout(bootstrap);
+      controller.abort();
     };
   }, [activeQuery, category, retry, isPlusUser, market]);
 
@@ -154,7 +170,7 @@ export default function LiveNewsFeed({
   }, [reactions]);
 
   useEffect(() => {
-    if (!isPlusUser || !ready || activeQuery || isPaused) {
+    if (!isPlusUser || !ready || isPaused) {
       setStatus(
         !ready ? "Hämtar nyheter" : isPaused ? "Pausat" : "Sökresultat",
       );
@@ -198,55 +214,139 @@ export default function LiveNewsFeed({
       setItems(observedRows);
       if (contentChanged) setReactionOrder(reactionRanking(observedRows));
     }
+    applyLive.current = accept;
+    if (activeQuery) {
+      setStatus("Sökresultat");
+      return () => { active = false; applyLive.current = null; };
+    }
     let refreshing = false;
+    const controller = new AbortController();
+    let connected = false;
     async function refresh() {
       if (!active || refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
       try {
-        const data = await fetchLiveFeed({ category, market, limit: 100 });
+        const data = await fetchLiveFeed({ category, market, limit: 20, signal: controller.signal });
         if (active && document.visibilityState !== "hidden" && Array.isArray(data?.items)) accept(data.items.map(storyToItem));
       } catch { /* Retain observed data and its original timestamp on failure. */ }
       finally { refreshing = false; }
     }
     function connect() {
       source?.close();
+      connected = false;
       if (!active || document.visibilityState === "hidden") return;
       setStatus("Ansluter");
+      const streamParams = new URLSearchParams({ since: String(streamSince.current) });
+      if (streamCursor.current) streamParams.set("lastEventId", streamCursor.current);
       source = new EventSource(
-        `${process.env.NEXT_PUBLIC_API_URL}/feed/stream`,
+        `${process.env.NEXT_PUBLIC_API_URL}/feed/stream?${streamParams}`,
         { withCredentials: true },
       );
       const connection = source;
       source.onopen = () => {
         if (!active || source !== connection) return;
         setStatus("Ansluten");
-        // Catch up on reconnect; the stream alone cannot replay a missed interval.
-        refresh();
+        connected = true;
+        // Replay starts before the initial snapshot. No duplicate snapshot on
+        // open; the outbox cursor also covers reconnect/pause/visibility gaps.
       };
-      source.addEventListener("story", (event) => {
+      const receive = (event) => {
         if (!active || source !== connection || document.visibilityState === "hidden")
           return;
         try {
+          if (event.lastEventId) streamCursor.current = event.lastEventId;
           accept([storyToItem(JSON.parse(event.data))]);
         } catch {
           /* Malformed frames don't discard good stories. */
         }
-      });
+      };
+      for (const kind of ["story", "context", "pulse"]) source.addEventListener(kind, receive);
       source.onerror = () => {
-        if (active && source === connection) setStatus("Återansluter");
+        if (active && source === connection) { connected = false; setStatus("Återansluter"); }
       };
     }
     connect();
-    // The upstream story stream does not emit optional v2 measurement updates.
-    const timer = setInterval(refresh, 60_000);
+    // Only fall back to small news snapshots while the stream is disconnected.
+    // The independent observation request below handles price/volume updates.
+    const timer = setInterval(() => { if (!connected) refresh(); }, 60_000);
     document.addEventListener("visibilitychange", connect);
     return () => {
       active = false;
       clearInterval(timer);
       source?.close();
+      controller.abort();
+      applyLive.current = null;
       document.removeEventListener("visibilitychange", connect);
     };
   }, [isPlusUser, ready, activeQuery, category, isPaused, retry, market]);
+
+  useEffect(() => {
+    if (!isPlusUser || !ready || isPaused) return;
+    let active = true, busy = false, scrollTimer;
+    const controller = new AbortController();
+    async function refreshObservations() {
+      if (!active || busy || document.visibilityState === "hidden") return;
+      const visibleIds = [...(listRef.current?.querySelectorAll("[data-live-news-id]") ?? [])]
+        .filter(node => { const box = node.getBoundingClientRect(); return box.bottom > 0 && box.top < window.innerHeight; })
+        .map(node => node.dataset.liveNewsId);
+      const byId = new Map(current.current.map(item => [item.id, item]));
+      // If the reader is above the list (or in reaction view awaiting its first
+      // metrics), warm only the first batch, not the entire loaded archive.
+      const prioritized = [...visibleIds, ...current.current.map(item => item.id)];
+      const targets = [...new Set(prioritized)].map(id => byId.get(id)).filter(Boolean).slice(0, 20);
+      if (!targets.length) return;
+      const batchKey = targets.map(item => `${item.id}:${item.version ?? 1}`).sort().join(",");
+      if (lastMetricBatch.current.key === batchKey && Date.now() - lastMetricBatch.current.at < 15_000) return;
+      lastMetricBatch.current = { key: batchKey, at: Date.now() };
+      busy = true;
+      try {
+        const data = await fetchFeedObservations({ stories: targets, known: fingerprints.current, signal: controller.signal });
+        if (!active || document.visibilityState === "hidden") return;
+        const matching = matchingObservations(current.current, data.items);
+        for (const row of matching) fingerprints.current.set(row.id, row.fingerprint);
+        // Metrics never replace copy or reorder existing rows.
+        if (matching.length) {
+          captureAnchor();
+          const next = matching.map(storyToItem);
+          current.current = refreshMarketObservations(current.current, next);
+          for (const row of current.current) observations.current.set(row.id, row);
+          observations.current = new Map([...observations.current].slice(-500));
+          fingerprints.current = new Map([...fingerprints.current].slice(-500));
+          setItems(current.current);
+          // Admit newly measured stories without reshuffling existing rankings.
+          setReactionOrder(previous => [...previous, ...reactionRanking(current.current).filter(id => !previous.includes(id))]);
+          const summaryUpdates = matching.flatMap(row => {
+            const item = current.current.find(item => item.id === row.id);
+            return row.aiSummary && JSON.stringify(item.aiSummary) !== JSON.stringify(row.aiSummary)
+              ? [{ ...item, aiSummary: row.aiSummary }] : [];
+          });
+          if (summaryUpdates.length) applyLive.current?.(summaryUpdates);
+        }
+        if (data.updates?.length) applyLive.current?.(data.updates.map(storyToItem));
+        for (const removed of data.removed ?? []) {
+          const item = current.current.find(item => item.id === removed.id);
+          if (item && (item.version ?? 1) === removed.version)
+            applyLive.current?.([{ ...item, status: "withdrawn" }]);
+        }
+      } catch { /* Optional metrics must never hide the news or reset a measurement timestamp. */ }
+      finally {
+        busy = false;
+        if (controller.signal.aborted && lastMetricBatch.current.key === batchKey) lastMetricBatch.current = { key: "", at: 0 };
+        // Revalidate field freshness even when the server returns an empty
+        // delta (or is unavailable), without changing any observation time.
+        if (active && document.visibilityState !== "hidden") setItems([...current.current]);
+      }
+    }
+    const schedule = () => { clearTimeout(scrollTimer); scrollTimer = setTimeout(refreshObservations, 250); };
+    const first = setTimeout(refreshObservations, 0);
+    const timer = setInterval(refreshObservations, 30_000);
+    window.addEventListener("scroll", schedule, { passive: true });
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      active = false; controller.abort(); clearTimeout(first); clearTimeout(scrollTimer); clearInterval(timer);
+      window.removeEventListener("scroll", schedule); document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [isPlusUser, ready, isPaused, requestKey, measurementKey, captureAnchor, listRef]);
 
   async function loadOlder() {
     if (!cursor || loadingMore) return;
@@ -259,7 +359,7 @@ export default function LiveNewsFeed({
         category,
         market,
         cursor,
-        limit: 100,
+        limit: 20,
       });
       if (version !== generation.current) return;
       if (!Array.isArray(data?.items))
@@ -295,8 +395,9 @@ export default function LiveNewsFeed({
       : filtered;
     return compact ? sorted.slice(0, 12) : sorted;
   };
-  const shown = selectRows(ready ? items : []);
-  const observed = refreshMarketObservations(ready ? items : [], [...observations.current.values()]);
+  const shown = ready ? selectRows(items) : previousShown.current;
+  if (ready) previousShown.current = shown;
+  const observed = refreshMarketObservations(items ?? [], [...observations.current.values()]);
   const observedById = new Map(observed.map(item => [item.id, item]));
 
   return (
@@ -389,7 +490,7 @@ export default function LiveNewsFeed({
             <Button
               variant="secondary"
               onClick={() =>
-                items?.length ? loadOlder() : setRetry((value) => value + 1)
+                ready && items?.length ? loadOlder() : setRetry((value) => value + 1)
               }
             >
               Försök igen
@@ -397,7 +498,7 @@ export default function LiveNewsFeed({
           }
         />
       )}
-      {!ready && !error ? (
+      {!ready && !shown.length && !error ? (
         <NewsListSkeleton />
       ) : !shown.length && !error ? (
         <EmptyState
@@ -415,7 +516,7 @@ export default function LiveNewsFeed({
           }
         />
       ) : (
-        <div className={styles.rows} ref={listRef}>
+        <div className={styles.rows} ref={listRef} aria-busy={!ready}>
           {shown.map((item) => (
             <div key={item.id} data-live-news-id={item.id}>
               <NewsFeedItem item={observedById.get(item.id) ?? item} />
@@ -423,7 +524,7 @@ export default function LiveNewsFeed({
           ))}
         </div>
       )}
-      {!compact && cursor && (
+      {!compact && ready && cursor && (
         <Button variant="secondary" loading={loadingMore} onClick={loadOlder}>
           Visa äldre nyheter
         </Button>

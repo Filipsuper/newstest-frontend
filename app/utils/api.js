@@ -82,7 +82,7 @@ export async function addEmail(mail, website) {
     }
 }
 
-export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, market, limit = 60 } = {}) {
+export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, market, limit = 20, signal } = {}) {
     const params = new URLSearchParams();
     if (symbol) params.set("symbol", symbol);
     if (symbols?.length) params.set("symbols", symbols.join(","));
@@ -91,11 +91,12 @@ export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, mark
     if (category && category !== "all") params.set("category", category);
     if (market === "se") params.set("market", "se");
     params.set("limit", limit);
+    params.set("reactions", "deferred");
     try {
         const res = await fetch(`${API_URL}/feed/news?${params}`, {
             credentials: "include",
             cache: "no-store",
-            signal: AbortSignal.timeout(15_000),
+            signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
         });
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || "Nyheterna kunde inte hämtas.");
@@ -104,6 +105,21 @@ export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, mark
         console.error('Error fetching data:', error);
         throw error;
     }
+}
+
+export async function fetchFeedObservations({ stories, known = new Map(), signal }) {
+    const refs = stories.slice(0, 20);
+    const params = new URLSearchParams({ stories: refs.map(item => `${item.id}:${item.version ?? 1}`).join(",") });
+    const fingerprints = refs.filter(item => known.has(item.id)).map(item => `${item.id}:${known.get(item.id)}`);
+    if (fingerprints.length) params.set("known", fingerprints.join(","));
+    const response = await fetch(`${API_URL}/feed/news/observations?${params}`, {
+        credentials: "include", cache: "no-store",
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12_000)]) : AbortSignal.timeout(12_000),
+    });
+    if (!response.ok) throw new Error("Kursdata kunde inte uppdateras");
+    const body = await response.json();
+    if (!Array.isArray(body.items)) throw new Error("Ogiltiga kursdata");
+    return body;
 }
 
 export async function fetchStock(symbol, range = "intraday") {
