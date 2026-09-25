@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 15 September 2026, newest public revisions first.
+Release records through 25 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,18 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## Coherent Bevakning and company research — released 25 September
+
+Frontend `b501b84`, backend `29d8235`, Stonks `77b7a7f`. Deployed at 08:53 UTC.
+Personal feeds/settings and the company research redesign are live, including
+the latest EV/EBIT, dated VD-ord, capex/debt and seven-quarter model fixes.
+Production API and desktop/mobile checks passed; rollback images are retained.
+
+The model refresh produced **zero new forecasts**: every seven-quarter Yahoo
+history failed revenue qualification. Report extraction and email delivery
+scope remain unchanged. See the [release and coverage record](company-research-release-2026-09-25.md)
+for source compatibility, validation, worker changes and rollback evidence.
 
 ## News daily-price context and missing-data states — released
 

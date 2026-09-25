@@ -61,7 +61,8 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `1edbcf2`; backend: `f7e4f70`; newsletter renderer: `8bd95c8`.
+Latest frontend application release: `b501b84`; backend: `29d8235`; Stonks: `77b7a7f`;
+newsletter renderer unchanged: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
@@ -69,42 +70,44 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ### Coherent Bevakning → news → company/report journey
 
-Approved after the 23 September product audit. Implementation on
-`codex/coherent-watch-experience` is **local and unreleased**; this is not a
-claim that the production behavior below has changed.
+Approved after the 23 September product audit. The first implementation slice
+was deployed on 25 September; see the
+[release and coverage record](docs/company-research-release-2026-09-25.md).
+Unchecked items below remain follow-ups, not shipped promises.
 
-- [x] Local: cursor-scan the personal candidate window, disclose incomplete
+- [x] Shipped: cursor-scan the personal candidate window, disclose incomplete
   coverage, normalize lexical keyword matching, filter before result limits,
   and page direct personal matches chronologically. No inferred industry rows
   displacing explicitly followed interests in the site feed.
-- [x] Local: remove the duplicate email CTA from the overview's personal
+- [x] Shipped: remove the duplicate email CTA from the overview's personal
   preview; preserve counts, edit and full-feed actions. Centralize email controls
   outside interest tabs, include quiet hours/exceptions, link Settings to the
   same editor, and guard dismissal of unsaved email drafts.
-- [x] Local: actual-only financial question charts, source drilldown, distinct
+- [x] Shipped: actual-only financial question charts, source drilldown, distinct
   report access/failure states, and a separately navigable, redesigned VD-ord
   section using existing report extractions and original text.
-- [x] Local: compact Resultat with grouped revenue/EBIT bars and a fixed
+- [x] Shipped: compact Resultat with grouped revenue/EBIT bars and a fixed
   EBIT-margin line; shared quarter/year periods and cash-flow waterfall.
   Bolagsprofil is an open public section with its own anchor, six perspectives,
   coverage and expandable methodology. Existing access and score rules retained.
-- [x] Local: net-debt/net-cash headline and the same three-step waterfall as
+- [x] Shipped: net-debt/net-cash headline and the same three-step waterfall as
   Kassaflöde in Finansiell ställning, with expandable signed net-debt history.
   Reconcile source totals, retain
   missing/mismatch states, and expose exact inputs/definitions in calculation detail.
-- [x] Local: Vinst och kassaflöde compares same-period net income and operating
+- [x] Shipped: Vinst och kassaflöde compares same-period net income and operating
   cash flow with grouped bars, the shared quarter/year control and exact source
   values. Preserve signed/zero/missing observations; omit when no paired period exists.
-- [x] Local coverage fixes (25 September): canonical EV/EBIT profile mapping;
+- [x] Shipped coverage fixes (25 September): canonical EV/EBIT profile mapping;
   explicitly dated latest-available VD-ord fallback; seven-quarter minimum for
   qualified public OMXsum estimates, using the same Yahoo-only source as the
   page. Preserve source gating; report extraction remains deferred.
-- [x] Local cash/debt definitions: supported reported-capex alias, complete
+- [x] Shipped cash/debt definitions: supported reported-capex alias, complete
   debt components only, separate labelled calculations and retained provider
   totals. Missing provider capex remains missing; no back-solved zeroes.
-- [ ] Release the coverage fixes, refresh eligible model rows and paced Yahoo
-  snapshots, then remeasure coverage. Seven quarters is not broad model coverage:
-  the production audit had 27 seven-quarter histories before qualification.
+- [x] Release coverage fixes and run the normal model refresh: 1,510 companies,
+  zero new forecasts. All 27 seven-quarter histories fail revenue qualification.
+- [ ] Retain/backfill usable Yahoo history and remeasure qualified coverage.
+  Confirm new metadata through normal paced snapshots; missing capex stays missing.
 - [ ] Verify deployed candidate coverage and latency on an active news day;
   synthetic cursor tests do not prove live completeness or extraction quality.
 - [ ] Add a source-backed keyword index/preview, including source body only
@@ -122,7 +125,7 @@ claim that the production behavior below has changed.
 - [ ] Improve the report extractor next: source/page/span, fiscal period,
   currency, reported/adjusted/derived basis, revisions and extraction quality.
   Then introduce report-backed key markets, business segments and risks.
-- [x] Local Bolagsprofil refresh: larger point-free radar, shared reading sizes,
+- [x] Shipped Bolagsprofil refresh: larger point-free radar, shared reading sizes,
   and separate Möjligheter/Risker report-excerpt sections. Readable tangent labels
   now identify all six axes; remove tiny perimeter scores and generic side explanations.
   Keep coverage/missing axes visible and exact
@@ -131,13 +134,13 @@ claim that the production behavior below has changed.
 Before the company-signals backend, finish the remaining `/aktie` UI review in
 this order, using existing data and preserving its availability/source rules:
 
-1. **Värdering — first delivery implemented locally:** shared metric controls,
+1. **Värdering — first delivery shipped:** shared metric controls,
    historical line/band beside zero-based reported/estimate bars, source labels,
    and one methodology disclosure. Consensus wins per metric/period; a scoped
    model-only API supplies qualified OMXsum fallback, never manual estimates.
    The current model predicts one quarter: annual ratios require a full annual
-   denominator, not Q×4. Remaining: deploy/refresh qualified model rows and audit
-   live coverage, then annual horizons/EPS and immutable revisions separately.
+   denominator, not Q×4. Remaining: usable source-history coverage (the live
+   refresh qualified no models), then annual horizons/EPS and immutable revisions.
    See [valuation implementation and rollout](docs/company-valuation-ui.md).
 2. **VD-ord:** refine the existing redesign's reading hierarchy and outlook lists;
    keep AI interpretation and original text distinct. Period comparisons wait for data.

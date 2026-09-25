@@ -1,6 +1,7 @@
 # Valuation UI and forward estimates
 
-Status: first delivery implemented locally, 25 September 2026; not deployed.
+Status: first delivery deployed on 25 September 2026. See the
+[release and live coverage record](company-research-release-2026-09-25.md).
 The company-risk backend remains deferred.
 
 ## Delivered
@@ -30,11 +31,11 @@ The company-risk backend remains deferred.
 
 ### Rollout / remaining work
 
-1. Deploy producer, backend and frontend after approval. Run the existing house
-   model refresh (`producer/scripts/refresh_house_estimates.py`) so eligible
-   rows receive the new currency/input metadata.
-   Legacy rows intentionally remain unpublished.
-2. Inspect live coverage; fixtures and tests are not proof of coverage. Public
+1. Completed: producer, backend, frontend and model worker deployed. The normal
+   model refresh inspected 1,510 companies and wrote zero forecasts. All 27
+   seven-quarter histories had missing or non-positive revenue. Legacy rows
+   intentionally remain unpublished; no new qualified forecasts were available.
+2. Retain/backfill usable history and remeasure coverage. Public
    qualification requires at least seven quarters and a latest input less than 180 days
    old. Input revisions require a fresh model run.
    Yahoo remains the default financial source. Missing Yahoo histories never
@@ -48,7 +49,7 @@ The company-risk backend remains deferred.
 4. Add immutable forecast revisions before point-in-time backtesting. Existing
    model overwrite/lock behavior has not changed.
 
-### Local verification
+### Local verification (before deployment)
 
 Frontend unit suite and production build passed. All 17 focused browser checks
 passed against the production build: valuation controls, source precedence in
@@ -58,7 +59,8 @@ The producer TypeScript check, model-input Python tests and public-projection
 tests passed. The backend suite passed with its test-only OpenAI placeholder
 key; seven added route tests cover success, absence, timeout, malformed/error
 responses, identity mismatch and the public access boundary. No production
-database refresh, live coverage claim, push or deployment was performed.
+database refresh, live coverage claim, push or deployment was performed during
+that local test phase. Subsequent deployment and refresh are recorded above.
 
 ## One section, two clearly different questions
 

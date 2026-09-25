@@ -1,11 +1,13 @@
 # Coherent experience v1 — 24 September 2026
 
-Local implementation, not deployed. Preserve the public design system, navigation,
+Deployed on 25 September 2026; see the
+[release and validation record](company-research-release-2026-09-25.md).
+Preserve the public design system, navigation,
 server-resolved memberships and separate Terminal. This follows the approved
 23 September product/UX audit; it is the first implementation slice, not completion
 of the full retention/report-extraction roadmap.
 
-## Delivered locally
+## Delivered
 
 - Personal site feed scans real Market API cursors through its 48-hour window,
   with 200-row pages, a 25-page cap and a 12-second candidate deadline. Caps,
