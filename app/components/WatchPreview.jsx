@@ -12,7 +12,6 @@ import { Button } from "./ui/Button";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import NewsFeedItem from "./NewsFeedItem";
 import WatchPreferencesButton from "./WatchPreferencesButton";
-import CompanyAlertStatus from "./CompanyAlertStatus";
 import styles from "./workspace.module.css";
 
 export default function WatchPreview({ paused = false }) {
@@ -96,7 +95,6 @@ export default function WatchPreview({ paused = false }) {
         <Text size="xs" tone="secondary">{user.watchlist?.length ?? 0} bolag · {user.topics?.length ?? 0} ämnen · {user.keywords?.length ?? 0} nyckelord</Text>
         <WatchPreferencesButton variant="ghost" size="sm">Anpassa</WatchPreferencesButton>
       </Inline>}
-      <CompanyAlertStatus />
       {error && stories.length > 0 && <Inline>
         <Text size="xs" tone="secondary" role="status">Kunde inte uppdatera. Visar senast hämtade nyheter.</Text>
         <Button variant="ghost" size="sm" onClick={() => setRetry((value) => value + 1)}>Försök igen</Button>

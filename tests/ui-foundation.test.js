@@ -50,6 +50,17 @@ function contrast(a, b) {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 for (const theme of ["light", "dark"]) {
+  test(`${theme} categorical chart palette is visible against its surface`, () => {
+    const values = tokens(theme);
+    // The first category aliases the existing brand accent.
+    const colors = [values.accent, ...Array.from({ length: 5 }, (_, i) => values[`chart-${i + 2}`])];
+    assert.equal(new Set(colors).size, 6);
+    for (const color of colors) {
+      assert.ok(contrast(color, values.surface) >= 3, `${color} needs 3:1 contrast against the chart surface`);
+      assert.notEqual(color, values.positive);
+      assert.notEqual(color, values.negative);
+    }
+  });
   test(`${theme} palette meets text and control contrast targets`, () => {
     const values = tokens(theme);
     const pairs = [

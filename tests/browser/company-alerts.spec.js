@@ -61,6 +61,32 @@ async function openSettings(page) {
   return panel;
 }
 
+for (const closeMethod of ['button', 'escape', 'icon']) test(`unsaved email edits survive ${closeMethod} until explicitly discarded`, async ({ page }) => {
+  const state = await setup(page);
+  await page.goto('/marknaden/bevakning');
+  await page.getByRole('button', { name: 'Anpassa bevakning', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Anpassa bevakning', exact: true });
+  await editor.getByRole('button', { name: 'Mejl om mina bolag', exact: true }).click();
+  await editor.getByRole('button', { name: 'Bara det viktigaste', exact: true }).click();
+  await editor.getByRole('tab', { name: /^Nyckelord/ }).click();
+  await expect(editor.getByRole('slider')).toBeVisible();
+  if (closeMethod === 'escape') await page.keyboard.press('Escape');
+  else await editor.getByRole('button', { name: closeMethod === 'icon' ? 'Stäng dialog' : 'Stäng', exact: true }).click();
+  const guard = page.getByRole('dialog', { name: 'Osparade mejlval', exact: true });
+  await expect(guard).toBeVisible();
+  await guard.getByRole('button', { name: 'Fortsätt redigera', exact: true }).click();
+  await expect(editor.getByRole('slider')).toHaveAttribute('aria-valuetext', 'Bara det viktigaste');
+  expect(state.puts).toHaveLength(0);
+  await editor.getByRole('button', { name: 'Stäng', exact: true }).click();
+  await guard.getByRole('button', { name: 'Kasta mejländringar', exact: true }).click();
+  await expect(editor).toBeHidden();
+  await page.getByRole('button', { name: 'Anpassa bevakning', exact: true }).click();
+  await editor.getByRole('button', { name: 'Mejl om mina bolag', exact: true }).click();
+  await expect(editor.getByRole('slider')).toHaveAttribute('aria-valuetext', 'Viktiga nyheter');
+  expect(state.puts).toHaveLength(0);
+  expect(state.errors).toEqual([]);
+});
+
 for (const width of [320, 390, 1280]) {
   test(`collapsed email header can enable and disable alerts at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
@@ -104,11 +130,12 @@ for (const width of [390, 1280]) test(`active production pilot uses compact Sett
   state.resource.enabled = true;
   state.resource.delivery = { available: true, status: "active" };
   await page.goto("/settings#company-email");
+  await page.getByRole("button", { name: "Hantera mejl från bevakningen", exact: true }).click();
   const panel = page.getByRole("region", { name: "Mejlbevakning", exact: true });
   await expect(panel.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).toBeChecked();
   await expect(page.getByText(/Ett separat val från vilka bolag|Du kan spara dina mejlval|Inga mejl skickas ännu|Rutinmeddelanden, som kallelser/)).toHaveCount(0);
   await expect(panel.getByLabel("Från", { exact: true })).not.toBeVisible();
-  await expect(panel.getByRole("link", { name: /^Bolagsval/ })).toBeVisible();
+  await expect(panel.locator("summary", { hasText: /^Bolagsval/ })).toBeVisible();
   await panel.getByRole("button", { name: "Bara det viktigaste", exact: true }).click();
   await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
   await expect(panel.getByText("Dina mejlval har sparats.", { exact: true })).toBeVisible();
@@ -126,7 +153,7 @@ test("Plus explicit save, keyboard levels, reload and stop preserve newsletter/f
   await expect(enabled).not.toBeChecked();
   await enabled.click();
   const slider = panel.getByRole("slider");
-  await slider.focus(); await page.keyboard.press("End");
+  await slider.focus(); await page.keyboard.press("Home");
   await expect(slider).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
   expect(state.puts).toHaveLength(0);
   await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
@@ -161,7 +188,7 @@ test("compact editor keeps explanations on demand with keyboard and hover help",
   const state = await setup(page);
   const panel = await openSettings(page);
   await expect(panel).not.toContainText("Ett separat val");
-  await expect(panel).not.toContainText(state.user.email);
+  await expect(panel).toContainText(state.user.email);
   await expect(panel.getByText("Inga mejl skickas ännu.", { exact: true })).toBeVisible();
   const major = panel.getByRole("button", { name: "Bara det viktigaste", exact: true });
   await major.hover();
@@ -170,7 +197,7 @@ test("compact editor keeps explanations on demand with keyboard and hover help",
   await page.mouse.move(0, 0);
   await panel.getByRole("slider").focus();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("tooltip")).toContainText("Fler affärsnyheter");
+  await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   await expect(panel.getByRole("slider")).toHaveAttribute("aria-valuetext", "Viktiga nyheter");
@@ -201,6 +228,7 @@ test("settings retain invalid quiet-hour drafts and keep other alert fields", as
   state.resource.mutedSymbols = ["BANK.TEST"];
   state.resource.importanceLevel = "major";
   await page.goto("/settings#company-email");
+  await page.getByRole("button", { name: "Hantera mejl från bevakningen", exact: true }).click();
   const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
   await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
   await settings.getByLabel("Från", { exact: true }).fill("07:00");
@@ -217,13 +245,14 @@ test("email settings remain accessible on mobile before any companies are follow
   const state = await setup(page, { watchlist: [] });
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto("/settings#company-email");
+  await page.getByRole("button", { name: "Hantera mejl från bevakningen", exact: true }).click();
   const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
   await expect(settings.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).toBeDisabled();
   await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
   await expect(settings.getByLabel("Från", { exact: true })).toBeVisible();
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") {
-      await page.getByRole("button", { name: "Växla tema", exact: true }).click();
+      await page.evaluate(() => document.documentElement.classList.add('dark'));
       await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))));
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
@@ -250,7 +279,7 @@ test("save errors retain draft and no autosave is triggered by changing importan
   const panel = await openSettings(page);
   await panel.getByRole("switch", { name: "Mejl om mina bolag", exact: true }).click();
   const slider = panel.getByRole("slider");
-  await slider.focus(); await page.keyboard.press("Home");
+  await slider.focus(); await page.keyboard.press("End");
   await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
   await expect(panel.getByRole("alert")).toBeVisible();
   await expect(slider).toHaveAttribute("aria-valuetext", "Fler relevanta nyheter");
@@ -322,27 +351,23 @@ test("409 retains input and requires explicit review before another save", async
   expect(state.puts[1]).toMatchObject({ revision: 1, importanceLevel: "major", enabled: true });
 });
 
-test("company mutes and quiet hours save separately without unfollowing", async ({ page }) => {
+test("company mutes and quiet hours share one editor without unfollowing", async ({ page }) => {
   const state = await setup(page);
   const panel = await openSettings(page);
   await panel.locator("summary", { hasText: /^Bolagsval/ }).click();
   await panel.getByRole("switch", { name: "Norden Industri", exact: true }).click();
-  await expect(panel.locator("summary", { hasText: /^Tysta timmar/ })).toHaveCount(0);
-  await expect(panel.getByRole("link", { name: "Fler mejlinställningar →" })).toBeDisabled();
+  await expect(panel.locator("summary", { hasText: /^Tysta timmar/ })).toBeVisible();
   await panel.getByRole("button", { name: "Spara mejlval", exact: true }).click();
   await expect.poll(() => state.puts.length).toBe(1);
   expect(state.puts[0]).toMatchObject({ mutedSymbols: ["NORD.TEST"], quietHours: { enabled: true, start: "22:00", end: "07:00" } });
-  await panel.getByRole("link", { name: "Fler mejlinställningar →" }).click();
-  const settings = page.getByRole("region", { name: "Mejlbevakning", exact: true });
+  const settings = panel;
   await expect(settings.getByText(/Till bekräftad mejladress:/)).toBeVisible();
-  await expect(settings.getByRole("heading", { name: "Mejlbevakning" })).toBeInViewport();
   await settings.locator("summary", { hasText: /^Tysta timmar/ }).click();
   await settings.getByLabel("Från", { exact: true }).fill("21:00");
   await settings.getByLabel("Till", { exact: true }).fill("08:00");
   await settings.getByRole("button", { name: "Spara mejlval", exact: true }).click();
   await expect.poll(() => state.puts.length).toBe(2);
   expect(state.puts[1]).toMatchObject({ mutedSymbols: ["NORD.TEST"], quietHours: { enabled: true, start: "21:00", end: "08:00" } });
-  await settings.getByRole("link", { name: /^Bolagsval/ }).click();
   await expect(page.getByRole("slider")).toBeVisible();
   expect(state.user.watchlist).toEqual(["NORD.TEST", "BANK.TEST"]);
 });
@@ -360,8 +385,8 @@ test("unverified accounts cannot enable and have a real recovery link", async ({
 test("no companies guides following rather than enabling an empty alert", async ({ page }) => {
   const state = await setup(page, { watchlist: [] });
   const panel = await openSettings(page);
-  await expect(panel.getByText("Följ ett bolag för att välja mejlbevakning.", { exact: true })).toBeVisible();
-  await expect(panel.getByRole("switch")).toHaveCount(0);
+  await expect(panel.getByText(/Lägg till ett bolag i Bevakning/)).toBeVisible();
+  await expect(panel.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).toBeDisabled();
   expect(state.puts).toHaveLength(0);
 });
 

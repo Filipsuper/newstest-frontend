@@ -1,7 +1,9 @@
 export const COMPANY_SECTIONS = [
   { id: "overview", label: "Översikt" },
   { id: "news", label: "Nyheter & reaktioner" },
+  { id: "profile", label: "Bolagsprofil" },
   { id: "financials", label: "Finansiellt", plus: true },
+  { id: "management", label: "VD-ord", plus: true },
   { id: "estimates", label: "Estimat", plus: true },
   { id: "valuation", label: "Värdering", plus: true },
   { id: "insiders", label: "Insyn & ägare", plus: true },

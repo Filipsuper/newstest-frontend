@@ -32,11 +32,16 @@ export default function WatchFeedPage() {
   const [retry, setRetry] = useState(0);
   const [lastVisit, setLastVisit] = useState(null);
   const [paused, setPaused] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [olderError, setOlderError] = useState("");
+  const olderRequest = useRef(null);
   const rows = useRef([]);
   const loadedKey = useRef(null);
   const { listRef, captureAnchor } = useLiveScrollAnchor();
-  const key = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords]);
+  const key = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords, filter, filter === 'new' ? lastVisit : null]);
   const items = snapshot?.key === key ? snapshot.items : null;
+  const coverage = snapshot?.key === key ? snapshot.coverage : null;
+  const nextCursor = snapshot?.key === key ? snapshot.nextCursor : null;
   const hasPreferences = Boolean(user?.watchlist?.length || user?.topics?.length || user?.keywords?.length);
 
   function setFilter(value) {
@@ -61,6 +66,9 @@ export default function WatchFeedPage() {
       rows.current = [];
       setSnapshot(null);
       setError("");
+      setOlderError("");
+      setLoadingOlder(false);
+      setPaused(false);
     }
     if (paused || !user || isGuestUser || !hasPreferences) return;
     let active = true, refreshing = false;
@@ -68,7 +76,10 @@ export default function WatchFeedPage() {
       if (!active || refreshing || document.visibilityState === 'hidden') return;
       refreshing = true;
       try {
-        const data = await fetchPersonalFeed({ limit: 50 });
+        const data = await fetchPersonalFeed({ limit: 20,
+          filter: filter === 'new' ? 'all' : filter,
+          after: filter === 'new' && lastVisit ? new Date(lastVisit).toISOString() : undefined,
+        });
         if (!active) return;
         if (!data || data.unavailable || !Array.isArray(data.stories)) throw new Error('Bevakningsflödet kunde inte hämtas. Dina val är fortfarande sparade.');
         const incoming = data.stories.map(story => ({
@@ -76,7 +87,7 @@ export default function WatchFeedPage() {
         }));
         captureAnchor();
         rows.current = reconcileNewsSnapshot(rows.current, incoming);
-        setSnapshot({ key, items: rows.current });
+        setSnapshot({ key, items: rows.current, nextCursor: data.nextCursor, coverage: data.coverage });
         setError("");
       } catch (failure) {
         if (active) { captureAnchor(); setError(failure.message); }
@@ -91,9 +102,38 @@ export default function WatchFeedPage() {
       document.removeEventListener('visibilitychange', refresh);
     };
   }, [key, hasPreferences, isGuestUser, retry, paused, captureAnchor]);
+  useEffect(() => {
+    return () => { olderRequest.current?.abort(); olderRequest.current = null; };
+  }, [key]);
   const shown = useMemo(() => (items ?? []).filter(item =>
     filter === 'all' || (filter === 'new' ? lastVisit && item.ts > lastVisit : item.matches?.includes(filter)),
   ), [items, filter, lastVisit]);
+
+  async function loadOlder() {
+    if (!nextCursor || olderRequest.current) return;
+    const controller = new AbortController();
+    olderRequest.current = controller;
+    setPaused(true); // Keep this reading snapshot stable until explicitly resumed.
+    setLoadingOlder(true);
+    setOlderError("");
+    try {
+      const data = await fetchPersonalFeed({ limit: 20, cursor: nextCursor,
+        filter: filter === 'new' ? 'all' : filter,
+        after: filter === 'new' && lastVisit ? new Date(lastVisit).toISOString() : undefined,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (!data || data.unavailable || !Array.isArray(data.stories)) throw new Error('Äldre matchningar kunde inte hämtas.');
+      const incoming = data.stories.map(story => ({ ...personalStoryToItem(story), reason: preferenceReason(story), matches: personalMatchKinds(story) }));
+      const existingIds = new Set(incoming.map(item => item.id));
+      rows.current = reconcileNewsSnapshot(rows.current, [...rows.current.filter(item => !existingIds.has(item.id)), ...incoming]);
+      setSnapshot(previous => ({ key, items: rows.current, nextCursor: data.nextCursor,
+        coverage: previous?.coverage?.complete === false ? previous.coverage : data.coverage }));
+    } catch (failure) { if (!controller.signal.aborted) setOlderError(failure.message); }
+    finally {
+      if (olderRequest.current === controller) { olderRequest.current = null; setLoadingOlder(false); }
+    }
+  }
 
   async function follow(company) {
     if (!user || isGuestUser) { setLogin(true); return; }
@@ -143,13 +183,17 @@ export default function WatchFeedPage() {
           ]} />
           <Inline className={styles.between}>
             <Text size="xs" tone="secondary" role="status">
-              {paused ? 'Pausat' : 'Uppdateras automatiskt'} · Senaste 48 timmarna
+              {paused ? 'Pausat' : 'Uppdateras automatiskt'} · {coverage?.complete === false ? 'Delar av de senaste 48 timmarna' : 'Senaste 48 timmarna'}
               {filter === 'new' && lastVisit && ' · sedan ditt senaste besök på den här enheten'}
             </Text>
-            <Button variant="ghost" size="sm" aria-pressed={paused} onClick={() => setPaused(value => !value)}>
+            <Button variant="ghost" size="sm" disabled={loadingOlder} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
               {paused ? 'Återuppta' : 'Pausa uppdateringar'}
             </Button>
           </Inline>
+          {coverage?.complete === false && <Inline>
+            <Text size="sm" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Det kan finnas fler matchningar.</Text>
+            <Button variant="ghost" onClick={() => { setPaused(false); setRetry(value => value + 1); }}>Kontrollera igen</Button>
+          </Inline>}
           {!items && !error ? (paused
             ? <Text size="sm" tone="secondary">Uppdateringar pausade.</Text>
             : <NewsListSkeleton count={3} />) : shown.length ? (
@@ -159,12 +203,14 @@ export default function WatchFeedPage() {
               </div>)}
             </div>
           ) : !error && <EmptyState title={filter === 'new'
-            ? lastVisit ? 'Du är ikapp' : 'Inget tidigare besök på den här enheten'
+            ? lastVisit ? coverage?.complete ? 'Inga nya matchningar under perioden' : 'Inga nya matchningar i hämtade nyheter' : 'Inget tidigare besök på den här enheten'
             : 'Inga matchningar just nu'}
             description={filter === 'new' && !lastVisit
               ? 'Visa alla matchningar för att läsa dina nyheter.'
               : 'Dina bevakningar är sparade. Nya matchningar visas automatiskt.'}
             action={filter !== 'all' && <Button variant="secondary" onClick={() => setFilter('all')}>Visa alla matchningar</Button>} />}
+          {olderError && <Text size="sm" role="alert">{olderError} Försök igen nedan.</Text>}
+          {nextCursor && <Inline><Button variant="secondary" loading={loadingOlder} onClick={loadOlder}>Visa äldre matchningar</Button></Inline>}
         </>}
       </section>
       <Dialog open={login} onOpenChange={setLogin} title="Spara din bevakning">

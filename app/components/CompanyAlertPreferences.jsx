@@ -19,8 +19,9 @@ const DESCRIPTIONS = {
   important: "Rapporter och andra tydligt betydande bolagshändelser.",
   major: "De mest betydande beskeden, som vinstvarningar och stora affärer.",
 };
-const SLIDER_OPTIONS = COMPANY_ALERT_LEVELS.map((level, value) => ({
-  value, label: level.label,
+const SLIDER_LEVELS = [...COMPANY_ALERT_LEVELS].reverse();
+const SLIDER_OPTIONS = SLIDER_LEVELS.map((level) => ({
+  value: level.value, label: level.label,
   description: `${DESCRIPTIONS[level.value]} Rutinmeddelanden filtreras bort.`,
 }));
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -50,8 +51,7 @@ function RouteAction({ href, children }) {
 }
 
 /** Draft-only editor; the owning hook supplies authenticated snapshots and writes. */
-export default function CompanyAlertPreferences({ alerts, user, companies = [], view = "watch", collapsible = false, open = true, onOpenChange }) {
-  const settingsView = view === "settings";
+export default function CompanyAlertPreferences({ alerts, user, companies = [], collapsible = false, open = true, onOpenChange, onDraftStateChange }) {
   const identity = user?.email?.toLowerCase() || "";
   const identityRef = useRef(identity);
   identityRef.current = identity;
@@ -73,6 +73,15 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   const saveError = failure || (alerts.saveError !== dismissedError ? alerts.saveError : null);
   const conflict = saveError?.status === 409;
   const newerSnapshot = Boolean(resource && currentEdit && resource.revision !== currentEdit.base.revision);
+
+  useEffect(() => { onDraftStateChange?.({ dirty, busy }); }, [dirty, busy, onDraftStateChange]);
+  useEffect(() => () => onDraftStateChange?.({ dirty: false, busy: false }), [onDraftStateChange]);
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, busy]);
 
   function frame(content, toggle = null, footer = null) {
     return <Stack gap={collapsible && !open && !footer ? 0 : 4} className={styles.root}
@@ -287,17 +296,6 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
     );
   }
 
-  if (!settingsView && !followed.length && !draft.enabled && !currentEdit.base.enabled && !dirty) {
-    return frame(
-      <Stack gap={2} className={styles.root}>
-        <Text size="sm">Följ ett bolag för att välja mejlbevakning.</Text>
-        <Inline><RouteAction href="/marknaden/bevakning/hantera">Välj bolag</RouteAction></Inline>
-        {!resource.delivery.available && <Text size="sm" tone="secondary">Mejlutskicken har inte startat ännu.</Text>}
-        {feedback}
-      </Stack>
-    );
-  }
-
   const toggle = <Switch
     label="Mejl om mina bolag"
     className={collapsible ? styles.headerSwitch : undefined}
@@ -309,13 +307,14 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
 
   return frame(
     <Stack gap={4}>
-      {(!collapsible || settingsView || !resource.delivery.available) && <Stack gap={2}>
+      <Stack gap={2}>
         {!collapsible && toggle}
-        {settingsView && <Text size="sm" tone="secondary" className={styles.wrap}>
+        <Text size="sm" tone="secondary">Mejl omfattar bolag du följer. Ämnen och nyckelord används på webbplatsen och i personliga brev, inte i separata mejl ännu.</Text>
+        <Text size="sm" tone="secondary" className={styles.wrap}>
           {resource.verified ? "Till bekräftad mejladress:" : "Kontots mejladress:"} {resource.destination}
-        </Text>}
+        </Text>
         {!resource.delivery.available && <Text id={statusId} size="xs" tone="secondary">Inga mejl skickas ännu.</Text>}
-      </Stack>}
+      </Stack>
 
       {!resource.verified && (
         <Stack gap={1}>
@@ -323,7 +322,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
           <Inline><Button variant="ghost" onClick={() => setVerifyOpen((value) => !value)}>
             {verifyOpen ? "Stäng bekräftelse" : "Bekräfta mejladress"}
           </Button></Inline>
-          {verifyOpen && <LogInModal redirectTo={settingsView ? "/settings#company-email" : "/marknaden/bevakning/hantera?section=email"} />}
+          {verifyOpen && <LogInModal redirectTo="/marknaden/bevakning/hantera?section=email" />}
         </Stack>
       )}
       {resource.delivery.status === "suppressed" && (
@@ -336,7 +335,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
         <Text size="sm">Mejlvalen är pausade. Slå på Mejl om mina bolag och spara för att återuppta ditt val. Tidigare nyheter skickas inte i efterhand.</Text>
       )}
       {overLimit ? (
-        <Text size="sm">Välj upp till {companyLimit} bolag för mejl. Pausa några under Bolagsval{settingsView ? " i Bevakning" : " nedan"}; de finns kvar i Bevakning. Slå sedan på mejlvalet och spara.</Text>
+        <Text size="sm">Välj upp till {companyLimit} bolag för mejl. Pausa några under Bolagsval nedan; de finns kvar i Bevakning. Slå sedan på mejlvalet och spara.</Text>
       ) : resource.delivery.status === "over_limit" && (
         <Text size="sm">Bolagen ryms nu inom ditt medlemskap. Slå på mejlvalet och spara för att återuppta. Tidigare nyheter skickas inte i efterhand.</Text>
       )}
@@ -348,15 +347,15 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
 
       <Stack gap={3}>
         <Slider
-          label="Vilka nyheter vill du få?"
+          label="Nyhetsnivå"
           options={SLIDER_OPTIONS}
-          value={COMPANY_ALERT_LEVELS.findIndex((level) => level.value === draft.importanceLevel)}
-          onValueChange={(index) => update({ importanceLevel: COMPANY_ALERT_LEVELS[index].value })}
+          value={draft.importanceLevel}
+          onValueChange={(importanceLevel) => update({ importanceLevel })}
           disabled={busy}
         />
       </Stack>
 
-      {!settingsView && <details className={styles.details}>
+      <details className={styles.details}>
         <summary>Bolagsval · {alertCount} av {followed.length} valda</summary>
         <Stack gap={3} className={styles.detailsBody}>
           <ul className={styles.companyList}>
@@ -376,9 +375,9 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
             ))}
           </ul>
         </Stack>
-      </details>}
+      </details>
 
-      {settingsView && <details className={styles.details} open={Object.keys(timeErrors).length ? true : undefined}>
+      <details className={styles.details} open={Object.keys(timeErrors).length ? true : undefined}>
         <summary>Tysta timmar · {draft.quietHours.enabled ? `${draft.quietHours.start}–${draft.quietHours.end}` : "Av"}</summary>
         <Stack gap={3} className={styles.detailsBody}>
           <Switch
@@ -396,7 +395,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
           </div>
           <Text size="sm" tone="secondary" className={styles.wrap}>Tidszon: {draft.timeZone}. Sommar- och vintertid följer tidszonen.</Text>
         </Stack>
-      </details>}
+      </details>
 
     </Stack>,
     toggle,
@@ -413,12 +412,6 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
         {(alerts.loading || dirty) && <Text size="sm" tone="secondary" role="status">
           {alerts.loading ? "Uppdaterar sparade mejlval…" : "Du har osparade mejlval."}
         </Text>}
-        {(!collapsible || open) && <Inline>
-          <Button variant="ghost" nativeButton={false} role="link" disabled={dirty || busy}
-            render={<Link href={settingsView ? "/marknaden/bevakning/hantera?section=email" : "/settings#company-email"} />}>
-            {settingsView ? `Bolagsval · ${alertCount} av ${followed.length} valda →` : "Fler mejlinställningar →"}
-          </Button>
-        </Inline>}
       </Stack>}
     </Stack> : null
   );

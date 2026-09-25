@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 14 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 25 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -66,6 +66,127 @@ Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
+
+### Coherent Bevakning → news → company/report journey
+
+Approved after the 23 September product audit. Implementation on
+`codex/coherent-watch-experience` is **local and unreleased**; this is not a
+claim that the production behavior below has changed.
+
+- [x] Local: cursor-scan the personal candidate window, disclose incomplete
+  coverage, normalize lexical keyword matching, filter before result limits,
+  and page direct personal matches chronologically. No inferred industry rows
+  displacing explicitly followed interests in the site feed.
+- [x] Local: remove the duplicate email CTA from the overview's personal
+  preview; preserve counts, edit and full-feed actions. Centralize email controls
+  outside interest tabs, include quiet hours/exceptions, link Settings to the
+  same editor, and guard dismissal of unsaved email drafts.
+- [x] Local: actual-only financial question charts, source drilldown, distinct
+  report access/failure states, and a separately navigable, redesigned VD-ord
+  section using existing report extractions and original text.
+- [x] Local: compact Resultat with grouped revenue/EBIT bars and a fixed
+  EBIT-margin line; shared quarter/year periods and cash-flow waterfall.
+  Bolagsprofil is an open public section with its own anchor, six perspectives,
+  coverage and expandable methodology. Existing access and score rules retained.
+- [x] Local: net-debt/net-cash headline and the same three-step waterfall as
+  Kassaflöde in Finansiell ställning, with expandable signed net-debt history.
+  Reconcile source totals, retain
+  missing/mismatch states, and expose exact inputs/definitions in calculation detail.
+- [x] Local: Vinst och kassaflöde compares same-period net income and operating
+  cash flow with grouped bars, the shared quarter/year control and exact source
+  values. Preserve signed/zero/missing observations; omit when no paired period exists.
+- [x] Local coverage fixes (25 September): canonical EV/EBIT profile mapping;
+  explicitly dated latest-available VD-ord fallback; seven-quarter minimum for
+  qualified public OMXsum estimates, using the same Yahoo-only source as the
+  page. Preserve source gating; report extraction remains deferred.
+- [x] Local cash/debt definitions: supported reported-capex alias, complete
+  debt components only, separate labelled calculations and retained provider
+  totals. Missing provider capex remains missing; no back-solved zeroes.
+- [ ] Release the coverage fixes, refresh eligible model rows and paced Yahoo
+  snapshots, then remeasure coverage. Seven quarters is not broad model coverage:
+  the production audit had 27 seven-quarter histories before qualification.
+- [ ] Verify deployed candidate coverage and latency on an active news day;
+  synthetic cursor tests do not prove live completeness or extraction quality.
+- [ ] Add a source-backed keyword index/preview, including source body only
+  where rights permit. Explicit language aliases, not invisible AI expansion.
+- [ ] Qualify the Freemelt numerical-meaning regression: distinguish market size,
+  order, option and investment before publishing rewritten numerical claims.
+  Do not magnify unqualified amounts into derived business-impact ratios.
+- [ ] Expand optional email matching to topics/keywords with a reviewed scope,
+  explicit opt-in migration, deduplication and preserved company exceptions.
+  The current implementation does **not** broaden or activate email delivery.
+- [ ] Add real selection examples to the relevance slider after complete-window
+  coverage is qualified. Cadence is separate; do not imply an exact mail count.
+- [ ] Qualify sector-specific chart choices and period/metric-level report
+  provenance. Keep the statement as progressive detail, not the default task.
+- [ ] Improve the report extractor next: source/page/span, fiscal period,
+  currency, reported/adjusted/derived basis, revisions and extraction quality.
+  Then introduce report-backed key markets, business segments and risks.
+- [x] Local Bolagsprofil refresh: larger point-free radar, shared reading sizes,
+  and separate Möjligheter/Risker report-excerpt sections. Readable tangent labels
+  now identify all six axes; remove tiny perimeter scores and generic side explanations.
+  Keep coverage/missing axes visible and exact
+  scores in methodology. Fictional preview excerpts only; scoring/access unchanged.
+
+Before the company-signals backend, finish the remaining `/aktie` UI review in
+this order, using existing data and preserving its availability/source rules:
+
+1. **Värdering — first delivery implemented locally:** shared metric controls,
+   historical line/band beside zero-based reported/estimate bars, source labels,
+   and one methodology disclosure. Consensus wins per metric/period; a scoped
+   model-only API supplies qualified OMXsum fallback, never manual estimates.
+   The current model predicts one quarter: annual ratios require a full annual
+   denominator, not Q×4. Remaining: deploy/refresh qualified model rows and audit
+   live coverage, then annual horizons/EPS and immutable revisions separately.
+   See [valuation implementation and rollout](docs/company-valuation-ui.md).
+2. **VD-ord:** refine the existing redesign's reading hierarchy and outlook lists;
+   keep AI interpretation and original text distinct. Period comparisons wait for data.
+3. **Estimat:** period/source-led actual-versus-estimate presentation where qualified
+   data exists, with one concise unavailable state instead of a grid of missing values.
+4. **Insyn & ägare / Blankning:** consistent compact summaries, chart controls,
+   readable lists and mobile behavior; unsupported registry coverage is not zero.
+5. **Kalender and final page pass:** upcoming events first, optional month view,
+   then overview/news hierarchy, anchor navigation and long-document mobile QA.
+
+- [ ] Build deterministic, source-backed company signals in Stonks after the UI
+  pass above, separate from report excerpts and radar scores. Qualify facts and start with profitability
+  and cash generation; add runway, dilution, leverage, cash conversion and
+  volatility only with their required period/adjustment checks. Preserve versioned
+  evidence for historical replay. See [proposed backend plan](docs/company-signals-v1.md).
+- [ ] Review and extract report-backed opportunities and risks with company,
+  period, PDF hash and page evidence, then deliberately expose approved public
+  excerpts through the profile API. Do not infer claims from radar scores or
+  relabel the mixed VD-ord changesAndRisks/outlook arrays as opportunities/risks.
+- [x] Local pilot: omsättning per affärsområde validated against three issuer
+  PDFs (Atlas Copco 2025, Epiroc 2025, Alfa Laval 2024). Reviewed, hash-pinned
+  layouts produce page/cell evidence, external revenue and bounded reconciliation.
+  Compact donuts with visible amounts, shares and source details are available at
+  the gated `/designsystem/segments` preview. This is not a generic extractor,
+  production data delivery or a claim of latest-report coverage.
+- [x] Local `/aktie` integration: keep revenue breakdowns half-width on desktop,
+  stacking on mobile. Consume optional `financials.segmentRevenue` with company/evidence checks
+  and the existing Plus access boundary. Preserve its own annual period/currency
+  through quarter/year switches; support segment-only reports without empty
+  controls. Reviewed company examples enter only through the local fixture API.
+- [x] Geographic-revenue UI: pair the business-area and country/region cards
+  using the same component. Optional `financials.geographicRevenue` requires
+  customer-location evidence, matching company and reconciled external revenue.
+  Local geography examples are explicitly fictional; lone cards stay half-width.
+- [ ] Extract and review geographic revenue from actual issuer reports, preserving
+  country/region granularity and the customer-location basis; then materialize
+  and deliver through the existing financials API. No real geographic coverage yet.
+- [ ] Materialize qualified segment records in the existing report store and
+  expose them through the financials API with issuer identity, period/revision,
+  provenance and existing access rules. The stock-page consumer is ready, but
+  production segment delivery is not implemented. Expand reviewed layouts before
+  broad coverage. Add history or growth only across comparable segment definitions.
+  No synthetic allocations.
+- [ ] Extend VD-ord with period history and supported “what changed” comparisons
+  after the API preserves comparable source passages. Never invent continuity.
+- [ ] Define and test useful return journeys with readers; measure saved interest
+  → relevant news → source/report exploration, not session length alone.
+
+Implementation boundary and validation: [coherent experience v1](docs/coherent-experience-v1.md).
 
 ### Nordic price pilot — live; coverage follow-up
 
@@ -146,19 +267,20 @@ See [timeframe contract and verification](docs/company-chart-timeframes.md).
 Done when: an audited sample shows useful coverage and less duplication, with
 clear reasons for selection and no unsupported explanation of price causality.
 
-### 2. Company email alerts — preferences ready, delivery next
+### 2. Company email alerts — private pilot; broader scope next
 
 - **Preferences released 13 September (`1edbcf2` / `f7e4f70`).** See the
   [plan](docs/company-email-alerts.md) and [local verification](docs/company-email-alerts-verification.md).
 - Plus/Pro only, separate explicit opt-in, three importance levels, company
   mutes and quiet hours inside the existing Bevakning editor. No automatic opt-in.
-- The pure policy is fixture-qualified only. Actual email delivery is not
-  implemented; saved settings must not be advertised as a live sending service.
-- [ ] Qualify the source and build a durable event/recipient ledger and outbox.
-- [ ] Implement the renderer, scoped unsubscribe/suppression, quiet-hour/DST
-  scheduling, provider budgets, retries and unknown-outcome handling.
-- [ ] Recheck authorization at send time and qualify a fake-transport run before
-  requesting approval for real sending. Keep existing newsletters unchanged.
+- The 23 September read-only audit verified a running, single-account pilot and
+  two provider-confirmed deliveries in seven days. This is not a public rollout
+  or proof of inbox placement. Existing outbox, send-time authorization, scoped
+  unsubscribe/suppression, quiet-hour scheduling and provider budgets remain.
+- [ ] Qualify sustained reliability and capacity before expanding recipients.
+- [ ] Reconcile personal matching and company-only delivery through explicit
+  scope review; preserve consent and historical send boundaries. Keep the
+  newsletter subscription independent.
 
 ### 3. Connect newsletters to exact stories
 
@@ -190,10 +312,8 @@ coverage is documented, including any upstream limits.
 - [ ] **Personal relevance:** expand the existing industry-match approach with
   shared company/story labels and visible matching reasons. Separate direct
   announcements from related industry news; do not rebuild topics/keywords.
-- [ ] **Opt-in alert delivery:** decide the first channel and plan access, then
-  implement explicit preferences, thresholds, quiet hours, deduplication and
-  delivery feedback. Telegram is a candidate, not a shipped entitlement.
-  Assess web push/email fallback against delivery capacity and user needs.
+- [ ] **Additional alert channels:** validate demand after the email pilot and
+  matching foundations. Telegram/web push are candidates, not entitlements.
 - [ ] **Shareable screener:** persist filters and sorting in the URL while
   retaining the current table, presets and access rules.
 - [ ] **Targeted UX cleanup:** audit remaining legacy account/utility surfaces

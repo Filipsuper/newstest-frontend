@@ -52,7 +52,7 @@ test("timeout failures stay distinct from empty news and unavailable personal da
   });
   await assert.rejects(fetchLiveFeed(), { name: "TimeoutError" });
   assert.equal(await fetchPersonalFeed({ limit: 3 }), null);
-  assert.deepEqual(durations, [15000, 15000]);
+  assert.deepEqual(durations, [15000, 25000]);
 });
 
 test("a broken personal-feed response becomes unavailable rather than an unhandled rejection", async (t) => {

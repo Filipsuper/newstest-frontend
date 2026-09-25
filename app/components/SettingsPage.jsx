@@ -6,8 +6,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { saveActiveNewsletters, createPortalSession } from "../utils/api";
 import { useTheme } from "../providers/ThemeProvider";
 import LogInModal from "../modals/logInModal";
-import CompanyAlertPreferences from "./CompanyAlertPreferences";
-import { useCompanyAlerts } from "../hooks/useCompanyAlerts";
+import WatchPreferencesButton from "./WatchPreferencesButton";
 import { companyAlertsEnabled } from "../utils/companyAlerts";
 import { Button } from "./ui/Button";
 import { Switch } from "./ui/Choices";
@@ -18,7 +17,6 @@ import { EmptyState, Skeleton } from "./ui/data";
 import styles from "./settings.module.css";
 
 function AccountSettings({ user, refreshUser }) {
-  const alerts = useCompanyAlerts(user);
   const { theme, setTheme } = useTheme();
   const original = Array.isArray(user.active_newsletters)
     ? user.active_newsletters
@@ -239,8 +237,9 @@ function AccountSettings({ user, refreshUser }) {
         </Stack>
       </section>
       {companyAlertsEnabled() && <section id="company-email" aria-labelledby="company-email-title" className={styles.section}>
-        <Heading id="company-email-title" size="subsection">Mejlbevakning</Heading>
-        <CompanyAlertPreferences alerts={alerts} user={user} view="settings" />
+        <Heading id="company-email-title" size="subsection">Mejl från bevakningen</Heading>
+        <Text size="sm" tone="secondary">Hantera nyhetsnivå, bolagsval och tysta timmar tillsammans med det du följer. Morgonbrevet har sitt eget val ovan.</Text>
+        <Inline><WatchPreferencesButton initialSection="email">Hantera mejl från bevakningen</WatchPreferencesButton></Inline>
       </section>}
       <Text size="sm" tone="secondary">
         Vill du ändra din e-postadress eller ta bort kontot?{" "}

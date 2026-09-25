@@ -51,10 +51,11 @@ function SelectedChips({ label, values, itemLabel = (value) => value, removeLabe
 }
 
 /** Shared editor body, used both in the preference dialog and its direct route. */
-export default function WatchPreferencesEditor({ initialTab = "companies", initialSection }) {
+export default function WatchPreferencesEditor({ initialTab = "companies", initialSection, onEmailStateChange }) {
   const { user, isGuestUser, refreshUser } = useAuthContext();
   const alerts = useCompanyAlerts(user);
   const [emailOpen, setEmailOpen] = useState(initialSection === "email");
+  const emailSection = useRef(null);
   const pathname = usePathname();
   const [companies, setCompanies] = useState([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
@@ -72,6 +73,10 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
   const [message, setMessage] = useState("");
   const pending = useRef(false);
   const hasAccount = Boolean(user?.email);
+
+  useEffect(() => {
+    if (initialSection === "email" && hasAccount) emailSection.current?.scrollIntoView({ block: "nearest" });
+  }, [initialSection, hasAccount]);
 
   useEffect(() => {
     if (!hasAccount) return;
@@ -218,10 +223,6 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
         </TabList>
         <TabPanel value="companies">
           <Stack gap={4}>
-            {companyAlertsEnabled() && <section className={styles.emailSection} aria-label="Mejlbevakning">
-              <CompanyAlertPreferences alerts={alerts} user={user} companies={companies}
-                collapsible open={emailOpen} onOpenChange={setEmailOpen} />
-            </section>}
             <SelectedChips
               label="Valda bolag" values={watchlist} busy={busy}
               itemLabel={(symbol) => companyNames.get(symbol) || symbol}
@@ -314,7 +315,11 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
               }}
             />
             <Text size="xs" tone="secondary" numeric>{keywords.length}/{KEYWORD_LIMIT} nyckelord valda</Text>
-            <Text size="sm" tone="secondary">Matchas mot rubrik och sammanfattning. Välj till exempel försvar eller vinstvarning.</Text>
+            <Text size="sm" tone="secondary">Söker i rubrik och nyhetens grundtext, inte hela artikeln eller AI-sammanfattningen.</Text>
+            <details className={styles.matchingHelp}>
+              <summary>Så fungerar nyckelord</summary>
+              <Text size="sm" tone="secondary">AI matchar ett eget ord, inte retail. Försvar matchar även försvarsorder. Data center matchar också data-center. Lägg till engelska ord separat om du vill bevaka dem.</Text>
+            </details>
             <form className={styles.keywordForm} onSubmit={addKeyword}>
               <TextField
                 label="Nytt nyckelord" value={keyword} maxLength={40} error={keywordError}
@@ -326,6 +331,11 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
           </Stack>
         </TabPanel>
       </Tabs>
+      {companyAlertsEnabled() && <section ref={emailSection} className={styles.emailSection} aria-label="Mejlbevakning">
+        <Heading as="h3" size="subsection">Mejl från bevakningen</Heading>
+        <CompanyAlertPreferences alerts={alerts} user={user} companies={companies}
+          collapsible open={emailOpen} onOpenChange={setEmailOpen} onDraftStateChange={onEmailStateChange} />
+      </section>}
       {!companyAlertsEnabled() && <Text size="xs" tone="secondary">Valen formar ditt nyhetsflöde. De aktiverar inga aviseringar.</Text>}
     </Stack>
   );

@@ -14,6 +14,7 @@ async function setup(page, request) {
     personalGate: null,
     personalStatus: 200,
     errors: [],
+    requests: [], pages: {}, byFilter: {},
   };
   page.on("pageerror", (error) => state.errors.push(error.message));
   await page.clock.install();
@@ -31,7 +32,8 @@ async function setup(page, request) {
       } });
     if (url.pathname === "/api/user/personal-feed") {
       state.personalReads++;
-      const body = structuredClone(state.personal);
+      state.requests.push(Object.fromEntries(url.searchParams));
+      const body = structuredClone(state.pages[url.searchParams.get('cursor')] ?? state.byFilter[url.searchParams.get('filter')] ?? state.personal);
       const status = state.personalStatus;
       if (state.personalGate) await state.personalGate;
       return route.fulfill({ status, json: body });
@@ -72,6 +74,48 @@ async function openPersonal(page) {
 }
 
 const clickGate = /nya eller uppdaterade|Visa nya|Uppdatera urval/;
+
+test('personal filtering requests its own page and older matches remain while reading', async ({ page, request }) => {
+  const state = await setup(page, request);
+  const keyword = { ...state.personal.stories[0], matchedKeyword: 'orderingång', viaWatchlist: false };
+  const older = { ...keyword, id: 'older-keyword', eventId: 'older-keyword', facts: {}, headline: 'Fiktiv äldre orderingång', publishedAt: new Date(Date.now() - 3600_000).toISOString() };
+  state.byFilter.keywords = { stories: [keyword], nextCursor: 'older-page', coverage: { complete: true } };
+  state.pages['older-page'] = { stories: [older], nextCursor: null, coverage: { complete: true } };
+  await page.goto('/marknaden/bevakning?filter=keywords');
+  const region = page.getByRole('region', { name: 'Personliga nyheter', exact: true });
+  await expect(region.locator('article')).toHaveCount(1);
+  expect(state.requests.at(-1).filter).toBe('keywords');
+  await region.getByRole('button', { name: 'Visa äldre matchningar' }).click();
+  await expect(region.locator('article')).toHaveCount(2);
+  expect(state.requests.at(-1).cursor).toBe('older-page');
+  await expect(region.getByRole('button', { name: 'Återuppta', exact: true })).toBeVisible();
+  const before = state.personalReads;
+  await page.clock.runFor(30_100);
+  expect(state.personalReads).toBe(before);
+  await region.getByRole('button', { name: 'Bolag', exact: true }).click();
+  await expect(region.getByRole('button', { name: 'Pausa uppdateringar', exact: true })).toBeVisible();
+  expect(state.errors).toEqual([]);
+});
+
+test('partial matching never claims the reader is caught up', async ({ page, request }) => {
+  const state = await setup(page, request);
+  await page.addInitScript(() => localStorage.setItem('omxsum:watch-visited:personal-live@example.test', String(Date.now() - 3600_000)));
+  state.personal = { stories: [], coverage: { complete: false, reason: 'timeout' } };
+  await page.goto('/marknaden/bevakning?filter=new');
+  await expect(page.getByText('Alla nyheter kunde inte kontrolleras. Det kan finnas fler matchningar.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Inga nya matchningar i hämtade nyheter', { exact: true })).toBeVisible();
+  expect(state.requests.at(-1).after).toBeTruthy();
+  await expect(page.getByText('Du är ikapp', { exact: true })).toHaveCount(0);
+});
+
+test('watch preview keeps counts and edit action, without another email control', async ({ page, request }) => {
+  await setup(page, request);
+  await page.goto('/marknaden');
+  const preview = page.getByRole('region', { name: 'Dina bevakningar', exact: true });
+  await expect(preview.getByText('1 bolag · 0 ämnen · 1 nyckelord', { exact: true })).toBeVisible();
+  await expect(preview.getByRole('button', { name: 'Anpassa', exact: true })).toBeVisible();
+  await expect(preview.getByRole('button', { name: /[Mm]ejl/ })).toHaveCount(0);
+});
 
 test("personal snapshots insert new stories and revisions after 30 seconds without a click gate", async ({ page, request }) => {
   const state = await setup(page, request);

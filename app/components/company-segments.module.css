@@ -1,0 +1,22 @@
+.panel { container-type: inline-size; min-width: 0; display: grid; align-content: start; gap: var(--ui-space-4); padding: var(--ui-space-4); background: var(--ui-surface); border-radius: var(--ui-radius-md); }
+.panel .heading { font-size: var(--ui-text-md); }
+.composition { --donut-size: 10rem; display: grid; align-items: center; gap: var(--ui-space-4); min-width: 0; }
+.panel .total { font-size: var(--ui-text-lg); font-weight: 550; line-height: var(--ui-leading-tight); letter-spacing: -0.03em; }
+.rows { display: grid; gap: var(--ui-space-3); margin: 0; min-width: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--ui-space-2) var(--ui-space-3); }
+.row dt { min-width: 0; display: flex; align-items: baseline; gap: var(--ui-space-2); overflow-wrap: anywhere; }
+.marker { width: var(--ui-space-2); height: var(--ui-space-2); border-radius: var(--ui-radius-pill); flex-shrink: 0; }
+.row dd { margin: 0; }
+.values { display: flex; align-items: baseline; gap: var(--ui-space-3); white-space: nowrap; }
+.values > :last-child { min-width: 48px; text-align: right; }
+.track { grid-column: 1 / -1; height: var(--ui-space-2); overflow: hidden; border-radius: var(--ui-radius-sm); background: var(--ui-inset); }
+.track > span { display: block; height: 100%; border-radius: inherit; background: var(--ui-accent); }
+.source > summary { cursor: pointer; min-height: var(--ui-control-md); align-content: center; font-size: var(--ui-text-sm); font-weight: 500; }
+.source > summary:focus-visible, .source a:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.source > summary + * { margin-top: var(--ui-space-3); }
+.source a { min-height: var(--ui-control-md); align-content: center; color: var(--ui-text-secondary); font-size: var(--ui-text-sm); text-decoration: underline; }
+.preview { padding-block: var(--ui-space-8); }
+.examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: var(--ui-space-6); }
+@container (min-width: 480px) {
+  .composition { --donut-size: 11rem; grid-template-columns: var(--donut-size) minmax(0, 1fr); gap: var(--ui-space-6); }
+}

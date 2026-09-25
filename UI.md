@@ -24,10 +24,13 @@ implementation and migration plan is in `docs/design-system.md`.
   Features compose them and retain the existing data/auth contracts.
 - Discrete importance choices use the shared Base UI Slider with named stops,
   keyboard support and clickable 44px labels; never imply predicted price impact.
-- Company email preferences live in a collapsed section near the top of Bolag
-  inside the existing Bevakning editor. Keep drafts across refreshes and tabs,
-  save explicitly and require review after revision conflicts. Following and
-  newsletter choices stay separate. Free accounts get a quiet plan explanation.
+- Email preferences live in a separate section below the interest tabs in the
+  shared Bevakning editor, including company exceptions and quiet hours.
+  Settings opens this same editor. Keep drafts across refreshes and tabs, save
+  explicitly and require review after revision conflicts. Closing a dirty dialog
+  must offer continue/discard, never silently save or discard email consent.
+  Following and newsletter choices stay separate. Free accounts get a quiet
+  plan explanation. Do not imply topic/keyword email delivery until it exists.
 - Saved email preferences are not active delivery. While delivery is unavailable,
   say `Mejlval sparade` / `Inga mejl skickas ännu`; never show `Mejl på`.
 - `Label` is a non-interactive content/edition label, distinct from a form
@@ -369,6 +372,16 @@ desktop density or abbreviated interaction model.
   Following must never silently activate notification delivery.
 - Personal results explain their match. The local `Sedan sist` filter is
   a last-visit comparison, not a cross-device read/unread guarantee.
+- Personal feeds match the paginated source window before applying the result
+  limit and interest filter. Direct company/topic/keyword matches sort newest
+  first; inferred industry suggestions must not displace explicit interests.
+  Only complete coverage can support an empty-period claim. Interrupted/capped
+  scans disclose partial coverage and offer retry. Older-page reading pauses
+  automatic refresh until the reader resumes; filter changes start a new view.
+- Keywords are lexical, case-insensitive, punctuation-normalized matches in
+  headline and deterministic summary. Short words match whole tokens; longer
+  standalone words also match compound prefixes. Do not promise body search,
+  translations or semantic/AI matching. Explain this on demand in the editor.
 - Editorial previews show the actual title, date and short excerpt. After
   17:30 Stockholm, use today's evening letter only once published; otherwise
   retain the morning letter. Refresh candidates while the overview is open.
@@ -507,8 +520,9 @@ desktop density or abbreviated interaction model.
 - Missing profile axes remain visibly missing and never collapse to zero.
   Show profile coverage tersely so sparse source data is not mistaken for a
   complete assessment. Partial profiles retain a filled silhouette; use the
-  known-axis average only to bridge the missing point geometrically, and mark
-  that point as hollow while its visible score remains `–`.
+  known-axis average only to bridge the missing point geometrically. Compact
+  screener profiles retain hollow missing points. The point-free company-page
+  view names missing axes below the chart and retains exact scores in its detail.
 - Color the profile from its average available axis score: red for a weak
   match, OMXsum yellow for a mixed profile, and green only for a strong match.
   The axis values and silhouette remain the primary explanation; color is a
@@ -542,8 +556,8 @@ desktop density or abbreviated interaction model.
   a raised card, outline, shadow, or rounded container.
 - Keep the price plot and matching share image grid-free. Retain price/date
   axes, volume and meaningful session dividers; other analytical charts are separate.
-- One continuous document contains Översikt, Nyheter & reaktioner, Finansiellt,
-  Estimat, Värdering, Insyn & ägare, Blankning and Kalender. Desktop contents
+- One continuous document contains Översikt, Nyheter & reaktioner, Bolagsprofil,
+  Finansiellt, VD-ord, Estimat, Värdering, Insyn & ägare, Blankning and Kalender. Desktop contents
   stay sticky on the left; mobile uses a sticky, touch-sized contents sheet.
   These are anchor links, not tabs that replace the page content.
 - Section anchors preserve the company, chart range and moving-average state.
@@ -558,10 +572,157 @@ desktop density or abbreviated interaction model.
   masquerading as AI. Reports and letter mentions are progressive detail.
 - Defer analytical sections until nearby or explicitly selected, then keep
   their state mounted. Preserve server-resolved Plus access. Show useful
-  financial charts first, with the full statement and spider as optional depth;
+  financial charts first, with the full statement as optional depth;
   their calculations, score thresholds and source distinctions stay unchanged.
+- Bolagsprofil is an open, public section before financials, with its own anchor.
+  Use a substantial, point-free shared radar with readable, upright tangent
+  labels around its perimeter: Värdering, Tillväxt, Historik, Hälsa, Insyn and
+  Utdelning. Retain these six axes, not a competitor's scoring vocabulary.
+  Center the plot itself in its desktop column, balancing the caption below
+  rather than centering chart and caption as one block. Mobile stays compact.
+  Keep coverage and missing-axis names visible below it. The six numeric scores
+  belong in the expandable methodology, not tiny perimeter values or generic
+  explanatory blocks alongside the chart. Zero scores and missing axes differ.
+  Pair the chart with compact icon-led lists: Risker above Möjligheter, shared
+  20px headings and 16px reading text. Use a consistent warning icon for risks
+  and star for opportunities, with semantic negative/positive colors as category
+  cues—not invented severity levels or investment ratings. Text headings keep
+  meaning independent of color. No borders, per-row panels or inline citations.
+  Use neutral surfaces and normal mobile stacking.
+  These are independently sourced report excerpts, never inferred from scores,
+  missing data or unsorted VD-ord outlook/changes text. Keep report title/period
+  and each claim's exact PDF-page link in one collapsed Källor disclosure below
+  the lists, not a metadata line above them or a citation under each resting row.
+  Source links stay 14px with touch-sized targets. Keep a concise unavailable state when no qualified
+  excerpts exist. Local examples are explicitly fictional; public delivery and
+  extraction remain future work. The public API currently supplies no underlying check
+  values, so never imply those are available or expose private checks. Do not add a
+  new Plus gate, sticky profile panel or frontend-generated scores. Load once
+  nearby with a bounded request; transport errors offer retry, absent data stays
+  absent, and responses must match the requested company.
 - A company page represents one company. Search replaces it rather than adding
   dashboard panels.
+- Financial overview charts answer growth, profit, cash generation and financing
+  questions with available actuals. Keep estimates separate, preserve missing
+  values and report each series' actual source—not generic coverage metadata.
+  Source-linked tables remain available below the charts. Do not combine raw
+  amounts across reporting currencies or call provider fallback issuer extraction.
+- Group the financial overview into compact Resultat, Kassaflöde and Finansiell
+  ställning surfaces. Revenue, EBIT and EBIT margin share one metric row.
+  Revenue and EBIT are grouped (never stacked) bars on one amount axis; a distinct
+  EBIT-margin line uses the right percentage axis, without a margin switch.
+  Net margin remains available in source/statement detail, using same-period
+  net income, never EBIT as a substitute. Ratios require finite inputs and positive revenue;
+  missing periods break the margin line. Keep both units, a shared tooltip and
+  raw values/derived percentages in the source table. The shared Kvartal / År
+  control defaults to available quarterly
+  actuals and changes all overview charts and the detailed statement together.
+  Show the latest selected period as quiet text, not a report dropdown. Keep R12
+  in statement detail (or explicitly labelled when it is the only data available).
+  Changes compare the same fiscal quarter last year or the previous fiscal year;
+  missing/zero/negative percentage baselines remain absent. Margin changes use
+  percentage points. Retain the public summary for free/missing-history states,
+  but do not repeat it above an available member overview.
+- Cash flow prioritizes the latest free-cash-flow value and a compact waterfall:
+  operating cash flow minus capex equals free cash flow. Use all three finite
+  values from the same selected period; normalize capex to an outflow only when
+  the bridge reconciles with the supplied total (floating-point tolerance only).
+  Yahoo's explicit CapitalExpenditureReported may fill a missing standard capex
+  field; retain its source field. A named API calculation may show OCF minus
+  that capex independently of provider FCF, labelled Beräknat, with both totals
+  in details. Never back-solve missing capex, add an invented "other" step, or subtract tax,
+  interest or debt again. Preserve zero/negative totals. If missing or inconsistent,
+  keep available figures and a short explanation instead of a misleading chart.
+  Keep history, methodology and source links under Historik och beräkning.
+- Finansiell ställning leads with net debt, or a positive Nettokassa headline
+  when cash exceeds debt. Reuse the cash-flow panel's three-step vertical waterfall
+  component: debt minus cash equals signed net debt. Keep the same bar styling,
+  labels, value row, spacing and connectors; negative net debt extends below zero.
+  History lives under Historik och beräkning in both panels, not beside or below
+  the visible waterfall. It plots signed net debt, with zero visible and negative
+  values explicitly meaning net cash. Keep the shared quarter/year selection;
+  these are period-end balances, not sums across a reporting period.
+  Derive only from finite, nonnegative same-period debt and cash. Reconcile any
+  supplied net-debt total for legacy/unknown definitions; allow floating-point
+  noise only. A named API debt-minus-cash calculation is an explicitly labelled
+  OMXsum figure, independent of provider net debt. Retain the provider total
+  and cash/debt definitions in details; never add an invented adjustment.
+  Only join history with the same cash/debt definition. Source-only totals stay visible without a fabricated
+  breakdown. History gaps stay missing. Exact inputs, source/period end, calculated
+  versus supplied totals and cash-definition caveats live in Historik och beräkning.
+  Cash can include short-term investments. Do not introduce net debt/EBITDA until
+  its annual/R12 denominator and period basis have been verified.
+- Vinst och kassaflöde sits below the waterfalls as a compact historical
+  comparison. Reuse the grouped-bar renderer for nettoresultat and operativt
+  kassaflöde, on one signed amount axis with zero visible. Keep the shared
+  quarter/year selection, same-period actuals, source drilldown and series labels.
+  Show it only if at least one selected period has both values. Other missing
+  observations stay absent; the latest headline must not borrow an older value.
+  Preserve losses and real zeros. Do not add a conversion ratio, quality score
+  or explanatory paragraph to the resting card; methodology belongs in the
+  source disclosure. Segment-revenue charts require a verified extractor
+  contract and should be omitted when unavailable, not shown as empty cards.
+- Omsättning per affärsområde uses the shared DonutChart for up to six rows,
+  with total revenue, unit and fiscal year in the center. Keep original segment
+  labels, amounts and shares always visible in the adjacent breakdown, stacked
+  below a smaller donut on narrow cards. Use the theme-aware categorical
+  `--ui-chart-1` through `--ui-chart-6` tokens for matching arcs and legend marks;
+  these encode identity, not positive/negative performance. No shadows, gradients,
+  slice labels, hover-only values or entrance animation. More than six rows use
+  horizontal bars rather than recycled colors or a fabricated Other category.
+  Zero remains in the breakdown without an arc; tiny slices are not inflated.
+  Donut geometry uses reported shares: leave a rounding shortfall unfilled,
+  clip a tolerated excess at one turn, and keep the exact shares unchanged.
+  Keep fiscal year and currency/unit on the card; never imply a quarterly view
+  when only annual segment data exists. External customer revenue must reconcile
+  with the group's external total. Preserve reported corporate rows separately
+  in the contract, real zeroes and bounded rounding differences; never create
+  an Other allocation or normalize incomplete inputs to 100%. Put source links,
+  denominator and rounding detail under Rapportkälla. Links target the actual
+  PDF page; labels use printed pages. Use the shared surface, type, spacing and
+  accent tokens, and hide the component when the data contract is unqualified.
+  On `/aktie`, place revenue breakdowns together beneath the historical charts:
+  Affärsområden and Länder (or Regioner) share a two-column row on wider layouts
+  and stack on mobile. A lone breakdown stays half-width on desktop, including
+  when there is no financial history. Do not stretch it across the whole section.
+  Keep it inside the existing Plus boundary, from optional `financials.segmentRevenue`.
+  Match the record and any supplied financials symbol to the requested company;
+  never guess share-class aliases or fall back to design-system snapshots.
+  Keep it visible when changing quarter/year charts, with its own annual label.
+  It can stand alone without financial history; then omit empty period controls.
+  Missing, invalid or wrong-company records render no card. The design-system
+  route remains a historical reference; live upstream segment delivery is pending.
+- Omsättning per land / region reuses the exact revenue-breakdown card, donut,
+  legend and source disclosure. Read optional `financials.geographicRevenue`,
+  not operating-segment labels, headquarters or asset location. Require a
+  source-evidenced customer-location basis, matching company and reconciled
+  external group revenue. Use the source's declared country/region dimension
+  for the heading; never relabel regions as countries, manufacture an Other row
+  or infer missing country amounts. Each card keeps its own annual period/unit.
+  More than six geographic rows use the same bar fallback. Missing/invalid
+  geography leaves no placeholder. The NORD.TEST country example is fictional;
+  real geographic extraction/materialization/API delivery is not implemented yet.
+- Värdering uses one shared P/E / EV/EBIT / P/S / EV/S control for two adjacent
+  charts: historical multiple/band and its reported/estimated denominator.
+  Stack panels on mobile; wrap narrow controls into two rows. Bars start at zero,
+  use solid reported values and striped estimates, and preserve negative values.
+  Keep period, unit and estimate source visible. No forecast price curve or
+  implied fair-value band. Sources/calculations belong in one disclosure.
+  Resolve consensus/model by exact metric, fiscal period, currency and basis;
+  never substitute a positive model for a valid consensus loss. One quarter
+  cannot become a forward annual multiple. EPS needs an explicit share basis.
+  Unknown data and upstream failures are distinct from confirmed absence.
+  Historical publication lag is assumed, not a verified disclosure timestamp.
+- VD-ord has its own anchor and navigation entry, using the shared reading
+  type and controls. Separate labelled AI interpretation from expandable original
+  text; show the actual report period, source link and supplied PDF page range.
+  If the latest report has no readable statement, show the latest available
+  company-matched statement with its own period, publication date and source,
+  labelled Senaste tillgängliga VD-ord. Never borrow newer report metadata.
+  Processing, extraction failure, no identified section, and locked access are
+  different states. Do not revive the unqualified extracted key-figures tiles.
+  New report-derived markets/risks and period comparisons need qualified extractor
+  contracts; they must not be generated ad hoc in the frontend.
 
 ## Data and charts
 

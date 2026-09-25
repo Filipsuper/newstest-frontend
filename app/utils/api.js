@@ -209,10 +209,10 @@ export async function fetchRelatedStories(storyId) {
 
 // Valuation bands are Plus-only and move once a day, so the tab loads them on
 // demand rather than weighing down every company page.
-export async function fetchValuation(symbol) {
+export async function fetchValuation(symbol, { signal } = {}) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/valuation`,
-        { cache: "no-store", credentials: "include" },
+        { cache: "no-store", credentials: "include", signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12_000)]) : AbortSignal.timeout(12_000) },
     );
     const body = await response.json();
     // A Plus route answers a missing or expired session with 200 and an error
@@ -315,15 +315,16 @@ export async function fetchCompanyProfiles(symbols = []) {
     if (requested.length === 0) return { items: [], missing: [] };
     try {
         const params = new URLSearchParams({ symbols: requested.join(",") });
-        const response = await fetch(`${API_URL}/feed/company-profiles?${params}`);
-        if (!response.ok) return { items: [], missing: requested };
+        const response = await fetch(`${API_URL}/feed/company-profiles?${params}`, { signal: AbortSignal.timeout(8000) });
+        if (!response.ok) return { items: [], missing: requested, unavailable: true };
         const body = await response.json();
+        if (!Array.isArray(body?.items) || !Array.isArray(body?.missing)) return { items: [], missing: requested, unavailable: true };
         return {
             items: Array.isArray(body?.items) ? body.items : [],
             missing: Array.isArray(body?.missing) ? body.missing : [],
         };
     } catch {
-        return { items: [], missing: requested };
+        return { items: [], missing: requested, unavailable: true };
     }
 }
 
@@ -397,12 +398,14 @@ export async function fetchPersonalPreview({ limit = 5 } = {}) {
     }
 }
 
-export async function fetchPersonalFeed({ limit = 40 } = {}) {
+export async function fetchPersonalFeed({ limit = 40, filter = "all", cursor, after, signal } = {}) {
     try {
-        const params = new URLSearchParams({ limit: String(limit) });
+        const params = new URLSearchParams({ limit: String(limit), filter });
+        if (cursor) params.set("cursor", cursor);
+        if (after) params.set("after", after);
         const res = await fetch(`${API_URL}/user/personal-feed?${params}`, {
             credentials: "include",
-            signal: AbortSignal.timeout(15_000),
+            signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(25_000)]) : AbortSignal.timeout(25_000),
         });
         if (!res.ok) return null;
         return await res.json();

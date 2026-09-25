@@ -70,6 +70,15 @@ locally served open-source Geist Variable, not Wealthsimple's Simple Sans.
   route patches. Do not rewrite legacy palette aliases in one pass.
 - Presentation modules (`layout`, `data`, `format`) are independent of account
   and API state. Interactive modules (`controls`, `overlays`) wrap Base UI.
+- `DonutChart` is a static, server-rendered presentation primitive for qualified
+  shares. The feature owns its denominator, center content and always-visible
+  breakdown. Use the theme-aware categorical chart tokens, not performance
+  colors, and leave rounding/zero values intact. `/designsystem/segments` is the
+  reference; `/aktie` consumes the same card when its financials payload contains
+  a matching qualified record. Business-area and country/region views reuse
+  CompanyRevenueBreakdown, in a two-column row (stacked on mobile). A lone card
+  keeps the same half-width. Geographic data has its own validated customer-location
+  contract; it is not inferred from segment names. Upstream delivery remains pending.
 - Features retain business logic. `NewsFeedItem` adapts real story data into
   the same `NewsRow` used in the reference page.
 - Navigation links are anchors. Tabs connect in-page panels. A segmented
@@ -103,7 +112,10 @@ news-first ordering and shared news rows; its analytical controls/charts remain
 an incremental migration. Screener presentation is now implemented
 with shared controls, grouped metric selection, a Base UI filter dialog and
 a token-based compact table. The research profile keeps its scores and only
-opts into the new palette inside the screener.
+opts into the new palette inside the screener. The local `/aktie` profile now
+uses a larger point-free variant, shared reading typography, and separate
+report-excerpt opportunities/risks. Exact scores remain in methodology; coverage
+and missing axes stay visible. No score-derived claims or new scoring logic.
 See `docs/news-first-workspace.md` for the new product and data contract.
 
 The 7 September release also migrated `/settings`, `/article/[id]`,

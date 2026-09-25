@@ -5,7 +5,7 @@ import { personalMatchKinds, reconcileNewsSnapshot } from '../app/utils/personal
 const item = (id, version = 1) => ({ id, eventId: id, version, title: id, ts: 100, status: 'flash' });
 test('overlapping preference reasons belong to all their filters', () => {
   assert.deepEqual(personalMatchKinds({ viaWatchlist: true, matchedTopic: 'ORDER', matchedKeyword: 'AI' }), ['companies', 'topics', 'keywords']);
-  assert.deepEqual(personalMatchKinds({ viaIndustry: true }), ['topics']);
+  assert.deepEqual(personalMatchKinds({ viaIndustry: true }), []);
   assert.deepEqual(personalMatchKinds({}), []);
 });
 test('snapshot accepts new content automatically and removes absent or withdrawn rows', () => {

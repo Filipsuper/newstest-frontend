@@ -1,0 +1,445 @@
+[
+  {
+    "schemaVersion": 1,
+    "symbol": "ATCO-A.ST",
+    "company": "Atlas Copco",
+    "dimension": "business_area",
+    "basis": "external_customer_revenue",
+    "frequency": "annual",
+    "fiscalPeriod": "2025-FY",
+    "periodEnd": "2025-12-31",
+    "currency": "SEK",
+    "unitMultiplier": 1000000,
+    "source": {
+      "url": "https://www.atlascopcogroup.com/content/dam/atlas-copco/group/documents/investors/financial-publications/english/20260320-annual-report-2025-incl-sustainability-report-and-corporate-governance-report-copy-of-the-official-ESEF-format.pdf",
+      "pdfSha256": "70d076bd915ecb111549426d3bf2b585626e117e20509f42c84dd001915e4164",
+      "pdfPage": 119,
+      "printedPage": "117",
+      "unitPage": 105
+    },
+    "verification": {
+      "method": "reviewed_pdf_layout",
+      "profileId": "atlas-2025",
+      "reviewedAt": "2026-09-24"
+    },
+    "rows": [
+      {
+        "label": "Compressor Technique",
+        "role": "segment",
+        "revenue": 76513000000,
+        "evidence": {
+          "cellText": "76 513",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            495.26879999999994,
+            81.33679999999993,
+            588.1316999999999,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Vacuum Technique",
+        "role": "segment",
+        "revenue": 36700000000,
+        "evidence": {
+          "cellText": "36 700",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            588.1316999999999,
+            81.33679999999993,
+            660.3584,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Industrial Technique",
+        "role": "segment",
+        "revenue": 26313000000,
+        "evidence": {
+          "cellText": "26 313",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            660.3584,
+            81.33679999999993,
+            732.5850999999999,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Power Technique",
+        "role": "segment",
+        "revenue": 28817000000,
+        "evidence": {
+          "cellText": "28 817",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            732.5850999999999,
+            81.33679999999993,
+            804.8118,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Common Group functions",
+        "role": "corporate",
+        "revenue": null,
+        "evidence": {
+          "cellText": "–",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            804.8118,
+            81.33679999999993,
+            887.3566,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Eliminations",
+        "role": "eliminations",
+        "revenue": null,
+        "evidence": {
+          "cellText": "–",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            887.3566,
+            81.33679999999993,
+            949.2651999999999,
+            88.33679999999998
+          ]
+        }
+      },
+      {
+        "label": "Group",
+        "role": "group",
+        "revenue": 168343000000,
+        "evidence": {
+          "cellText": "168 343",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 119,
+          "bbox": [
+            949.2651999999999,
+            81.33679999999993,
+            990.5375999999999,
+            88.33679999999998
+          ]
+        }
+      }
+    ],
+    "status": "available",
+    "groupRevenue": 168343000000,
+    "segments": [
+      {
+        "label": "Compressor Technique",
+        "role": "segment",
+        "revenue": 76513000000,
+        "sharePct": 45.450657288987365
+      },
+      {
+        "label": "Vacuum Technique",
+        "role": "segment",
+        "revenue": 36700000000,
+        "sharePct": 21.800728275009952
+      },
+      {
+        "label": "Industrial Technique",
+        "role": "segment",
+        "revenue": 26313000000,
+        "sharePct": 15.630587550417896
+      },
+      {
+        "label": "Power Technique",
+        "role": "segment",
+        "revenue": 28817000000,
+        "sharePct": 17.11802688558479
+      }
+    ],
+    "reconciliation": {
+      "status": "exact",
+      "difference": 0,
+      "roundingTolerance": 2500000
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "symbol": "EPI-A.ST",
+    "company": "Epiroc",
+    "dimension": "business_area",
+    "basis": "external_customer_revenue",
+    "frequency": "annual",
+    "fiscalPeriod": "2025-FY",
+    "periodEnd": "2025-12-31",
+    "currency": "SEK",
+    "unitMultiplier": 1000000,
+    "source": {
+      "url": "https://reports.epirocgroup.com/media/ld4los1m/annual-and-sustainability-report-2025.pdf",
+      "pdfSha256": "0f6ac036c297f60a21cb21e6a37defaa480e4e9c5977582d714bb9ace5a6842c",
+      "pdfPage": 168,
+      "printedPage": "167",
+      "unitPage": 164
+    },
+    "verification": {
+      "method": "reviewed_pdf_layout",
+      "profileId": "epiroc-2025",
+      "reviewedAt": "2026-09-24"
+    },
+    "rows": [
+      {
+        "label": "Equipment & Service",
+        "role": "segment",
+        "revenue": 47121000000,
+        "evidence": {
+          "cellText": "47 121",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 168,
+          "bbox": [
+            249.8831832,
+            264.67360485955385,
+            315.3287788,
+            272.17660494536574
+          ]
+        }
+      },
+      {
+        "label": "Tools & Attachments",
+        "role": "segment",
+        "revenue": 14783000000,
+        "evidence": {
+          "cellText": "14 783",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 168,
+          "bbox": [
+            315.3287788,
+            264.67360485955385,
+            374.8247748,
+            272.17660494536574
+          ]
+        }
+      },
+      {
+        "label": "Common group functions",
+        "role": "corporate",
+        "revenue": 94000000,
+        "evidence": {
+          "cellText": "94",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 168,
+          "bbox": [
+            374.8247748,
+            264.67360485955385,
+            434.3207708,
+            272.17660494536574
+          ]
+        }
+      },
+      {
+        "label": "Eliminations",
+        "role": "eliminations",
+        "revenue": null,
+        "evidence": {
+          "cellText": "-",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 168,
+          "bbox": [
+            434.3207708,
+            264.67360485955385,
+            499.7663664,
+            272.17660494536574
+          ]
+        }
+      },
+      {
+        "label": "Group",
+        "role": "group",
+        "revenue": 61998000000,
+        "evidence": {
+          "cellText": "61 998",
+          "rowLabel": "Revenues from external customers",
+          "pdfPage": 168,
+          "bbox": [
+            499.7663664,
+            264.67360485955385,
+            559.2623624,
+            272.17660494536574
+          ]
+        }
+      }
+    ],
+    "status": "available",
+    "groupRevenue": 61998000000,
+    "segments": [
+      {
+        "label": "Equipment & Service",
+        "role": "segment",
+        "revenue": 47121000000,
+        "sharePct": 76.00406464724668
+      },
+      {
+        "label": "Tools & Attachments",
+        "role": "segment",
+        "revenue": 14783000000,
+        "sharePct": 23.844317558630923
+      },
+      {
+        "label": "Common group functions",
+        "role": "corporate",
+        "revenue": 94000000,
+        "sharePct": 0.15161779412239104
+      }
+    ],
+    "reconciliation": {
+      "status": "exact",
+      "difference": 0,
+      "roundingTolerance": 2000000
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "symbol": "ALFA.ST",
+    "company": "Alfa Laval",
+    "dimension": "business_area",
+    "basis": "external_customer_revenue",
+    "frequency": "annual",
+    "fiscalPeriod": "2024-FY",
+    "periodEnd": "2024-12-31",
+    "currency": "SEK",
+    "unitMultiplier": 1000000,
+    "source": {
+      "url": "https://www.alfalaval.com/globalassets/documents/investors/english/annual-reports/2024/alfa-laval-annual-report-2024.pdf",
+      "pdfSha256": "034d748603f351fe8a7405ccd4142f6aefc62927c2c528ff28b75f7980d7e10e",
+      "pdfPage": 60,
+      "printedPage": "118",
+      "unitPage": 60
+    },
+    "verification": {
+      "method": "reviewed_pdf_layout",
+      "profileId": "alfa-2024",
+      "reviewedAt": "2026-09-24"
+    },
+    "rows": [
+      {
+        "label": "Energy",
+        "role": "segment",
+        "revenue": 19330000000,
+        "evidence": {
+          "cellText": "19,330",
+          "rowLabel": "Energy",
+          "pdfPage": 60,
+          "bbox": [
+            464.3145,
+            139.07209999999986,
+            503.60265,
+            146.07209999999986
+          ]
+        }
+      },
+      {
+        "label": "Food & Water",
+        "role": "segment",
+        "revenue": 25742000000,
+        "evidence": {
+          "cellText": "25,742",
+          "rowLabel": "Food & Water",
+          "pdfPage": 60,
+          "bbox": [
+            464.3145,
+            149.5020999999998,
+            503.60265,
+            156.5020999999998
+          ]
+        }
+      },
+      {
+        "label": "Marine",
+        "role": "segment",
+        "revenue": 21881000000,
+        "evidence": {
+          "cellText": "21,881",
+          "rowLabel": "Marine",
+          "pdfPage": 60,
+          "bbox": [
+            464.3145,
+            159.93209999999976,
+            503.60265,
+            166.93209999999976
+          ]
+        }
+      },
+      {
+        "label": "Operations & Other",
+        "role": "segment",
+        "revenue": 0,
+        "evidence": {
+          "cellText": "0",
+          "rowLabel": "Operations & Other",
+          "pdfPage": 60,
+          "bbox": [
+            464.3145,
+            170.3620999999997,
+            503.60265,
+            177.3620999999997
+          ]
+        }
+      },
+      {
+        "label": "Total",
+        "role": "group",
+        "revenue": 66954000000,
+        "evidence": {
+          "cellText": "66,954",
+          "rowLabel": "Total",
+          "pdfPage": 60,
+          "bbox": [
+            464.3145,
+            180.85509999999965,
+            503.60265,
+            187.85509999999965
+          ]
+        }
+      }
+    ],
+    "status": "available",
+    "groupRevenue": 66954000000,
+    "segments": [
+      {
+        "label": "Energy",
+        "role": "segment",
+        "revenue": 19330000000,
+        "sharePct": 28.870567852555485
+      },
+      {
+        "label": "Food & Water",
+        "role": "segment",
+        "revenue": 25742000000,
+        "sharePct": 38.44729217074409
+      },
+      {
+        "label": "Marine",
+        "role": "segment",
+        "revenue": 21881000000,
+        "sharePct": 32.68064641395585
+      },
+      {
+        "label": "Operations & Other",
+        "role": "segment",
+        "revenue": 0,
+        "sharePct": 0
+      }
+    ],
+    "reconciliation": {
+      "status": "rounded",
+      "difference": -1000000,
+      "roundingTolerance": 2500000
+    }
+  }
+]

@@ -4,7 +4,7 @@ import { chronologicalNews, mergeFeed } from './newsroom.js';
 // it disappear when the corresponding preference filter is selected.
 export function personalMatchKinds(story) {
   return [story.viaWatchlist && 'companies',
-    (story.matchedTopic || story.viaIndustry) && 'topics',
+    story.matchedTopic && 'topics',
     story.matchedKeyword && 'keywords'].filter(Boolean);
 }
 

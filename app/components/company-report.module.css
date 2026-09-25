@@ -105,6 +105,7 @@
   font-size: var(--ui-text-sm);
 }
 .research :global(.company-tab-section), .research :global(.company-section) { margin: 0; min-height: 0; }
+.financialToolbar { justify-content: space-between; margin-bottom: var(--ui-space-3); }
 .research :global(.company-tab-section) > h2 { font: 500 var(--ui-text-lg) / 1.4 var(--ui-font); margin-bottom: var(--ui-space-4); }
 .research :global(.company-eyebrow) { display: none; }
 .research :global(h3), .research :global(.company-section h2) { font-family: var(--ui-font); font-size: var(--ui-text-lg); font-weight: 500; }
@@ -131,7 +132,6 @@
 .research :global(.company-financial-chart) { width: 100%; height: 320px; margin: var(--ui-space-3) 0; }
 .research :global(.company-financial-table) { font-size: var(--ui-text-sm); }
 .research :global(.company-financial-table th), .research :global(.company-financial-table td) { font-variant-numeric: tabular-nums; }
-.researchDetails { margin-top: var(--ui-space-6); }
 .financialSummary { margin-bottom: var(--ui-space-6); }
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-4); }
 .metrics > div { display: grid; gap: var(--ui-space-2); padding: var(--ui-space-4); background: var(--ui-surface); border-radius: var(--ui-radius-md); }

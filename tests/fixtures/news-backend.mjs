@@ -1,8 +1,12 @@
-// Local-only integration fixture. All companies, news and account data are fictional.
+// Local-only integration fixture. Fictional data except the three explicitly
+// reviewed segment-report previews, which have no invented quotes or history.
 import { createServer } from "node:http";
 import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
 import { sessionPreviewStories } from "../../app/designsystem/sessions/fixtures.js";
 import { previewStockChart } from "../../app/designsystem/sessions/chartFixtures.js";
+import { fictionalGeographicRevenue, fictionalSegmentRevenue, reviewedCompanyOverview } from './segment-revenue.mjs';
+import { fictionalProfileInsights } from './profile-insights.mjs';
+import { valuationFixture } from './valuation.mjs';
 
 const base = Date.now() - 2 * 3600_000;
 function genericStockChart(story, symbol, unavailable = false) {
@@ -235,8 +239,16 @@ const server = createServer(async (req, res) => {
     if (discoveryFailure) { res.writeHead(503, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Fiktivt anslutningsfel" })); return; }
     data = companyNews();
   }
-  else if (path === "/api/feed/company-profiles")
-    data = { items: [], missing: companies.map((c) => c.symbol) };
+  else if (path === "/api/feed/company-profiles") {
+    const requested = (url.searchParams.get('symbols') || '').split(',');
+    const supported = requested.filter(symbol => ['NORD.TEST', 'FREE.TEST'].includes(symbol));
+    // Fictional public profile for local research-page previews only.
+    data = { items: supported.map(symbol => ({ symbol, coveragePct: 83, version: 1,
+      ...(symbol === 'NORD.TEST' ? { insights: fictionalProfileInsights(symbol) } : {}),
+      axes: [['value', 3], ['growth', 5], ['past', 3], ['health', 5], ['insiders', null], ['dividend', 0]]
+        .map(([key, score]) => ({ key, score })),
+    })), missing: requested.filter(symbol => !supported.includes(symbol)) };
+  }
   else if (path === "/api/data") data = articles;
   else if (path === "/api/data/morning-letter")
     data = articles.filter((article) => !article.isEveningLetter);
@@ -285,7 +297,8 @@ const server = createServer(async (req, res) => {
       })),
     };
   else if (/^\/api\/feed\/company\/[^/]+\/overview$/.test(path)) {
-    const symbol = decodeURIComponent(path.split("/").at(-2));
+    const requestedSymbol = decodeURIComponent(path.split("/").at(-2));
+    const symbol = requestedSymbol === 'COVERAGE.TEST' ? 'NORD.TEST' : requestedSymbol;
     const company =
       companies.find((item) => item.symbol === symbol) || companies[0];
     if (["MISSING.TEST", "UNAVAILABLE.TEST"].includes(symbol)) {
@@ -331,27 +344,123 @@ const server = createServer(async (req, res) => {
       },
       news: symbol === "MANY.TEST" ? [...stories, { ...stories[0], id: "duplicate-release", primarySource: { ...stories[0].primarySource, language: "en" } }].map(story => ({ ...story, companies: [{ ...company, symbol }] })) : stories.filter((story) => story.companies[0].symbol === symbol),
       reports: [],
-      financials: symbol === "NORD.TEST" ? {
+      financials: symbol.startsWith('GEO-') || symbol.startsWith('SEGMENT-') || ['NORD.TEST', 'CASH-MISSING.TEST', 'CASH-MISMATCH.TEST', 'CASH-NEGATIVE.TEST', 'CASH-ZERO.TEST', 'MARGIN-MISSING.TEST', 'NET-DEBT.TEST', 'NET-MISSING.TEST', 'NET-MISMATCH.TEST', 'NET-ONLY.TEST', 'NET-ZERO.TEST', 'NET-INVALID.TEST', 'EARNINGS-SIGNED.TEST', 'EARNINGS-PARTIAL.TEST', 'EARNINGS-DISJOINT.TEST'].includes(symbol) ? {
+        symbol,
         currency: "SEK",
+        source: "issuer_report",
+        latestReport: { fiscalPeriod: "2025-Q3", status: "complete", publishedAt: "2025-10-20T06:00:00Z", attachmentUrl: "https://example.test/fictional-report.pdf" },
+        managementComment: { type: "ceo_statement", fiscalPeriod: "2025-Q3", publishedAt: "2025-10-20T06:00:00Z", pageStart: 2, pageEnd: 3,
+          text: "Detta är ett fiktivt VD-ord för UI-tester. Vi har växt på våra befintliga marknader.\n\nVi fortsätter investera i verksamheten och följer utvecklingen i efterfrågan.",
+          source: { url: "https://example.test/fictional-report.pdf" },
+          summary: { summary: "Fiktivt exempel: ledningen beskriver tillväxt och fortsatta investeringar.", outlook: ["Fiktivt exempel: fortsatt fokus på befintliga kunder."], changesAndRisks: ["Fiktivt exempel: efterfrågan är fortsatt osäker."], keyFigures: [{ label: "Unqualified figure", value: "999" }] },
+        },
         annual: [2023, 2024, 2025].map((year, index) => ({
           fiscalYear: year, fiscalPeriod: String(year), frequency: "annual", periodKey: `${year}-A`, periodEnd: `${year}-12-31`,
           revenue: 100_000_000 + index * 10_000_000, ebit: 10_000_000 + index * 2_000_000,
           netIncome: 8_000_000, ebitMarginPct: 10 + index, dilutedEps: 1.5, sharesOutstanding: 10_000_000,
+          source: "issuer_report", sourceUrl: "https://example.test/fictional-report.pdf", currency: "SEK",
+          operatingCashFlow: 8_000_000 + index * 1_000_000, freeCashFlow: index === 1 ? null : 4_000_000,
+          capitalExpenditure: -(4_000_000 + index * 1_000_000),
+          cash: 20_000_000, totalDebt: 12_000_000 - index * 1_000_000,
         })),
-        quarterly: [1, 2, 3].map((quarter) => ({
-          fiscalYear: 2025, fiscalPeriod: `2025-Q${quarter}`, frequency: "quarterly", periodKey: `2025-Q${quarter}`, periodEnd: `2025-0${quarter * 3}-28`,
-          revenue: 20_000_000 + quarter * 1_000_000, ebit: 2_000_000 + quarter * 200_000,
-          ebitMarginPct: 10 + quarter, dilutedEps: 0.3, sharesOutstanding: 10_000_000,
-        })),
+        quarterly: Array.from({ length: 7 }, (_, index) => {
+          const year = 2024 + Math.floor(index / 4), quarter = index % 4 + 1;
+          return {
+            fiscalYear: year, fiscalPeriod: `${year}-Q${quarter}`, frequency: "quarterly", periodKey: `${year}-Q${quarter}`, periodEnd: `${year}-${String(quarter * 3).padStart(2, '0')}-28`,
+            revenue: 20_000_000 + index * 1_000_000, ebit: 2_000_000 + index * 200_000,
+            netIncome: symbol === 'MARGIN-MISSING.TEST' || index === 3 ? null : 1_000_000 + index * 100_000,
+            dilutedEps: 0.3, sharesOutstanding: 10_000_000,
+            source: "issuer_report", sourceUrl: "https://example.test/fictional-report.pdf", currency: "SEK",
+            operatingCashFlow: 2_000_000 + index * 100_000, freeCashFlow: index === 5 ? null : 800_000 + index * 80_000,
+            capitalExpenditure: -(1_200_000 + index * 20_000),
+            cash: 18_000_000 + index * 300_000, totalDebt: 12_000_000 - index * 200_000,
+          };
+        }),
+        ttm: [{ fiscalYear: 2025, fiscalPeriod: '2025-Q3-TTM', periodKey: '2025-Q3-TTM', frequency: 'ttm', periodEnd: '2025-09-28', currency: 'SEK', source: 'omxsum-derived', revenue: 98_000_000, ebit: 11_600_000 }],
       } : null,
       access: { plus: symbol !== "FREE.TEST" },
     };
+    const cashVariant = {
+      'CASH-MISSING.TEST': { capitalExpenditure: null },
+      'CASH-MISMATCH.TEST': { freeCashFlow: 3_000_000 },
+      'CASH-NEGATIVE.TEST': { operatingCashFlow: 2_000_000, capitalExpenditure: -3_000_000, freeCashFlow: -1_000_000 },
+      'CASH-ZERO.TEST': { operatingCashFlow: 0, capitalExpenditure: 0, freeCashFlow: 0 },
+    }[symbol];
+    if (cashVariant) Object.assign(data.financials.quarterly.at(-1), cashVariant);
+    const debtVariant = {
+      'NET-DEBT.TEST': { totalDebt: 30_000_000, cash: 5_000_000, netDebt: 25_000_000 },
+      'NET-MISSING.TEST': { cash: null, netDebt: null },
+      'NET-MISMATCH.TEST': { totalDebt: 30_000_000, cash: 5_000_000, netDebt: 27_000_000 },
+      'NET-ZERO.TEST': { totalDebt: 0, cash: 0, netDebt: 0 },
+      'NET-INVALID.TEST': { totalDebt: 30_000_000, cash: -5_000_000, netDebt: 25_000_000 },
+    }[symbol];
+    if (debtVariant) Object.assign(data.financials.quarterly.at(-1), debtVariant);
+    if (symbol === 'NET-DEBT.TEST') data.financials.quarterly[3].cash = null;
+    if (symbol === 'NET-ZERO.TEST') data.financials.quarterly.forEach(period => Object.assign(period, { totalDebt: 0, cash: 0, netDebt: 0 }));
+    if (symbol === 'NET-ONLY.TEST') data.financials.quarterly.forEach((period, index) => Object.assign(period, { totalDebt: null, cash: null, netDebt: (2 + index) * 1_000_000 }));
+    if (symbol === 'EARNINGS-SIGNED.TEST') {
+      Object.assign(data.financials.quarterly[4], { netIncome: 0, operatingCashFlow: 0 });
+      Object.assign(data.financials.quarterly[5], { netIncome: -1_000_000, operatingCashFlow: -2_000_000 });
+      data.financials.quarterly.at(-1).netIncome = -1_600_000;
+    }
+    if (symbol === 'EARNINGS-PARTIAL.TEST') data.financials.quarterly.at(-1).operatingCashFlow = null;
+    if (symbol === 'EARNINGS-DISJOINT.TEST') data.financials.quarterly.forEach((period, index) => {
+      period.netIncome = index % 2 === 0 ? 1_000_000 : null;
+      period.operatingCashFlow = index % 2 === 1 ? 2_000_000 : null;
+    });
     if (["NORDIC.TEST", "NORDIC-EMPTY.TEST"].includes(symbol)) {
       data.summary.profile.tradingCurrency = "NOK";
       data.summary.priceCapabilities = { quote: { status: "supported" }, minute: { status: "supported" }, daily: { status: "supported" } };
       data.summary.quote = { ...data.summary.quote, quoteTime: base, source: "yahoo-chart-snapshot", updateMode: "snapshot" };
       data.chart.sourceName = "Yahoo Finance";
     }
+    if (symbol === 'NORD.TEST' || symbol.startsWith('SEGMENT-')) {
+      data.financials.segmentRevenue = fictionalSegmentRevenue(symbol);
+      if (symbol === 'SEGMENT-WRONG.TEST') data.financials.segmentRevenue.symbol = 'WRONG.TEST';
+      if (symbol === 'SEGMENT-INVALID.TEST') data.financials.segmentRevenue.rows.pop();
+      if (symbol === 'SEGMENT-PARENT.TEST') data.financials.symbol = 'WRONG.TEST';
+      if (symbol === 'SEGMENT-ONLY.TEST') Object.assign(data.financials, { annual: [], quarterly: [], ttm: [] });
+      if (symbol === 'SEGMENT-UNAVAILABLE.TEST') data.availability = { financials: 'unavailable' };
+      if (symbol === 'SEGMENT-FREE.TEST') {
+        data.access.plus = false;
+        data.financials = null;
+      }
+    }
+    if (symbol === 'NORD.TEST' || symbol.startsWith('GEO-')) {
+      data.financials.geographicRevenue = fictionalGeographicRevenue(symbol);
+      if (symbol === 'GEO-WRONG.TEST') data.financials.geographicRevenue.symbol = 'WRONG.TEST';
+      if (symbol === 'GEO-INVALID.TEST') data.financials.geographicRevenue.rows.pop();
+      if (symbol === 'GEO-ONLY.TEST') Object.assign(data.financials, { annual: [], quarterly: [], ttm: [] });
+      if (symbol === 'GEO-UNAVAILABLE.TEST') data.availability = { financials: 'unavailable' };
+      if (symbol === 'GEO-FREE.TEST') {
+        data.access.plus = false;
+        data.financials = null;
+      }
+    }
+    if (requestedSymbol === 'COVERAGE.TEST') {
+      data.symbol = data.summary.symbol = data.financials.symbol = requestedSymbol;
+      data.financials.segmentRevenue = data.financials.geographicRevenue = null;
+      data.financials.latestReport = { fiscalPeriod: '2026-Q2', status: 'no_section', publishedAt: '2026-07-15', attachmentUrl: 'https://example.test/new-report.pdf' };
+      data.financials.managementComment.selection = 'latest_available';
+      for (const p of [...data.financials.quarterly, ...data.financials.annual]) {
+        Object.assign(p, { source: 'yahoo', sourceUrl: null, totalDebt: 30e6, cash: 5e6, netDebt: 27e6,
+          reportedNetDebt: 27e6, cashDefinition: 'cash_and_short_term_investments',
+          netDebtCalculation: { definition: 'debt_minus_cash', totalDebt: 30e6, cash: 5e6, netDebt: 25e6, cashDefinition: 'cash_and_short_term_investments', debtDefinition: 'provider_total_debt' },
+          operatingCashFlow: 10e6, capitalExpenditure: -3e6, capitalExpenditureSourceField: 'CapitalExpenditureReported', freeCashFlow: 10e6, reportedFreeCashFlow: 10e6,
+          cashFlowCalculation: { definition: 'operating_minus_capex', operatingCashFlow: 10e6, capitalExpenditure: -3e6, freeCashFlow: 7e6 } });
+      }
+    }
+    if (symbol.startsWith('VALUE')) {
+      const fixture = valuationFixture(symbol);
+      data.financials = fixture.financials;
+      data.estimates = fixture.estimates;
+      data.summary.profile.name = 'Fiktiva Industribolaget';
+      data.availability = { estimates: 'available', financials: 'available' };
+      if (symbol === 'VALUE-FAIL.TEST') { data.estimates = null; data.availability.estimates = 'unavailable'; }
+    }
+    data = reviewedCompanyOverview(symbol) ?? data;
+  } else if (/^\/api\/feed\/company\/[^/]+\/valuation$/.test(path)) {
+    data = valuationFixture(decodeURIComponent(path.split('/').at(-2))).valuation;
   } else if (["/api/feed/company/NORDIC.TEST/intraday", "/api/feed/company/NORDIC-EMPTY.TEST/intraday"].includes(path)) {
     const empty = path.includes("NORDIC-EMPTY");
     data = { symbol: empty ? "NORDIC-EMPTY.TEST" : "NORDIC.TEST", updateMode: "snapshot", timezone: "Europe/Oslo",
@@ -459,6 +568,7 @@ const server = createServer(async (req, res) => {
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
 });
-server.listen(8100, "127.0.0.1", () =>
-  console.log("Fictional newsroom fixture on http://127.0.0.1:8100"),
+const fixturePort = Number(process.env.NEWS_FIXTURE_PORT || 8100);
+server.listen(fixturePort, "127.0.0.1", () =>
+  console.log(`Fictional newsroom fixture on http://127.0.0.1:${fixturePort}`),
 );

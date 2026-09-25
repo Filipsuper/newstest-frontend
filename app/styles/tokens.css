@@ -49,6 +49,13 @@
   --ui-on-action: #ffffff;
   --ui-accent: #89610e;
   --ui-accent-soft: #f5ebcb;
+  /* Categorical charts: order/identity, never positive or negative performance. */
+  --ui-chart-1: var(--ui-accent);
+  --ui-chart-2: #527b8c;
+  --ui-chart-3: #86719b;
+  --ui-chart-4: #897a5b;
+  --ui-chart-5: #586679;
+  --ui-chart-6: #837b73;
   --ui-positive: #176e48;
   --ui-positive-soft: #e3f1e8;
   --ui-negative: #ae3634;
@@ -73,6 +80,12 @@
   --ui-on-action: #252820;
   --ui-accent: #ebc467;
   --ui-accent-soft: #383225;
+  --ui-chart-1: var(--ui-accent);
+  --ui-chart-2: #85afbf;
+  --ui-chart-3: #b29bc7;
+  --ui-chart-4: #c8b795;
+  --ui-chart-5: #98a7bd;
+  --ui-chart-6: #b2aba3;
   --ui-positive: #82cea3;
   --ui-positive-soft: #25382c;
   --ui-negative: #ef9990;
