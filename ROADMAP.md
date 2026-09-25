@@ -135,10 +135,12 @@ Unchecked items below remain follow-ups, not shipped promises.
   Keep coverage/missing axes visible and exact
   scores in methodology. Fictional preview excerpts only; scoring/access unchanged.
 
-Before the company-signals backend, review the local `/aktie` research pass.
-Implementation is on `codex/stock-page-polish`, not deployed. The section plan,
-acceptance criteria and review entry points are in
-[company-page UX v2](docs/company-page-ux-v2.md).
+The `/aktie` research pass was reviewed on eight real companies and deployed
+as-is on 25 September at the user's request. Before the company-signals backend,
+address the review findings: company-specific news reactions, large chart labels,
+short-history freshness, bank/Nordic coverage states and dated management text.
+The [release record](docs/stock-page-polish-release-2026-09-25.md) preserves these
+open issues; the section plan is in [company-page UX v2](docs/company-page-ux-v2.md).
 
 1. **Värdering — first delivery shipped:** shared metric controls,
    historical line/band beside zero-based reported/estimate bars, source labels,
@@ -148,13 +150,13 @@ acceptance criteria and review entry points are in
    denominator, not Q×4. The later scoped recovery qualified two models.
    Remaining: broader source-history coverage, annual horizons/EPS and immutable revisions.
    See [valuation implementation and rollout](docs/company-valuation-ui.md).
-2. **VD-ord — local pass implemented:** icon-led, readable outlook/change lists;
+2. **VD-ord — UI pass shipped:** icon-led, readable outlook/change lists;
    keep AI interpretation and original text distinct. Period comparisons wait for data.
-3. **Estimat — local pass implemented:** period/source-led actual-versus-estimate charts where qualified
+3. **Estimat — UI pass shipped:** period/source-led actual-versus-estimate charts where qualified
    data exists, with one concise unavailable state instead of a grid of missing values.
-4. **Insyn & ägare / Blankning — local pass implemented:** buy/sell and capital-share bars, independent disclosed-short history, shared chart controls,
+4. **Insyn & ägare / Blankning — UI pass shipped:** buy/sell and capital-share bars, independent disclosed-short history, shared chart controls,
    readable lists and mobile behavior; unsupported registry coverage is not zero.
-5. **Kalender and page continuity — local pass implemented:** upcoming events first, optional month view,
+5. **Kalender and page continuity — UI pass shipped:** upcoming events first, optional month view,
    then overview/news hierarchy, anchor navigation and long-document mobile QA.
 
 - [ ] Build deterministic, source-backed company signals in Stonks after the UI

@@ -11,6 +11,15 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## Company research section polish — released 25 September, 16:03 UTC
+
+Frontend `629c13c`, image `b8fbe08c0731`. The user requested deployment as-is
+after an eight-company review. The continuous company page, management reading
+view, estimates, ownership, short-interest and calendar UI are live. Backend,
+collector and database services were unchanged. Review findings remain open;
+live browser checks also recorded recoverable hydration warnings. See the
+[release record](stock-page-polish-release-2026-09-25.md) for scope and verification.
+
 ## Coherent Bevakning and company research — released 25 September
 
 Frontend `b501b84`, backend `29d8235`, Stonks `77b7a7f`. Deployed at 08:53 UTC.

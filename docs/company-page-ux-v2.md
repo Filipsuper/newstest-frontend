@@ -1,6 +1,9 @@
 # Company research — section-by-section pass
 
-25 September 2026. Local implementation on `codex/stock-page-polish`, based on the deployed company-research release. Backend coverage work has been deployed separately. This UI pass is not a new scoring or extraction system.
+25 September 2026. Implemented on `codex/stock-page-polish` and deployed as-is at
+16:03 UTC after the real-company review. See the [release record](stock-page-polish-release-2026-09-25.md)
+for verification and deliberately deferred findings. Backend coverage work was
+deployed separately. This UI pass is not a new scoring or extraction system.
 
 ## Plan
 
@@ -32,7 +35,7 @@
 
 Qualified report-extracted risks/opportunities, segment/geography delivery, richer consensus coverage, Nordic ownership/short-register support and stronger report extraction. Empty states must not masquerade as absence of economic risk.
 
-## Delivered locally
+## Delivered
 
 All rows above have been addressed. The already-reviewed financial/profile/valuation
 visuals are retained; the remaining research sections now follow their component,
@@ -71,11 +74,13 @@ Run `node tests/fixtures/news-backend.mjs` on port 8100, and the frontend with
 `NEXT_PUBLIC_API_URL=http://127.0.0.1:8100/api` on port 3111. Use Node 22.
 For an optimized preview, build with those values before `npm run start`.
 **Rebuild with production configuration before any future deployment; do not
-ship the fixture-configured local build.** The new UI is not pushed or deployed.
+ship the fixture-configured local build.** The public release used a separate
+clean production image, not this local preview build.
 
 ## Remaining product work
 
-1. Review this version against a few real companies before public rollout;
+1. Address the real-company review findings retained in the release record.
+   The review covered eight companies, but is not an issuer-report numerical audit;
    fixture tests demonstrate UI behavior, not provider coverage or extraction quality.
 2. Finish the source-backed signals/report-extractor contracts already on the
    roadmap; only then expand report-derived risks, opportunities and key markets.
@@ -93,8 +98,8 @@ ship the fixture-configured local build.** The new UI is not pushed or deployed.
   automated WCAG A/AA checks and manual screenshot review. Keyboard disclosures,
   chart-query-preserving next-section links, retry, wrong-symbol and unsupported
   registry cases covered. This is not a claim of full assistive-technology audit.
-- Production build and `git diff --check` passed. No production services or
-  database records were changed by this UI pass.
+- Production build and `git diff --check` passed. The subsequent release replaced
+  only the frontend container; no backend services or database records changed.
 - The running preview was also smoke-tested without API-response interception:
   ownership, short history and forecast data loaded from the fixture service;
   no browser runtime errors or failed local requests were observed.
