@@ -11,6 +11,7 @@ import { Label } from './ui/Label';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { Heading, Inline, Stack, Surface, Text } from './ui/layout';
 import styles from './company-valuation.module.css';
+import { FiscalPeriodTick } from './ResearchPanelParts';
 
 const number = (value, digits = 1) => finite(value) ? value.toLocaleString('sv-SE', { maximumFractionDigits: digits }) : '–';
 const multipleValue = value => finite(value) ? `${number(value)}×` : '–';
@@ -82,7 +83,7 @@ function FinancialChart({ model, patternId }) {
           <defs><pattern id={patternId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="6" height="6" fill="var(--ui-accent-soft)" /><line x1="0" x2="0" y1="0" y2="6" stroke="var(--ui-chart-1)" strokeWidth="2" />
           </pattern></defs>
-          <XAxis dataKey="label" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11 }} tickFormatter={value => model.frequency === 'quarterly' ? value.replace(' 20', ' ’') : value} />
+          <XAxis dataKey="label" axisLine={false} tickLine={false} interval={0} height={38} tick={<FiscalPeriodTick />} />
           <YAxis hide domain={[minimum => Math.min(0, minimum * 1.12), maximum => Math.max(0, maximum * 1.12)]} />
           <ReferenceLine y={0} stroke="var(--ui-border)" />
           <Tooltip cursor={false} content={({ active, payload }) => active && payload?.length ? <div className={styles.tooltip}>

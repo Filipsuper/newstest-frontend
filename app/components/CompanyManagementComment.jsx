@@ -1,6 +1,6 @@
 "use client";
 
-import { FiExternalLink } from 'react-icons/fi';
+import { FiExternalLink, FiCompass, FiActivity } from 'react-icons/fi';
 import { Button } from './ui/Button';
 import { Label } from './ui/Label';
 import { Heading, Inline, Stack, Text } from './ui/layout';
@@ -37,8 +37,8 @@ export default function CompanyManagementComment({ comment, latestReport }) {
       {(outlook.length > 0 || changes.length > 0) && <div className={styles.commentColumns}>
         {[["Utsikter", outlook], ["Förändringar och risker", changes]].filter(([, entries]) => entries.length).map(([title, entries]) =>
           <Stack gap={3} key={title}>
-            <Heading as="h3" size="subsection">{title}</Heading>
-            <ul className={styles.bullets}>{entries.map((entry, index) => <li key={index}>{entry}</li>)}</ul>
+            <Heading as="h3" size="subsection" className={styles.commentHeading}>{title === 'Utsikter' ? <FiCompass aria-hidden="true" /> : <FiActivity aria-hidden="true" />}{title}</Heading>
+            <ul className={styles.commentList}>{entries.map((entry, index) => <li key={index}><span className={styles.commentNumber} aria-hidden="true">{index + 1}</span><Text>{entry}</Text></li>)}</ul>
           </Stack>)}
       </div>}
     </> : paragraphs.length ? <Text size="sm" tone="secondary">AI-sammanfattning saknas. Läs ledningens egna ord nedan.</Text> : <Text size="sm" tone="secondary">Originaltexten är inte tillgänglig här.</Text>}

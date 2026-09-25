@@ -724,6 +724,37 @@ desktop density or abbreviated interaction model.
   New report-derived markets/risks and period comparisons need qualified extractor
   contracts; they must not be generated ad hoc in the frontend.
 
+### Company research continuity — local v2 pass
+
+- Keep grouped desktop contents compact and reachable on short displays. Mobile
+  still uses the contents sheet, not an overflowing horizontal tab row. Quiet
+  next-section links preserve the chart query parameters and focus the destination.
+- The flat quote header links to the next supplied report date. Old quotes show
+  their actual date instead of an unconditional Idag. Business description and
+  identity facts belong in Bolagsprofil, not the news footer.
+- Company news filters operate on the loaded, event-deduplicated selection:
+  Alla nyheter / Rapporter. State that count's scope; it is not a complete-history
+  promise or a new importance algorithm.
+- Estimat uses the same qualified consensus-first, model-fallback adapter as
+  Värdering. Revenue, EBIT and basis-qualified EPS show zero-based actual/forecast
+  bars, with stripes and an E suffix for forecasts. Each panel keeps its own
+  period, currency and source; do not replace losses or annualise quarterly data.
+  No qualifying forecast means a concise empty state, not three empty charts.
+- Insyn & ägare leads with 90/365-day SEK buy/sell summaries and true 0–100 %
+  capital-share bars. Never substitute voting share in a capital chart or invent
+  an Other slice. Show six recent trades, then explicit batches; retain source
+  links, original instrument/currency and available person/owner tables in detail.
+- Blankning separates the FI aggregate from named positions. The step chart uses
+  disclosed history directly, even without price bars. Keep dates visible and do
+  not subtract differently dated series to infer undisclosed positions. Holder
+  bars compare disclosed positions, not fractions of all market shorting.
+  Unsupported markets, absent observations and transport failures are different.
+- Kalender leads with an agenda and date tiles. A month grid is optional detail;
+  no empty full-size calendar when upcoming dates are absent. Preserve fiscal
+  period and event type; supplied dates are not a guarantee or an alert opt-in.
+- Registry requests remain deferred, cancelable and time-bounded, with retry and
+  exact-symbol response checks. Do not fetch private data for free readers.
+
 ## Data and charts
 
 - Historical daily data remains the company-page default. News stock charts may

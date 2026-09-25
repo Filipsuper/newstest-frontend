@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiChevronDown, FiChevronLeft, FiLock } from "react-icons/fi";
@@ -14,7 +14,8 @@ import styles from "./company-report.module.css";
 const ReportContext = createContext(null);
 
 export function ReportSection({ id, title, children, deferred = false }) {
-  const { target } = useContext(ReportContext);
+  const { target, navigate } = useContext(ReportContext);
+  const next = COMPANY_SECTIONS[COMPANY_SECTIONS.findIndex(section => section.id === id) + 1];
   const node = useRef(null);
   const [ready, setReady] = useState(!deferred);
   useEffect(() => {
@@ -33,6 +34,7 @@ export function ReportSection({ id, title, children, deferred = false }) {
     <section ref={node} id={id} className={styles.section} data-report-section aria-labelledby={`${id}-heading`}>
       {title && <Heading id={`${id}-heading`} tabIndex={-1} className={styles.sectionHeading}>{title}</Heading>}
       {ready ? children : <div className={styles.deferred} role="group" aria-busy="true" aria-label={`Hämtar ${title}`}><Skeleton /><Skeleton /><Skeleton /></div>}
+      {ready && next && id !== 'overview' && <a className={styles.nextSection} href={`#${next.id}`} onClick={event => navigate(event, next.id)}>Nästa: {next.label} <span aria-hidden="true">↓</span></a>}
     </section>
   );
 }
@@ -148,9 +150,11 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
   };
 
   const links = (label) => <nav className={styles.contents} aria-label={label}>
-    {COMPANY_SECTIONS.map((section) => <a key={section.id} href={`#${section.id}`} aria-current={active === section.id ? "location" : undefined} onClick={(event) => navigate(event, section.id)}>
+    {COMPANY_SECTIONS.map((section) => <Fragment key={section.id}>
+      {({ overview: 'Bolaget idag', profile: 'Verksamhet & resultat', insiders: 'Ägare & händelser' })[section.id] && <span className={styles.contentsGroup}>{({ overview: 'Bolaget idag', profile: 'Verksamhet & resultat', insiders: 'Ägare & händelser' })[section.id]}</span>}
+      <a href={`#${section.id}`} aria-current={active === section.id ? "location" : undefined} onClick={(event) => navigate(event, section.id)}>
       <span>{section.label}</span>{!hasPlus && section.plus && <FiLock aria-label="Plus" />}
-    </a>)}
+    </a></Fragment>)}
   </nav>;
 
   const context = <div className={styles.context} data-nosnippet="">
@@ -161,7 +165,7 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
     </div>
   </div>;
 
-  return <ReportContext.Provider value={{ target }}>
+  return <ReportContext.Provider value={{ target, navigate }}>
     <Container as="main" className={styles.report} ref={main}>
       <div className={styles.mobileBar}>
         {context}

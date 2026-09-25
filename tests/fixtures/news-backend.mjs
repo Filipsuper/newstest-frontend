@@ -7,6 +7,7 @@ import { previewStockChart } from "../../app/designsystem/sessions/chartFixtures
 import { fictionalGeographicRevenue, fictionalSegmentRevenue, reviewedCompanyOverview } from './segment-revenue.mjs';
 import { fictionalProfileInsights } from './profile-insights.mjs';
 import { valuationFixture } from './valuation.mjs';
+import { researchFixtures } from './company-research.mjs';
 
 const base = Date.now() - 2 * 3600_000;
 function genericStockChart(story, symbol, unavailable = false) {
@@ -322,7 +323,7 @@ const server = createServer(async (req, res) => {
           changePct: company.changePct,
           quoteTime: new Date(base).toISOString(),
         },
-        calendar: {},
+        calendar: researchFixtures(symbol).calendar,
         financialHighlights: symbol === "FREE.TEST" ? {
           currency: "SEK", source: "Fiktivt testunderlag", annual: { fiscalPeriod: "2025", frequency: "annual", revenue: 120_000_000, ebit: 14_000_000 },
         } : null,
@@ -344,6 +345,9 @@ const server = createServer(async (req, res) => {
       },
       news: symbol === "MANY.TEST" ? [...stories, { ...stories[0], id: "duplicate-release", primarySource: { ...stories[0].primarySource, language: "en" } }].map(story => ({ ...story, companies: [{ ...company, symbol }] })) : stories.filter((story) => story.companies[0].symbol === symbol),
       reports: [],
+      // A successful empty response differs from unavailable upstream data.
+      estimates: symbol === 'FREE.TEST' ? null : { symbol, snapshots: [], models: [] },
+      availability: { estimates: symbol === 'FREE.TEST' ? 'locked' : 'available' },
       financials: symbol.startsWith('GEO-') || symbol.startsWith('SEGMENT-') || ['NORD.TEST', 'CASH-MISSING.TEST', 'CASH-MISMATCH.TEST', 'CASH-NEGATIVE.TEST', 'CASH-ZERO.TEST', 'MARGIN-MISSING.TEST', 'NET-DEBT.TEST', 'NET-MISSING.TEST', 'NET-MISMATCH.TEST', 'NET-ONLY.TEST', 'NET-ZERO.TEST', 'NET-INVALID.TEST', 'EARNINGS-SIGNED.TEST', 'EARNINGS-PARTIAL.TEST', 'EARNINGS-DISJOINT.TEST'].includes(symbol) ? {
         symbol,
         currency: "SEK",
@@ -459,6 +463,9 @@ const server = createServer(async (req, res) => {
       if (symbol === 'VALUE-FAIL.TEST') { data.estimates = null; data.availability.estimates = 'unavailable'; }
     }
     data = reviewedCompanyOverview(symbol) ?? data;
+  } else if (/^\/api\/feed\/company\/[^/]+\/(insiders|shorts)$/.test(path)) {
+    const symbol = decodeURIComponent(path.split('/').at(-2));
+    data = researchFixtures(symbol)[path.split('/').at(-1)];
   } else if (/^\/api\/feed\/company\/[^/]+\/valuation$/.test(path)) {
     data = valuationFixture(decodeURIComponent(path.split('/').at(-2))).valuation;
   } else if (["/api/feed/company/NORDIC.TEST/intraday", "/api/feed/company/NORDIC-EMPTY.TEST/intraday"].includes(path)) {

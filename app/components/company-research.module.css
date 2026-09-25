@@ -28,6 +28,11 @@
 .debtDetails dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .cashSource { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); display: inline-flex; align-items: center; min-height: var(--ui-control-md); text-decoration: underline; }
 .commentColumns { padding: var(--ui-space-6); background: var(--ui-surface); border-radius: var(--ui-radius-md); }
+.commentHeading { display: flex; align-items: center; gap: var(--ui-space-2); }
+.commentHeading svg { width: 20px; height: 20px; color: var(--ui-text-secondary); }
+.commentList { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ui-space-4); }
+.commentList li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--ui-space-2); align-items: start; }
+.commentNumber { display: grid; place-items: center; width: 24px; height: 24px; background: var(--ui-inset); border-radius: var(--ui-radius-sm); color: var(--ui-text-secondary); font-size: var(--ui-text-xs); font-variant-numeric: tabular-nums; }
 .bullets { display: grid; gap: var(--ui-space-3); padding-left: var(--ui-space-4); margin: 0; list-style: disc; font-size: var(--ui-text-sm); line-height: var(--ui-leading-body); }
 .original { min-width: 0; }
 .original > summary { cursor: pointer; min-height: var(--ui-control-md); align-content: center; font-size: var(--ui-text-sm); font-weight: 500; }

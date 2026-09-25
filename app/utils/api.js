@@ -228,10 +228,10 @@ export async function fetchValuation(symbol, { signal } = {}) {
 
 // The short register is Plus-only and updates on FI's twice-daily cadence,
 // so the tab loads it on demand.
-export async function fetchShorts(symbol) {
+export async function fetchShorts(symbol, { signal } = {}) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/shorts`,
-        { cache: "no-store", credentials: "include" },
+        { cache: "no-store", credentials: "include", signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12_000)]) : AbortSignal.timeout(12_000) },
     );
     const body = await response.json();
     if (!response.ok || body?.error) {
@@ -245,10 +245,10 @@ export async function fetchShorts(symbol) {
 
 // Insider transactions are Plus-only and update on FI's daily cadence, so the
 // tab loads them on demand.
-export async function fetchInsiders(symbol) {
+export async function fetchInsiders(symbol, { signal } = {}) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/insiders`,
-        { cache: "no-store", credentials: "include" },
+        { cache: "no-store", credentials: "include", signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12_000)]) : AbortSignal.timeout(12_000) },
     );
     const body = await response.json();
     if (!response.ok || body?.error) {

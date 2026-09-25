@@ -4,9 +4,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-    Area,
     Bar,
-    CartesianGrid,
     Cell,
     ComposedChart,
     Line,
@@ -17,7 +15,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { FiChevronLeft, FiChevronRight, FiExternalLink, FiInfo, FiShare2, FiSliders } from "react-icons/fi";
+import { FiCalendar, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
 import { FaLock, FaScaleBalanced } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
 import ShareStockModal from "../modals/ShareStockModal";
@@ -36,10 +34,15 @@ import CompanyManagementComment from "./CompanyManagementComment";
 import CompanyFinancialOverview from "./CompanyFinancialOverview";
 import CompanyResearchProfile from "./CompanyResearchProfile";
 import CompanyValuation from "./CompanyValuation";
+import CompanyEstimates from "./CompanyEstimates";
+import CompanyOwnership from "./CompanyOwnership";
+import CompanyShortInterest from "./CompanyShortInterest";
+import CompanyCalendar from "./CompanyCalendar";
 import { financialPeriodLabel, researchPeriods } from "../utils/companyResearch";
 import { geographicRevenueForCompany, segmentRevenueForCompany } from "../utils/segmentRevenue";
+import { upcomingCompanyEvents } from "../utils/companyResearchViews";
 import styles from "./company-report.module.css";
-import { fetchCompanyIntraday, fetchInsiders, fetchShorts } from "../utils/api";
+import { fetchCompanyIntraday } from "../utils/api";
 import { companyPriceCurrency, pollCompanySnapshots } from "../utils/companyPriceUpdates";
 import { COMPANY_CHART_RANGES as RANGES, companyChartRange, companyRangeDisabled, companyIntradayRows, companyIntradayTick } from "../utils/companyChartRanges";
 import { tagLabel } from "../utils/newsTags";
@@ -119,13 +122,6 @@ const periodLabel = (period) => {
 // Matches the slug scheme the article route expects: spaces become hyphens,
 // existing hyphens become underscores.
 const articleSlug = (title = "") => title.replaceAll("-", "_").replaceAll(" ", "-");
-
-const compactAmount = new Intl.NumberFormat("sv-SE", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-});
-
-const storyUrl = (story) => story.primarySource?.url ?? story.sources?.find((source) => source.url)?.url ?? null;
 
 // Chart event markers -------------------------------------------------------
 // A story only earns a mark on the chart if the wire ranked it material; the
@@ -629,11 +625,14 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     const firstIntradayPoint = intradayData.find((row) => row.session === "current");
     const lastIntradayPoint = intradayData.findLast((row) => row.currentPrice != null);
     const profile = summary.profile;
+    const nextReport = upcomingCompanyEvents(summary.calendar).find(event => event.type === 'earnings');
     const quote = useMemo(() => {
         if (snapshotOnly && intraday) return intraday.quote ? { ...summary.quote, ...intraday.quote } : null;
         return isIntraday && intraday?.quote ? { ...summary.quote, ...intraday.quote } : summary.quote;
     }, [isIntraday, snapshotOnly, intraday, summary.quote]);
     const priceCurrency = companyPriceCurrency(profile, quote);
+    const quoteTime = quote?.quoteTime ?? quote?.dataAsOf;
+    const quoteDayLabel = quoteTime ? (stockholmDay(quoteTime) === stockholmDay(Date.now()) ? 'Idag' : svDate(quoteTime, true)) : 'Senaste kurs';
     useEffect(() => { onQuoteChange?.(quote); }, [quote, onQuoteChange]);
     const loadingIntraday = isIntraday && !data.length;
     const placeholderPrice = Number(quote?.price ?? dailyData.at(-1)?.close ?? 1);
@@ -666,18 +665,17 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                     </div>
                     <span data-nosnippet=""><FollowCompanyButton symbol={symbol} name={profile.name} /></span>
                 </div>
-                <Text size="sm" tone="secondary">Följ nyheter om {companyName}, aktiens kursreaktioner och kommande rapporter.</Text>
                 <div className={styles.quote} data-nosnippet="">
                     <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${priceCurrency === "SEK" ? "kr" : priceCurrency}`}</strong>
                     <ChangeBadge value={quote?.changePct} label="Dagsförändring" />
-                    <span className={styles.quoteMeta}>{snapshotOnly && quote?.quoteTime ? svDate(quote.quoteTime) : "Idag"}{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${priceCurrency}`}</span>
+                    <span className={styles.quoteMeta}>{quoteDayLabel}{quote?.change != null && ` · ${quote.change > 0 ? "+" : ""}${number(quote.change, 2)} ${priceCurrency}`}</span>
                 </div>
-                <Text as="span" size="xs" tone="secondary" data-nosnippet="">
+                <Inline className={styles.quoteContext}><Text as="span" size="xs" tone="secondary" data-nosnippet="">
                     {quote?.quoteTime || quote?.dataAsOf ? `Kursuppdatering ${svDateTime(quote.quoteTime ?? quote.dataAsOf)}` : "Kurstidpunkt saknas"}
                     {quote?.delayed && " · Fördröjd kurs"}
                     {(quote?.source?.startsWith("yahoo") || chart?.sourceName === "Yahoo Finance") && <> · Källa: <a href="https://finance.yahoo.com/" target="_blank" rel="noreferrer">Yahoo Finance</a></>}
                     {snapshotOnly && quote?.price != null && " · Kan vara fördröjd"}
-                </Text>
+                </Text>{nextReport && <a className={styles.reportDate} href="#calendar"><FiCalendar aria-hidden="true" /> Nästa rapport · {svDate(nextReport.date, true)}</a>}</Inline>
             </header>
             <div className={styles.controls} data-nosnippet="">
                 <SegmentedControl label="Kursperiod" value={range} onValueChange={setRange} className={styles.ranges}
@@ -821,16 +819,6 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     );
 }
 
-function Metric({ label, value, detail }) {
-    return (
-        <div className="company-metric">
-            <span>{label}</span>
-            <strong>{value}</strong>
-            {detail && <small>{detail}</small>}
-        </div>
-    );
-}
-
 function FinancialSummary({ highlights }) {
     const period = highlights?.ttm ?? highlights?.annual ?? highlights?.quarterly;
     if (!period) return null;
@@ -855,12 +843,17 @@ function FinancialSummary({ highlights }) {
 // Company news opens the shared URL-backed reader, preserving page context.
 function NewsList({ news }) {
     const [count, setCount] = useState(6);
+    const [filter, setFilter] = useState('all');
     const items = useMemo(() => chronologicalNews((news ?? []).map(storyToItem)), [news]);
+    const reports = items.filter(item => item.labels?.includes('EARNINGS'));
+    const visible = filter === 'reports' ? reports : items;
     if (!items.length) return <EmptyState title="Inga bolagsspecifika nyheter finns ännu." />;
     return (
         <Stack gap={2}>
-            {items.slice(0, count).map(item => <NewsFeedItem key={item.id} item={item} showSymbol={false} />)}
-            {items.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 6)}>Visa fler nyheter</Button>}
+            <Inline className={styles.financialToolbar}><SegmentedControl label="Bolagsnyheter" value={filter} onValueChange={value => { setFilter(value); setCount(6); }} options={[{ value: 'all', label: 'Alla nyheter' }, { value: 'reports', label: 'Rapporter' }]} /><Text size="xs" tone="secondary">{visible.length} i urvalet · senaste först</Text></Inline>
+            {visible.slice(0, count).map(item => <NewsFeedItem key={item.id} item={item} showSymbol={false} />)}
+            {!visible.length && <EmptyState title="Inga rapportnyheter i det hämtade urvalet" />}
+            {visible.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 6)}>Visa fler nyheter</Button>}
         </Stack>
     );
 }
@@ -900,10 +893,10 @@ function ExpandableText({ text, className = "", lines = 6 }) {
 
 function CompanyAbout({ summary }) {
     const { profile } = summary;
-    return <details className={styles.details}>
-        <summary>Om {profile.name ?? summary.symbol}</summary>
+    return <Stack gap={3} className={styles.business}>
+        <Heading as="h3" size="subsection">Om {profile.name ?? summary.symbol}</Heading>
         <div className={styles.about}>
-            <Text>{profile.description || "Bolagsbeskrivning saknas ännu."}</Text>
+            {profile.description ? <ExpandableText text={profile.description} className={styles.description} lines={4} /> : <Text size="sm" tone="secondary">Bolagsbeskrivning saknas ännu.</Text>}
             <dl className={styles.facts}>
                 {profile.sector && <><dt>Sektor</dt><dd>{profile.sector}</dd></>}
                 {profile.industry && <><dt>Bransch</dt><dd>{profile.industry}</dd></>}
@@ -911,7 +904,7 @@ function CompanyAbout({ summary }) {
                 {safeSourceUrl(profile.website) && <><dt>Webbplats</dt><dd><a href={safeSourceUrl(profile.website)} target="_blank" rel="noreferrer">Besök bolaget ↗</a></dd></>}
             </dl>
         </div>
-    </details>;
+    </Stack>;
 }
 
 
@@ -1177,494 +1170,6 @@ function FinancialsTab({ symbol, financials, estimates }) {
     );
 }
 
-function EstimatesTab({ summary, financials, estimates }) {
-    const calendar = summary.calendar;
-    const latest = upcomingEstimateSnapshot(estimates?.latest, financials);
-    const summaryEstimate = upcomingEstimateSnapshot(summary.upcomingEstimate, financials);
-    return (
-        <section className="company-tab-section">
-            <p className="company-eyebrow">Offentligt konsensus</p>
-            <h2>Vad väntar marknaden sig?</h2>
-            <p className="company-intro">Estimat visas bara med källa och period. Täckningen är fortfarande begränsad för mindre svenska bolag.</p>
-            <div className="company-metric-grid company-metric-grid-small">
-                <Metric label="EPS-estimat" value={calendar?.epsEstimate?.average == null ? "Saknas" : `${number(calendar.epsEstimate.average, 2)} ${calendar.currency ?? "SEK"}`} />
-                <Metric label="Omsättningsestimat" value={money(calendar?.revenueEstimate?.average, calendar?.currency ?? "SEK")} />
-                <Metric label="Nästa estimatperiod" value={latest?.fiscalPeriod ?? summaryEstimate?.fiscalPeriod ?? "Saknas"} />
-            </div>
-            {!latest && <p className="company-empty">Inget öppet konsensusestimat har samlats in för bolaget ännu.</p>}
-        </section>
-    );
-}
-
-// FI:s verbatim natures -> readable Swedish; the normalized direction decides
-// the sign and color, so an odd nature never masquerades as a trade.
-// Full digits like the registry itself: "209 262 150 SEK" carries more weight
-// than a compacted "209,3 M SEK" and stays honest to the öre.
-const sekFull = (value, currency = "SEK") =>
-    `${Math.round(value).toLocaleString("sv-SE")} ${currency}`;
-
-const INSIDER_DIRECTION = {
-    acquisition: { label: "Köp", tone: "buy" },
-    subscription: { label: "Teckning", tone: "buy" },
-    disposal: { label: "Sälj", tone: "sell" },
-    loan_in: { label: "Inlån", tone: "neutral" },
-    loan_out: { label: "Utlån", tone: "neutral" },
-    other: { label: "Övrigt", tone: "neutral" },
-};
-
-// Net per person over the stored window. FI's register does not publish
-// total holdings — unlike the US Form 4 — so each person's 24-month pattern
-// is joined onto their report-anchored holding in one list.
-function insiderNetTrades(rows) {
-    const byPerson = new Map();
-    for (const row of rows) {
-        if (typeof row.value !== "number" || (row.currency && row.currency !== "SEK")) continue;
-        const entry = byPerson.get(row.person) ?? { position: row.position, count: 0, net: 0 };
-        entry.count += 1;
-        if (row.direction === "acquisition" || row.direction === "subscription") entry.net += row.value;
-        else if (row.direction === "disposal") entry.net -= row.value;
-        byPerson.set(row.person, entry);
-    }
-    return byPerson;
-}
-
-const capSharePct = (value, marketCap) =>
-    marketCap && value ? (Math.abs(value) / marketCap) * 100 : null;
-
-function InsidersTab({ symbol, companyName, marketCap, sharesOutstanding, price }) {
-    const [data, setData] = useState(null);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        let active = true;
-        setData(null);
-        setError(null);
-        fetchInsiders(symbol)
-            .then((body) => { if (active) setData(body); })
-            .catch((cause) => { if (active) setError(cause.message); });
-        return () => { active = false; };
-    }, [symbol]);
-
-    const rows = data?.transactions ?? [];
-    const summary90 = data?.summary?.last90Days;
-    const summary365 = data?.summary?.last365Days;
-    const ownership = data?.ownership?.available ? data.ownership : null;
-    const hasOwners = Boolean(ownership?.largestOwners?.length);
-    // computed below once holdings exist; aside shows for either section
-    const holdings = new Map((data?.personHoldings ?? []).map((entry) => [entry.person, entry]));
-    // One row per person i ledande ställning: the report-anchored holding
-    // (rolled forward with registry flows, valued at today's price) joined
-    // with the person's own net trading over the stored 24 months. A person
-    // appears with either side alone — a disclosed holding without filings,
-    // or filings without any disclosed holding.
-    const insiderPeople = (() => {
-        const roleByPerson = new Map();
-        for (const row of rows) {
-            if (row.person && row.position && !roleByPerson.has(row.person)) roleByPerson.set(row.person, row.position);
-        }
-        const byName = new Map();
-        for (const holding of holdings.values()) {
-            const shares = holding.estimatedShares ?? holding.shares;
-            if (shares == null) continue;
-            byName.set(holding.person, {
-                name: holding.person,
-                role: holding.role || roleByPerson.get(holding.person) || null,
-                shares,
-                estimated: holding.flowCount > 0 && holding.estimatedShares != null && holding.estimatedShares !== holding.shares,
-                includesRelated: holding.includesRelated,
-            });
-        }
-        for (const lead of ownership?.leadership ?? []) {
-            if (lead.shares == null || byName.has(lead.name)) continue;
-            byName.set(lead.name, {
-                name: lead.name, role: lead.role || null, shares: lead.shares,
-                estimated: false, includesRelated: lead.includesRelated,
-            });
-        }
-        for (const [person, trade] of insiderNetTrades(rows)) {
-            const entry = byName.get(person);
-            if (entry) {
-                entry.net = trade.net;
-                entry.tradeCount = trade.count;
-            } else {
-                byName.set(person, {
-                    name: person,
-                    role: roleByPerson.get(person) || trade.position || null,
-                    shares: null, estimated: false, includesRelated: false,
-                    net: trade.net, tradeCount: trade.count,
-                });
-            }
-        }
-        // Known holdings first (largest value on top); people with only
-        // trades follow, ordered by the size of their net.
-        return [...byName.values()]
-            .map((person) => ({ ...person, value: price && person.shares != null ? person.shares * price : null }))
-            .sort((left, right) => {
-                const leftRank = left.value ?? left.shares;
-                const rightRank = right.value ?? right.shares;
-                if (leftRank != null && rightRank != null) return rightRank - leftRank;
-                if (leftRank != null) return -1;
-                if (rightRank != null) return 1;
-                return Math.abs(right.net ?? 0) - Math.abs(left.net ?? 0);
-            });
-    })();
-    const holdingShare = (row) => {
-        const holding = holdings.get(row.person);
-        if (!holding?.shares || row.unit !== "Quantity" || !row.volume) return null;
-        return (row.volume / holding.shares) * 100;
-    };
-    // The registry and the annual report are independent sources: a small cap
-    // with a disclosed owner table but no filed transactions still has an
-    // ownership picture worth showing.
-    const hasOwnershipView = hasOwners || insiderPeople.length > 0;
-
-    return (
-        <section className="company-tab-section">
-            <p className="company-eyebrow">{ownership ? "FI:s insynsregister · Bolagets årsredovisning" : "FI:s insynsregister"}</p>
-            <p className="company-intro">Vad personer i ledande ställning i {companyName} själva gör med aktien{hasOwners ? ", och vilka de största ägarna är" : ""}</p>
-
-            {error && <p className="company-empty">{error}</p>}
-            {!data && !error && <p className="company-empty">Hämtar insyn och ägarbild …</p>}
-            {data && !rows.length && !hasOwnershipView && <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren, och ingen ägarförteckning har ännu hämtats ur bolagets rapporter.</p>}
-
-            {(rows.length > 0 || hasOwnershipView) && (
-                <div className={`company-insider-layout ${rows.length > 0 && hasOwnershipView ? "" : "company-insider-layout-single"}`}>
-                    {!rows.length && (
-                        <p className="company-empty">Inga insynstransaktioner registrerade för bolaget under de senaste två åren.</p>
-                    )}
-                    {rows.length > 0 && (
-                    <div className="company-insider-transactions">
-                        {(summary365?.transactions ?? 0) > 0 && (
-                            <div className="company-insider-summary">
-                                <small className="company-insider-heading">Insynshandel senaste 12 mån</small>
-                                <strong className={`company-insider-net ${summary365.netValue >= 0 ? "company-insider-buy" : "company-insider-sell"}`}>
-                                    {summary365.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary365.netValue))}
-                                </strong>
-                                <small className="company-insider-sub">
-                                    {summary365.transactions} affärer · {summary365.buyers} köpare · {summary365.sellers} säljare
-                                    {capSharePct(summary365.netValue, marketCap) != null && ` · ≈ ${number(capSharePct(summary365.netValue, marketCap), 3)} % av börsvärdet`}
-                                </small>
-                                <div className="company-insider-split">
-                                    <div>
-                                        <span><i className="company-insider-dot company-insider-dot-buy" />Köp</span>
-                                        <strong>{sekFull(summary365.boughtValue)}</strong>
-                                    </div>
-                                    <div>
-                                        <span><i className="company-insider-dot company-insider-dot-sell" />Sälj</span>
-                                        <strong>{sekFull(summary365.soldValue)}</strong>
-                                    </div>
-                                </div>
-                                {(summary90?.transactions ?? 0) > 0 && summary90.transactions !== summary365.transactions && (
-                                    <small className="company-insider-sub">Senaste 3 mån: netto {summary90.netValue >= 0 ? "+" : "−"}{sekFull(Math.abs(summary90.netValue))} ({summary90.transactions} affärer)</small>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="company-insider-list-heading">
-                            <h3 className="company-insider-section-title">Transaktioner</h3>
-                            <p className="company-insider-depth">Senaste 24 månaderna</p>
-                        </div>
-                        <div className="company-insider-list">
-                            {rows.slice(0, 60).map((row) => {
-                                const direction = INSIDER_DIRECTION[row.direction] ?? INSIDER_DIRECTION.other;
-                                const showInstrument = row.instrumentType && !/^(share|aktie)$/i.test(row.instrumentType);
-                                return (
-                                    <a key={row.txId} className="company-insider-row" href={row.url} target="_blank" rel="noreferrer">
-                                        <small className={`company-insider-tag company-insider-${direction.tone}`}>
-                                            {direction.label} · <span>{svDate(row.transactionDate ?? row.publishedAt)}{row.direction === "disposal" && holdingShare(row) != null && ` · ≈ ${number(holdingShare(row), 1)} % av innehavet (ÅR ${holdings.get(row.person).fiscalYear})`}</span>
-                                        </small>
-                                        <div className="company-insider-main">
-                                            <span className="company-insider-name">{row.person}</span>
-                                            <span className="company-insider-value">{row.value == null ? "–" : sekFull(row.value, row.currency ?? "SEK")}</span>
-                                        </div>
-                                        <div className="company-insider-meta">
-                                            <span>{row.closelyAssociated ? "Närstående till " : ""}{row.position}{showInstrument ? ` · ${row.instrumentType}` : ""}</span>
-                                            <span>{row.volume == null ? "" : `${Math.round(row.volume).toLocaleString("sv-SE")} st`}{row.volume != null && row.price != null ? " · " : ""}{row.price == null ? "" : `${number(row.price, 2)} ${row.currency ?? "SEK"}`}</span>
-                                        </div>
-                                    </a>
-                                );
-                            })}
-                        </div>
-                        {rows.length > 60 && <p className="company-source">Visar de 60 senaste av {rows.length} transaktioner.</p>}
-                        <p className="company-source">Källa: Finansinspektionens insynsregister. Registret innehåller inte personens totala innehav, så nettot per person avser de senaste 24 månaderna — inte andel av innehavet. Varje rad länkar till FI:s anmälan. Värde beräknas som volym × pris när enheten är antal; teckningar räknas som köp, aktielån som varken eller. Ingen rekommendation.</p>
-                    </div>
-                    )}
-
-                    {hasOwnershipView && (
-                        <aside className="company-insider-owner-panel" aria-labelledby="company-insider-owners-heading">
-                            {insiderPeople.length > 0 && (
-                                <>
-                                    <h3 className="company-insider-section-title">Insynspersoner</h3>
-                                    <p className="company-insider-sub">Innehav ur bolagets rapporter{insiderPeople.some((person) => person.estimated) ? ", framrullade med registrerade affärer" : ""}, värderade till dagens kurs.{rows.length > 0 ? " Netto avser personens registrerade affärer under de senaste 24 månaderna." : ""}</p>
-                                    <div className="company-insider-persons">
-                                        {insiderPeople.slice(0, 12).map((person) => (
-                                            <div key={person.name} className="company-insider-person-row">
-                                                <span className="company-insider-person-name">{person.name}
-                                                    <small>{person.role || "Person i ledande ställning"}</small>
-                                                </span>
-                                                <span className="company-insider-person-net">
-                                                    {person.shares != null ? (
-                                                        <>
-                                                            <strong>{person.value != null ? money(person.value, "SEK") : `${Math.round(person.shares).toLocaleString("sv-SE")} st`}</strong>
-                                                            <small>
-                                                                {Math.round(person.shares).toLocaleString("sv-SE")} aktier
-                                                                {sharesOutstanding ? ` · ${number((person.shares / sharesOutstanding) * 100, 2)} %` : ""}
-                                                                {person.estimated ? " · uppskattat" : ""}
-                                                            </small>
-                                                        </>
-                                                    ) : (
-                                                        <small>Innehav ej känt</small>
-                                                    )}
-                                                    {(person.tradeCount ?? 0) > 0 && (
-                                                        <small className={person.net >= 0 ? "company-insider-buy" : "company-insider-sell"}>
-                                                            {person.net >= 0 ? "+" : "−"}{sekFull(Math.abs(person.net))} netto · {person.tradeCount} affärer
-                                                        </small>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        ))}
-                                        {insiderPeople.length > 12 && <p className="company-insider-sub">Visar de 12 största av {insiderPeople.length} personer.</p>}
-                                    </div>
-                                </>
-                            )}
-                            {hasOwners && (<>
-                            <h3 id="company-insider-owners-heading" className="company-insider-section-title">Största ägare</h3>
-                            {ownership.ownersAsOf && <p className="company-insider-sub">Ägarbild {ownership.ownersAsOf}</p>}
-                            <div className="company-insider-persons company-insider-owners">
-                                {ownership.largestOwners.slice(0, 25).map((owner) => (
-                                    <div key={owner.name} className="company-insider-person-row">
-                                        <span className="company-insider-person-name">{owner.name}
-                                            {owner.shares != null && <small>{Math.round(owner.shares).toLocaleString("sv-SE")} aktier</small>}
-                                        </span>
-                                        <span className="company-insider-person-net">
-                                            <strong>{owner.capitalPct != null ? `${number(owner.capitalPct, 1)} %` : owner.votesPct != null ? `${number(owner.votesPct, 1)} %` : "–"}</strong>
-                                            <small>{owner.capitalPct != null ? "av kapitalet" : owner.votesPct != null ? "av rösterna" : ""}{owner.capitalPct != null && owner.votesPct != null ? ` · ${number(owner.votesPct, 1)} % av rösterna` : ""}</small>
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                            <p className="company-source">Ur {ownership.source?.issuer ? `${ownership.source.issuer}s` : "bolagets"} årsredovisning{ownership.fiscalYear ? ` ${ownership.fiscalYear - 1}` : ""}{ownership.source?.url ? <> · <a href={ownership.source.url} target="_blank" rel="noreferrer">källa</a></> : null}. Innehav per rapportdatum, inte dagens position.</p>
-                            </>)}
-                        </aside>
-                    )}
-                </div>
-            )}
-        </section>
-    );
-}
-
-const SHORT_RANGES = [
-    { id: "3m", label: "3 mån", sessions: 63 },
-    { id: "12m", label: "12 mån", sessions: 252 },
-    { id: "full", label: "Max", sessions: null },
-];
-
-function ShortsTab({ symbol, companyName, bars }) {
-    const [data, setData] = useState(null);
-    const [error, setError] = useState(null);
-    const [range, setRange] = useState("full");
-
-    useEffect(() => {
-        let active = true;
-        setData(null);
-        setError(null);
-        fetchShorts(symbol)
-            .then((body) => { if (active) setData(body); })
-            .catch((cause) => { if (active) setError(cause.message); });
-        return () => { active = false; };
-    }, [symbol]);
-
-    const series = data?.series ?? [];
-    const positions = data?.positions ?? [];
-    const aggregate = data?.aggregate ?? null;
-
-    // Daily closes joined with the disclosed short level in effect that day.
-    // The disclosed sum is a step function: a position holds its reported
-    // size until its next change, so the join carries the latest point
-    // forward instead of interpolating.
-    const chartData = useMemo(() => {
-        if (!series.length || !bars?.length) return [];
-        const firstShort = series[0].date;
-        const firstIndex = bars.findIndex((bar) => bar.date >= firstShort);
-        const start = Math.max(0, (firstIndex === -1 ? bars.length : firstIndex) - 60);
-        let cursor = -1;
-        return bars.slice(start).map((bar) => {
-            while (cursor + 1 < series.length && series[cursor + 1].date <= bar.date) cursor += 1;
-            return {
-                time: new Date(bar.date).getTime(),
-                date: bar.date,
-                close: bar.close,
-                shortPct: cursor >= 0 ? series[cursor].pct : null,
-            };
-        });
-    }, [series, bars]);
-
-    const sessions = SHORT_RANGES.find((option) => option.id === range)?.sessions ?? null;
-    const visible = sessions ? chartData.slice(-sessions) : chartData;
-
-    // Year marks over long windows, month marks inside one; the formatter
-    // follows the same split.
-    const spanDays = visible.length > 1
-        ? (visible[visible.length - 1].time - visible[0].time) / 86400000
-        : 0;
-    const ticks = useMemo(() => {
-        if (visible.length < 2) return [];
-        const first = new Date(visible[0].date);
-        const last = new Date(visible[visible.length - 1].date);
-        const marks = [];
-        if (spanDays > 730) {
-            for (let year = first.getFullYear() + 1; year <= last.getFullYear(); year += 1) {
-                marks.push(new Date(`${year}-01-01`).getTime());
-            }
-        } else {
-            const cursor = new Date(first.getFullYear(), first.getMonth() + 1, 1);
-            const stepMonths = spanDays > 200 ? 2 : 1;
-            while (cursor <= last) {
-                marks.push(cursor.getTime());
-                cursor.setMonth(cursor.getMonth() + stepMonths);
-            }
-        }
-        return marks;
-    }, [visible, spanDays]);
-
-    const maxShort = visible.reduce((most, point) => Math.max(most, point.shortPct ?? 0), 0);
-    const ceiling = Math.max(1, Math.ceil(maxShort * 1.25));
-    const visibleSum = positions.reduce((sum, position) => sum + (position.pct ?? 0), 0);
-    const belowBar = aggregate ? Math.max(0, Math.round((aggregate.pct - visibleSum) * 100) / 100) : null;
-    const available = Boolean(data?.available);
-
-    return (
-        <section className="company-tab-section">
-            <p className="company-eyebrow">FI:s blankningsregister</p>
-            <p className="company-intro">Hur stor andel av {companyName} som är blankad, och vilka som står bakom de största positionerna</p>
-
-            {error && <p className="company-empty">{error}</p>}
-            {!data && !error && <p className="company-empty">Hämtar blankningsdata …</p>}
-            {data && !available && <p className="company-empty">Inga blankningspositioner över tröskelvärdena är anmälda för bolaget. Det utesluter inte mindre positioner — enskilda innehav syns först vid 0,5 % och aggregatet vid 0,1 % av kapitalet.</p>}
-
-            {available && (
-                <>
-                    <div className="company-metric-grid company-metric-grid-small">
-                        <Metric label="Total blankning" value={aggregate ? `${number(aggregate.pct, 2)} %` : "Saknas"} />
-                        <Metric label="Namngivna positioner" value={`${number(visibleSum, 2)} %`} />
-                        <Metric label="Under 0,5 %-tröskeln" value={belowBar == null ? "Saknas" : `${number(belowBar, 2)} %`} />
-                    </div>
-
-                    {chartData.length > 0 && (
-                        <div className="company-period-tabs">
-                            {SHORT_RANGES.map((option) => (
-                                <button
-                                    key={option.id}
-                                    className={range === option.id ? "active" : ""}
-                                    onClick={() => setRange(option.id)}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {visible.length > 0 && (
-                        <div className="company-shorts-chart" role="img" aria-label={`Blankning i ${companyName} över tid mot aktiekursen`}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={visible} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
-                                    <defs>
-                                        <linearGradient id="company-short-fill" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="var(--company-yellow)" stopOpacity={0.32} />
-                                            <stop offset="100%" stopColor="var(--company-yellow)" stopOpacity={0.02} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid stroke="var(--company-grid-line)" vertical={false} />
-                                    <XAxis
-                                        dataKey="time"
-                                        type="number"
-                                        scale="time"
-                                        domain={["dataMin", "dataMax"]}
-                                        axisLine={{ stroke: "var(--company-grid-line)" }}
-                                        tickLine={false}
-                                        ticks={ticks}
-                                        tickFormatter={(value) => spanDays > 730
-                                            ? new Date(value).getFullYear()
-                                            : new Date(value).toLocaleDateString("sv-SE", { month: "short" })}
-                                    />
-                                    <YAxis
-                                        yAxisId="short"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        width={52}
-                                        domain={[0, ceiling]}
-                                        tickFormatter={(value) => `${number(value, 1)} %`}
-                                    />
-                                    <YAxis yAxisId="price" hide domain={["auto", "auto"]} />
-                                    <Tooltip
-                                        cursor={{ stroke: "var(--company-grid-line)" }}
-                                        content={({ active: hovered, payload }) => {
-                                            if (!hovered || !payload?.length) return null;
-                                            const point = payload[0].payload;
-                                            return (
-                                                <div className="company-tooltip">
-                                                    <strong>{svDate(point.date)}</strong>
-                                                    <span>Blankning {point.shortPct == null ? "–" : `${number(point.shortPct, 2)} %`}</span>
-                                                    <span>Kurs {number(point.close, 2)}</span>
-                                                    <span className="company-tooltip-note">Summan av namngivna positioner ≥ 0,5 %</span>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                    <Line
-                                        yAxisId="price"
-                                        type="monotone"
-                                        dataKey="close"
-                                        stroke="var(--company-muted-line)"
-                                        strokeWidth={1.5}
-                                        strokeDasharray="4 4"
-                                        dot={false}
-                                        isAnimationActive={false}
-                                    />
-                                    <Area
-                                        yAxisId="short"
-                                        type="stepAfter"
-                                        dataKey="shortPct"
-                                        stroke="var(--company-yellow)"
-                                        strokeWidth={2}
-                                        fill="url(#company-short-fill)"
-                                        dot={false}
-                                        connectNulls={false}
-                                        isAnimationActive={false}
-                                    />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </div>
-                    )}
-
-                    <h3 className="company-insider-section-title">Största blankare</h3>
-                    {positions.length > 0 ? (
-                        <>
-                            <p className="company-insider-sub">Namngivna nettopositioner på minst 0,5 % av kapitalet, per position i FI:s register.</p>
-                            <div className="company-insider-persons">
-                                {positions.map((position) => (
-                                    <div key={position.holder} className="company-insider-person-row">
-                                        <span className="company-insider-person-name">{position.holder}
-                                            <small>per {svDate(position.positionDate)}</small>
-                                        </span>
-                                        <span className="company-insider-person-net">
-                                            <strong>{number(position.pct, 2)} %</strong>
-                                            <small>av kapitalet</small>
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    ) : (
-                        <p className="company-insider-sub">Inga enskilda positioner når 0,5 % just nu — hela blankningen ligger i mindre, icke namngivna positioner.</p>
-                    )}
-
-                    <p className="company-source">Källa: Finansinspektionens blankningsregister. Enskilda positioner offentliggörs först vid 0,5 % av aktiekapitalet; aggregatet summerar alla positioner över 0,1 % och kan därför överstiga de namngivna tillsammans. Den gula linjen visar summan av namngivna positioner över tid, med varje position kvar på sin senast anmälda nivå tills nästa ändring; den streckade linjen är stängningskursen. Att data saknas betyder att inget anmälts över tröskelvärdena — inte att ingen blankning finns. Ingen rekommendation.</p>
-                </>
-            )}
-        </section>
-    );
-}
 
 function NewsSection({ data, mentions, hasPlus }) {
     return <div className={styles.news}>
@@ -1690,165 +1195,9 @@ function NewsSection({ data, mentions, hasPlus }) {
                 </Link>)}</div>
             </details>}
         </div>
-        <CompanyAbout summary={data.summary} />
     </div>;
 }
 
-const CALENDAR_EVENT_LABELS = {
-    earnings: "Rapport",
-    agm: "Årsstämma",
-    ex_dividend: "X-dag",
-    dividend: "Utdelning",
-    capital_market_day: "Kapitalmarknadsdag",
-};
-
-const parseCalendarDate = (value) => {
-    const [year, month, day] = String(value ?? "").slice(0, 10).split("-").map(Number);
-    if (!year || !month || !day) return null;
-    const date = new Date(year, month - 1, day, 12);
-    return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const calendarDateKey = (value) => {
-    const date = value instanceof Date ? value : parseCalendarDate(value);
-    if (!date) return "";
-    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
-};
-
-const calendarEventLabel = (type) => CALENDAR_EVENT_LABELS[type]
-    ?? String(type ?? "Händelse").replaceAll("_", " ");
-
-function CalendarTab({ calendar }) {
-    const todayKey = stockholmDay(Date.now());
-    const today = parseCalendarDate(todayKey);
-    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12);
-    const [visibleMonth, setVisibleMonth] = useState(currentMonth);
-
-    const events = useMemo(() => {
-        const candidates = [
-            ...(calendar?.events ?? []),
-            ...(calendar?.earningsDates ?? []).map((date) => ({ type: "earnings", date })),
-            ...(calendar?.exDividendDate ? [{ type: "ex_dividend", date: calendar.exDividendDate }] : []),
-            ...(calendar?.dividendDate ? [{ type: "dividend", date: calendar.dividendDate }] : []),
-        ];
-        const seen = new Set();
-        return candidates
-            .filter((event) => calendarDateKey(event.date) >= todayKey)
-            .filter((event) => {
-                const key = `${calendarDateKey(event.date)}-${event.type}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            })
-            .sort((left, right) => calendarDateKey(left.date).localeCompare(calendarDateKey(right.date)));
-    }, [calendar, todayKey]);
-
-    const eventsByDate = useMemo(() => events.reduce((result, event) => {
-        const key = calendarDateKey(event.date);
-        result.set(key, [...(result.get(key) ?? []), event]);
-        return result;
-    }, new Map()), [events]);
-
-    const days = useMemo(() => {
-        const first = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1, 12);
-        const mondayOffset = (first.getDay() + 6) % 7;
-        const start = new Date(first);
-        start.setDate(first.getDate() - mondayOffset);
-        const daysInMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate();
-        const cellCount = Math.ceil((mondayOffset + daysInMonth) / 7) * 7;
-        return Array.from({ length: cellCount }, (_, index) => {
-            const date = new Date(start);
-            date.setDate(start.getDate() + index);
-            return date;
-        });
-    }, [visibleMonth]);
-
-    const showingCurrentMonth = visibleMonth.getFullYear() === currentMonth.getFullYear()
-        && visibleMonth.getMonth() === currentMonth.getMonth();
-    const moveMonth = (offset) => setVisibleMonth((month) =>
-        new Date(month.getFullYear(), month.getMonth() + offset, 1, 12));
-    const showEventMonth = (event) => {
-        const date = parseCalendarDate(event.date);
-        if (date) setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1, 12));
-    };
-
-    return (
-        <section className="company-tab-section">
-            <p className="company-eyebrow">Bolagets datum</p>
-            <h2>Rapporter och kapitalhändelser</h2>
-            <div className="company-calendar-layout">
-                <div className="company-calendar">
-                    <header className="company-calendar-toolbar">
-                        <IconButton disabled={showingCurrentMonth} label="Föregående månad" onClick={() => moveMonth(-1)}><FiChevronLeft /></IconButton>
-                        <h3>{visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}</h3>
-                        <IconButton label="Nästa månad" onClick={() => moveMonth(1)}><FiChevronRight /></IconButton>
-                    </header>
-                    <div className="company-calendar-weekdays" aria-hidden="true">
-                        {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map((day) => <span key={day}>{day}</span>)}
-                    </div>
-                    <div className="company-calendar-grid" role="group" aria-label={visibleMonth.toLocaleDateString("sv-SE", { month: "long", year: "numeric" })}>
-                        {days.map((date) => {
-                            const key = calendarDateKey(date);
-                            const dayEvents = eventsByDate.get(key) ?? [];
-                            const outsideMonth = date.getMonth() !== visibleMonth.getMonth();
-                            const hasPassed = key < todayKey;
-                            return (
-                                <div
-                                    key={key}
-                                    className={`company-calendar-day ${outsideMonth ? "outside" : ""} ${hasPassed ? "past" : ""} ${key === todayKey ? "today" : ""}`}
-                                >
-                                    <time dateTime={key}>{date.getDate()}</time>
-                                    <div className="company-calendar-day-events">
-                                        {dayEvents.slice(0, 2).map((event) => (
-                                            <span key={event.id ?? event.eventId ?? `${event.type}-${event.date}`} title={`${calendarEventLabel(event.type)}${event.fiscalPeriod ? ` · ${event.fiscalPeriod}` : ""}`}>
-                                                {event.fiscalPeriod ?? calendarEventLabel(event.type)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-                <aside className="company-calendar-upcoming" aria-label="Kommande händelser">
-                    <div className="company-calendar-upcoming-heading">
-                        <h3>Kommande</h3>
-                        <span>{events.length}</span>
-                    </div>
-                    {events.length ? events.slice(0, 6).map((event) => {
-                        const date = parseCalendarDate(event.date);
-                        return (
-                            <button type="button" key={event.id ?? event.eventId ?? `${event.type}-${event.date}`} onClick={() => showEventMonth(event)}>
-                                <time dateTime={calendarDateKey(event.date)}>
-                                    <strong>{date?.getDate()}</strong>
-                                    <span>{date?.toLocaleDateString("sv-SE", { month: "short", year: "numeric" })}</span>
-                                </time>
-                                <span>
-                                    <strong>{event.fiscalPeriod ?? calendarEventLabel(event.type)}</strong>
-                                    <small>{calendarEventLabel(event.type)}</small>
-                                </span>
-                                <FiChevronRight />
-                            </button>
-                        );
-                    }) : <p className="company-empty">Inga kommande bolagshändelser är bekräftade.</p>}
-                </aside>
-            </div>
-        </section>
-    );
-}
-
-function Performance({ returns }) {
-    const periods = [["1 mån", "1m"], ["3 mån", "3m"], ["6 mån", "6m"], ["I år", "ytd"], ["1 år", "1y"]];
-    return (
-        <div className="company-performance" aria-label="Kursutveckling per period">
-            {periods.map(([label, key]) => {
-                const value = returns?.[key];
-                const tone = value == null ? "neutral" : value >= 0 ? "positive" : "negative";
-                return <div key={key}><span>{label}</span><strong className={tone}>{pct(value)}</strong></div>;
-            })}
-        </div>
-    );
-}
 
 function PlusSectionGate({ companyName }) {
     return <div className={styles.gate}>
@@ -1872,8 +1221,6 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
     // Preserve the server-resolved access boundary. Off-screen research does
     // not mount (or make private requests) for visitors without access.
     const hasPlus = initialData.access?.plus ?? isPlusUser;
-    const sharesOutstanding = [initialData.financials?.ttm, initialData.financials?.quarterly, initialData.financials?.annual]
-        .flatMap(periods => [...(periods ?? [])].reverse()).find(period => period.sharesOutstanding)?.sharesOutstanding ?? null;
     const research = (children) => hasPlus ? <div className={styles.research}>{children}</div> : <PlusSectionGate companyName={name} />;
     return <CompanyReportShell symbol={symbol} name={name} quote={quote} currency={companyPriceCurrency(summary.profile, quote)} hasPlus={hasPlus} initialTab={initialTab}>
         <ReportSection id="overview">
@@ -1884,6 +1231,7 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
             <NewsSection data={initialData} mentions={mentions} hasPlus={hasPlus} />
         </ReportSection>
         <ReportSection id="profile" title="Bolagsprofil" deferred>
+            <CompanyAbout summary={summary} />
             <div className={styles.research}><CompanyResearchProfile key={symbol} symbol={symbol} companyName={name} /></div>
         </ReportSection>
         <ReportSection id="financials" title="Finansiell utveckling" deferred={hasPlus}>
@@ -1898,19 +1246,19 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 : <CompanyManagementComment comment={initialData.financials?.managementComment} latestReport={initialData.financials?.latestReport} />)}
         </ReportSection>
         <ReportSection id="estimates" title="Estimat" deferred={hasPlus}>
-            {research(<EstimatesTab summary={summary} financials={initialData.financials} estimates={initialData.estimates} />)}
+            {research(<CompanyEstimates symbol={symbol} financials={initialData.financials} estimates={initialData.estimates} availability={initialData.availability?.estimates} financialAvailability={initialData.availability?.financials} />)}
         </ReportSection>
         <ReportSection id="valuation" title="Värdering" deferred={hasPlus}>
             {research(<CompanyValuation key={symbol} symbol={symbol} financials={initialData.financials} estimates={initialData.estimates} estimateAvailability={initialData.availability?.estimates} />)}
         </ReportSection>
         <ReportSection id="insiders" title="Insyn & ägare" deferred={hasPlus}>
-            {research(<InsidersTab symbol={symbol} companyName={name} price={summary.quote?.price ?? null} sharesOutstanding={sharesOutstanding} marketCap={summary.quote?.price && sharesOutstanding ? summary.quote.price * sharesOutstanding : null} />)}
+            {research(<CompanyOwnership key={symbol} symbol={symbol} price={quote?.price} currency={companyPriceCurrency(summary.profile, quote)} />)}
         </ReportSection>
         <ReportSection id="shorts" title="Blankning" deferred={hasPlus}>
-            {research(<ShortsTab symbol={symbol} companyName={name} bars={initialData.chart?.bars ?? []} />)}
+            {research(<CompanyShortInterest key={symbol} symbol={symbol} />)}
         </ReportSection>
         <ReportSection id="calendar" title="Kalender" deferred>
-            <div className={styles.research}><CalendarTab calendar={summary.calendar} /></div>
+            <div className={styles.research}><CompanyCalendar key={symbol} calendar={summary.calendar} /></div>
         </ReportSection>
     </CompanyReportShell>;
 }

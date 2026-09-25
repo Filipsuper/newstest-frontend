@@ -32,16 +32,22 @@
 }
 .document { min-width: 0; }
 .loadingChart { height: 320px; }
-.sidebar { position: sticky; top: var(--report-offset); display: grid; gap: var(--ui-space-6); }
+.sidebar { position: sticky; top: var(--report-offset); display: grid; gap: var(--ui-space-3); max-height: calc(100dvh - var(--report-offset) - var(--ui-space-4)); overflow-y: auto; scrollbar-width: thin; }
 .back { display: inline-flex; align-items: center; gap: var(--ui-space-1); min-height: 44px; color: var(--ui-text-secondary); font-size: var(--ui-text-sm); text-decoration: none; }
 .context { display: grid; gap: var(--ui-space-2); min-width: 0; }
 .contextName { font-size: var(--ui-text-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .contextQuote { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); font-size: var(--ui-text-sm); font-variant-numeric: tabular-nums; }
 .contents { display: grid; gap: var(--ui-space-1); }
+.contentsGroup { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); padding: var(--ui-space-3) var(--ui-space-3) var(--ui-space-1); }
+.contentsGroup:first-child { padding-top: 0; }
+.nextSection { display: inline-flex; align-items: center; gap: var(--ui-space-3); min-height: 44px; margin-top: var(--ui-space-6); font-size: var(--ui-text-sm); text-decoration: none; color: var(--ui-text-secondary); }
+.nextSection:hover { color: var(--ui-text); }
+.nextSection:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
 .contents a { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); min-height: 44px; padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-sm); color: var(--ui-text-secondary); font: 400 var(--ui-text-sm) / 1.4 var(--ui-font); text-decoration: none; }
 .contents a:hover { background: var(--ui-hover); color: var(--ui-text); }
 .contents a[aria-current] { background: var(--ui-inset); color: var(--ui-text); font-weight: 550; }
 .contents a svg { flex-shrink: 0; }
+@media (pointer: fine) { .sidebar .contents a { min-height: 36px; } }
 .contents a:focus-visible, .back:focus-visible, .section :global(summary):focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
 .mobileBar { display: none; }
 .section { scroll-margin-top: var(--report-offset); margin-bottom: var(--ui-space-16); min-width: 0; }
@@ -59,6 +65,10 @@
 .quote { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); font-variant-numeric: tabular-nums; }
 .quote > strong { font-size: var(--ui-text-2xl); font-weight: 550; letter-spacing: -0.03em; }
 .quoteMeta { font-size: var(--ui-text-xs); color: var(--ui-text-secondary); }
+.quoteContext { justify-content: space-between; }
+.reportDate { display: inline-flex; align-items: center; gap: var(--ui-space-2); min-height: 44px; color: var(--ui-text-secondary); font-size: var(--ui-text-sm); text-decoration: none; }
+.reportDate:hover { color: var(--ui-text); }
+.reportDate:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
 .ranges { min-width: 0; flex-wrap: wrap; }
 .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
@@ -77,6 +87,9 @@
 .details > summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; color: var(--ui-text); font: 500 var(--ui-text-sm) / 1.5 var(--ui-font); }
 .details > summary + * { margin-top: var(--ui-space-4); }
 .about { display: grid; gap: var(--ui-space-4); }
+.business { margin-bottom: var(--ui-space-6); }
+.description { font: 400 var(--ui-text-md) / var(--ui-leading-body) var(--ui-font); color: var(--ui-text); margin: 0; max-width: var(--ui-reading-max); }
+.researchDetails { margin-top: var(--ui-space-6); }
 .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--ui-space-2) var(--ui-space-6); font-size: var(--ui-text-sm); }
 .facts dt { color: var(--ui-text-secondary); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }

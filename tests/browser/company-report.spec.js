@@ -100,7 +100,7 @@ for (const width of [320, 390, 820, 1440]) test(`open company profile fits ${wid
   expect(alignment.horizontal).toBeLessThan(1);
   if (width === 1440) expect(alignment.vertical).toBeLessThan(1);
   expect(alignment.captionInside).toBe(true);
-  await expect(profile.locator('dl')).not.toBeVisible();
+  await expect(profile.locator('details dl')).not.toBeVisible();
   await expect(profile.getByText(/Minst hälften måste ha underlag/)).not.toBeVisible();
   await belowChrome(page, 'profile');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -479,9 +479,16 @@ test("desktop report uses one chart, persistent sections and on-demand research"
   await nav(page).getByRole("link", { name: "Finansiellt", exact: true }).click();
   await expect(page.getByRole("button", { name: "Kvartal", exact: true })).toHaveAttribute("aria-pressed", "true");
   await nav(page).getByRole("link", { name: "Insyn & ägare" }).click();
-  await expect.poll(() => requests.filter(request => request.endsWith("/insiders")).length).toBe(1);
+  await expect(page.locator('#insiders').getByRole('heading', { name: 'Insynshandel', exact: true })).toBeVisible();
+  // React's development effect replay can send then cancel the first request.
+  // A visited section must stay mounted and must not fetch again on returning.
+  const insiderRequests = requests.filter(request => request.endsWith('/insiders')).length;
+  expect(insiderRequests).toBeGreaterThanOrEqual(1);
+  expect(insiderRequests).toBeLessThanOrEqual(2);
   await nav(page).getByRole("link", { name: "Översikt", exact: true }).click();
   await expect(page.locator(".company-chart")).toHaveCount(1);
+  await nav(page).getByRole('link', { name: 'Insyn & ägare' }).click();
+  expect(requests.filter(request => request.endsWith('/insiders')).length).toBe(insiderRequests);
   expect(errors).toEqual([]);
 });
 
@@ -584,7 +591,7 @@ test("server access prevents private requests while news/calendar remain usable;
   await expect(page.locator('#profile .stock-profile')).toBeVisible();
   await expect(page.locator('#profile')).not.toContainText('ingår i Plus');
   await nav(page).getByRole("link", { name: "Kalender", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Rapporter och kapitalhändelser" })).toBeVisible();
+  await expect(page.locator('#calendar').getByRole('list', { name: 'Kommande bolagshändelser' })).toBeVisible();
   expect(requests).toEqual([]);
   await page.goto("/aktie/FJALL.TEST");
   await expect(page.locator("main:visible").getByText("Ingen historisk kursdata är tillgänglig ännu.")).toBeVisible();

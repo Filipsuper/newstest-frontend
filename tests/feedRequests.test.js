@@ -1,6 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchLiveFeed, fetchPersonalFeed, fetchFeedObservations } from "../app/utils/api.js";
+import { fetchLiveFeed, fetchPersonalFeed, fetchFeedObservations, fetchInsiders, fetchShorts } from "../app/utils/api.js";
+
+test('registry requests keep credentials, combine cancellation with a timeout, and reject failures', async t => {
+  const signals = [], durations = [];
+  t.mock.method(AbortSignal, 'timeout', duration => { durations.push(duration); return new AbortController().signal; });
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.match(url, /\/feed\/company\/NORD.TEST\/(insiders|shorts)$/);
+    assert.equal(options.credentials, 'include');
+    assert.equal(options.cache, 'no-store');
+    signals.push(options.signal);
+    return Response.json({ symbol: 'NORD.TEST', available: false, status: 'unsupported' });
+  });
+  const controller = new AbortController();
+  await fetchInsiders('NORD.TEST', { signal: controller.signal });
+  await fetchShorts('NORD.TEST', { signal: controller.signal });
+  assert.deepEqual(durations, [12000, 12000]);
+  controller.abort();
+  assert.ok(signals.every(signal => signal.aborted));
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ error: 'Unavailable' }, { status: 503 }));
+  await assert.rejects(fetchShorts('NORD.TEST'), /Unavailable/);
+  await assert.rejects(fetchInsiders('NORD.TEST'), /Unavailable/);
+});
 
 test("initial and catch-up news requests are bounded, uncached and retain credentials", async (t) => {
   const durations = [];
