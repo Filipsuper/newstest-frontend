@@ -1,6 +1,6 @@
 # OMXsum roadmap
 
-Updated 25 September 2026. OMXsum 2.0's main public-site redesign is released.
+Updated 26 September 2026. OMXsum 2.0's main public-site redesign is released.
 This is the current planning backlog. Unreleased implementation is marked
 explicitly; queued items are not committed release dates.
 
@@ -61,7 +61,8 @@ The next phase is news quality and retention, not another wholesale UI redesign.
 - Public Terminal gateway uses the same header, palette, type, membership
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
-Latest frontend application release: `b501b84`; backend: `29d8235`; Stonks: `77b7a7f`;
+Latest frontend application release: `bc3429a`; backend: `8ba2d64`; Stonks web: `77b7a7f`;
+briefing worker overlay: `99c48d2` (ten-company pilot);
 newsletter renderer unchanged: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
@@ -71,11 +72,12 @@ and compatible backend releases are in the release history, not pending tasks.
 ### Company briefing beside the price chart
 
 - [x] Local approved Nanexa prototype: one title and one description, sources
-  behind a dialog; no separate next-report row. Not deployed.
+  behind a dialog; no separate next-report row. The reviewed design is now shipped.
 - [x] Local cost-controlled backend: explicit company pilot list, source-content
   cache, ten-minute debounce, per-company/global attempt caps, shared leases,
   failure/insufficient-result caching and actual token accounting. No page-view
-  generation or quote/metadata triggers. Disabled by default.
+  generation or quote/metadata triggers. Disabled by default in code; explicitly
+  enabled for the ten-company production pilot on 26 September.
 - [x] Read-only Nanexa evidence replay selects the two issuer agreements and Q2
   management commentary; 100 repeat checks reuse the result. Zero paid calls.
 - [x] First paid Nanexa evaluation (26 Sep): 1,696 input / 483 output tokens,
@@ -89,8 +91,8 @@ and compatible backend releases are in the release history, not pending tasks.
 - [x] Local news-plus-price experiment: three generated news sentences plus one
   code-composed, explicitly dated daily-change sentence (92 words total).
   Quote data stays outside the model; payment conditions, development targets
-  and separate agreements are clearer in this example. No live integration,
-  production writes or deployment; production prompt remains unchanged.
+  and separate agreements are clearer in this example. This reviewed prompt is
+  now production prompt v3; quote composition remains independent of generation.
 - [x] Approved news-plus-price draft is now the local UI prototype, with a subtle
   theme-aware amber gradient, unchanged single-title/paragraph hierarchy and
   quote provenance inside the sources dialog. Checked at 320–1440px in both
@@ -99,14 +101,23 @@ and compatible backend releases are in the release history, not pending tasks.
   The dated price sentence uses the current header quote independently of AI
   text; invalid quote inputs omit the sentence, not the news. Add expiry/fallback
   protection and cached-route read-only tests. Company charts and share charts
-  now use straight segments. Implemented locally; public flags remain off.
-- [ ] Review paid outputs and semantic-source accuracy on Nanexa and contrasting
-  quiet/report/conflicting-news companies before public activation. Nanexa's
-  editorial quality gate remains open despite its structural pass. Then deploy
-  the worker/API/UI with a small explicitly approved pilot. No automatic universe
-  or anonymous-visitor expansion.
+  now use straight segments. Worker/API/UI deployed 26 September; public delivery
+  enabled only for qualified cached results, with the existing news fallback.
+- [x] Activate the authorized ten-company pilot: Nanexa, Saab, Evolution, SBB,
+  Freemelt, ABB, AstraZeneca, Sivers, EQT and Alfa Laval. Keep ten total attempts
+  per day, two per company/day, and the existing request/reservation limits.
+- [x] Initial production batch: nine structurally valid outputs, seven public.
+  Nanexa rejected by validation; SBB/EQT withheld after editorial review. No
+  budget override. Add safe rejection codes and persistent-hold regression tests.
+- [ ] Resolve the Nanexa rejection and SBB/EQT editorial cases within the caps.
+  Strengthen original-source checks for reused AI digests, unsupported inference,
+  technical jargon and dated management context before expanding coverage.
+- [ ] Expand paid-output and semantic-source review to quiet/report/conflicting
+  news cases before expanding the pilot. Citation/schema checks are not factual
+  verification. No automatic universe or anonymous-visitor expansion.
 
-See [briefing UI and boundaries](docs/company-briefing-prototype.md). Worker
+See [release, pilot and rollback](docs/company-briefing-release-2026-09-26.md) and
+[briefing UI and boundaries](docs/company-briefing-prototype.md). Worker
 policy and operator steps are documented in the producer's
 `docs/company-briefings.md`.
 

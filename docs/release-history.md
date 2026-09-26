@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 25 September 2026, newest public revisions first.
+Release records through 26 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,15 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## Cached company briefings and linear charts — released 26 September, 08:50 UTC
+
+Frontend `bc3429a`, backend `8ba2d64`, scoped producer worker `0a0df71`.
+The approved gradient briefing reads a shared source-qualified cache, with a
+separately verified price sentence and source dialog. Company/share price lines
+use straight segments. The user authorized a ten-company AI pilot; spending
+remains capped and page visits cannot generate. See the
+[release, pilot and rollback record](company-briefing-release-2026-09-26.md).
 
 ## Company research section polish — released 25 September, 16:03 UTC
 

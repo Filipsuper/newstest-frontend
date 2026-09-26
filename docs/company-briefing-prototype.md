@@ -1,13 +1,17 @@
 # Company briefing · Nanexa prototype
 
-Local review, 25 September 2026. Not deployed and not an automated analysis service.
+Prototype review began 25 September 2026. The approved design and cached pipeline
+were deployed 26 September with an explicitly authorized ten-company generation
+pilot. See the [release record](company-briefing-release-2026-09-26.md); historical
+local-only statements below describe the earlier review stages.
 
 ## Cached integration · 26 September
 
 The approved gradient now applies to qualified saved `mode: generated` briefings
 as well as the explicitly supplied local prototype. `/aktie/[symbol]` consumes
 the existing overview API's optional `briefing`; no new endpoint, page-triggered
-generation or mutation was added. The backend's public flag remains off.
+generation or mutation was added. The backend's public flag was enabled at the
+26 September deployment; it serves only qualified generated cache records.
 Unknown modes and prototype records received through the ordinary API cannot
 bypass generated-record validation. Expiry is rechecked when its deadline is
 reached and on tab return; absent/expired data restores the existing news context.
