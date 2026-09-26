@@ -14,6 +14,21 @@ export const COMPANY_CHART_RANGES = [
 export const companyChartRange = id => COMPANY_CHART_RANGES.find(range => range.id === id)
   ?? COMPANY_CHART_RANGES.find(range => range.id === "1y");
 
+// SVG equivalent of Recharts' linear interpolation for company share images.
+// Missing values break the line; never manufacture a smoothed price path.
+export function companyChartLinePath(rows, key, x, y) {
+  let connected = false;
+  return rows.map((row, index) => {
+    const value = row[key];
+    if (value == null || !Number.isFinite(Number(value))) { connected = false; return ''; }
+    const point = [x(index), y(Number(value))];
+    if (!point.every(Number.isFinite)) { connected = false; return ''; }
+    const command = connected ? 'L' : 'M';
+    connected = true;
+    return `${command}${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
+  }).filter(Boolean).join(' ');
+}
+
 export function companyRangeDisabled(range, barCount, priceCapabilities) {
   if (range.intraday) return Boolean(priceCapabilities && priceCapabilities.minute?.status !== "supported");
   // Preserve the longer-history thresholds without the old negative minimum

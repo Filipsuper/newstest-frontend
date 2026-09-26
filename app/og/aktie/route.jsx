@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { loadOgFonts } from "../_shared/fonts";
 import { OgBrand, OgCanvas, OgChangeBadge } from "../_shared/elements";
 import { OG_SIZE, ogThemes, ogDate, previewText } from "../_shared/theme";
-import { companyChartRange, companyIntradayRows, companyIntradayBaseline, companyIntradayTick } from "../../utils/companyChartRanges";
+import { companyChartRange, companyChartLinePath, companyIntradayRows, companyIntradayBaseline, companyIntradayTick } from "../../utils/companyChartRanges";
 import { companyPriceCurrency } from "../../utils/companyPriceUpdates";
 
 // The share card for a stock's move. Rendered as a route handler rather than an
@@ -59,72 +59,8 @@ function niceTicks(min, max, count = 4) {
   return ticks;
 }
 
-// Build the same smooth, monotone curve Recharts uses without depending on a
-// browser DOM. Null values split the line into separate drawable sections.
-function monotonePath(rows, key, x, y) {
-  const sections = [];
-  let current = [];
-  rows.forEach((row, index) => {
-    const value = row[key];
-    if (value == null || !Number.isFinite(Number(value))) {
-      if (current.length) sections.push(current);
-      current = [];
-      return;
-    }
-    current.push({ x: x(index), y: y(Number(value)) });
-  });
-  if (current.length) sections.push(current);
-
-  return sections
-    .map((points) => {
-      if (points.length === 1)
-        return `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-      const slopes = points
-        .slice(0, -1)
-        .map(
-          (point, index) =>
-            (points[index + 1].y - point.y) / (points[index + 1].x - point.x),
-        );
-      const tangents = points.map((point, index) => {
-        if (index === 0) return slopes[0];
-        if (index === points.length - 1) return slopes[slopes.length - 1];
-        return slopes[index - 1] * slopes[index] <= 0
-          ? 0
-          : (slopes[index - 1] + slopes[index]) / 2;
-      });
-
-      slopes.forEach((slope, index) => {
-        if (slope === 0) {
-          tangents[index] = 0;
-          tangents[index + 1] = 0;
-          return;
-        }
-        const alpha = tangents[index] / slope;
-        const beta = tangents[index + 1] / slope;
-        const length = Math.hypot(alpha, beta);
-        if (length > 3) {
-          const scale = 3 / length;
-          tangents[index] = scale * alpha * slope;
-          tangents[index + 1] = scale * beta * slope;
-        }
-      });
-
-      let path = `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-      for (let index = 0; index < points.length - 1; index += 1) {
-        const from = points[index];
-        const to = points[index + 1];
-        const third = (to.x - from.x) / 3;
-        path += ` C${(from.x + third).toFixed(1)} ${(from.y + tangents[index] * third).toFixed(1)}`;
-        path += ` ${(to.x - third).toFixed(1)} ${(to.y - tangents[index + 1] * third).toFixed(1)}`;
-        path += ` ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
-      }
-      return path;
-    })
-    .join(" ");
-}
-
 // The company-page chart, redrawn as a standalone SVG because Satori cannot
-// run Recharts. It keeps the volume scale, smooth curves, right-side price
+// run Recharts. It keeps the volume scale, straight segments, right-side price
 // ticks and optional MA50/MA200 series. Solid strokes stay legible at share
 // size, including perfectly straight/flat paths with zero-height SVG bounds.
 function chartSvg(
@@ -180,19 +116,19 @@ function chartSvg(
     ),
   );
 
-  const priceLine = monotonePath(
+  const priceLine = companyChartLinePath(
     rows,
     intraday ? "currentPrice" : "close",
     x,
     y,
   );
   const previousLine = intraday
-    ? monotonePath(rows, "previousPrice", x, y)
+    ? companyChartLinePath(rows, "previousPrice", x, y)
     : "";
   const ma50Line =
-    !intraday && movingAverages.ma50 ? monotonePath(rows, "ma50", x, y) : "";
+    !intraday && movingAverages.ma50 ? companyChartLinePath(rows, "ma50", x, y) : "";
   const ma200Line =
-    !intraday && movingAverages.ma200 ? monotonePath(rows, "ma200", x, y) : "";
+    !intraday && movingAverages.ma200 ? companyChartLinePath(rows, "ma200", x, y) : "";
   const firstCurrentIndex = intraday
     ? rows.findIndex((row) => row.session === "current")
     : -1;

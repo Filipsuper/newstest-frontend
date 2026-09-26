@@ -68,6 +68,48 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
 
+### Company briefing beside the price chart
+
+- [x] Local approved Nanexa prototype: one title and one description, sources
+  behind a dialog; no separate next-report row. Not deployed.
+- [x] Local cost-controlled backend: explicit company pilot list, source-content
+  cache, ten-minute debounce, per-company/global attempt caps, shared leases,
+  failure/insufficient-result caching and actual token accounting. No page-view
+  generation or quote/metadata triggers. Disabled by default.
+- [x] Read-only Nanexa evidence replay selects the two issuer agreements and Q2
+  management commentary; 100 repeat checks reuse the result. Zero paid calls.
+- [x] First paid Nanexa evaluation (26 Sep): 1,696 input / 483 output tokens,
+  approximately 0.94 öre at the budgeting exchange rate. Overlong prose was
+  rejected; no publication or retry. Added the real response as a regression
+  fixture and tightened plain-language/length rules. Approved preview unchanged.
+- [x] Second paid Nanexa evaluation: revised prompt passes structure at 81 words,
+  1,940 input / 307 output tokens (about 0.77 öre). Source review still requires
+  clearer development-target qualifications and separation of independent
+  agreements. Not approved for publication; saved as an editorial regression case.
+- [x] Local news-plus-price experiment: three generated news sentences plus one
+  code-composed, explicitly dated daily-change sentence (92 words total).
+  Quote data stays outside the model; payment conditions, development targets
+  and separate agreements are clearer in this example. No live integration,
+  production writes or deployment; production prompt remains unchanged.
+- [x] Approved news-plus-price draft is now the local UI prototype, with a subtle
+  theme-aware amber gradient, unchanged single-title/paragraph hierarchy and
+  quote provenance inside the sources dialog. Checked at 320–1440px in both
+  themes; 253 frontend tests pass. No additional model call or deployment.
+- [x] Connect the approved panel to the overview's cached generated briefings.
+  The dated price sentence uses the current header quote independently of AI
+  text; invalid quote inputs omit the sentence, not the news. Add expiry/fallback
+  protection and cached-route read-only tests. Company charts and share charts
+  now use straight segments. Implemented locally; public flags remain off.
+- [ ] Review paid outputs and semantic-source accuracy on Nanexa and contrasting
+  quiet/report/conflicting-news companies before public activation. Nanexa's
+  editorial quality gate remains open despite its structural pass. Then deploy
+  the worker/API/UI with a small explicitly approved pilot. No automatic universe
+  or anonymous-visitor expansion.
+
+See [briefing UI and boundaries](docs/company-briefing-prototype.md). Worker
+policy and operator steps are documented in the producer's
+`docs/company-briefings.md`.
+
 ### Coherent Bevakning → news → company/report journey
 
 Approved after the 23 September product audit. The first implementation slice

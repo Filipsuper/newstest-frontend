@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "symbol": "NANEXA.ST",
+  "asOf": "2026-09-25T19:15:42.079Z",
+  "mode": "reviewed_prototype",
+  "headline": "Från licensförhandling till avtal med Novo",
+  "summary": {
+    "text": "Nanexa har tecknat ett Novo-avtal för upp till fem PharmaShell-program inom bland annat obesitas och diabetes. I Q2 beskrev ledningen aktiva licensförhandlingar. Avtalets maxbelopp på 1,165 miljarder euro omfattar villkorade milstolpar, inte pengar på kontot. Initialbetalningen anges inte separat. Samtidigt ska samarbetet med Forge Nano utveckla tillverkningskapaciteten – det gäller inte en färdig produktionsanläggning.",
+    "sourceIds": ["novo", "q2", "forge"]
+  },
+  "background": [
+    { "id": "management", "title": "Ledningens bild före avtalet · Q2 2026", "text": "I rapporten den 27 augusti beskrev vd långt gångna och fortsatt aktiva licensförhandlingar inom obesitas och typ 2-diabetes. Semaglutidformuleringar utvecklades parallellt inför ett möjligt avtal. Novo-avtalet är en senare, bekräftad händelse; Q2-texten namnger inte motparten i förhandlingarna.", "sourceIds": ["q2", "novo"] },
+    { "id": "terms", "title": "Vad betalningsbeloppen faktiskt betyder", "text": "Nanexa anger ett möjligt totalbelopp på 1,165 miljarder euro. Av detta avser 615 miljoner euro initialbetalning tillsammans med utvecklings- och regulatoriska milstolpar. Återstoden avser försäljningsmilstolpar, och royalty tillkommer. Pressmeddelandet särredovisar inte initialbetalningen. Vi räknar därför inte maxbeloppet som dagens kassa eller intäkt.", "sourceIds": ["novo"] },
+    { "id": "scale", "title": "En separat utveckling samma vecka", "text": "Avtalet med Forge Nano den 22 september gäller att utveckla storskalig, GMP-anpassad ALD-utrustning för PharmaShell-portföljen. Möjlig framtida kommersiell produktion förutsätter fortsatt utveckling och myndighetsgodkännanden. Källan säger inte att utrustningen redan är färdig eller att avtalet gäller enbart Novo-programmen.", "sourceIds": ["forge"] },
+    { "id": "next", "title": "Nästa daterade hållpunkt", "text": "Bolagets kalender anger Q3-rapport den 5 november 2026. Inga nya datum för kliniska resultat eller milstolpsbetalningar har lagts till i prototypen.", "sourceIds": ["calendar"] }
+  ],
+  "sources": [
+    { "id": "novo", "title": "Nanexa · licens- och samarbetsavtal med Novo", "publishedAt": "2026-09-24T16:24:00Z", "url": "https://mfn.se/a/nanexa/nanexa-and-novo-enter-into-eur-1-165-billion-global-license-and-collaboration-agreement-for-long-acting-injectables", "detail": "Bolagets pressmeddelande" },
+    { "id": "q2", "title": "Nanexa · VD-kommentar i Q2-rapporten", "publishedAt": "2026-08-27T06:00:00Z", "url": "https://storage.mfn.se/a144fc7f-0f56-4c06-a8ef-df718c8eb30c/nanexa-delarsrapport-april-juni-2026.pdf#page=3", "detail": "Q2 2026 · PDF-sida 3" },
+    { "id": "forge", "title": "Nanexa · tillverkningssamarbete med Forge Nano", "publishedAt": "2026-09-22T12:30:00Z", "url": "https://mfn.se/a/nanexa/forge-nano-and-nanexa-enter-joint-development-agreement-to-advance-manufacturing-for-ald-coated-pharmashell-r-long-acting-injectable-medicines", "detail": "Bolagets pressmeddelande" },
+    { "id": "calendar", "title": "Nanexa · finansiell kalender hos MFN", "observedAt": "2026-09-25T19:15:42.079Z", "url": "https://mfn.se/all/a/nanexa" }
+  ]
+}

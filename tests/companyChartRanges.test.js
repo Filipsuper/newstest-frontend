@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COMPANY_CHART_RANGES, companyChartRange, companyRangeDisabled, companyIntradayRows, companyIntradayBaseline, companyIntradayTick } from "../app/utils/companyChartRanges.js";
+import { COMPANY_CHART_RANGES, companyChartRange, companyChartLinePath, companyRangeDisabled, companyIntradayRows, companyIntradayBaseline, companyIntradayTick } from "../app/utils/companyChartRanges.js";
+
+test('share price paths join actual points with straight lines and preserve missing values', () => {
+  const rows = [10, 8, 15, null, 13, 12, NaN, 11].map(close => ({ close }));
+  assert.equal(companyChartLinePath(rows, 'close', i => i * 10, v => v),
+    'M0.0 10.0 L10.0 8.0 L20.0 15.0 M40.0 13.0 L50.0 12.0 M70.0 11.0');
+  assert.equal(companyChartLinePath([], 'close', i => i, v => v), '');
+  assert.equal(companyChartLinePath([{ close: 10 }], 'close', i => i, v => v), 'M0.0 10.0');
+});
 
 const at = date => Date.parse(date + "Z");
 const previousFull = [7, 10, 14].map(hour => ({ time: at(`2026-09-11T${String(hour).padStart(2, "0")}:00:00`), close: 98 + hour, volume: 10 }));

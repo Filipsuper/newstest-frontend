@@ -388,6 +388,10 @@ desktop density or abbreviated interaction model.
 - Product typography is Geist and uses the shared 12/14/16/20/24/32px scale.
   Retain full headlines and 44px touch controls; remove nonessential elements
   before shrinking text. No serif data rows, decorative gradients or glass.
+  One explicitly approved exception: the company-briefing
+  panel uses a static, subtle amber-to-surface gradient to distinguish the
+  synthesis from ordinary data cards. Keep normal text contrast, shared radii
+  and spacing; no glow, animation, performance-color tint or application to other cards.
 - The reusable Base UI Combobox belongs in `ui/`; company search adapters own
   fetching/filtering and provide an explicit handoff to news search.
 
@@ -556,6 +560,18 @@ desktop density or abbreviated interaction model.
   a raised card, outline, shadow, or rounded container.
 - Keep the price plot and matching share image grid-free. Retain price/date
   axes, volume and meaningful session dividers; other analytical charts are separate.
+- Company price lines use straight segments between observed values, including
+  intraday, comparison, moving averages and the share image. No smoothing or
+  interpolation of missing prices. Other analytical charts are unchanged.
+- A qualified cached company briefing replaces the chart-side latest-news
+  context. Use the approved gradient panel, one title and one paragraph, with
+  sources behind the shared dialog. Page views only read saved text; never
+  generate on demand. Missing/expired/mismatched briefings keep the news fallback.
+  Compose a dated daily-change sentence from the same quote as the header,
+  independently of the AI text and selected chart range. Require a matching
+  company, explicit timestamp/currency/source and a prior close reconciling with
+  the quote's change; omit only the sentence when those inputs fail. It is not
+  a news-attributed return. Calculation details remain in the source dialog.
 - One continuous document contains Översikt, Nyheter & reaktioner, Bolagsprofil,
   Finansiellt, VD-ord, Estimat, Värdering, Insyn & ägare, Blankning and Kalender. Desktop contents
   stay sticky on the left; mobile uses a sticky, touch-sized contents sheet.

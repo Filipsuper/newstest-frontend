@@ -9,7 +9,7 @@ export const SITE_ICONS = {
   apple: [{ url: "/apple-icon.png?v=20260908-circle", type: "image/png", sizes: "180x180" }],
 };
 // Shared by company preview/download/metadata and dedicated news metadata.
-export const CONTENT_OG_VERSION = "4";
+export const CONTENT_OG_VERSION = "5";
 // Version the URL when the artwork changes so social crawlers see a new asset.
 // Dedicated story, article and company sharing images override this fallback.
 export const SITE_OG_IMAGE = {

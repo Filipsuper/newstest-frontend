@@ -3,6 +3,7 @@ build
 node_modules
 README.md
 .next
+.next-*
 .git
 .env
 .env.*

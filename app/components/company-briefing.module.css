@@ -1,0 +1,32 @@
+.briefing {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-4);
+  min-width: 0;
+  padding: var(--ui-space-6);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+/* Company synthesis only: a quiet warm highlight, not a performance signal. */
+.highlighted {
+  background-image: radial-gradient(ellipse at top right,
+    color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface)) 0%,
+    color-mix(in srgb, var(--ui-accent) 4%, var(--ui-surface)) 48%,
+    var(--ui-surface) 100%);
+}
+.sources a:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.footer { justify-content: space-between; gap: var(--ui-space-1); }
+.footer button { padding-inline: 0; font-size: var(--ui-text-sm); }
+.briefing a, .briefing button { scroll-margin-block: var(--report-offset, 164px) 100px; }
+.sources { list-style: none; margin: 0; padding: 0; }
+.sources a { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); min-height: 44px; padding-block: var(--ui-space-2); color: var(--ui-text); font: 400 var(--ui-text-sm) / 1.5 var(--ui-font); text-decoration: none; }
+.sources a:hover { text-decoration: underline; }
+.sources a > span { min-width: 0; }
+.sources svg { flex-shrink: 0; }
+.sources small { display: block; color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
+.sourceDialog { width: min(100%, var(--ui-reading-max)); }
+.previewBar { padding-block: var(--ui-space-4); }
+.previewControls { justify-content: space-between; }
+@media (forced-colors: active) { .highlighted { background-image: none; } }
+@media (max-width: 600px) { .briefing { padding: var(--ui-space-4); } }

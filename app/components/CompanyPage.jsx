@@ -38,6 +38,8 @@ import CompanyEstimates from "./CompanyEstimates";
 import CompanyOwnership from "./CompanyOwnership";
 import CompanyShortInterest from "./CompanyShortInterest";
 import CompanyCalendar from "./CompanyCalendar";
+import CompanyBriefing from "./CompanyBriefing";
+import { companyBriefingPrice, qualifiedCompanyBriefing } from "../utils/companyBriefing";
 import { financialPeriodLabel, researchPeriods } from "../utils/companyResearch";
 import { geographicRevenueForCompany, segmentRevenueForCompany } from "../utils/segmentRevenue";
 import { upcomingCompanyEvents } from "../utils/companyResearchViews";
@@ -410,7 +412,7 @@ function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, onQuoteChange }) {
+function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, onQuoteChange, briefing }) {
     const router = useRouter();
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
@@ -570,6 +572,10 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                                 change: Number.isFinite(Number(tick.change)) ? Number(tick.change) : current.quote?.change,
                                 changePct: Number.isFinite(Number(tick.changePct)) ? Number(tick.changePct) : current.quote?.changePct,
                                 quoteTime: tickTime,
+                                source: tick.source ?? null,
+                                sourceName: null,
+                                sourceStatus: tick.sourceStatus ?? null,
+                                verifiedRealtime: tick.verifiedRealtime === true,
                                 fresh: tick.freshStream === true,
                             },
                         };
@@ -654,7 +660,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
 
 
     return (
-        <div className={styles.intro}>
+        <div className={`${styles.intro} ${briefing ? styles.introWithBriefing : ''}`}>
             <header className={styles.identity}>
                 <div className={styles.identityTop}>
                     <div>
@@ -697,7 +703,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                     </>}
                 </div>
             </div>
-            {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${drivers.length ? styles.chartWithContext : ""}`}>
+            {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${!briefing && drivers.length ? styles.chartWithContext : ""}`}>
             <div className="company-chart-main" data-nosnippet="">
             <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="group" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -742,10 +748,10 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             <ReferenceLine yAxisId="price" x={firstIntradayPoint.date} stroke="var(--company-muted-line)" strokeOpacity={0.55} strokeDasharray="4 6" />
                         )}
                         {isIntraday && !loadingIntraday && (
-                            <Line yAxisId="price" type="monotone" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
+                            <Line yAxisId="price" type="linear" dataKey="previousPrice" stroke="var(--company-muted-line)" strokeOpacity={0.62} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls={false} />
                         )}
                         {isIntraday && !loadingIntraday && (
-                            <Line yAxisId="price" type="monotone" dataKey="currentPrice" stroke="url(#company-line-fade-yellow)" strokeWidth={2.2} dot={data.length === 1 ? { r: 3 } : false} isAnimationActive={false} connectNulls={false} />
+                            <Line yAxisId="price" type="linear" dataKey="currentPrice" stroke="url(#company-line-fade-yellow)" strokeWidth={2.2} dot={data.length === 1 ? { r: 3 } : false} isAnimationActive={false} connectNulls={false} />
                         )}
                         {isIntraday && !loadingIntraday && intradayLive && lastIntradayPoint && (
                             <ReferenceDot yAxisId="price" x={lastIntradayPoint.date} y={lastIntradayPoint.currentPrice} isFront shape={(props) => <LiveEndpointDot {...props} />} />
@@ -753,7 +759,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                         {!isIntraday && (
                             <Line
                                 yAxisId="price"
-                                type="monotone"
+                                type="linear"
                                 dataKey={chartCompare ? "returnPct" : "close"}
                                 stroke="url(#company-line-fade-yellow)"
                                 strokeWidth={2.2}
@@ -762,13 +768,13 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                             />
                         )}
                         {chartCompare && (
-                            <Line yAxisId="price" type="monotone" dataKey="benchmarkPct" stroke="url(#company-line-fade-blue)" strokeWidth={1.6} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="linear" dataKey="benchmarkPct" stroke="url(#company-line-fade-blue)" strokeWidth={1.6} dot={false} isAnimationActive={false} />
                         )}
                         {!isIntraday && !chartCompare && ma50 && (
-                            <Line yAxisId="price" type="monotone" dataKey="ma50" stroke="url(#company-line-fade-blue)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="linear" dataKey="ma50" stroke="url(#company-line-fade-blue)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
                         {!isIntraday && !chartCompare && ma200 && (
-                            <Line yAxisId="price" type="monotone" dataKey="ma200" stroke="url(#company-line-fade-muted)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
+                            <Line yAxisId="price" type="linear" dataKey="ma200" stroke="url(#company-line-fade-muted)" strokeWidth={1.4} dot={false} isAnimationActive={false} />
                         )}
                         {markedRows.map((row) => (
                             <ReferenceDot
@@ -811,10 +817,13 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 ))}
             </div>
             </div>
-                {drivers.length > 0 && (
+                {!briefing && drivers.length > 0 && (
                     <MoveDrivers drivers={drivers} />
                 )}
             </div>}
+            {briefing && <CompanyBriefing briefing={briefing} symbol={symbol} companyName={companyName}
+                allowPrototype={briefing.mode === 'reviewed_prototype'}
+                priceContext={companyBriefingPrice({ symbol, quote, chart, profile, intraday })} />}
         </div>
     );
 }
@@ -1206,9 +1215,21 @@ function PlusSectionGate({ companyName }) {
     </div>;
 }
 
-export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [], missing = false }) {
+export default function CompanyPage({ symbol, initialData, initialTab, initialRange, initialMovingAverages, mentions = [], missing = false, briefing }) {
     const { isPlusUser } = useAuthContext();
     const [quote, setQuote] = useState(initialData?.summary?.quote);
+    const savedBriefing = briefing === undefined ? initialData?.briefing : briefing;
+    const [, checkBriefingExpiry] = useState(0);
+    useEffect(() => {
+        if (savedBriefing?.mode !== 'generated') return undefined;
+        const expiry = Date.parse(savedBriefing.validUntil);
+        if (!Number.isFinite(expiry)) return undefined;
+        const check = () => checkBriefingExpiry(value => value + 1);
+        const visible = () => { if (document.visibilityState !== 'hidden') check(); };
+        const timer = setTimeout(check, Math.min(2_147_483_647, Math.max(0, expiry - Date.now() + 1)));
+        document.addEventListener('visibilitychange', visible);
+        return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', visible); };
+    }, [savedBriefing]);
     if (!initialData?.summary) {
         return <Container as="main">
             <EmptyState title={missing ? "Aktien kunde inte hittas" : "Bolagssidan kunde inte hämtas"}
@@ -1225,7 +1246,8 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
     return <CompanyReportShell symbol={symbol} name={name} quote={quote} currency={companyPriceCurrency(summary.profile, quote)} hasPlus={hasPlus} initialTab={initialTab}>
         <ReportSection id="overview">
             <CompanyChart summary={summary} symbol={symbol} chart={initialData.chart} news={initialData.news} reports={initialData.reports}
-                initialRange={initialRange} initialMovingAverages={initialMovingAverages} companyName={name} onQuoteChange={setQuote} />
+                initialRange={initialRange} initialMovingAverages={initialMovingAverages} companyName={name} onQuoteChange={setQuote}
+                briefing={qualifiedCompanyBriefing(savedBriefing, symbol, { allowPrototype: briefing !== undefined })} />
         </ReportSection>
         <ReportSection id="news" title={`Nyheter om ${name}`}>
             <NewsSection data={initialData} mentions={mentions} hasPlus={hasPlus} />

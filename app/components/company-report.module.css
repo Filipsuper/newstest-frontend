@@ -74,6 +74,10 @@
 .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
 .chartLayout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-6); }
 .chartWithContext { grid-template-columns: minmax(0, 1fr) 280px; }
+.introWithBriefing { grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto auto 1fr; align-items: start; }
+.introWithBriefing > .identity, .introWithBriefing > .controls, .introWithBriefing > .chartLayout { grid-column: 1; }
+.introWithBriefing > aside { grid-column: 2; grid-row: 1 / 4; }
+.introWithBriefing .quoteContext > .reportDate { display: none; }
 .report :global(.company-chart) { height: 320px; mask-image: none; -webkit-mask-image: none; animation: none; }
 .report :global(.company-chart-legend) { margin: var(--ui-space-3) 0 0; gap: var(--ui-space-3); color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
 .report :global(.company-chart .recharts-cartesian-axis-tick-value) { fill: var(--ui-text-secondary); }
@@ -150,6 +154,8 @@
 .metrics > div { display: grid; gap: var(--ui-space-2); padding: var(--ui-space-4); background: var(--ui-surface); border-radius: var(--ui-radius-md); }
 
 @media (max-width: 1100px) {
+  .introWithBriefing { grid-template-columns: minmax(0, 1fr); }
+  .introWithBriefing > aside { grid-column: 1; grid-row: auto; }
   .chartWithContext { grid-template-columns: minmax(0, 1fr); }
   .driver { display: none; } /* The same event remains in the news section. */
 }
