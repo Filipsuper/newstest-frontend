@@ -8,7 +8,7 @@ export default async function Page() {
   // accessed only through this explicitly configured development route.
   if (process.env.NODE_ENV !== 'development' || !process.env.COMPANY_BRIEFING_SNAPSHOT) notFound();
   const [{ readFile }, { default: Preview }, { default: briefing }] = await Promise.all([
-    import('node:fs/promises'), import('./BriefingPreview'), import('./nanexa-price.json'),
+    import('node:fs/promises'), import('./BriefingPreview'), import('./nanexa-compact.json'),
   ]);
   const snapshot = JSON.parse(await readFile(process.env.COMPANY_BRIEFING_SNAPSHOT, 'utf8'));
   if (snapshot.symbol !== briefing.symbol || snapshot.overview.status !== 200) notFound();

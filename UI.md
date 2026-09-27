@@ -567,6 +567,10 @@ desktop density or abbreviated interaction model.
   context. Use the approved gradient panel, one title and one paragraph, with
   sources behind the shared dialog. Page views only read saved text; never
   generate on demand. Missing/expired/mismatched briefings keep the news fallback.
+  Keep new copy compact: a headline up to 65 characters and 1–2 news sentences,
+  targeting 35–45 words (hard limit 55 words / 420 characters before the price
+  sentence). Preserve meaningful conditions and separate counterparties. Do not
+  shrink the 16px paragraph or clamp/truncate existing cached text to achieve this.
   Compose a dated daily-change sentence from the same quote as the header,
   independently of the AI text and selected chart range. Require a matching
   company, explicit timestamp/currency/source and a prior close reconciling with

@@ -54,6 +54,20 @@ test('generated briefings need a current validity window', () => {
 });
 
 const priceDraft = JSON.parse(readFileSync(new URL('../app/designsystem/company-briefing/nanexa-price.json', import.meta.url)));
+test('compact editorial preview preserves qualifications, sources and independent price context', () => {
+  const compact = JSON.parse(readFileSync(new URL('../app/designsystem/company-briefing/nanexa-compact.json', import.meta.url)));
+  assert.equal(qualifiedCompanyBriefing(compact, 'NANEXA.ST', { allowPrototype: true }), compact);
+  assert.equal(qualifiedCompanyBriefing(compact, 'NANEXA.ST'), null);
+  assert.ok(compact.headline.length <= 65);
+  assert.equal(compact.summary.text.split(/\s+/).length, 35);
+  assert.ok(compact.summary.text.length <= 420);
+  assert.match(compact.summary.text, /kan ge upp till.*villkorade milstolpar/);
+  assert.match(compact.summary.text, /Separat ska Nanexa och Forge Nano utveckla/);
+  assert.deepEqual(compact.summary.sourceIds, priceDraft.summary.sourceIds);
+  assert.deepEqual(compact.sources, priceDraft.sources);
+  assert.deepEqual(compact.priceContext, priceDraft.priceContext);
+  assert.equal(prototypeBriefingPrice(compact, 'NANEXA.ST').sentence, prototypeBriefingPrice(priceDraft, 'NANEXA.ST').sentence);
+});
 test('approved news and independently composed quote stay separate', () => {
   assert.equal(qualifiedCompanyBriefing(priceDraft, 'NANEXA.ST', { allowPrototype: true }), priceDraft);
   assert.doesNotMatch(priceDraft.summary.text, /105,1/);

@@ -112,6 +112,13 @@ and compatible backend releases are in the release history, not pending tasks.
 - [ ] Resolve the Nanexa rejection and SBB/EQT editorial cases within the caps.
   Strengthen original-source checks for reused AI digests, unsupported inference,
   technical jargon and dated management context before expanding coverage.
+- [x] Local compact briefing pass: prompt v4 targets 35–45 news words in 1–2
+  sentences (hard 55 words / 420 characters), with shorter headlines and schema
+  constraints. The Nanexa editorial preview drops from 80 to 35 news words;
+  independent price context, sources, gradient and 16px reading text are retained.
+  Not deployed or paid-tested; existing production cache and budgets unchanged.
+- [ ] Release and evaluate compact v4 output within the existing pilot caps;
+  review actual model wording against original sources before wider rollout.
 - [ ] Expand paid-output and semantic-source review to quiet/report/conflicting
   news cases before expanding the pilot. Citation/schema checks are not factual
   verification. No automatic universe or anonymous-visitor expansion.

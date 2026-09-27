@@ -5,6 +5,35 @@ were deployed 26 September with an explicitly authorized ten-company generation
 pilot. See the [release record](company-briefing-release-2026-09-26.md); historical
 local-only statements below describe the earlier review stages.
 
+## Compact copy · local follow-up, 26 September
+
+The default development preview now uses `nanexa-compact.json`: an editorial
+shortening of the previously reviewed example from 80 to 35 news words, plus the
+same independently composed dated price sentence. The conditional maximum deal
+value and separate Forge Nano development agreement remain. The original paid
+response and `nanexa-price.json` are preserved as historical evaluation evidence.
+This is a local presentation example, not a new model result or production cache.
+
+Producer prompt v4 targets 35–45 words, allowing one shorter sentence when only
+one material event exists. It caps the news paragraph at 55 words / 420 characters,
+headlines at 65 characters and sentences at 240 characters; schema patterns and
+application validation enforce these limits without truncation or repair calls.
+The font, spacing, gradient, sources dialog and independent price composition
+are unchanged. Production v3/cache/budgets are untouched; deploy separately and
+evaluate actual compact model output within the existing limits.
+
+The read-only local snapshot API additionally accepts
+`COMPANY_BRIEFING_COMPACT_PREVIEW=1` with `COMPANY_BRIEFING_REPLAY=1` to show this
+editorial copy on the real company route through the cached-reader test double.
+`/__briefing_preview` explicitly reports `editorialCompactPreview: true`.
+
+Verification: 195 selected producer tests and all 259 frontend tests pass. Both
+themes pass briefing accessibility and overflow checks at 320/390/820/1440px,
+with working source links and Escape/focus return. At 390px the card shrinks
+from 586px to 370px; at 1440px from 626px to 386px. These comparisons use the
+historical copy in the identical component, without changing the 16px font.
+No new paid API request, production database write or deployment was made.
+
 ## Cached integration · 26 September
 
 The approved gradient now applies to qualified saved `mode: generated` briefings
