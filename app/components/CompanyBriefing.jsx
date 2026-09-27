@@ -22,8 +22,8 @@ export default function CompanyBriefing({ briefing, symbol, companyName, priceCo
   const sourcesFor = claim => record.sources.filter(source => claim.sourceIds.includes(source.id));
   return <aside aria-labelledby={headingId} className={`${styles.briefing} ${styles.highlighted}`}>
     <Stack gap={3}>
-      <Heading as="h2" size="subsection" id={headingId}>{record.headline}</Heading>
-      <Text>{record.summary.text}{price ? ` ${price.sentence}` : ''}</Text>
+      <Heading as="h2" size="item" id={headingId}>{record.headline}</Heading>
+      <Text size="sm">{record.summary.text}{price ? ` ${price.sentence}` : ''}</Text>
     </Stack>
     <Inline className={styles.footer}>
       <Text as="span" size="xs" tone="secondary">{prototype ? 'AI-utkast' : 'AI-sammanfattning'} · {dateLabel(record.asOf, true)}</Text>

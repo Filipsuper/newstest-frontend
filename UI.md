@@ -565,12 +565,17 @@ desktop density or abbreviated interaction model.
   interpolation of missing prices. Other analytical charts are unchanged.
 - A qualified cached company briefing replaces the chart-side latest-news
   context. Use the approved gradient panel, one title and one paragraph, with
-  sources behind the shared dialog. Page views only read saved text; never
+  sources behind the shared dialog. Center the card vertically alongside the
+  full quote/controls/chart overview on desktop, keeping its text left-aligned.
+  On narrower layouts it follows the chart in normal full-width document flow.
+  Page views only read saved text; never
   generate on demand. Missing/expired/mismatched briefings keep the news fallback.
   Keep new copy compact: a headline up to 65 characters and 1–2 news sentences,
   targeting 35–45 words (hard limit 55 words / 420 characters before the price
-  sentence). Preserve meaningful conditions and separate counterparties. Do not
-  shrink the 16px paragraph or clamp/truncate existing cached text to achieve this.
+  sentence). Preserve meaningful conditions and separate counterparties. Match
+  news-card typography: shared 14px item heading and summary, 12px metadata,
+  with a medium-weight title. Keep 20px subsection headings and 16px reading
+  text inside the sources dialog. Do not clamp/truncate cached text to fit.
   Compose a dated daily-change sentence from the same quote as the header,
   independently of the AI text and selected chart range. Require a matching
   company, explicit timestamp/currency/source and a prior close reconciling with

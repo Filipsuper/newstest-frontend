@@ -4,6 +4,23 @@ import { readFileSync } from 'node:fs';
 import { companyBriefingPrice, prototypeBriefingPrice, qualifiedCompanyBriefing } from '../app/utils/companyBriefing.js';
 
 const record = JSON.parse(readFileSync(new URL('../app/designsystem/company-briefing/nanexa.json', import.meta.url)));
+test('briefing centers within its desktop overview column and stacks on narrow layouts', () => {
+  const css = readFileSync(new URL('../app/components/company-report.module.css', import.meta.url), 'utf8');
+  assert.match(css, /\.introWithBriefing > aside\s*\{\s*grid-column: 2;\s*grid-row: 1 \/ 4;\s*align-self: center;/);
+  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.introWithBriefing > aside\s*\{\s*grid-column: 1;\s*grid-row: auto;\s*align-self: start;/);
+});
+test('briefing card matches news typography while source dialog keeps reading sizes', () => {
+  const component = readFileSync(new URL('../app/components/CompanyBriefing.jsx', import.meta.url), 'utf8');
+  const sharedCss = readFileSync(new URL('../app/components/ui/ui.module.css', import.meta.url), 'utf8');
+  const newsCss = readFileSync(new URL('../app/components/ui/news-row.module.css', import.meta.url), 'utf8');
+  const summaryCss = readFileSync(new URL('../app/components/news-summary.module.css', import.meta.url), 'utf8');
+  assert.match(component, /<Heading as="h2" size="item" id=\{headingId\}/);
+  assert.match(component, /<Text size="sm">\{record\.summary\.text\}/);
+  assert.match(component, /<Heading as="h3" size="subsection">/);
+  assert.match(component, /<Text>\{claim\.text\}<\/Text>/);
+  assert.match(sharedCss, /\.heading_item\s*\{[^}]*font-size: var\(--ui-text-sm\);[^}]*line-height: var\(--ui-leading-body\);/);
+  for (const css of [newsCss, summaryCss]) assert.match(css, /var\(--ui-text-sm\)\s*\/\s*var\(--ui-leading-body\)/);
+});
 test('reviewed prototype has dated claim-level sources and an exact company', () => {
   assert.equal(qualifiedCompanyBriefing(record, 'NANEXA.ST', { allowPrototype: true }), record);
   assert.equal(qualifiedCompanyBriefing(record, 'NANEXA.ST'), null);
