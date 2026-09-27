@@ -7,6 +7,11 @@ local-only statements below describe the earlier review stages.
 
 ## Compact copy · local follow-up, 26 September
 
+Deployment follow-up: prompt v4 shipped on 27 September; see the
+[compact release record](company-briefing-compact-release-2026-09-27.md).
+The local-only statements below describe the initial visual pass, not the
+subsequent deployment. No example fixture was promoted to production data.
+
 The default development preview now uses `nanexa-compact.json`: an editorial
 shortening of the previously reviewed example from 80 to 35 news words, plus the
 same independently composed dated price sentence. The conditional maximum deal

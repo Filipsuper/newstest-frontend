@@ -62,7 +62,7 @@ The next phase is news quality and retention, not another wholesale UI redesign.
   presentation and sign-in dialog; the separate Terminal workspace is unchanged.
 
 Latest frontend application release: `bc3429a`; backend: `8ba2d64`; Stonks web: `77b7a7f`;
-briefing worker overlay: `99c48d2` (ten-company pilot);
+briefing worker overlay: `fd053b3` (compact v4, ten-company pilot);
 newsletter renderer unchanged: `8bd95c8`.
 Detailed changes, validation
 and compatible backend releases are in the release history, not pending tasks.
@@ -109,21 +109,28 @@ and compatible backend releases are in the release history, not pending tasks.
 - [x] Initial production batch: nine structurally valid outputs, seven public.
   Nanexa rejected by validation; SBB/EQT withheld after editorial review. No
   budget override. Add safe rejection codes and persistent-hold regression tests.
-- [ ] Resolve the Nanexa rejection and SBB/EQT editorial cases within the caps.
+- [x] Nanexa's normal overnight retry succeeded on 27 September within the caps;
+  the original rejection's exact cause remains unknown.
+- [ ] Resolve the SBB/EQT editorial cases within the caps.
   Strengthen original-source checks for reused AI digests, unsupported inference,
   technical jargon and dated management context before expanding coverage.
 - [x] Local compact briefing pass: prompt v4 targets 35–45 news words in 1–2
   sentences (hard 55 words / 420 characters), with shorter headlines and schema
   constraints. The Nanexa editorial preview drops from 80 to 35 news words;
   independent price context, sources, gradient and 16px reading text are retained.
-  Not deployed or paid-tested; existing production cache and budgets unchanged.
-- [ ] Release and evaluate compact v4 output within the existing pilot caps;
-  review actual model wording against original sources before wider rollout.
+  Original local pass made no paid requests; historical model fixtures preserved.
+- [x] Deploy compact v4 on 27 September with prompt/model-safe editorial holds.
+  Only the newswire worker restarted; public UI containers and ten-stock cohort
+  unchanged. Normal settling/refresh applies; counters and limits were not reset.
+- [ ] Evaluate the new compact v4 outputs against original sources before wider
+  rollout. H&M, Swedbank, ASSA ABLOY and Tele2 passed a read-only source-coverage
+  check as possible next pilot additions; none were enabled.
 - [ ] Expand paid-output and semantic-source review to quiet/report/conflicting
   news cases before expanding the pilot. Citation/schema checks are not factual
   verification. No automatic universe or anonymous-visitor expansion.
 
 See [release, pilot and rollback](docs/company-briefing-release-2026-09-26.md) and
+[compact worker release](docs/company-briefing-compact-release-2026-09-27.md), plus
 [briefing UI and boundaries](docs/company-briefing-prototype.md). Worker
 policy and operator steps are documented in the producer's
 `docs/company-briefings.md`.
