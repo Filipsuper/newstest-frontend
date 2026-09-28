@@ -4,10 +4,13 @@ import { readFileSync } from 'node:fs';
 import { companyBriefingPrice, prototypeBriefingPrice, qualifiedCompanyBriefing } from '../app/utils/companyBriefing.js';
 
 const record = JSON.parse(readFileSync(new URL('../app/designsystem/company-briefing/nanexa.json', import.meta.url)));
-test('briefing centers within its desktop overview column and stacks on narrow layouts', () => {
+test('briefing sits beside the chart below full-width quote and controls, then stacks on narrow layouts', () => {
   const css = readFileSync(new URL('../app/components/company-report.module.css', import.meta.url), 'utf8');
-  assert.match(css, /\.introWithBriefing > aside\s*\{\s*grid-column: 2;\s*grid-row: 1 \/ 4;\s*align-self: center;/);
+  assert.match(css, /\.introWithBriefing > \.identity, \.introWithBriefing > \.controls\s*\{\s*grid-column: 1 \/ -1;/);
+  assert.match(css, /\.introWithBriefing > \.chartLayout\s*\{\s*grid-column: 1;/);
+  assert.match(css, /\.introWithBriefing > aside\s*\{\s*grid-column: 2;\s*grid-row: 3;\s*align-self: start;/);
   assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.introWithBriefing > aside\s*\{\s*grid-column: 1;\s*grid-row: auto;\s*align-self: start;/);
+  assert.doesNotMatch(css, /\.introWithBriefing \.quoteContext > \.reportDate\s*\{\s*display: none;/);
 });
 test('briefing card matches news typography while source dialog keeps reading sizes', () => {
   const component = readFileSync(new URL('../app/components/CompanyBriefing.jsx', import.meta.url), 'utf8');

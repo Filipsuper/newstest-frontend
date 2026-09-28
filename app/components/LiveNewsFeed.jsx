@@ -194,7 +194,7 @@ export default function LiveNewsFeed({
       const rows = mergeFeed(current.current, eligible);
       const contentChanged = rows.length !== current.current.length
         || rows.some((item) => !currentById.has(item.id))
-        || changedFeedItems(current.current, rows).length > 0;
+        || changedFeedItems(current.current, rows, { showSummary: false }).length > 0;
       const next = new Map(observations.current);
       for (const item of eligible) {
         if (item.status && !["flash", "update"].includes(item.status)) {
@@ -206,8 +206,9 @@ export default function LiveNewsFeed({
           ? refreshMarketObservations([old], [item])[0] : item);
       }
       const observedRows = refreshMarketObservations(rows, [...next.values()]);
-      // News and AI copy appear immediately. Quote-only changes update metrics
-      // in place; actual news changes or a view switch refresh reaction order.
+      // Keep AI copy in state without expanding these headline-only rows.
+      // Enrichment/quote changes must not reorder the reaction view;
+      // actual visible news changes or a view switch refresh its order.
       captureAnchor();
       observations.current = new Map([...next].slice(-500));
       current.current = observedRows;
@@ -519,7 +520,7 @@ export default function LiveNewsFeed({
         <div className={styles.rows} ref={listRef} aria-busy={!ready}>
           {shown.map((item) => (
             <div key={item.id} data-live-news-id={item.id}>
-              <NewsFeedItem item={observedById.get(item.id) ?? item} />
+              <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary={false} />
             </div>
           ))}
         </div>

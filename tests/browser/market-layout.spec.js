@@ -97,6 +97,11 @@ for (const [width, height] of [[1440, 900], [1280, 800], [900, 900], [390, 844],
     await page.goto("/marknaden");
     const { featured, letter, personal, latest } = await loadedRegions(page);
     await expect(personal.locator("article")).toHaveCount(2);
+    await expect(featured.getByText("AI-sammanfattning", { exact: true })).toHaveCount(2);
+    await expect(latest.locator("article")).toHaveCount(12);
+    await expect(latest.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+    await expect(latest.getByRole("list")).toHaveCount(0);
+    await expect(latest).not.toContainText("Fiktiv AI-text");
     const allPersonal = personal.getByRole("link").filter({ hasText: /^Visa alla/ });
     await expect(allPersonal).toBeVisible();
     await expect(allPersonal).toHaveAttribute("href", "/marknaden/bevakning");

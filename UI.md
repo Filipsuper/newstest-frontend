@@ -245,19 +245,28 @@ desktop density or abbreviated interaction model.
   clear headline/company, supporting source/time and optional relevance reason.
   Rows are raised surfaces separated by gaps, not dark rows inside an outer
   card. Avoid repetitive summaries and obligatory per-row charts.
-- When a story has `aiSummary`, show its prose and up to three supplied bullet
-  points immediately below the headline, quietly labelled AI-sammanfattning.
-  Use the same `NewsSummary` in rows and the reader. Do not substitute the
-  deterministic `summary`, manufacture points or fetch every story detail to
-  fill a list. Missing AI copy leaves the headline/source row intact.
-- Exception: `Viktigast just nu` is a scannable headline selection. Its rows
-  show company/headline, reaction badge and source/time, without description
-  or AI bullets. Keep the complete supplied AI summary in the opened reader;
-  chronological feeds retain their existing summary presentation.
+  Only render a reaction badge for a finite percentage, including a real zero.
+  Without a percentage, omit the badge and its leading space entirely; do not
+  substitute `Nyhet`, `Saknas` or a dash. Keep timing/status in metadata and
+  measurement details in the reader. Other data widgets keep their own states.
+- `Viktigast just nu` is the explanatory selection: when a story has
+  `aiSummary`, show its full supplied prose and up to three supplied bullet
+  points below the headline, quietly labelled AI-sammanfattning. Reuse
+  `NewsSummary` and the same row typography, surfaces and spacing as elsewhere.
+  Do not substitute the deterministic `summary`, manufacture points or fetch
+  every story detail to fill the selection. Missing AI copy leaves the
+  headline/source row intact; it does not affect selection or importance.
+- Ordinary market news stays scannable: `Senaste nytt` (public and member
+  views), the full chronological/reaction feed and Bevakning show the headline,
+  company, reaction and supporting metadata without AI prose or bullets.
+  Full summaries remain in the opened reader for every story that has them.
+  This is presentation, not a change to ranking, access or AI generation.
+  Enrichment updates featured copy in place without reshuffling its selection;
+  hidden enrichment must not reorder ordinary feed rows either.
 - The personal sidebar uses the compact variant of the same news row: two
   full headlines, signed reaction with its period, publication time, source
-  and match reason. Leave AI summaries, type labels, repeated ticker links
-  and extra volume context to the full feed/reader. Do not truncate headlines
+  and match reason. Leave AI summaries to the reader; type labels, repeated
+  ticker links and extra volume context belong in the full feed/reader. Do not truncate headlines
   or shrink type to make this preview fit.
 - Every percentage states its period. `Sedan publicering` and `idag` are not
   interchangeable. A temporal association is not proof of causation. Missing
@@ -565,14 +574,18 @@ desktop density or abbreviated interaction model.
   interpolation of missing prices. Other analytical charts are unchanged.
 - A qualified cached company briefing replaces the chart-side latest-news
   context. Use the approved gradient panel, one title and one paragraph, with
-  sources behind the shared dialog. Center the card vertically alongside the
-  full quote/controls/chart overview on desktop, keeping its text left-aligned.
+  sources behind the shared dialog. On desktop, place the card to the right of
+  the chart, top-aligned with the chart row below the share/comparison/settings
+  controls. The company header and controls span the full overview width;
+  the card must not occupy or span their rows. Keep its text left-aligned.
   On narrower layouts it follows the chart in normal full-width document flow.
   Page views only read saved text; never
   generate on demand. Missing/expired/mismatched briefings keep the news fallback.
   Keep new copy compact: a headline up to 65 characters and 1–2 news sentences,
-  targeting 35–45 words (hard limit 55 words / 420 characters before the price
-  sentence). Preserve meaningful conditions and separate counterparties. Match
+  targeting 35–45 words as guidance, with a shared 420-character budget before
+  the price sentence. Generation and validation share a derived 209-character
+  per-sentence limit, including room for the joining space, not a second hard
+  word-count gate. Preserve meaningful conditions and separate counterparties. Match
   news-card typography: shared 14px item heading and summary, 12px metadata,
   with a medium-weight title. Keep 20px subsection headings and 16px reading
   text inside the sources dialog. Do not clamp/truncate cached text to fit.

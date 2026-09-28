@@ -121,6 +121,8 @@ export default function MarketOverviewPage({
             : "",
         );
         const incoming = reconcileNewsSnapshot(currentItems.current, itemsFrom(next));
+        // Refresh displayed summaries in place; enrichment alone must not
+        // reshuffle the editorial selection or reset its ranking timestamp.
         const contentChanged = changedFeedItems(currentItems.current, incoming, { showSummary: false }).length > 0
           || currentItems.current.map(item => item.id).join() !== incoming.map(item => item.id).join();
         currentItems.current = incoming;
@@ -227,7 +229,7 @@ export default function MarketOverviewPage({
           <div className={styles.news}>
             {featured.length ? (
               featured.map((item) => <div key={item.id} data-live-news-id={`featured:${item.id}`}>
-                <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary={false} />
+                <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary />
               </div>)
             ) : (
               <EmptyState
@@ -262,7 +264,7 @@ export default function MarketOverviewPage({
               <div className={styles.news}>
                 {visibleItems.slice(0, 12).map((item) => (
                   <div key={item.id} data-live-news-id={`latest:${item.id}`}>
-                    <NewsFeedItem item={item} />
+                    <NewsFeedItem item={item} showSummary={false} />
                   </div>
                 ))}
               </div>

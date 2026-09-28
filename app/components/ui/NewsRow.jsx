@@ -24,9 +24,9 @@ export default function NewsRow({
   return (
     <ListRow
       as={as}
-      leading={
-        <ChangeBadge value={reaction} fallback="Nyhet" label={reactionLabel} />
-      }
+      leading={Number.isFinite(reaction)
+        ? <ChangeBadge value={reaction} label={reactionLabel} />
+        : null}
       highlighted={highlighted}
       className={cx(compact && styles.compact, className)}
       {...props}

@@ -119,7 +119,7 @@ test("chronological feed inserts arrivals automatically, pauses, filters by URL 
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("news rows and reader show AI prose and bullets, never the wire description", async ({ page }) => {
+test("ordinary news rows stay headline-only while the reader keeps full AI copy", async ({ page }) => {
   const detailRequests = [];
   page.on("request", (request) => {
     if (/\/api\/feed\/news\/fixture-/.test(new URL(request.url()).pathname))
@@ -127,9 +127,9 @@ test("news rows and reader show AI prose and bullets, never the wire description
   });
   await page.goto("/marknaden/nyheter");
   const row = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~fixture-0"]') });
-  await expect(row.getByText("AI-sammanfattning", { exact: true })).toBeVisible();
-  await expect(row.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" }).getByRole("listitem")).toHaveCount(3);
-  await expect(row).toContainText("Fiktiv AI-text.");
+  await expect(row.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+  await expect(row.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" })).toHaveCount(0);
+  await expect(row).not.toContainText("Fiktiv AI-text.");
   await expect(row).not.toContainText("Uppgifterna kommer från bolagets publicerade rapport.");
   const proseOnly = page.locator("article").filter({ has: page.locator('a[href^="/nyhet/"][href$="~fixture-1"]') });
   await expect(proseOnly.getByRole("list")).toHaveCount(0);
@@ -313,18 +313,18 @@ test("a stalled dashboard request times out instead of showing skeletons indefin
   await expect(latest.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
 });
 
-test("featured headlines update automatically without exposing AI-only enrichment", async ({ page, request }) => {
+test("featured AI context updates in place without reshuffling the selection", async ({ page, request }) => {
   const snapshot = await (await request.get("http://127.0.0.1:8100/api/feed/market-overview")).json();
   await page.clock.install();
   await page.goto("/marknaden");
   const featured = page.getByRole("region", { name: "Viktigast just nu", exact: true });
   await expect(featured.locator("article")).toHaveCount(3);
+  const initialOrder = await featured.locator('a[href^="/nyhet/"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
   let response = {
     ...snapshot,
-    news: snapshot.news.map((story, index) => ({
+    news: snapshot.news.map((story) => ({
       ...story,
-      aiSummary: { text: "Uppdaterad AI-text som bara visas i läsaren." },
-      ...(index === 3 ? { version: 2, headline: "Uppdaterad rubrik utanför toppurvalet" } : {}),
+      aiSummary: { text: "Uppdaterad AI-text för den viktigaste nyheten." },
     })),
   };
   let refreshes = 0;
@@ -337,7 +337,8 @@ test("featured headlines update automatically without exposing AI-only enrichmen
   // require a refresh without assuming hydration made exactly one request.
   await expect.poll(() => refreshes).toBeGreaterThan(0);
   await expect(featured.getByRole("button", { name: /nya eller uppdaterade|Visa nya|Uppdatera urval/ })).toHaveCount(0);
-  await expect(featured.getByText("Uppdaterad AI-text som bara visas i läsaren.", { exact: true })).toHaveCount(0);
+  await expect(featured.getByText("Uppdaterad AI-text för den viktigaste nyheten.", { exact: true })).toHaveCount(3);
+  expect(await featured.locator('a[href^="/nyhet/"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("href")))).toEqual(initialOrder);
   response = { ...response, news: response.news.map((story, index) => index === 0
     ? { ...story, version: 2, headline: "Bolaget meddelar en ny helårsprognos" } : story) };
   await page.clock.runFor(30000);
@@ -360,16 +361,22 @@ test("reaction filter excludes unmeasured arrivals while latest shows them autom
   await expect(page.locator("article").filter({ hasText: incoming.headline })).toBeVisible();
 });
 
-test("AI enrichment with the same story version appears automatically", async ({ page, request }) => {
+test("hidden AI enrichment does not expand or reshuffle the reaction feed", async ({ page, request }) => {
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
-  const enriched = { ...body.items[2], aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
-  await page.goto("/marknaden/nyheter");
+  const enriched = { ...body.items[2],
+    reaction: { ...body.items[2].reaction, pct: 99, h1Pct: 99, asOf: new Date().toISOString() },
+    aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
+  await page.goto("/marknaden/nyheter?view=reactions");
   await expect(page.locator("article")).toHaveCount(12);
-  await page.evaluate((story) => {
-    const source = window.__newsStreams.findLast((source) => !source.closed);
-    source.dispatchEvent(new MessageEvent("story", { data: JSON.stringify(story) }));
-  }, enriched);
-  await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toBeVisible();
+  await expect(page.getByText("Ansluten · Störst uppmätt förändring")).toBeVisible();
+  const order = () => page.locator('main article a[href^="/nyhet/"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
+  const initialOrder = await order();
+  await emitStories(page, [enriched]);
+  await expect(page.locator("article").filter({ has: page.locator('a[href$="~fixture-2"]') }))
+    .toContainText("+99,0");
+  await expect(page.getByText(enriched.aiSummary.text, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" })).toHaveCount(0);
+  expect(await order()).toEqual(initialOrder);
   await expect(page.getByRole("button", { name: /nya eller uppdaterade|Visa nya/ })).toHaveCount(0);
   await expect(page.locator("article")).toHaveCount(12);
 });

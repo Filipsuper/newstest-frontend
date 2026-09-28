@@ -69,6 +69,9 @@ async function openPersonal(page) {
   await page.goto("/marknaden/bevakning");
   const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
   await expect(region.locator("article")).toHaveCount(3);
+  await expect(region.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+  await expect(region.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" })).toHaveCount(0);
+  await expect(region).not.toContainText("Fiktiv AI-text");
   await expect(region.getByRole("status", { name: "Hämtar nyheter" })).toHaveCount(0);
   return region;
 }

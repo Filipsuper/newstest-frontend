@@ -199,7 +199,7 @@ export default function WatchFeedPage() {
             : <NewsListSkeleton count={3} />) : shown.length ? (
             <div className={styles.news}>
               {shown.map(item => <div key={item.id} data-live-news-id={item.id}>
-                <NewsFeedItem item={item} reason={item.reason} />
+                <NewsFeedItem item={item} reason={item.reason} showSummary={false} />
               </div>)}
             </div>
           ) : !error && <EmptyState title={filter === 'new'

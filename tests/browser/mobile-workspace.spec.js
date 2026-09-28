@@ -128,7 +128,7 @@ for (const width of [320, 390, 600, 768, 820]) {
   });
 }
 
-test("featured news stays compact while its reader retains AI prose and bullets", async ({
+test("featured news shows AI context while latest news stays compact on mobile", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 850 });
@@ -139,22 +139,32 @@ test("featured news stays compact while its reader retains AI prose and bullets"
   });
   const story = featured.locator('a[href^="/nyhet/"][href$="~fixture-0"]');
   await expect(story).toBeVisible();
+  const row = featured.locator("article").filter({ has: page.locator('a[href$="~fixture-0"]') });
   await expect(
-    featured.getByText("AI-sammanfattning", { exact: true }),
-  ).toHaveCount(0);
-  await expect(featured.getByRole("list")).toHaveCount(0);
-  await expect(featured).not.toContainText("Fiktiv AI-text");
+    row.getByText("AI-sammanfattning", { exact: true }),
+  ).toBeVisible();
+  await expect(row.getByRole("listitem")).toHaveCount(3);
+  await expect(row).toContainText("Fiktiv AI-text");
+  const missing = featured.locator("article").filter({ has: page.locator('a[href$="~fixture-2"]') });
+  await expect(missing).toBeVisible();
+  await expect(missing.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+  const latest = page.getByRole("region", { name: "Senaste nytt", exact: true });
+  await expect(latest.locator("article")).toHaveCount(12);
+  await expect(latest.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
+  await expect(latest.getByRole("list")).toHaveCount(0);
+  await expect(latest).not.toContainText("Fiktiv AI-text");
   await expect(featured).not.toContainText(
     "Uppgifterna kommer från bolagets publicerade rapport.",
   );
   await expect(featured).toContainText("Sedan publicering");
   await expect(featured).toContainText("MFN");
   await featured.screenshot({
-    path: testInfo.outputPath("compact-featured-mobile.png"),
+    path: testInfo.outputPath("explanatory-featured-mobile.png"),
   });
   await story.click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
+  // This can be the dev server's first intercepted reader-route compilation.
+  await expect(dialog).toBeVisible({ timeout: 15000 });
   await expect(dialog).toContainText("Fiktiv AI-text");
   await expect(
     dialog
