@@ -11,6 +11,16 @@ resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
 
+## News percentage coverage — released 28 September, 16:54 UTC
+
+Frontend `9975d6d`, backend `2429478`, scoped producer `18d8c3e`. Completed
+reactions take priority; missing measurements can use explicitly labelled daily
+change. A recent successful provider check can retain an older price without
+changing its timestamp or freshening volume. The live 100-story sample showed
+97 percentages versus 78 under the previous reader. Existing Swedish snapshot
+coverage/timer, archives, AI and email settings are unchanged. See the
+[release and verification record](news-price-fallback-2026-09-28.md).
+
 ## News presentation — released 28 September, 10:21 UTC
 
 Frontend `c5a849c`. Featured market news shows available AI context; ordinary
