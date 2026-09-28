@@ -1,6 +1,6 @@
 # OMXsum release history
 
-Release records through 26 September 2026, newest public revisions first.
+Release records through 28 September 2026, newest public revisions first.
 The current backlog is in [ROADMAP.md](../ROADMAP.md); implementation contracts
 remain in [UI.md](../UI.md), [the design system](design-system.md) and
 [the news-first workspace](news-first-workspace.md).
@@ -10,6 +10,15 @@ Designs can be superseded by a later entry. Test counts, source coverage,
 resource measurements and image/rollback availability describe their recorded
 release; recheck the running environment before an operational action.
 Open follow-ups have been consolidated in the roadmap.
+
+## News presentation — released 28 September, 10:21 UTC
+
+Frontend `c5a849c`. Featured market news shows available AI context; ordinary
+feeds stay compact and open full summaries in the reader. Missing reaction
+percentages no longer create a generic `Nyhet` badge or empty badge column.
+Includes the approved chart-side briefing placement and shared news typography.
+Backend, workers, AI budgets and pilot scope are unchanged. See the
+[release and verification record](news-ui-release-2026-09-28.md).
 
 ## Cached company briefings and linear charts — released 26 September, 08:50 UTC
 
