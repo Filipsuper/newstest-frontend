@@ -66,6 +66,25 @@ for (const width of [1440, 390, 320])
       page.getByRole("link", { name: "OMXsum 2.0 – startsida" }),
     ).toBeVisible();
     await expect(main.getByText("Välkommen till OMXsum 2.0")).toBeVisible();
+    await expect(main.getByRole('heading', { name: 'Lär känna bolaget bakom aktien.' })).toBeVisible();
+    await expect(main.getByRole('region', { name: 'Lär känna bolaget bakom aktien.' })).toContainText('VD-ord');
+    await expect(main.getByRole('link', { name: 'Utforska screenern' })).toHaveAttribute('href', '/aktier/screener');
+    await expect(main).toContainText('Terminal ingår i Pro');
+    const screenerSection = main.getByRole('region', { name: 'Hitta nästa bolag att läsa på om.' });
+    const terminalSection = main.getByRole('region', { name: 'En egen arbetsyta för dig som vill gå längre.' });
+    await expect(screenerSection.getByRole('link', { name: 'Utforska screenern' })).toBeVisible();
+    await expect(screenerSection).not.toContainText('Terminal');
+    await expect(terminalSection.getByRole('link', { name: 'Upptäck Terminal' })).toBeVisible();
+    await expect(terminalSection.getByRole('tab', { name: 'Trading', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await terminalSection.getByRole('tab', { name: 'Bolagsanalys', exact: true }).click();
+    await expect(terminalSection.getByRole('img')).toHaveAttribute('alt', /CombinedX/);
+    await expect(terminalSection.getByRole('link', { name: 'Visa större bild av Terminal (öppnas i ny flik)' })).toHaveAttribute('href', /terminal-financials-2026-09-28/);
+    await terminalSection.getByRole('tab', { name: 'Trading', exact: true }).click();
+    await expect(terminalSection.getByRole('img')).toHaveAttribute('alt', /Cibus/);
+    const screenerBox = await screenerSection.boundingBox();
+    const terminalBox = await terminalSection.boundingBox();
+    expect(terminalBox.y).toBeGreaterThanOrEqual(screenerBox.y + screenerBox.height + (width > 760 ? 112 : 64));
+    await expect(main).toContainText('Följ upp till 2 bolag med ett gratis konto');
     const news = main.getByRole("region", { name: "Ur Marknaden" });
     await expect(news.locator("article")).toHaveCount(2);
     await expect(news).toContainText("AI-sammanfattning");

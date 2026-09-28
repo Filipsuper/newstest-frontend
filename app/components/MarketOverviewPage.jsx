@@ -212,6 +212,7 @@ export default function MarketOverviewPage({
         </Inline>
       )}
       <MarketStrip overview={data} />
+      <div className={styles.personalEntry}><WatchPreview paused={paused} /></div>
       <div className={styles.marketGrid}>
         <section
           className={cx(styles.section, styles.featured)}
@@ -241,7 +242,6 @@ export default function MarketOverviewPage({
         </section>
         <div className={styles.context}>
           <LetterPreview article={edition} />
-          <WatchPreview paused={paused} />
         </div>
         <section
           id="senaste-nytt"

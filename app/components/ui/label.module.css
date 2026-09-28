@@ -20,6 +20,14 @@
   display: inline-flex;
   flex: none;
 }
+.beforeOpen {
+  color: var(--ui-session-before);
+  background: var(--ui-session-before-soft);
+}
+.afterClose {
+  color: var(--ui-session-after);
+  background: var(--ui-session-after-soft);
+}
 .icon svg {
   width: 1em;
   height: 1em;

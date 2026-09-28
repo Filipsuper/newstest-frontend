@@ -6,8 +6,8 @@ import { NavigationTabs } from "./ui/layout";
 
 const MARKET_LINKS = [
     { href: "/marknaden", label: "Överblick", exact: true },
+    { href: "/marknaden/bevakning", label: "Mina bolag" },
     { href: "/marknaden/nyheter", label: "Nyhetsflöde" },
-    { href: "/marknaden/bevakning", label: "Bevakning" },
 ];
 
 const STOCK_LINKS = [

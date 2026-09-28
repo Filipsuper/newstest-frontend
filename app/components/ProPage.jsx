@@ -60,11 +60,11 @@ export default function ProPage() {
               <Label tone="accent">Medlemskap</Label>
             </Inline>
             <Heading as="h1" size="page">
-              Välj hur du följer marknaden
+              Från börskoll till din egen arbetsyta
             </Heading>
             <Text tone="secondary" className={styles.intro}>
-              Breven och marknadsöversikten är gratis. Med Plus får du hela
-              nyhetsflödet och mer djup i din bolagsanalys.
+              Börja gratis med två bolag. Plus samlar nyheter, bevakning och
+              lättöverskådlig bolagsanalys. Pro ger dig dessutom Terminal.
             </Text>
           </Stack>
           <Stack gap={2} className={styles.account}>
@@ -210,8 +210,8 @@ export default function ProPage() {
                 </Heading>
                 <Text size="sm" tone="secondary">
                   Morgon- och kvällsbreven, Marknadens nyhetsurval och
-                  aktieöversikterna. Med ett konto kan du följa fem bolag och se
-                  matchande nyheter i Bevakning.
+                  aktieöversikterna. Med ett konto kan du följa två bolag och se
+                  nyheter som matchar dina bolag, ämnen och nyckelord i Mina bolag.
                 </Text>
               </Stack>
               <Stack gap={2}>
@@ -219,8 +219,18 @@ export default function ProPage() {
                   Vad skiljer Plus från Pro?
                 </Heading>
                 <Text size="sm" tone="secondary">
-                  Båda har hela nyhetsflödet, screenern, fördjupad bolagsanalys
-                  och Terminal. Plus låter dig följa 10 bolag, Pro upp till 100.
+                  Plus innehåller hela nyhetsflödet, screenern, finansiella
+                  grafer, VD-ord och fördjupad bolagsanalys. Du kan följa upp till
+                  20 bolag i Mina bolag. Pro innehåller allt i Plus, upp till 100 följda
+                  bolag och exklusiv tillgång till Terminal.
+                </Text>
+              </Stack>
+              <Stack gap={2}>
+                <Heading as="h3" size="subsection">Finns all data för alla bolag?</Heading>
+                <Text size="sm" tone="secondary">
+                  Underlaget varierar mellan bolag och marknader. Finansiell
+                  historik, VD-ord, estimat, insyn, blankning och kursreaktioner
+                  visas när data finns. Källor och perioder finns vid uppgifterna.
                 </Text>
               </Stack>
               <Stack gap={2}>

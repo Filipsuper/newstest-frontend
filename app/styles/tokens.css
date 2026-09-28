@@ -49,6 +49,10 @@
   --ui-on-action: #ffffff;
   --ui-accent: #89610e;
   --ui-accent-soft: #f5ebcb;
+  --ui-session-before: #96500c;
+  --ui-session-before-soft: #fff0db;
+  --ui-session-after: #345ca2;
+  --ui-session-after-soft: #e9effb;
   /* Categorical charts: order/identity, never positive or negative performance. */
   --ui-chart-1: var(--ui-accent);
   --ui-chart-2: #527b8c;
@@ -80,6 +84,10 @@
   --ui-on-action: #252820;
   --ui-accent: #ebc467;
   --ui-accent-soft: #383225;
+  --ui-session-before: #f1b468;
+  --ui-session-before-soft: #3c3022;
+  --ui-session-after: #a5c2fa;
+  --ui-session-after-soft: #252f43;
   --ui-chart-1: var(--ui-accent);
   --ui-chart-2: #85afbf;
   --ui-chart-3: #b29bc7;

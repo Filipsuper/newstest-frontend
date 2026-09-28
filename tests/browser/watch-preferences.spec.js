@@ -168,7 +168,7 @@ test("keyword validation and failed writes preserve input, with pending and save
   expect(state.user.keywords).toEqual(["försvar", "ny order"]);
 });
 
-for (const [plan, limit] of [["free", 5], ["plus", 10], ["premium", 100]]) {
+for (const [plan, limit] of [["free", 2], ["plus", 20], ["premium", 100]]) {
   test(`${plan}: company limit allows removal and explicit follow state`, async ({ page }) => {
     const watchlist = ["NORD.TEST", ...Array.from({ length: limit - 1 }, (_, index) => `SAVED${index}.TEST`)];
     const state = await setup(page, { user: { plan, watchlist } });

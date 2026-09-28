@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { FiArrowRight, FiCheck } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { membershipPlans } from "../utils/membership";
+import { membershipPlans, hasTerminalPlan } from "../utils/membership";
 import LogInModal from "../modals/logInModal";
 import { Button } from "./ui/Button";
 import { Label } from "./ui/Label";
@@ -13,17 +13,18 @@ import { Container, Heading, Inline, Stack, Surface, Text } from "./ui/layout";
 import TerminalShowcase from "./TerminalShowcase";
 import styles from "./terminal-gateway.module.css";
 
-const plus = membershipPlans.find((plan) => plan.id === "plus");
+const pro = membershipPlans.find((plan) => plan.id === "pro");
 const sessionUrl = "/api/auth/terminal-session";
 
 export default function TerminalGateway() {
-  const { user, isGuestUser, isPlusUser } = useAuthContext();
+  const { user, isGuestUser } = useAuthContext();
+  const canOpenTerminal = hasTerminalPlan(user);
 
   useEffect(() => {
-    if (isPlusUser) window.location.replace(sessionUrl);
-  }, [isPlusUser]);
+    if (canOpenTerminal) window.location.replace(sessionUrl);
+  }, [canOpenTerminal]);
 
-  if (!user || isPlusUser) {
+  if (!user || canOpenTerminal) {
     return (
       <Container as="main" reading className={styles.page}>
         <Stack gap={4} className={styles.pending}>
@@ -31,11 +32,11 @@ export default function TerminalGateway() {
             OMXsum Terminal
           </Heading>
           <Text tone="secondary" role="status">
-            {isPlusUser
+            {canOpenTerminal
               ? "Öppnar OMXsum Terminal…"
               : "Kontrollerar din åtkomst…"}
           </Text>
-          {isPlusUser && (
+          {canOpenTerminal && (
             <Inline>
               <Button
                 variant="secondary"
@@ -90,19 +91,19 @@ export default function TerminalGateway() {
           >
             <Stack gap={4}>
               <Heading id="terminal-access" size="subsection">
-                Terminal ingår i Plus
+                Terminal ingår i Pro
               </Heading>
               <Inline gap={1} className={styles.price}>
                 <Text as="span" numeric className={styles.amount}>
-                  {plus.price} kr
+                  {pro.price} kr
                 </Text>
                 <Text as="span" size="sm" tone="secondary">
                   /mån
                 </Text>
               </Inline>
               <Text size="sm" tone="secondary">
-                Ingår också i Pro. Du får även Plus-funktionerna på vanliga
-                OMXsum.
+                Alla Plus-funktioner på vanliga OMXsum ingår också,
+                tillsammans med upp till 100 följda bolag.
               </Text>
               <ul className={styles.included}>
                 {[
@@ -117,14 +118,14 @@ export default function TerminalGateway() {
                 ))}
               </ul>
               <Button nativeButton={false} role="link" render={<Link href="/pro" />}>
-                Se Plus & Pro <FiArrowRight aria-hidden="true" />
+                Se Pro <FiArrowRight aria-hidden="true" />
               </Button>
               {isGuestUser && (
                 <Dialog
                   title="Logga in för att öppna Terminal"
                   trigger={
                     <Button variant="secondary">
-                      Har du redan Plus? Logga in
+                      Har du redan Pro? Logga in
                     </Button>
                   }
                 >

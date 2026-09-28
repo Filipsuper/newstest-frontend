@@ -62,6 +62,7 @@
   color: var(--ui-text-secondary);
 }
 .questions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ui-space-8);
 }
 .link {

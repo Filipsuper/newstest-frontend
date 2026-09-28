@@ -6,6 +6,7 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { fetchPersonalFeed } from "../utils/api";
 import { personalStoryToItem, preferenceReason } from "../utils/newsroom";
 import { reconcileNewsSnapshot } from "../utils/personalNews";
+import { followedCompanies, importantPersonalNews } from "../utils/personalOverview";
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { Heading, Inline, Text } from "./ui/layout";
 import { Button } from "./ui/Button";
@@ -55,14 +56,15 @@ export default function WatchPreview({ paused = false }) {
       busy = true;
       if (!hasSnapshot.current) setLoading(true);
       try {
-        const result = await fetchPersonalFeed({ limit: 2 });
+        const result = await fetchPersonalFeed({ limit: 50, filter: 'companies' });
         if (!active) return;
         if (!result || result.unavailable || !Array.isArray(result.stories)) throw new Error('unavailable');
         captureAnchor();
         rows.current = reconcileNewsSnapshot(rows.current, result.stories.map(story => ({
           ...personalStoryToItem(story), reason: preferenceReason(story),
         })));
-        setData({ key, stories: rows.current });
+        setData({ key, stories: rows.current, coverage: result.coverage, nextCursor: result.nextCursor,
+          importantStories: Array.isArray(result.importantStories) ? result.importantStories.map(personalStoryToItem) : null });
         hasSnapshot.current = true;
         setError(false);
       } catch { if (active) { captureAnchor(); setError(true); } }
@@ -77,17 +79,19 @@ export default function WatchPreview({ paused = false }) {
       document.removeEventListener('visibilitychange', refresh);
     };
   }, [key, hasPreferences, isGuestUser, retry, paused, captureAnchor]);
-  const stories = data?.key === key ? data.stories : [];
+  const stories = data?.key === key ? data.stories.filter(item => followedCompanies(item, user?.watchlist ?? []).length) : [];
+  const important = importantPersonalNews(data?.key === key ? data.importantStories ?? stories : stories, user?.watchlist ?? [], Date.now(), 2);
+  const selected = important.length ? important : stories.slice(0, 2);
   return (
     <section className={styles.section} aria-label="Dina bevakningar" ref={listRef}>
       <Inline className={styles.between}>
-        <Heading size="subsection">Dina bevakningar</Heading>
+        <Heading size="subsection">Mina bolag</Heading>
         <Link
           href="/marknaden/bevakning"
           className={styles.textLink}
           aria-label="Öppna dina bevakningar"
         >
-          Visa alla
+          Öppna mina bolag
           <FiArrowRight aria-hidden="true" />
         </Link>
       </Inline>
@@ -99,6 +103,7 @@ export default function WatchPreview({ paused = false }) {
         <Text size="xs" tone="secondary" role="status">Kunde inte uppdatera. Visar senast hämtade nyheter.</Text>
         <Button variant="ghost" size="sm" onClick={() => setRetry((value) => value + 1)}>Försök igen</Button>
       </Inline>}
+      {data?.key === key && data.coverage?.complete === false && <Text size="xs" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Öppna Mina bolag för att försöka igen.</Text>}
       {!user || (loading && !stories.length) ? (
         <NewsListSkeleton count={2} compact label="Hämtar dina bevakningar" />
       ) : isGuestUser || !hasPreferences ? (
@@ -125,7 +130,8 @@ export default function WatchPreview({ paused = false }) {
         </>
       ) : stories.length ? (
         <div className={styles.watchRows}>
-          {stories.slice(0, 2).map((story) => (
+          <Text size="xs" tone="secondary">{important.length ? 'Viktigt i dina bolag' : 'Senaste i dina bolag'} · ur hämtade nyheter</Text>
+          {selected.map((story) => (
             <div key={story.id} data-live-news-id={story.id}>
               <NewsFeedItem item={story} reason={story.reason} showSummary={false} compact />
             </div>
@@ -133,7 +139,7 @@ export default function WatchPreview({ paused = false }) {
         </div>
       ) : (
         <Text size="sm" tone="secondary">
-          {paused ? 'Uppdateringar pausade.' : 'Inga nya matchningar just nu. Dina bevakningar är sparade.'}
+          {paused ? 'Uppdateringar pausade.' : data?.coverage?.complete === true ? 'Inga bolagsnyheter i den hämtade perioden.' : 'Inga bolagsnyheter i det hämtade underlaget. Öppna Mina bolag för fler bevakningar.'}
         </Text>
       )}
     </section>

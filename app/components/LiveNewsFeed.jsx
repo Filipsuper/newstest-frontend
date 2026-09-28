@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useFeedSearchParams } from "../hooks/useFeedSearchParams";
 import { FiPause, FiPlay, FiSearch, FiX } from "react-icons/fi";
 import { fetchLiveFeed, fetchFeedObservations } from "../utils/api";
 import { feedStoryToItem as storyToItem, matchingObservations } from "../utils/feedObservations";
@@ -11,6 +11,8 @@ import {
   refreshMarketObservations,
 } from "../utils/newsroom";
 import { rowReaction } from "../utils/reactionV2";
+import { selectedNews } from '../utils/newsSelection';
+import { followedCompanies } from '../utils/personalOverview';
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { useAuthContext } from "../providers/AuthProvider";
 import { Button, IconButton } from "./ui/Button";
@@ -20,6 +22,7 @@ import { EmptyState } from "./ui/data";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import { Inline, Text } from "./ui/layout";
 import NewsFeedItem from "./NewsFeedItem";
+import WatchPreferencesButton from './WatchPreferencesButton';
 import styles from "./market-news.module.css";
 
 const FILTERS = [
@@ -66,7 +69,6 @@ function acceptVersions(incoming, latest) {
 
 const reactionRanking = (rows) => rows
   .filter((item) => rowReaction(item).pct !== null)
-  .sort((a, b) => Math.abs(rowReaction(b).pct) - Math.abs(rowReaction(a).pct))
   .map((item) => item.id);
 
 export default function LiveNewsFeed({
@@ -74,8 +76,11 @@ export default function LiveNewsFeed({
   market,
   paused: parentPaused = false,
 }) {
-  const params = useSearchParams();
-  const { isPlusUser } = useAuthContext();
+  const params = useFeedSearchParams();
+  const { isPlusUser, user } = useAuthContext();
+  const selection = compact ? 'all' : params.get('selection') === 'all' ? 'all' : 'selected';
+  const scope = !compact && params.get('scope') === 'following' ? 'following' : 'all';
+  const watchKey = JSON.stringify(user?.watchlist ?? []);
   const activeQuery = compact ? "" : params.get("q") || "";
   const category = compact
     ? "all"
@@ -105,14 +110,14 @@ export default function LiveNewsFeed({
   const previousShown = useRef([]);
   const { captureAnchor, listRef } = useLiveScrollAnchor();
   const isPaused = paused || parentPaused;
-  const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser, market]);
+  const requestKey = JSON.stringify([activeQuery, category, retry, isPlusUser, market, selection, scope, scope === 'following' ? watchKey : null]);
   const ready = items !== null && loadedFor === requestKey;
   const measurementKey = (items ?? []).map(item => `${item.id}:${item.version ?? 1}`).join(",");
 
   function navigate(next) {
     const search = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(next))
-      value && value !== "all" ? search.set(key, value) : search.delete(key);
+      value && (value !== "all" || key === 'selection') ? search.set(key, value) : search.delete(key);
     window.history.replaceState(
       null,
       "",
@@ -132,7 +137,7 @@ export default function LiveNewsFeed({
     // Deferring until the committed mount avoids issuing a second bootstrap
     // during React's development setup/cleanup check.
     const bootstrap = setTimeout(() => {
-      fetchLiveFeed({ q: activeQuery, category, market, limit: 20, signal: controller.signal })
+      fetchLiveFeed({ q: activeQuery, category, market, selection, scope, limit: 20, signal: controller.signal })
         .then((data) => {
           if (version !== generation.current) return;
           if (!Array.isArray(data?.items))
@@ -160,7 +165,7 @@ export default function LiveNewsFeed({
       clearTimeout(bootstrap);
       controller.abort();
     };
-  }, [activeQuery, category, retry, isPlusUser, market]);
+  }, [activeQuery, category, retry, isPlusUser, market, selection, scope, watchKey]);
 
   useEffect(() => {
     if (reactions) {
@@ -227,7 +232,7 @@ export default function LiveNewsFeed({
       if (!active || refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
       try {
-        const data = await fetchLiveFeed({ category, market, limit: 20, signal: controller.signal });
+        const data = await fetchLiveFeed({ category, market, selection, scope, limit: 20, signal: controller.signal });
         if (active && document.visibilityState !== "hidden" && Array.isArray(data?.items)) accept(data.items.map(storyToItem));
       } catch { /* Retain observed data and its original timestamp on failure. */ }
       finally { refreshing = false; }
@@ -279,7 +284,7 @@ export default function LiveNewsFeed({
       applyLive.current = null;
       document.removeEventListener("visibilitychange", connect);
     };
-  }, [isPlusUser, ready, activeQuery, category, isPaused, retry, market]);
+  }, [isPlusUser, ready, activeQuery, category, isPaused, retry, market, selection, scope]);
 
   useEffect(() => {
     if (!isPlusUser || !ready || isPaused) return;
@@ -359,6 +364,8 @@ export default function LiveNewsFeed({
         q: activeQuery,
         category,
         market,
+        selection,
+        scope,
         cursor,
         limit: 20,
       });
@@ -381,19 +388,16 @@ export default function LiveNewsFeed({
   }
   const selectRows = (rows) => {
     const filter = FILTERS.find((filter) => filter.id === category);
-    const order = new Map(reactionOrder.map((id, index) => [id, index]));
     const filtered = rows.filter(
       (item) =>
+        (selection !== 'selected' || selectedNews(item)) &&
+        (scope !== 'following' || followedCompanies(item, user?.watchlist ?? []).length > 0) &&
         (market !== "se" || isSwedishNews(item)) &&
         (!filter.tags ||
           item.labels?.some((tag) => filter.tags.includes(tag))) &&
-        (!reactions || order.has(item.id)),
+        (!reactions || reactionOrder.includes(item.id)),
     );
-    const sorted = reactions
-      ? [...filtered].sort(
-          (a, b) => order.get(a.id) - order.get(b.id),
-        )
-      : filtered;
+    const sorted = filtered;
     return compact ? sorted.slice(0, 12) : sorted;
   };
   const shown = ready ? selectRows(items) : previousShown.current;
@@ -405,6 +409,12 @@ export default function LiveNewsFeed({
     <section className={styles.feed} aria-label="Nyhetsflöde">
       {!compact && (
         <>
+          <Inline>
+            <SegmentedControl label="Nyhetsurval" value={selection} onValueChange={value => navigate({ selection: value })}
+              options={[{ value: 'selected', label: 'Urval' }, { value: 'all', label: 'Alla' }]} />
+            <SegmentedControl label="Bolagsurval" value={scope} onValueChange={value => navigate({ scope: value })}
+              options={[{ value: 'all', label: 'Hela marknaden' }, { value: 'following', label: 'Mina bolag' }]} />
+          </Inline>
           <div className={styles.controls}>
             <form
               className={styles.search}
@@ -438,17 +448,20 @@ export default function LiveNewsFeed({
               </Button>
             </form>
             <SegmentedControl
-              label="Sortera nyheter"
+              label="Visa kursdata"
               value={reactions ? "reactions" : "latest"}
               onValueChange={(value) =>
                 navigate({ view: value === "latest" ? "" : value })
               }
               options={[
                 { value: "latest", label: "Senaste" },
-                { value: "reactions", label: "Kursreaktion" },
+                { value: "reactions", label: "Med kursdata" },
               ]}
             />
           </div>
+          {activeQuery.trim().length >= 2 && activeQuery.trim().length <= 40 && <Inline>
+            <WatchPreferencesButton key={activeQuery} initialTab="keywords" initialKeyword={activeQuery.trim()} variant="ghost">Bevaka sökord</WatchPreferencesButton>
+          </Inline>}
           <SegmentedControl
             label="Nyhetskategori"
             value={category}
@@ -464,7 +477,7 @@ export default function LiveNewsFeed({
         <Text as="span" size="xs" tone="secondary" role="status">
           {error && !ready ? "Inte ansluten" : status}
           {reactions
-            ? " · Störst uppmätt förändring"
+            ? " · Med kursdata · Senast publicerat först"
             : " · Senast publicerat först"}
         </Text>
         {!compact && (
@@ -483,6 +496,7 @@ export default function LiveNewsFeed({
           </Button>
         )}
       </Inline>
+      {!compact && selection === 'selected' && <Text size="xs" tone="secondary">Betydande nyheter, utan rutinmeddelanden. Senast publicerat först.</Text>}
       {error && (
         <EmptyState
           role="alert"
@@ -504,12 +518,12 @@ export default function LiveNewsFeed({
       ) : !shown.length && !error ? (
         <EmptyState
           title="Inga nyheter i urvalet"
-          description="Prova ett annat sökord eller en annan kategori."
+          description={cursor ? 'Inga matchningar på den hämtade sidan. Visa äldre nyheter för att fortsätta.' : scope === 'following' ? 'Prova Alla eller följ fler bolag.' : 'Prova ett annat sökord eller en annan kategori.'}
           action={
             !compact && (
               <Button
                 variant="secondary"
-                onClick={() => navigate({ q: "", category: "", view: "" })}
+                onClick={() => navigate({ q: "", category: "", view: "", selection: 'all', scope: 'all' })}
               >
                 Visa alla nyheter
               </Button>

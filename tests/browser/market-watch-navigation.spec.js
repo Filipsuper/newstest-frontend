@@ -43,17 +43,17 @@ test("market views share three workspace links and one active primary destinatio
   for (const [path, active] of [
     ["/marknaden", "Överblick"],
     ["/marknaden/nyheter", "Nyhetsflöde"],
-    ["/marknaden/bevakning", "Bevakning"],
-    ["/marknaden/bevakning/hantera", "Bevakning"],
+    ["/marknaden/bevakning", "Mina bolag"],
+    ["/marknaden/bevakning/hantera", "Mina bolag"],
   ]) {
     await page.goto(path);
     const primary = page.getByRole("navigation", { name: "Huvudmeny", exact: true });
     await expect(primary.getByRole("link")).toHaveText(["Marknaden", "Aktier", "Breven"]);
     await expect(primary.locator('[aria-current="page"]')).toHaveText("Marknaden");
     const workspace = page.getByRole("navigation", { name: "Marknaden", exact: true });
-    await expect(workspace.getByRole("link")).toHaveText(["Överblick", "Nyhetsflöde", "Bevakning"]);
+    await expect(workspace.getByRole("link")).toHaveText(["Överblick", "Mina bolag", "Nyhetsflöde"]);
     await expect(workspace.locator('[aria-current="page"]')).toHaveText(active);
-    await expect(workspace.getByRole("link", { name: "Bevakning", exact: true }))
+    await expect(workspace.getByRole("link", { name: "Mina bolag", exact: true }))
       .toHaveAttribute("href", "/marknaden/bevakning");
   }
   expect(state.errors).toEqual([]);

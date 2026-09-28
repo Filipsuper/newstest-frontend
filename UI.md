@@ -93,12 +93,41 @@ desktop density or abbreviated interaction model.
 - Keep existing free/Plus/Pro access rules. Personalization previews must not
   invent private stories, imply enabled alerts or introduce a new client-only
   paywall. The published letter leads the overview's supporting column for
-  everyone; a two-story personal preview follows, with a visible `Visa alla`
-  link and direct access to the shared preference editor.
+  everyone. A compact personal entry below the index strip links to Mina bolag
+  and the shared preference editor.
 - Desktop and mobile use the same conceptual destinations. Company pages are
   contextual destinations beneath `Aktier`, not another top-level product.
 
 ## OMXsum 2.0 landing page
+
+- Explain the complete journey: news and reactions → catch up on your companies
+  and interests → understand financial performance and VD-ord → discover companies
+  in the screener. Keep the current letter beside the hero as the lead magnet.
+  Public copy only describes implemented features. Qualify report/data coverage;
+  do not claim extracted risk/geography data or AI briefings exist for every stock.
+  Terminal is the advanced Pro workspace, not necessary for everyday analysis.
+  Give the public-site screener and Terminal separate landing sections with
+  their own headings and actions, not two columns beneath a shared tools heading.
+  Landing and Terminal gateway reuse TerminalPreview with the user-supplied
+  September 28 trading/financial screenshots. Trading is the default; shared
+  Tabs expose Bolagsanalys and the full-size link follows the selected image.
+  Keep capture date visible and never imply the screenshots are live data.
+
+### Membership contract — September 28
+
+- Free: 2 followed companies, public market selection, company overviews, interest
+  matching and the existing letters. Plus: 20 followed companies and the normal
+  site's paid news, screener, financial research, VD-ord and personal newsletter.
+  Pro (stored as `premium`): 100 companies and exclusive Terminal access.
+- Prices remain 0 / 49 / 99 SEK monthly. Checkout IDs, billing and newsletter
+  consent are unchanged. Backend Terminal checks and follow limits are authoritative;
+  frontend pricing, gateway, onboarding and preference counts mirror them.
+- Preserve saved follows for accounts above a new limit. Block new additions
+  until below the cap; allow removals and idempotent retries. Do not bulk-delete
+  interests or silently change subscriptions. Separate newsletter personalization
+  from independently consented alerts. No promise of data for every company.
+
+### Landing layout
 
 - `/` explains the product's benefits: less searching, context around observed
   stock reactions, and news relevant to the reader's own companies. It is not
@@ -200,12 +229,11 @@ desktop density or abbreviated interaction model.
   (including cross-border stories) plus unassigned Riksbank releases, not a
   headline-language test. Apply scope before the API limit and to live frames.
   Full news, personal watchlists, company pages and ingestion stay unchanged.
-- On desktop, selected news is the primary column and the letter/watchlist
-  form a contextual column. On mobile the order is selected news, compact
-  letter and personal context, then latest news, with a direct latest-news jump.
+- On desktop, selected news is the primary column and the letter forms a
+  contextual column. A compact personal entry precedes this grid. On mobile
+  continue with selected news, compact letter, then latest news, with a direct latest-news jump.
   Let the contextual column grow to 384px on wider screens and switch to one
-  column at 960px. Keep the letter above personal matches in DOM and visual
-  order. Its edition/icon/date share one row; retain the actual full headline
+  column at 960px. The letter's edition/icon/date share one row; retain the actual full headline
   and at most two supplied takeaways, falling back to a short word-boundary
   excerpt. Never clip a letter or its actions into a fixed-height container.
 - Use normal document scrolling on desktop and mobile. Do not force one-screen
@@ -246,7 +274,12 @@ desktop density or abbreviated interaction model.
   Rows are raised surfaces separated by gaps, not dark rows inside an outer
   card. Avoid repetitive summaries and obligatory per-row charts.
   Only render a reaction badge for a finite percentage, including a real zero.
-  Without a percentage, omit the badge and its leading space entirely; do not
+  Without a percentage, a verified publication-session label may take its
+  place: orange sun / Före öppning, blue moon / Efter stängning. These use the
+  exact story/version/company reaction timing, not current time or guessed
+  exchange hours. With a percentage, retain the percentage and put the session
+  label in metadata. Holidays/unknown timing do not imply before/after hours.
+  Otherwise omit the badge and its leading space entirely; do not
   substitute `Nyhet`, `Saknas` or a dash. Keep timing/status in metadata and
   measurement details in the reader. Other data widgets keep their own states.
 - `Viktigast just nu` is the explanatory selection: when a story has
@@ -388,8 +421,55 @@ desktop density or abbreviated interaction model.
 - Following is a contextual action on stories and companies, with saved,
   loading, limit and error states. Topics/keywords are secondary preferences.
   Following must never silently activate notification delivery.
-- Personal results explain their match. The local `Sedan sist` filter is
-  a last-visit comparison, not a cross-device read/unread guarantee.
+- Personal results explain their match. `Olästa` uses account-backed explicit
+  read actions inside the news card's metadata row, aligned to the trailing
+  edge and wrapping naturally on mobile—not detached beneath the card. Use
+  the shared ghost button with a visible label and touch-sized target. Reveal
+  it on row hover or keyboard focus on desktop, reserving space to avoid shifts.
+  Keep it visible on touch devices and while saving. No per-row unfollow action;
+  manage interests in the shared preference editor.
+  Read state uses
+  read receipts, never an automatic visit timestamp. Mark only the selected
+  source-copy snapshot: changed headlines/ground text can become unread again;
+  price, AI and transport-version refreshes cannot. Unknown/failed read state
+  is not unread or caught-up. Keep news accessible if the read store fails.
+  Keep all personal filter tabs mounted while requests change; loading or
+  unavailable read state belongs in the results, not a disappearing Olästa tab.
+  Intercepted story modals keep the background feed's query filters and rows
+  intact. The canonical story URL must not reset the mounted feed to defaults;
+  closing and browser Back/Forward restore the same selection.
+- The personal destination is `Mina bolag`, before Nyhetsflöde in market
+  navigation. Its overview leads with important direct-company developments,
+  followed by expandable company timelines and separate topic/keyword matches.
+  Existing AI context belongs to important developments, not every row.
+  Marknaden links into this experience below the index strip. Selection from
+  bounded fetched results must disclose pagination/partial coverage. Show the
+  API's declared window (seven days on the catch-up API, 48 hours on older
+  backends), never imply complete catch-up from a capped scan. Important
+  company candidates are a separate server selection before timeline pagination;
+  keep its completeness/candidate-cap notice and never merge it into chronological
+  pages. Acknowledge individual shown
+  rows, not unseen pages or collapsed timelines. Existing old backends without
+  read-state support remain usable, but cannot offer persisted read actions.
+- The full feed has URL-backed `Urval` / `Alla` and `Hela marknaden` / `Mina bolag`.
+  Urval removes routine notices and requires importance 60; it remains
+  chronological, not a second featured ranking. Preserve real source cursors
+  when filtering leaves an empty page. `Med kursdata` also stays chronological:
+  daily changes and fixed event returns are not a comparable ranking.
+- Read-only keyword and email examples require an explicit preview request,
+  retain coverage qualifications and never save preferences or enable delivery.
+  Email examples reuse server content eligibility for draft level/company mutes;
+  they do not predict send counts or bypass consent, suppression or quiet hours.
+  `Bevaka sökord` prefills the shared keyword editor; only the lexical term is
+  saved explicitly, not the feed's company/category filters.
+  Keep preference-management actions out of individual news rows.
+  Word exclusions are secondary, under `Avancerade undantag` in Nyckelord,
+  never the primary per-story feedback action. Exclusions match source headlines/ground text using
+  the same lexical rules, before personal pagination and newsletter selection.
+  Direct followed-company news is protected; the full feed and alert settings
+  stay unchanged. Store at most ten words/phrases with atomic add/remove actions.
+  Keep removals available under Nyckelord and show active exception count on
+  Mina bolag. Opening or closing the dialog never saves an exclusion.
 - Personal feeds match the paginated source window before applying the result
   limit and interest filter. Direct company/topic/keyword matches sort newest
   first; inferred industry suggestions must not displace explicit interests.

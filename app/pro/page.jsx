@@ -3,7 +3,7 @@ import ProPage from "../components/ProPage";
 export const metadata = {
   title: "Medlemskap – Gratis, Plus och Pro",
   description:
-    "Jämför OMXsum Gratis, Plus och Pro. Dagliga börsbrev, nyhetsflöde med kursreaktioner, bevakning och fördjupad bolagsanalys.",
+    "Jämför Gratis med 2 följda bolag, Plus med 20 och Pro med 100. Nyheter, finansiella grafer och VD-ord i Plus. Terminal exklusivt i Pro.",
 };
 
 export default function Page() {

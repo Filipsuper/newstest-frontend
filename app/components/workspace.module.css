@@ -136,6 +136,19 @@
   flex-direction: column;
   gap: var(--ui-space-2);
 }
+.personalEntry {
+  margin-top: var(--ui-space-8);
+  min-width: 0;
+}
+@media (min-width: 820px) {
+  .personalEntry .watchRows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .personalEntry .watchRows > :first-child {
+    grid-column: 1 / -1;
+  }
+}
 .watchSummary {
   margin-bottom: var(--ui-space-6);
 }

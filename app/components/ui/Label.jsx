@@ -14,6 +14,8 @@ export function Label({
       className={cx(
         styles.label,
         tone === "accent" && styles.accent,
+        tone === "beforeOpen" && styles.beforeOpen,
+        tone === "afterClose" && styles.afterClose,
         className,
       )}
       {...props}

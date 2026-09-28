@@ -1,15 +1,19 @@
 import Link from "next/link";
+import TerminalPreview from './TerminalPreview';
 import {
   FiFileText,
   FiTrendingUp,
   FiStar,
   FiArrowUpRight,
+  FiBarChart2,
+  FiSliders,
 } from "react-icons/fi";
 import { BRAND_LABEL, LANDING_HEADLINE } from "../utils/brand";
 import { LandingActions, LetterSignup } from "./LandingActions";
 import { Button } from "./ui/Button";
 import { Label } from "./ui/Label";
-import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
+import { Container, Heading, Inline, Stack, Surface, Text } from "./ui/layout";
+import { companyLimit } from '../utils/membership';
 import styles from "./landing.module.css";
 
 const benefits = [
@@ -30,7 +34,7 @@ const benefits = [
   {
     icon: FiStar,
     title: "Håll koll på det som berör dig.",
-    text: "Följ bolag, ämnen och nyckelord. Bevakning samlar matchande nyheter och visar varför de är relevanta för dina val.",
+    text: "Samla nyheterna om dina bolag, ämnen och nyckelord. Se viktiga händelser du missat och läs ikapp bolag för bolag.",
     href: "/marknaden/bevakning",
     link: "Gör nyhetsflödet till ditt",
   },
@@ -52,8 +56,8 @@ export default function HomePage({ newsPreview, letterPreview }) {
             </Heading>
             <Text tone="secondary" className={styles.intro}>
               Vad har hänt på börsen? Hur har aktierna reagerat? Och vad berör
-              dig? OMXsum samlar nyheterna, reaktionerna och din bevakning på
-              ett ställe.
+              dig? Följ nyheterna om dina bolag och förstå hur företagen
+              utvecklas — med sammanfattningar, grafer och källor på ett ställe.
             </Text>
           </Stack>
           <LandingActions />
@@ -89,7 +93,7 @@ export default function HomePage({ newsPreview, letterPreview }) {
             Mer sammanhang. Mindre letande.
           </Heading>
           <Text tone="secondary">
-            Från en snabb överblick till nyheterna om just dina bolag.
+            Börja med vad som hänt. Förstå reaktionen. Följ bolaget vidare.
           </Text>
         </Stack>
         <div className={styles.benefits}>
@@ -109,7 +113,7 @@ export default function HomePage({ newsPreview, letterPreview }) {
           ))}
         </div>
         <Text size="xs" tone="secondary">
-          Bevaka upp till fem bolag med ett gratis konto. Kursreaktioner visar
+          Följ upp till {companyLimit('free')} bolag med ett gratis konto. Kursreaktioner visar
           observerade förändringar, inte säkra orsakssamband.
         </Text>
       </section>
@@ -147,6 +151,75 @@ export default function HomePage({ newsPreview, letterPreview }) {
         </section>
       </section>
 
+      <section aria-labelledby="landing-research-title" className={styles.market}>
+        <Stack gap={4}>
+          <Inline><Label>Bolagsanalys · Plus</Label></Inline>
+          <Heading id="landing-research-title">Lär känna bolaget bakom aktien.</Heading>
+          <Text tone="secondary">
+            Rubriken berättar vad som hänt. Aktieöversikten hjälper dig att
+            förstå verksamheten. Se hur försäljning, resultat och kassaflöde
+            utvecklas utan att börja i ett kalkylblad.
+          </Text>
+          <Text tone="secondary">
+            Läs ett kort AI-sammandrag av VD-ordet, följ ledningens kommentarer
+            och gå vidare till rapporten när du vill veta mer.
+          </Text>
+          <Link href="/aktier" className={styles.textLink}>
+            Hitta ett bolag att utforska <span aria-hidden="true">→</span>
+          </Link>
+        </Stack>
+        <Surface className={styles.research}>
+          {[
+            [FiBarChart2, 'Hur går verksamheten?', 'Omsättning, lönsamhet, kassaflöde och nettoskuld i tydliga grafer.'],
+            [FiFileText, 'Vad säger ledningen?', 'VD-ord i korthet, med rapportperiod och originaltext nära till hands.'],
+            [FiTrendingUp, 'Vad ligger framför bolaget?', 'Estimat och värdering, med prognoser tydligt skilda från rapporterade resultat.'],
+          ].map(([Icon, title, text]) => <div key={title} className={styles.researchRow}>
+            <Icon className={styles.benefitIcon} aria-hidden="true" />
+            <Stack gap={2}>
+              <Heading as="h3" size="subsection">{title}</Heading>
+              <Text size="sm" tone="secondary">{text}</Text>
+            </Stack>
+          </div>)}
+          <Text size="xs" tone="secondary">
+            Även insyn, ägare, blankning och rapportkalender. Underlaget varierar
+            mellan bolag och marknader; uppgifter visas när data finns.
+          </Text>
+        </Surface>
+      </section>
+
+      <section aria-labelledby="landing-screener-title" className={styles.market}>
+        <Stack gap={4}>
+          <Inline><FiSliders aria-hidden="true" /><Label>Bolagsscreener · Plus</Label></Inline>
+          <Heading id="landing-screener-title">Hitta nästa bolag att läsa på om.</Heading>
+        </Stack>
+        <Stack gap={4}>
+            <Text tone="secondary">
+              Filtrera och jämför bolag efter de mått som intresserar dig.
+              Gå från ett urval i screenern till bolagets nyheter och finansiella
+              utveckling — och följ det när du vill hålla koll framåt.
+            </Text>
+            <Link href="/aktier/screener" className={styles.textLink}>
+              Utforska screenern <span aria-hidden="true">→</span>
+            </Link>
+        </Stack>
+      </section>
+
+      <section aria-labelledby="landing-terminal-title" className={styles.market}>
+        <Stack gap={4}>
+            <Inline><Label tone="accent">Terminal · Pro</Label></Inline>
+            <Heading id="landing-terminal-title">En egen arbetsyta för dig som vill gå längre.</Heading>
+            <Text tone="secondary">
+              För den avancerade användaren: flera bolagsgrafer, ett
+              bolagskopplat nyhetsflöde, movers och relativ volym sida vid sida.
+              Terminal ingår i Pro. All analys på vanliga sajten ingår redan i Plus.
+            </Text>
+            <Link href="/terminal" className={styles.textLink}>
+              Upptäck Terminal <FiArrowUpRight aria-hidden="true" />
+            </Link>
+        </Stack>
+        <TerminalPreview compact />
+      </section>
+
       <section aria-labelledby="landing-letter-title" className={styles.next}>
         <Stack gap={4}>
           <Heading id="landing-letter-title">
@@ -168,18 +241,13 @@ export default function HomePage({ newsPreview, letterPreview }) {
         </Stack>
         <Stack gap={3} className={styles.more}>
           <Text size="sm" tone="secondary">
-            Marknadsöversikten, aktiesidorna och breven är öppna. Plus ger dig
-            hela nyhetsflödet, screenern och fördjupad bolagsanalys.
+            Börja gratis med {companyLimit('free')} följda bolag. Plus ger dig
+            hela nyhetsflödet, personlig brevdel, screener och bolagsanalys med
+            upp till {companyLimit('plus')} följda bolag. Pro lägger till Terminal
+            och upp till {companyLimit('premium')} bolag.
           </Text>
           <Link href="/pro" className={styles.textLink}>
             Jämför medlemskap <span aria-hidden="true">→</span>
-          </Link>
-          <Link href="/aktier/screener" className={styles.textLink}>
-            Jämför bolag i screenern <Label>Plus</Label>
-          </Link>
-          <Link href="/terminal" className={styles.textLink}>
-            För den avancerade användaren: Terminal{" "}
-            <FiArrowUpRight aria-hidden="true" />
           </Link>
           <Link href="/om-oss" className={styles.textLink}>
             Om OMXsum och vår nyhetsbevakning <span aria-hidden="true">→</span>

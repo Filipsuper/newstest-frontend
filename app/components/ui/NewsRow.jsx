@@ -12,8 +12,10 @@ export default function NewsRow({
   title,
   description,
   reaction,
+  leadingLabel,
   reactionLabel = "Kursförändring",
   metadata,
+  metadataAction,
   onOpen,
   href,
   highlighted,
@@ -26,9 +28,9 @@ export default function NewsRow({
       as={as}
       leading={Number.isFinite(reaction)
         ? <ChangeBadge value={reaction} label={reactionLabel} />
-        : null}
+        : leadingLabel ?? null}
       highlighted={highlighted}
-      className={cx(compact && styles.compact, className)}
+      className={cx(compact && styles.compact, !Number.isFinite(reaction) && leadingLabel && styles.sessionLeading, className)}
       {...props}
     >
       {href ? (
@@ -53,7 +55,10 @@ export default function NewsRow({
         </button>
       )}
       {description}
-      {metadata && <div className={styles.metadata}>{metadata}</div>}
+      {(metadata || metadataAction) && <div className={styles.metadata}>
+        {metadata}
+        {metadataAction && <span className={styles.metadataAction}>{metadataAction}</span>}
+      </div>}
     </ListRow>
   );
 }

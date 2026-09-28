@@ -16,6 +16,12 @@ async function setup(page, request) {
     errors: [],
     requests: [], pages: {}, byFilter: {},
   };
+  // These tests exercise refresh behavior for one followed company; the
+  // grouped overview's mixed-company semantics have their own browser test.
+  state.personal.stories = state.personal.stories.map(story => ({
+    ...story, companies: state.personal.stories[0].companies,
+    symbol: 'NORD.TEST', company: state.personal.stories[0].company,
+  }));
   page.on("pageerror", (error) => state.errors.push(error.message));
   await page.clock.install();
   await page.addInitScript(() => {
@@ -62,11 +68,12 @@ function newStory(source, id, headline) {
     headline,
     publishedAt: new Date().toISOString(),
     viaWatchlist: true,
+    importance: 100,
   };
 }
 
 async function openPersonal(page) {
-  await page.goto("/marknaden/bevakning");
+  await page.goto("/marknaden/bevakning?filter=companies");
   const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
   await expect(region.locator("article")).toHaveCount(3);
   await expect(region.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
@@ -102,12 +109,11 @@ test('personal filtering requests its own page and older matches remain while re
 
 test('partial matching never claims the reader is caught up', async ({ page, request }) => {
   const state = await setup(page, request);
-  await page.addInitScript(() => localStorage.setItem('omxsum:watch-visited:personal-live@example.test', String(Date.now() - 3600_000)));
-  state.personal = { stories: [], coverage: { complete: false, reason: 'timeout' } };
+  state.personal = { stories: [], readStateAvailable: true, coverage: { complete: false, reason: 'timeout' } };
   await page.goto('/marknaden/bevakning?filter=new');
   await expect(page.getByText('Alla nyheter kunde inte kontrolleras. Det kan finnas fler matchningar.', { exact: true })).toBeVisible();
-  await expect(page.getByText('Inga nya matchningar i hämtade nyheter', { exact: true })).toBeVisible();
-  expect(state.requests.at(-1).after).toBeTruthy();
+  await expect(page.getByText('Inga olästa nyheter i det hämtade urvalet', { exact: true })).toBeVisible();
+  expect(state.requests.at(-1).after).toBeUndefined();
   await expect(page.getByText('Du är ikapp', { exact: true })).toHaveCount(0);
 });
 
@@ -233,30 +239,30 @@ test("the overview refreshes its featured headline and personal preview automati
   expect(state.errors).toEqual([]);
 });
 
-test("a shared since-last-visit URL explains a missing local baseline and offers all matches", async ({ page, request }) => {
+test("a shared unread URL explains unavailable account read state and offers all matches", async ({ page, request }) => {
   const state = await setup(page, request);
-  // A fresh Playwright context has no marker for this account/device.
+  state.personal.readStateAvailable = false;
   await page.goto("/marknaden/bevakning?filter=new");
   const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
-  await expect(region.getByRole("button", { name: "Sedan sist", exact: true }))
+  await expect(region.getByRole("button", { name: "Olästa", exact: true }))
     .toHaveAttribute("aria-pressed", "true");
-  await expect(region.getByText("Inget tidigare besök på den här enheten", { exact: true })).toBeVisible();
+  await expect(region.getByText("Lässtatus är inte tillgänglig just nu", { exact: true })).toBeVisible();
   await expect(region.getByText("Du är ikapp", { exact: true })).toHaveCount(0);
   await expect(region.locator("article")).toHaveCount(0);
   await region.getByRole("button", { name: "Visa alla matchningar", exact: true }).click();
   await expect(page).toHaveURL(/\/marknaden\/bevakning$/);
-  await expect(region.locator("article")).toHaveCount(3);
-  await expect(region.getByRole("button", { name: "Alla", exact: true }))
+  await expect(region.getByRole('region', { name: 'Viktigt i dina bolag', exact: true }).locator('article')).toHaveCount(3);
+  await expect(region.getByRole("button", { name: "Översikt", exact: true }))
     .toHaveAttribute("aria-pressed", "true");
   expect(state.errors).toEqual([]);
 });
 
 test("an empty personal preview retains its empty state during the next pending poll", async ({ page, request }) => {
   const state = await setup(page, request);
-  state.personal = { ...state.personal, stories: [] };
+  state.personal = { ...state.personal, stories: [], coverage: null };
   await page.goto("/marknaden");
   const preview = page.getByRole("region", { name: "Dina bevakningar", exact: true });
-  const empty = preview.getByText("Inga nya matchningar just nu. Dina bevakningar är sparade.", { exact: true });
+  const empty = preview.getByText("Inga bolagsnyheter i det hämtade underlaget. Öppna Mina bolag för fler bevakningar.", { exact: true });
   const skeleton = preview.getByRole("status", { name: "Hämtar dina bevakningar", exact: true });
   await expect(empty).toBeVisible();
   await expect(skeleton).toHaveCount(0);

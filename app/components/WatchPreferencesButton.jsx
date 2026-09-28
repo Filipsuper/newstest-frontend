@@ -13,6 +13,7 @@ export default function WatchPreferencesButton({
   variant = "secondary",
   initialTab = "companies",
   initialSection,
+  initialKeyword,
   icon = <FiSliders aria-hidden="true" />,
   ...buttonProps
 }) {
@@ -37,7 +38,7 @@ export default function WatchPreferencesButton({
       }
       footer={<Button variant="secondary" disabled={emailState.busy} onClick={() => requestOpen(false)}>Stäng</Button>}
     >
-      <WatchPreferencesEditor initialTab={initialTab} initialSection={initialSection} onEmailStateChange={setEmailState} />
+      <WatchPreferencesEditor initialTab={initialTab} initialSection={initialSection} initialKeyword={initialKeyword} onEmailStateChange={setEmailState} />
       <Dialog open={confirmClose} onOpenChange={setConfirmClose} title="Osparade mejlval"
         description="Bolag, ämnen och nyckelord är redan sparade. Dina mejländringar är inte sparade."
         footer={<>

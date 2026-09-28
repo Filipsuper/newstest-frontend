@@ -82,35 +82,36 @@ for (const width of [1440, 768, 320]) {
     await expect(
       page.getByRole("link", { name: "OMXsum 2.0 – startsida" }),
     ).toBeVisible();
-    await expect(main).toContainText("49 kr");
-    await expect(main).toContainText("Ingår också i Pro");
+    await expect(main).toContainText("99 kr");
+    await expect(main).toContainText("Terminal ingår i Pro");
     await expect(main).toContainText("Visar inte aktuella kurser");
     await expect(
-      main.getByRole("link", { name: "Se Plus & Pro" }),
+      main.getByRole("link", { name: "Se Pro" }),
     ).toHaveAttribute("href", "/pro");
     await expect(
       main.getByRole("link", { name: "Till den fria marknadsöversikten" }),
     ).toHaveAttribute("href", "/marknaden");
-    await expect(main.locator("img")).toBeVisible();
-    await expect(main.locator("img")).toHaveAttribute("width", "2940");
-    await expect(main.locator("img")).toHaveAttribute("height", "1592");
+    await expect(main.locator("img:visible")).toBeVisible();
+    await expect(main.locator("img:visible")).toHaveAttribute("width", "2940");
+    await expect(main.locator("img:visible")).toHaveAttribute("height", "1596");
     const largerImage = main.getByRole("link", {
       name: "Visa större bild av Terminal (öppnas i ny flik)",
     });
     await expect(largerImage).toHaveAttribute(
       "href",
-      /terminal-showcase-2026-09-07\.[a-f0-9]+\.png$/,
+      /terminal-trading-2026-09-28\.[a-f0-9]+\.png$/,
     );
     const optimizedSource = new URL(
-      await main.locator("img").getAttribute("src"),
+      await main.locator("img:visible").getAttribute("src"),
       page.url(),
     );
     expect(optimizedSource.searchParams.get("url")).toBe(
       await largerImage.getAttribute("href"),
     );
-    await expect(main.locator("img")).toHaveJSProperty("complete", true);
+    await main.locator("img:visible").scrollIntoViewIfNeeded();
+    await expect(main.locator("img:visible")).toHaveJSProperty("complete", true);
     expect(
-      await main.locator("img").evaluate((image) => image.naturalWidth),
+      await main.locator("img:visible").evaluate((image) => image.naturalWidth),
     ).toBeGreaterThan(0);
     for (const theme of ["light", "dark"]) {
       await page.evaluate(
@@ -132,7 +133,7 @@ for (const width of [1440, 768, 320]) {
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
-      for (const control of await main.locator("a,button").all()) {
+      for (const control of await main.locator("a:visible,button:visible").all()) {
         const box = await control.boundingBox();
         expect(box.height).toBeGreaterThanOrEqual(44);
         expect(box.x).toBeGreaterThanOrEqual(0);
@@ -170,7 +171,7 @@ test("guest sign-in preserves Terminal return path and keyboard focus", async ({
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/terminal");
   const trigger = page.getByRole("button", {
-    name: "Har du redan Plus? Logga in",
+    name: "Har du redan Pro? Logga in",
   });
   await trigger.click();
   const dialog = page.getByRole("dialog", {
@@ -211,10 +212,10 @@ test("free account sees pricing without redundant sign-in or automatic checkout"
   });
   await page.goto("/terminal");
   await expect(
-    page.getByRole("main").getByRole("link", { name: "Se Plus & Pro" }),
+    page.getByRole("main").getByRole("link", { name: "Se Pro" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Har du redan Plus? Logga in" }),
+    page.getByRole("button", { name: "Har du redan Pro? Logga in" }),
   ).toHaveCount(0);
   expect(state.sessions).toBe(0);
   expect(state.writes).toEqual([]);
@@ -233,15 +234,24 @@ test("unresolved account is a neutral loading state, not a guest upsell", async 
     "Kontrollerar din åtkomst…",
   );
   await expect(
-    page.getByRole("main").getByRole("link", { name: "Se Plus & Pro" }),
+    page.getByRole("main").getByRole("link", { name: "Se Pro" }),
   ).toHaveCount(0);
   release();
   await expect(
-    page.getByRole("main").getByRole("link", { name: "Se Plus & Pro" }),
+    page.getByRole("main").getByRole("link", { name: "Se Pro" }),
   ).toBeVisible();
 });
 
-for (const plan of ["plus", "premium"]) {
+test('Plus keeps its public-site features but cannot enter Terminal', async ({ page }) => {
+  const state = await setup(page, { user: { email: 'plus@example.test', verified: true, plan: 'plus' } });
+  await page.goto('/terminal');
+  await expect(page.getByRole('heading', { name: 'Terminal ingår i Pro' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Se Pro' })).toBeVisible();
+  expect(state.sessions).toBe(0);
+  expect(state.writes).toEqual([]);
+});
+
+for (const plan of ["premium"]) {
   test(`${plan} still opens the server-authenticated Terminal session without an upsell`, async ({
     page,
   }) => {
@@ -264,7 +274,7 @@ test("account fetch failure never bypasses server authorization", async ({
   const state = await setup(page, { accountError: true });
   await page.goto("/terminal");
   await expect(
-    page.getByRole("button", { name: "Har du redan Plus? Logga in" }),
+    page.getByRole("button", { name: "Har du redan Pro? Logga in" }),
   ).toBeVisible();
   expect(state.sessions).toBe(0);
 });

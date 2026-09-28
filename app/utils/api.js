@@ -82,7 +82,7 @@ export async function addEmail(mail, website) {
     }
 }
 
-export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, market, limit = 20, signal } = {}) {
+export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, market, selection, scope, limit = 20, signal } = {}) {
     const params = new URLSearchParams();
     if (symbol) params.set("symbol", symbol);
     if (symbols?.length) params.set("symbols", symbols.join(","));
@@ -90,6 +90,8 @@ export async function fetchLiveFeed({ symbol, symbols, q, cursor, category, mark
     if (cursor) params.set("cursor", cursor);
     if (category && category !== "all") params.set("category", category);
     if (market === "se") params.set("market", "se");
+    if (selection) params.set('selection', selection);
+    if (scope) params.set('scope', scope);
     params.set("limit", limit);
     params.set("reactions", "deferred");
     try {
@@ -396,6 +398,16 @@ export async function fetchPersonalPreview({ limit = 5 } = {}) {
         console.error('Error fetching data:', error);
         return null;
     }
+}
+
+export async function markPersonalNewsRead(receipts) {
+    const response = await fetch(`${API_URL}/user/personal-feed/read`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipts }), signal: AbortSignal.timeout(12_000),
+    });
+    const data = await response.json();
+    if (!response.ok || !Array.isArray(data.acknowledged)) throw new Error('Lässtatus kunde inte sparas. Försök igen.');
+    return data;
 }
 
 export async function fetchPersonalFeed({ limit = 40, filter = "all", cursor, after, signal } = {}) {

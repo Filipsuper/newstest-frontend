@@ -6,7 +6,7 @@ import { MarketWorkspaceNav } from "../../components/WorkspaceNav";
 import styles from "../../components/workspace.module.css";
 
 export const metadata = {
-    title: "Bevakning – Marknaden",
+    title: "Mina bolag – Marknaden",
     description: "Nyheter och marknadsreaktioner från bolagen och ämnena du följer.",
     alternates: { canonical: "/marknaden/bevakning" },
     robots: { index: false },

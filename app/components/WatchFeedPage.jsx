@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useFeedSearchParams } from "../hooks/useFeedSearchParams";
 import { useAuthContext } from "../providers/AuthProvider";
-import { fetchPersonalFeed, setCompanyFollowing } from "../utils/api";
+import { fetchPersonalFeed, markPersonalNewsRead, setCompanyFollowing } from "../utils/api";
 import { personalStoryToItem, preferenceReason } from "../utils/newsroom";
 import { personalMatchKinds, reconcileNewsSnapshot } from "../utils/personalNews";
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
@@ -10,7 +10,8 @@ import { WatchWorkspaceNav } from "./WorkspaceNav";
 import WatchPreferencesButton from "./WatchPreferencesButton";
 import CompanyAlertStatus from "./CompanyAlertStatus";
 import CompanyAlertIntroduction from "./CompanyAlertIntroduction";
-import NewsFeedItem from "./NewsFeedItem";
+import PersonalNewsItem from "./PersonalNewsItem";
+import PersonalCompanyOverview from "./PersonalCompanyOverview";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import StockSearch from "./StockSearch";
 import LogInModal from "../modals/logInModal";
@@ -23,14 +24,16 @@ import styles from "./workspace.module.css";
 
 export default function WatchFeedPage() {
   const { user, isGuestUser, refreshUser } = useAuthContext();
-  const params = useSearchParams();
+  const params = useFeedSearchParams();
   const filter = ['all', 'new', 'companies', 'topics', 'keywords'].includes(params.get('filter')) ? params.get('filter') : 'all';
   const [snapshot, setSnapshot] = useState(null);
   const [error, setError] = useState("");
   const [login, setLogin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [lastVisit, setLastVisit] = useState(null);
+  const [marking, setMarking] = useState(null);
+  const markingRequest = useRef(false);
+  const [readError, setReadError] = useState('');
   const [paused, setPaused] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderError, setOlderError] = useState("");
@@ -38,10 +41,13 @@ export default function WatchFeedPage() {
   const rows = useRef([]);
   const loadedKey = useRef(null);
   const { listRef, captureAnchor } = useLiveScrollAnchor();
-  const key = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords, filter, filter === 'new' ? lastVisit : null]);
+  const key = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords, user?.excludedKeywords, filter]);
   const items = snapshot?.key === key ? snapshot.items : null;
+  const importantItems = snapshot?.key === key ? snapshot.importantItems : null;
+  const period = snapshot?.key === key && snapshot.sinceHours === 168 ? 'de senaste 7 dagarna' : 'de senaste 48 timmarna';
   const coverage = snapshot?.key === key ? snapshot.coverage : null;
   const nextCursor = snapshot?.key === key ? snapshot.nextCursor : null;
+  const readsAvailable = snapshot?.key === key && snapshot.readStateAvailable === true;
   const hasPreferences = Boolean(user?.watchlist?.length || user?.topics?.length || user?.keywords?.length);
 
   function setFilter(value) {
@@ -49,16 +55,6 @@ export default function WatchFeedPage() {
     value === 'all' ? search.delete('filter') : search.set('filter', value);
     window.history.replaceState(null, '', `${window.location.pathname}${search.size ? `?${search}` : ''}`);
   }
-  useEffect(() => {
-    setLastVisit(null);
-    if (!user?.email || isGuestUser) return;
-    const storageKey = `omxsum:watch-visited:${user.email}`;
-    try {
-      const last = Number(localStorage.getItem(storageKey));
-      setLastVisit(last > 0 && last <= Date.now() ? last : null);
-      localStorage.setItem(storageKey, String(Date.now()));
-    } catch { /* A local catch-up marker is optional, not a read receipt. */ }
-  }, [user?.email, isGuestUser]);
 
   useEffect(() => {
     if (loadedKey.current !== key) {
@@ -67,6 +63,7 @@ export default function WatchFeedPage() {
       setSnapshot(null);
       setError("");
       setOlderError("");
+      setReadError('');
       setLoadingOlder(false);
       setPaused(false);
     }
@@ -76,9 +73,8 @@ export default function WatchFeedPage() {
       if (!active || refreshing || document.visibilityState === 'hidden') return;
       refreshing = true;
       try {
-        const data = await fetchPersonalFeed({ limit: 20,
+        const data = await fetchPersonalFeed({ limit: 50,
           filter: filter === 'new' ? 'all' : filter,
-          after: filter === 'new' && lastVisit ? new Date(lastVisit).toISOString() : undefined,
         });
         if (!active) return;
         if (!data || data.unavailable || !Array.isArray(data.stories)) throw new Error('Bevakningsflödet kunde inte hämtas. Dina val är fortfarande sparade.');
@@ -87,7 +83,9 @@ export default function WatchFeedPage() {
         }));
         captureAnchor();
         rows.current = reconcileNewsSnapshot(rows.current, incoming);
-        setSnapshot({ key, items: rows.current, nextCursor: data.nextCursor, coverage: data.coverage });
+        setSnapshot({ key, items: rows.current, nextCursor: data.nextCursor, coverage: data.coverage, readStateAvailable: data.readStateAvailable,
+          sinceHours: data.sinceHours, importantCoverage: data.importantCoverage,
+          importantItems: Array.isArray(data.importantStories) ? data.importantStories.map(personalStoryToItem) : null });
         setError("");
       } catch (failure) {
         if (active) { captureAnchor(); setError(failure.message); }
@@ -106,8 +104,30 @@ export default function WatchFeedPage() {
     return () => { olderRequest.current?.abort(); olderRequest.current = null; };
   }, [key]);
   const shown = useMemo(() => (items ?? []).filter(item =>
-    filter === 'all' || (filter === 'new' ? lastVisit && item.ts > lastVisit : item.matches?.includes(filter)),
-  ), [items, filter, lastVisit]);
+    filter === 'all' || (filter === 'new' ? readsAvailable && item.readState?.status === 'unread' : item.matches?.includes(filter)),
+  ), [items, filter, readsAvailable]);
+
+  async function markRead(item) {
+    if (!item.readState?.receipt || markingRequest.current) return;
+    const requestKey = key;
+    const receipt = item.readState.receipt;
+    markingRequest.current = true;
+    setMarking(item.id);
+    setReadError('');
+    try {
+      const result = await markPersonalNewsRead([receipt]);
+      if (loadedKey.current !== requestKey) return;
+      if (!result.acknowledged.includes(receipt)) throw new Error('Lässtatus kunde inte sparas.');
+      captureAnchor();
+      rows.current = rows.current.map(row => row.readState?.receipt === receipt
+        ? { ...row, readState: { ...row.readState, status: 'read' } } : row);
+      setSnapshot(previous => previous?.key === requestKey ? { ...previous, items: rows.current,
+        importantItems: previous.importantItems?.map(row => row.readState?.receipt === receipt
+          ? { ...row, readState: { ...row.readState, status: 'read' } } : row) } : previous);
+      setRetry(value => value + 1);
+    } catch (failure) { if (loadedKey.current === requestKey) setReadError(failure.message); }
+    finally { markingRequest.current = false; setMarking(null); }
+  }
 
   async function loadOlder() {
     if (!nextCursor || olderRequest.current) return;
@@ -119,7 +139,6 @@ export default function WatchFeedPage() {
     try {
       const data = await fetchPersonalFeed({ limit: 20, cursor: nextCursor,
         filter: filter === 'new' ? 'all' : filter,
-        after: filter === 'new' && lastVisit ? new Date(lastVisit).toISOString() : undefined,
         signal: controller.signal,
       });
       if (controller.signal.aborted) return;
@@ -127,7 +146,8 @@ export default function WatchFeedPage() {
       const incoming = data.stories.map(story => ({ ...personalStoryToItem(story), reason: preferenceReason(story), matches: personalMatchKinds(story) }));
       const existingIds = new Set(incoming.map(item => item.id));
       rows.current = reconcileNewsSnapshot(rows.current, [...rows.current.filter(item => !existingIds.has(item.id)), ...incoming]);
-      setSnapshot(previous => ({ key, items: rows.current, nextCursor: data.nextCursor,
+      setSnapshot(previous => ({ ...previous, key, items: rows.current, nextCursor: data.nextCursor,
+        readStateAvailable: data.readStateAvailable,
         coverage: previous?.coverage?.complete === false ? previous.coverage : data.coverage }));
     } catch (failure) { if (!controller.signal.aborted) setOlderError(failure.message); }
     finally {
@@ -152,8 +172,8 @@ export default function WatchFeedPage() {
       <WatchWorkspaceNav />
       <header className={styles.heading}>
         <Stack gap={2}>
-          <Heading as="h1" size="page">Dina bevakningar</Heading>
-          <Text size="sm" tone="secondary">Nyheterna som berör det du följer.</Text>
+          <Heading as="h1" size="page">Mina bolag</Heading>
+          <Text size="sm" tone="secondary">Viktiga händelser och senaste nytt i bolagen du följer.</Text>
         </Stack>
         <Inline>
           <CompanyAlertStatus />
@@ -164,6 +184,9 @@ export default function WatchFeedPage() {
         <Text size="sm" tone="secondary">
           {user.watchlist?.length ?? 0} bolag · {user.topics?.length ?? 0} ämnen · {user.keywords?.length ?? 0} nyckelord
         </Text>
+        {Boolean(user.excludedKeywords?.length) && <WatchPreferencesButton initialTab="keywords" variant="ghost" size="sm" icon={null}>
+          {user.excludedKeywords.length} undantag
+        </WatchPreferencesButton>}
       </Inline>}
       <CompanyAlertIntroduction user={user} />
       <section className={styles.section} aria-label="Personliga nyheter">
@@ -178,13 +201,12 @@ export default function WatchFeedPage() {
           </Stack>
         ) : <>
           <SegmentedControl label="Filtrera bevakning" value={filter} onValueChange={setFilter} options={[
-            { value: 'all', label: 'Alla' }, ...(lastVisit || filter === 'new' ? [{ value: 'new', label: 'Sedan sist' }] : []),
+            { value: 'all', label: 'Översikt' }, { value: 'new', label: 'Olästa' },
             { value: 'companies', label: 'Bolag' }, { value: 'topics', label: 'Ämnen' }, { value: 'keywords', label: 'Nyckelord' },
           ]} />
           <Inline className={styles.between}>
             <Text size="xs" tone="secondary" role="status">
-              {paused ? 'Pausat' : 'Uppdateras automatiskt'} · {coverage?.complete === false ? 'Delar av de senaste 48 timmarna' : 'Senaste 48 timmarna'}
-              {filter === 'new' && lastVisit && ' · sedan ditt senaste besök på den här enheten'}
+              {paused ? 'Pausat' : 'Uppdateras automatiskt'} · {coverage?.complete === false ? `Delar av ${period}` : period.replace(/^de senaste/, 'Senaste')}
             </Text>
             <Button variant="ghost" size="sm" disabled={loadingOlder} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
               {paused ? 'Återuppta' : 'Pausa uppdateringar'}
@@ -194,19 +216,21 @@ export default function WatchFeedPage() {
             <Text size="sm" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Det kan finnas fler matchningar.</Text>
             <Button variant="ghost" onClick={() => { setPaused(false); setRetry(value => value + 1); }}>Kontrollera igen</Button>
           </Inline>}
+          {nextCursor && <Text size="xs" tone="secondary">Urvalet bygger på hämtade nyheter. Visa äldre matchningar för att ta med fler.</Text>}
+          {readError && <Text size="sm" role="alert">{readError}</Text>}
           {!items && !error ? (paused
             ? <Text size="sm" tone="secondary">Uppdateringar pausade.</Text>
-            : <NewsListSkeleton count={3} />) : shown.length ? (
-            <div className={styles.news}>
+            : <NewsListSkeleton count={3} />) : shown.length || (filter === 'all' && importantItems?.length) ? (
+            filter === 'all' ? <PersonalCompanyOverview items={shown} importantItems={importantItems} importantCoverage={snapshot?.importantCoverage} watchlist={user.watchlist ?? []} now={Date.now()} onMarkRead={markRead} marking={marking} /> : <div className={styles.news}>
               {shown.map(item => <div key={item.id} data-live-news-id={item.id}>
-                <NewsFeedItem item={item} reason={item.reason} showSummary={false} />
+                <PersonalNewsItem item={item} reason={item.reason} showSummary={false} onMarkRead={markRead} marking={marking} />
               </div>)}
             </div>
           ) : !error && <EmptyState title={filter === 'new'
-            ? lastVisit ? coverage?.complete ? 'Inga nya matchningar under perioden' : 'Inga nya matchningar i hämtade nyheter' : 'Inget tidigare besök på den här enheten'
+            ? readsAvailable ? 'Inga olästa nyheter i det hämtade urvalet' : 'Lässtatus är inte tillgänglig just nu'
             : 'Inga matchningar just nu'}
-            description={filter === 'new' && !lastVisit
-              ? 'Visa alla matchningar för att läsa dina nyheter.'
+            description={filter === 'new'
+              ? 'Översikten visar alla hämtade matchningar. Äldre sidor kan innehålla fler olästa nyheter.'
               : 'Dina bevakningar är sparade. Nya matchningar visas automatiskt.'}
             action={filter !== 'all' && <Button variant="secondary" onClick={() => setFilter('all')}>Visa alla matchningar</Button>} />}
           {olderError && <Text size="sm" role="alert">{olderError} Försök igen nedan.</Text>}

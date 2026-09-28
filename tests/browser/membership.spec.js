@@ -93,7 +93,10 @@ for (const width of [1440, 390, 320]) {
     await expect(plan(page, "Gratis")).toContainText("0 kr");
     await expect(plan(page, "Plus")).toContainText("49 kr");
     await expect(plan(page, "Pro")).toContainText("99 kr");
-    await expect(plan(page, "Plus")).toContainText("Tillgång till Terminal");
+    await expect(plan(page, "Plus")).not.toContainText("Terminal");
+    await expect(plan(page, "Plus")).toContainText("20 följda bolag");
+    await expect(plan(page, "Gratis")).toContainText("2 bolag");
+    await expect(plan(page, "Pro")).toContainText("Exklusiv tillgång till OMXsum Terminal");
     await expect(plan(page, "Pro")).toContainText("100 bolag");
     await expect(main(page)).not.toContainText("Realtidsdata");
     expect(state.checkout).toEqual([]);

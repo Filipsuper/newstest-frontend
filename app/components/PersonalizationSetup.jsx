@@ -1,4 +1,5 @@
 "use client";
+import { companyLimit as membershipCompanyLimit } from '../utils/membership';
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -36,7 +37,7 @@ export default function PersonalizationSetup() {
     };
   }, [retry]);
   const watchlist = user?.watchlist ?? [];
-  const cap = { free: 5, plus: 10, premium: 100 }[user?.plan] ?? 5;
+  const cap = membershipCompanyLimit(user?.plan);
   const hasPreferences =
     watchlist.length || user?.topics?.length || user?.keywords?.length;
   async function follow(company, followed) {
@@ -108,8 +109,8 @@ export default function PersonalizationSetup() {
         </Inline>
         {watchlist.length >= cap && (
           <Text size="sm" tone="secondary">
-            Du har valt så många bolag som ingår i din plan. Ta bort ett för att
-            välja ett annat.
+            Din plan har plats för {cap} bolag. Dina sparade val finns kvar.
+            Ta bort bolag tills du är under gränsen, eller byt plan, för att lägga till fler.
           </Text>
         )}
         {error && (

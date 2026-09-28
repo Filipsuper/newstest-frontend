@@ -20,4 +20,4 @@ export const SITE_OG_IMAGE = {
 };
 export const LANDING_HEADLINE = ["Förstå börsnyheterna.", "Följ dina bolag."];
 export const LANDING_DESCRIPTION =
-  "Samla börsnyheterna, se aktiernas reaktioner och följ bolagen som berör dig. Börja med marknadsöversikten eller det kostnadsfria Morgonbrevet.";
+  "Följ dina bolag och intressen med börsnyheter, kursreaktioner, finansiella grafer och VD-ord i korthet. Börja gratis med OMXsum och Morgonbrevet.";

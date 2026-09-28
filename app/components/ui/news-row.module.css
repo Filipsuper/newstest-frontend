@@ -43,6 +43,14 @@
 .metadata time {
   font-variant-numeric: tabular-nums;
 }
+.metadataAction {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ui-space-2);
+  align-items: center;
+  margin-inline-start: auto;
+}
 .metadata a {
   color: var(--ui-text);
   text-decoration: underline;
@@ -51,4 +59,12 @@
 }
 .metadata a:hover {
   text-decoration-color: currentColor;
+}
+@media (max-width: 600px) {
+  /* Session labels are wider than percentages; don't squeeze the headline. */
+  .sessionLeading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--ui-space-2);
+  }
 }

@@ -69,7 +69,7 @@ export const preferenceReason = (story) => {
   return "Matchar din bevakning";
 };
 export function personalStoryToItem(story) {
-  return normalizeStory({
+  return { ...normalizeStory({
     ...story,
     companies: story.companies?.length
       ? story.companies
@@ -79,7 +79,7 @@ export function personalStoryToItem(story) {
     reaction:
       story.reaction ??
       (story.reactionPct == null ? null : { pct: story.reactionPct }),
-  });
+  }), readState: story.readState, matchedKeyword: story.matchedKeyword, matchedTopic: story.matchedTopic };
 }
 
 export function featuredNews(items, now, limit = 5) {

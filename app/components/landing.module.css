@@ -99,6 +99,20 @@
 .more {
   align-items: flex-start;
 }
+.research {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-8);
+  min-width: 0;
+}
+.researchRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-4);
+}
+.researchRow > svg {
+  flex-shrink: 0;
+}
 @media (max-width: 1000px) {
   .hero,
   .market,

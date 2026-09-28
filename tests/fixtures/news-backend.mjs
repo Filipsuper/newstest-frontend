@@ -1,6 +1,9 @@
 // Local-only integration fixture. Fictional data except the three explicitly
 // reviewed segment-report previews, which have no invented quotes or history.
 import { createServer } from "node:http";
+import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
 import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
 import { sessionPreviewStories } from "../../app/designsystem/sessions/fixtures.js";
 import { previewStockChart } from "../../app/designsystem/sessions/chartFixtures.js";
@@ -8,6 +11,15 @@ import { fictionalGeographicRevenue, fictionalSegmentRevenue, reviewedCompanyOve
 import { fictionalProfileInsights } from './profile-insights.mjs';
 import { valuationFixture } from './valuation.mjs';
 import { researchFixtures } from './company-research.mjs';
+import { selectedNews } from '../../app/utils/newsSelection.js';
+
+// Optional interactive demo reuses the backend's pure matching/policy modules.
+// This path is local tooling configuration, never a production app import.
+const demoBackend = process.env.NEWS_DEMO_BACKEND_DIR;
+const demoMatching = demoBackend ? await import(pathToFileURL(resolve(demoBackend, 'utils/personalNewsMatching.js'))) : null;
+const demoAlertPreview = demoBackend ? (await import(pathToFileURL(resolve(demoBackend, 'utils/companyAlertPreview.js')))).companyAlertPreview : null;
+const demoCatchup = demoBackend ? await import(pathToFileURL(resolve(demoBackend, 'utils/personalCatchup.js'))) : null;
+const demoExclusions = demoBackend ? await import(pathToFileURL(resolve(demoBackend, 'utils/keywordExclusions.js'))) : null;
 
 const base = Date.now() - 2 * 3600_000;
 function genericStockChart(story, symbol, unavailable = false) {
@@ -114,6 +126,27 @@ const stories = Array.from({ length: 18 }, (_, index) => ({
         }
       : {},
 }));
+if (demoCatchup) stories.push({
+  ...stories[0], id: 'fixture-catchup', eventId: 'event-catchup',
+  headline: 'Tecknar ett nytt flerårigt serviceavtal', importance: 99,
+  publishedAt: new Date(Date.now() - 5 * 86400e3).toISOString(),
+  summary: 'Fiktiv testdata. Norden Industri har tecknat ett flerårigt serviceavtal.',
+  aiSummary: { text: 'Fiktiv testdata. Avtalet ger Norden Industri återkommande serviceintäkter under flera år.', bullets: [] },
+  tags: ['ORDER'], facts: {}, reaction: null,
+});
+if (demoCatchup) {
+  const after = stories.at(-1);
+  after.publishedAt = `${after.publishedAt.slice(0, 10)}T20:06:00.000Z`;
+  const before = { ...after, id: 'fixture-before-open', eventId: 'event-before-open',
+    headline: 'Presenterar en ny produkt inför börsöppningen', importance: 98,
+    publishedAt: `${after.publishedAt.slice(0, 10)}T05:35:00.000Z`,
+    aiSummary: null, summary: 'Fiktiv testdata. Bolaget presenterar en ny produkt.' };
+  for (const [story, timing] of [[after, 'after_close'], [before, 'before_open']]) {
+    story.reactionV2 = { schemaVersion: 2, storyId: story.id, storyVersion: story.version,
+      publishedAt: story.publishedAt, measurements: [{ symbol: story.companies[0].symbol, timing, status: 'missing_price', windows: {} }] };
+  }
+  stories.push(before);
+}
 // Explicit fictional volume provenance; no database or real trading data.
 for (const story of stories.slice(0, 2)) {
   story.marketContext = {
@@ -173,6 +206,17 @@ const user = {
   topics: [],
   keywords: [],
 };
+// In-memory UI demo only: real auth/receipt validation is covered by backend
+// tests. Restarting this fixture resets the fictional account's acknowledgements.
+const demoReads = new Set();
+const demoReceipt = story => createHash('sha256').update(JSON.stringify([story.id, story.headline, story.summary])).digest('hex');
+if (demoBackend) { user.watchlist = ['NORD.TEST', 'SKAR.TEST']; user.keywords = ['energi']; }
+let demoAlerts = {
+  revision: 0, enabled: false, importanceLevel: 'important', mutedSymbols: [],
+  quietHours: { enabled: true, start: '22:00', end: '07:00' }, timeZone: 'Europe/Stockholm',
+  destination: user.email, verified: true, entitlement: { eligible: true, companyLimit: 100 },
+  delivery: { available: false, status: 'off' }, batching: { windowSeconds: 120, maxWaitSeconds: 300 },
+};
 const overview = () => ({
   news: stories,
   moverNews: [],
@@ -218,6 +262,23 @@ const server = createServer(async (req, res) => {
   let data;
   if (path === "/__newsroom_fixture") data = { fixture: true };
   else if (path === "/__discovery_failure") { discoveryFailure = Boolean(input.fail); data = { ok: true }; }
+  else if (demoBackend && path === '/api/user/keyword-preview') {
+    try { data = { ...demoMatching.previewKeywordMatches(stories, input.keyword), readOnly: true, sinceHours: 48, coverage: { complete: true } }; }
+    catch { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Ogiltigt sökord' })); return; }
+  }
+  else if (demoBackend && path === '/api/user/company-alerts/preview') {
+    try { data = { ...demoAlertPreview(stories, user, input, Date.now()), coverage: { complete: true } }; }
+    catch { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Ogiltiga mejlval' })); return; }
+  }
+  else if (demoBackend && path === '/api/user/company-alerts') {
+    if (req.method === 'PUT') {
+      if (input.revision !== demoAlerts.revision) { res.writeHead(409, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Ladda om demoval' })); return; }
+      const { enabled, importanceLevel, mutedSymbols, quietHours, timeZone } = input;
+      demoAlerts = { ...demoAlerts, enabled, importanceLevel, mutedSymbols, quietHours, timeZone, revision: demoAlerts.revision + 1,
+        delivery: { available: false, status: enabled ? 'service_paused' : 'off' } };
+    }
+    data = demoAlerts;
+  }
   else if (path === "/api/user/watchlist/toggle") {
     user.watchlist = user.watchlist.includes(input.symbol)
       ? user.watchlist.filter((s) => s !== input.symbol)
@@ -287,16 +348,62 @@ const server = createServer(async (req, res) => {
       sectors: ["Industrials"],
       segments: ["LARGE_CAP"],
     };
-  else if (path === "/api/user/personal-feed")
+  else if (path === '/api/user/personal-feed/read' && req.method === 'POST') {
+    const receipts = input.receipts;
+    if (!Array.isArray(receipts) || !receipts.length || receipts.some(receipt => !stories.some(story => demoReceipt(story) === receipt))) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Ogiltig läsmarkör i demo.' })); return;
+    }
+    receipts.forEach(receipt => demoReads.add(receipt));
+    data = { acknowledged: receipts };
+  }
+  else if (path === '/api/user/interests/unfollow' && req.method === 'POST' && demoBackend) {
+    if (!['keyword', 'topic'].includes(input.type) || typeof input.value !== 'string') {
+      res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Ogiltig bevakning.' })); return;
+    }
+    const field = input.type === 'keyword' ? 'keywords' : 'topics';
+    user[field] = (user[field] ?? []).filter(value => value !== input.value);
+    data = { keywords: user.keywords ?? [], topics: user.topics ?? [] };
+  }
+  else if (path === '/api/user/keyword-exclusions' && req.method === 'POST' && demoExclusions) {
+    try {
+      const { keyword, operation } = demoExclusions.exclusionChange(input);
+      const values = user.excludedKeywords ?? [];
+      if (operation === 'add' && values.length >= 10 && !values.includes(keyword)) throw new Error('Högst 10 undantag.');
+      user.excludedKeywords = operation === 'add' ? [...new Set([...values, keyword])] : values.filter(value => value !== keyword);
+      data = { excludedKeywords: user.excludedKeywords };
+    } catch (error) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: error.message })); return; }
+  }
+  else if (path === "/api/user/personal-feed") {
+    let personal = stories.slice(0, 3).map(story => ({ ...story, viaWatchlist: true }));
+    if (demoMatching) personal = stories.map(story => ({ ...story,
+      viaWatchlist: story.companies.some(company => user.watchlist.includes(company.symbol)),
+      matchedKeyword: demoMatching.storyKeywordMatch(story, user.keywords)?.keyword ?? null,
+      matchedTopic: story.tags.find(tag => user.topics.includes(tag)) ?? null,
+    })).filter(story => (story.viaWatchlist || story.matchedKeyword || story.matchedTopic)
+      && !demoExclusions.excludedPersonalMatch(story, user, story.viaWatchlist))
+      .filter(story => url.searchParams.get('filter') === 'companies' ? story.viaWatchlist
+        : url.searchParams.get('filter') === 'keywords' ? Boolean(story.matchedKeyword)
+        : url.searchParams.get('filter') === 'topics' ? Boolean(story.matchedTopic) : true);
     data = {
-      sinceHours: 48,
-      stories: stories.slice(0, 3).map((story) => ({
+      sinceHours: demoCatchup ? 168 : 48,
+      readStateAvailable: true,
+      coverage: { complete: true },
+      stories: personal.map((story) => ({
         ...story,
         company: story.companies[0].name,
         symbol: story.companies[0].symbol,
-        viaWatchlist: true,
+        readState: { receipt: demoReceipt(story), status: demoReads.has(demoReceipt(story)) ? 'read' : 'unread' },
       })),
     };
+    if (demoCatchup) {
+      data.importantStories = demoCatchup.importantCompanyWindow({ annotated: personal.map(story => ({ story, symbols: story.companies.map(company => company.symbol) })) }, user.watchlist)
+        .annotated.slice(0, 20).map(({ story }) => ({ ...story,
+          readState: { receipt: demoReceipt(story), status: demoReads.has(demoReceipt(story)) ? 'read' : 'unread' },
+        }));
+      data.importantCoverage = { complete: true, candidateLimit: 20, candidatesLimited: false };
+    }
+  }
   else if (/^\/api\/feed\/company\/[^/]+\/overview$/.test(path)) {
     const requestedSymbol = decodeURIComponent(path.split("/").at(-2));
     const symbol = requestedSymbol === 'COVERAGE.TEST' ? 'NORD.TEST' : requestedSymbol;
@@ -486,12 +593,16 @@ const server = createServer(async (req, res) => {
       quote: { price: 101.1, quoteTime: base + 11 * 300_000, fresh: false },
     };
   } else if (path === "/api/feed/news") {
-    const items =
+    let items =
       url.searchParams.get("q") === "none"
         ? []
         : url.searchParams.has("cursor")
           ? stories.slice(12)
           : stories.slice(0, 12);
+    if (demoMatching) items = items.filter(story =>
+      (url.searchParams.get('selection') !== 'selected' || selectedNews(story))
+      && (url.searchParams.get('scope') !== 'following' || story.companies.some(company => user.watchlist.includes(company.symbol)))
+      && (!url.searchParams.get('q') || demoMatching.storyKeywordMatch(story, [url.searchParams.get('q')])));
     data = {
       items,
       nextCursor: url.searchParams.has("cursor") ? null : "page2",

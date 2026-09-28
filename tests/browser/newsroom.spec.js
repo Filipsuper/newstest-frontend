@@ -79,7 +79,7 @@ test("overview is news first and opens a URL-backed dialog with Back and forward
 test("chronological feed inserts arrivals automatically, pauses, filters by URL and loads older news", async ({
   page,
 }) => {
-  await page.goto("/marknaden/nyheter");
+  await page.goto("/marknaden/nyheter?selection=all");
   await expect(page.locator("article")).toHaveCount(12);
   await page.evaluate(() => {
     const stream = window.__newsStreams.findLast((source) => !source.closed);
@@ -353,7 +353,7 @@ test("reaction filter excludes unmeasured arrivals while latest shows them autom
   const body = await (await request.get("http://127.0.0.1:8100/api/feed/news")).json();
   await page.goto("/marknaden/nyheter?view=reactions");
   await expect(page.locator("article")).toHaveCount(12);
-  await expect(page.getByText("Ansluten · Störst uppmätt förändring")).toBeVisible();
+  await expect(page.getByText("Ansluten · Med kursdata · Senast publicerat först")).toBeVisible();
   const incoming = { ...body.items[1], id: "no-reaction", eventId: "no-reaction-event", reaction: null, headline: "Nyhet utan uppmätt reaktion" };
   await emitStories(page, [incoming]);
   await expect(page.getByRole("button", { name: /nya eller uppdaterade/ })).toHaveCount(0);
@@ -368,7 +368,7 @@ test("hidden AI enrichment does not expand or reshuffle the reaction feed", asyn
     aiSummary: { text: "Ny AI-sammanfattning efter publicering.", bullets: ["Ett nytt huvudbudskap."] } };
   await page.goto("/marknaden/nyheter?view=reactions");
   await expect(page.locator("article")).toHaveCount(12);
-  await expect(page.getByText("Ansluten · Störst uppmätt förändring")).toBeVisible();
+  await expect(page.getByText("Ansluten · Med kursdata · Senast publicerat först")).toBeVisible();
   const order = () => page.locator('main article a[href^="/nyhet/"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
   const initialOrder = await order();
   await emitStories(page, [enriched]);

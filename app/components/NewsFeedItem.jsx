@@ -8,6 +8,8 @@ import NewsRow from "./ui/NewsRow";
 import { newsMarketContext, volumeRatioLabel } from "../utils/newsMarketAttention";
 import { rowReaction } from "../utils/reactionV2";
 import { sessionDateLabel } from "../utils/companySession";
+import { newsPublicationSession } from '../utils/newsPublicationSession';
+import NewsSessionLabel from './NewsSessionLabel';
 
 export default function NewsFeedItem({
   item,
@@ -17,10 +19,13 @@ export default function NewsFeedItem({
   showSummary = true,
   summaryPreview = false,
   compact = false,
+  metadataAction,
+  className,
   onOpen,
 }) {
   const marketContext = newsMarketContext(item);
   const reaction = rowReaction(item);
+  const publicationSession = newsPublicationSession(item);
   const volume = reaction.measurement?.volume?.m30;
   const session = reaction.companySession;
   const sessionVolume = session?.relationship !== "before_event_session"
@@ -33,8 +38,10 @@ export default function NewsFeedItem({
 
   return (
     <NewsRow
+      className={className}
       highlighted={highlighted}
       compact={compact}
+      metadataAction={metadataAction}
       company={showSymbol ? (item.company ?? item.symbol) : null}
       title={item.title}
       description={
@@ -43,6 +50,7 @@ export default function NewsFeedItem({
         ) : null
       }
       reaction={reaction.pct}
+      leadingLabel={publicationSession ? <NewsSessionLabel session={publicationSession} /> : null}
       href={onOpen ? undefined : storyHref(item.id, item.title)}
       onOpen={onOpen}
       reactionLabel={reaction.pct !== null ? reaction.label : reaction.status ?? "Nyhet"}
@@ -57,6 +65,7 @@ export default function NewsFeedItem({
           >
             {newsDate(item.ts)}
           </time>
+          {reaction.pct !== null && <NewsSessionLabel session={publicationSession} />}
           {!compact && mainTag && <NewsTypeLabel type={mainTag} />}
           {reaction.pct !== null && <span>{reaction.label}</span>}
           {reaction.version === 2 && reaction.pct === null && <span>{reaction.status}</span>}

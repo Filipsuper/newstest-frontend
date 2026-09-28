@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import LogInModal from "../modals/logInModal";
+import CompanyAlertExamples from './CompanyAlertExamples';
 import { COMPANY_ALERT_LEVELS, companyAlertDraft } from "../utils/companyAlerts";
 import { Button } from "./ui/Button";
 import { Switch } from "./ui/Choices";
@@ -353,6 +354,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
           onValueChange={(importanceLevel) => update({ importanceLevel })}
           disabled={busy}
         />
+        <CompanyAlertExamples draft={draft} identity={identity} />
       </Stack>
 
       <details className={styles.details}>

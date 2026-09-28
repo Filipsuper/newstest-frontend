@@ -1,0 +1,19 @@
+/* Reserve space to avoid layout shifts. Keep touch and keyboard access. */
+@media (hover: hover) and (pointer: fine) {
+  .row .readAction {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .row:hover .readAction,
+  .row:focus-within .readAction,
+  .row .readAction[data-pending] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (any-pointer: coarse) {
+  .row .readAction {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

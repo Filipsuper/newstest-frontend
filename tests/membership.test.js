@@ -4,7 +4,19 @@ import {
   membershipPlans,
   memberPlan,
   checkoutDestination,
+  companyLimit,
+  hasTerminalPlan,
 } from "../app/utils/membership.js";
+
+test('company limits and Terminal entitlement match the new memberships', () => {
+  for (const [plan, limit, terminal] of [['free', 2, false], ['plus', 20, false], ['premium', 100, true], ['unknown', 2, false]]) {
+    assert.equal(companyLimit(plan), limit);
+    assert.equal(hasTerminalPlan({ email: 'reader@example.test', plan }), terminal);
+  }
+  assert.equal(hasTerminalPlan({ email: null, plan: 'premium' }), false);
+  assert.equal(hasTerminalPlan(null), false);
+  assert.ok(!membershipPlans.find(plan => plan.id === 'plus').features.some(text => text.includes('Terminal')));
+});
 
 test("membership presents unchanged prices and internal plan names", () => {
   assert.deepEqual(

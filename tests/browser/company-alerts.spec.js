@@ -14,7 +14,7 @@ async function setup(page, overrides = {}) {
       revision: 0, enabled: false, importanceLevel: "important", mutedSymbols: [],
       quietHours: { enabled: true, start: "22:00", end: "07:00" }, timeZone: "Europe/Stockholm",
       destination: user.email, verified: user.verified,
-      entitlement: { eligible: ["plus", "premium"].includes(user.plan), companyLimit: user.plan === "premium" ? 100 : user.plan === "plus" ? 10 : 0 },
+      entitlement: { eligible: ["plus", "premium"].includes(user.plan), companyLimit: user.plan === "premium" ? 100 : user.plan === "plus" ? 20 : 2 },
       delivery: { status: user.plan === "free" ? "requires_plan" : !user.verified ? "requires_verification" : "off", available: false },
       batching: { windowSeconds: 120, maxWaitSeconds: 300 },
     },
@@ -60,6 +60,26 @@ async function openSettings(page) {
   await panel.getByRole("button", { name: "Mejl om mina bolag", exact: true }).click();
   return panel;
 }
+
+test('historical email examples reflect the draft without saving consent', async ({ page }) => {
+  const state = await setup(page);
+  const calls = [];
+  await page.route('**/api/user/company-alerts/preview', route => {
+    calls.push(route.request().postDataJSON());
+    return route.fulfill({ json: { readOnly: true, items: [{ id: 'fixture-1', headline: 'Exempel på en viktig order', publishedAt: new Date().toISOString() }], coverage: { complete: true } } });
+  });
+  const panel = await openSettings(page);
+  await panel.getByRole('button', { name: 'Visa exempel med dessa val' }).click();
+  await expect(panel.getByRole('link', { name: 'Exempel på en viktig order' })).toBeVisible();
+  expect(calls[0]).toEqual({ importanceLevel: 'important', mutedSymbols: [] });
+  expect(state.puts).toHaveLength(0);
+  await panel.getByRole('button', { name: 'Bara det viktigaste', exact: true }).click();
+  await expect(panel.getByRole('link', { name: 'Exempel på en viktig order' })).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Visa exempel med dessa val' }).click();
+  await expect.poll(() => calls.length).toBe(2);
+  expect(calls[1].importanceLevel).toBe('major');
+  expect(state.puts).toHaveLength(0);
+});
 
 for (const closeMethod of ['button', 'escape', 'icon']) test(`unsaved email edits survive ${closeMethod} until explicitly discarded`, async ({ page }) => {
   const state = await setup(page);
@@ -507,8 +527,8 @@ test("keeping a draft after a server pause still requires an explicit opt-in aga
   expect(state.errors).toEqual([]);
 });
 
-test("an over-cap Plus account chooses ten email companies without deleting follows", async ({ page }) => {
-  const watchlist = ["NORD.TEST", ...Array.from({ length: 10 }, (_, index) => `B${index}.TEST`)];
+test("an over-cap Plus account chooses twenty email companies without deleting follows", async ({ page }) => {
+  const watchlist = ["NORD.TEST", ...Array.from({ length: 20 }, (_, index) => `B${index}.TEST`)];
   const state = await setup(page, { watchlist });
   state.resource.delivery.status = "over_limit";
   const panel = await openSettings(page);

@@ -1,4 +1,5 @@
 "use client";
+import { companyLimit as membershipCompanyLimit } from '../utils/membership';
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -7,7 +8,9 @@ import { useAuthContext } from "../providers/AuthProvider";
 import { useCompanyAlerts } from "../hooks/useCompanyAlerts";
 import { companyAlertsEnabled } from "../utils/companyAlerts";
 import CompanyAlertPreferences from "./CompanyAlertPreferences";
+import KeywordExamples from './KeywordExamples';
 import { fetchTopics, saveKeywords, saveTopics, setCompanyFollowing } from "../utils/api";
+import NewsExclusions from './NewsExclusions';
 import { getCompanies } from "../utils/companies";
 import { TOPIC_LABELS } from "../utils/topicLabels";
 import LogInModal from "../modals/logInModal";
@@ -51,7 +54,7 @@ function SelectedChips({ label, values, itemLabel = (value) => value, removeLabe
 }
 
 /** Shared editor body, used both in the preference dialog and its direct route. */
-export default function WatchPreferencesEditor({ initialTab = "companies", initialSection, onEmailStateChange }) {
+export default function WatchPreferencesEditor({ initialTab = "companies", initialSection, initialKeyword = '', onEmailStateChange }) {
   const { user, isGuestUser, refreshUser } = useAuthContext();
   const alerts = useCompanyAlerts(user);
   const [emailOpen, setEmailOpen] = useState(initialSection === "email");
@@ -66,7 +69,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
   const [topicRetry, setTopicRetry] = useState(0);
   const [topicQuery, setTopicQuery] = useState("");
   const [topicPage, setTopicPage] = useState(0);
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [keywordError, setKeywordError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -111,7 +114,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
   const watchlist = user?.watchlist ?? [];
   const topics = user?.topics ?? [];
   const keywords = user?.keywords ?? [];
-  const companyLimit = { free: 5, plus: 10, premium: 100 }[user?.plan] ?? 5;
+  const companyLimit = membershipCompanyLimit(user?.plan);
   const companyNames = useMemo(
     () => new Map(companies.map((company) => [company.symbol, company.name || company.symbol])),
     [companies],
@@ -230,7 +233,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
               onRemove={(symbol) => followCompany({ symbol, name: companyNames.get(symbol) }, false)}
             />
             <Text size="xs" tone="secondary" numeric>{watchlist.length}/{companyLimit} bolag i din plan</Text>
-            {watchlist.length >= companyLimit && <Text size="sm" tone="secondary">Du har valt så många bolag som ingår i din plan. Ta bort ett för att välja ett annat.</Text>}
+            {watchlist.length >= companyLimit && <Text size="sm" tone="secondary">Din plan har plats för {companyLimit} bolag. Dina sparade val finns kvar. Ta bort bolag tills du är under gränsen, eller byt plan, för att lägga till fler.</Text>}
             {companiesLoading ? <Skeleton label="Hämtar bolag" /> : companies.length ? (
               <fieldset className={styles.search} disabled={busy}>
                 <StockSearch
@@ -307,6 +310,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
         </TabPanel>
         <TabPanel value="keywords">
           <Stack gap={4}>
+            {initialKeyword && <Text size="sm" tone="secondary">Sökordet kan sparas som en nyckelordsbevakning. Flödets kategori och bolagsfilter sparas inte.</Text>}
             <SelectedChips
               label="Valda nyckelord" values={keywords} busy={busy} removeLabel="Ta bort nyckelordet"
               onRemove={(value) => {
@@ -328,6 +332,11 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
               />
               <Button type="submit" loading={busy}><FiPlus aria-hidden="true" />Lägg till</Button>
             </form>
+            <KeywordExamples keyword={keyword} identity={user.email} />
+            <details className={styles.matchingHelp}>
+              <summary>Avancerade undantag</summary>
+              <NewsExclusions key={user.email} />
+            </details>
           </Stack>
         </TabPanel>
       </Tabs>

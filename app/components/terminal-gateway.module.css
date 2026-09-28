@@ -42,22 +42,6 @@
   color: var(--ui-text-secondary);
   margin-top: var(--ui-space-1);
 }
-.previewHeader {
-  justify-content: space-between;
-}
-.preview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-3);
-  margin: 0;
-  min-width: 0;
-}
-.screenshot {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: var(--ui-radius-lg);
-}
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -87,9 +71,5 @@
   }
   .access {
     padding: var(--ui-space-6) var(--ui-space-4);
-  }
-  .previewHeader {
-    align-items: flex-start;
-    gap: var(--ui-space-2);
   }
 }
