@@ -347,12 +347,14 @@ desktop density or abbreviated interaction model.
   independently of the visually continuous stock-price chart.
   Local fictional examples live at `/designsystem/reactions`, gated off by
   default in production, and must never enter real feeds or company pages.
-- Company/session context is separate from archived event reactions. Before-open
-  news in its first eligible session may show `Aktien idag` against the exact
-  previous session close. During-session news keeps its valid event return; a
-  missing event return may use an explicitly labelled daily view, never pretend
-  it is a post-news return. Older stories retain their event outcome, with later
-  company context separately dated. One company selector changes all metrics.
+- Company/session context is separate from archived event reactions. Prefer the
+  latest completed event measurement, including real zero and before-open news.
+  Without one, news may show `Aktien idag` against the exact previous session
+  close, including a later trading day for older stories. Explicitly label this
+  `Idag · mot föregående stängning` (or its actual date), never a news return.
+  A snapshot preceding the first event session stays in context detail only.
+  Older stories keep any valid archived outcome ahead of the daily fallback.
+  One company selector changes all metrics.
   Use one aligned row: price, `RVOL vid samma tid`, `RVOL mot heldag` when session
   volume is available. Never borrow another company's legacy percentage.
 - Context prices and volume retain independent source timestamps, availability
@@ -360,6 +362,13 @@ desktop density or abbreviated interaction model.
   share their cumulative-volume timestamp. Retained snapshots expire at the next
   verified exchange open. Exact source times, prior-close date, baseline maturity
   and unknown adjustment basis belong under `Mätpunkter & underlag`.
+  An older price may remain visible only when a recent successful per-symbol
+  provider snapshot corroborates it; preserve its original observation time.
+  Rows and the reader show `kurs kl. HH:mm` beside that daily percentage; provider
+  check time belongs in details. This is not proof of real-time trading or of
+  an inactive stock. A process heartbeat, a new calculation or fresh volume is
+  not a price check. Expired checks still hide the value; volume rules do not
+  inherit the price exception. Never revive unqualified legacy percentages.
 - A session percentage and an absolute-price chart have their own explicit
   periods; never imply the chart's full-session range is a fixed news-return
   window. Earlier reaction measurements remain in details, not extra charts.

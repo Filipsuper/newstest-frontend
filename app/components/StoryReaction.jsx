@@ -14,7 +14,7 @@ import {
   reactionV2For,
   rowReaction,
 } from "../utils/reactionV2";
-import { companyContextFor, sessionDateLabel } from "../utils/companySession";
+import { companyContextFor, sessionDateLabel, sessionQuoteNote } from "../utils/companySession";
 import StoryStockHistory from "./StoryStockHistory";
 import styles from "./story-reaction.module.css";
 
@@ -73,7 +73,7 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
           <dd>
             <ChangeBadge value={observation.pct} fallback={pending ? "Väntar" : "Saknas"} label={observation.label} className={styles.kpiValue} />
           </dd>
-          <dd className={styles.period}>{sessionPrice ? "Mot föregående stängning" : data
+          <dd className={styles.period}>{sessionPrice ? `Mot föregående stängning${sessionQuoteNote(context) ? ` · ${sessionQuoteNote(context)}` : ""}` : data
             ? afterOpen && !period.includes("close") ? shortPeriod + " från öppning" : shortPeriod
             : Number.isFinite(observation.pct) ? observation.label : ""}</dd>
         </div>
@@ -103,6 +103,7 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
             <Text size="sm">Aktien {sessionLabel.toLowerCase()}</Text>
             <dl className={styles.provenance} aria-label="Dagens handel">
               <div><dt>Senaste kurs</dt><dd>{quoteLabel(context.fields.price)}{context.fields.price.at && <Text size="xs" tone="secondary">{newsDate(context.fields.price.at)}</Text>}</dd></div>
+              {context.fields.price.checkedAt && <div><dt>Kontrollerad hos leverantören</dt><dd>{newsDate(context.fields.price.checkedAt)}</dd></div>}
               <div><dt>Föregående stängning</dt><dd>{quoteLabel(context.fields.previousClose)}{context.fields.previousClose.sessionDate && <Text size="xs" tone="secondary">{context.fields.previousClose.sessionDate}</Text>}</dd></div>
               <div><dt>Handlad volym</dt><dd>{shares(context.fields.dayVolume.value)}{context.fields.dayVolume.at && <Text size="xs" tone="secondary">{newsDate(context.fields.dayVolume.at)}</Text>}</dd></div>
               <div><dt>Jämförelseunderlag</dt><dd>{Number.isInteger(context.baselineSessionCount) ? `${context.baselineSessionCount} handelsdagar` : "Saknas"}{Number.isInteger(context.baselineSessionCount) && !context.baselineMature && " · preliminärt"}</dd></div>

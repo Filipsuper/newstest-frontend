@@ -56,7 +56,7 @@ for (const width of [320, 1440]) {
     await page.goto("/designsystem/sessions");
     await expect(page.getByRole("heading", { name: "Nyheter & bolagets handelsdag", exact: true })).toBeVisible();
     await expect(page.getByText("Fiktiv förhandsvisning · ingen livedata")).toBeVisible();
-    await expect(page.locator("article")).toHaveCount(5);
+    await expect(page.locator("article")).toHaveCount(sessionPreviewStories().length);
     await expect(page.locator("article").getByText("+99,0 %", { exact: true })).toHaveCount(0);
     await expect(badge(page.locator("article").first(), "Idag · mot föregående stängning: +10,0 %")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -185,6 +185,44 @@ test("today's context does not relabel an older story's measured outcome", async
   await expect(section.getByText("Idag mot föregående stängning", { exact: true })).toBeVisible();
 });
 
+for (const width of [320, 1440]) {
+  test(`daily fallback, verified old quotes and stopped checks stay distinct at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 950 });
+    await page.goto("/designsystem/sessions");
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(theme => {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(theme);
+      }, theme);
+      for (const [key, label] of [["older-fallback", "Idag · mot föregående stängning"],
+        ["quiet", "Idag · mot föregående stängning · kurs kl. 16:00"], ["stalled", null]]) {
+        const trigger = page.getByRole("button", { name: story(key).headline, exact: true });
+        const row = page.locator("article").filter({ has: trigger });
+        if (label) await expect(badge(row, `${label}: +10,0 %`)).toBeVisible();
+        else {
+          await expect(row.locator('span[aria-label]')).toHaveCount(0);
+          await expect(row.getByText("Nyhet", { exact: true })).toHaveCount(0);
+        }
+        await trigger.click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
+        if (label) {
+          await expect(badge(reaction(dialog), `${label}: +10,0 %`)).toBeVisible();
+          await expect(fact(dialog, "Aktien idag")).toContainText("Mot föregående stängning");
+        } else await expect(fact(dialog, "Kursreaktion")).toContainText("Saknas");
+        if (key === "quiet") await expect(fact(dialog, "Aktien idag")).toContainText("kurs kl. 16:00");
+        await alignedFacts(dialog);
+        expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+        const audit = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+        expect(audit.violations.filter(item => ["critical", "serious"].includes(item.impact))).toEqual([]);
+        await page.screenshot({ path: testInfo.outputPath(`${key}-${width}-${theme}.png`) });
+        await page.keyboard.press("Escape");
+        await expect(trigger).toBeFocused();
+      }
+    }
+  });
+}
+
 test("expired daily context is not carried into the next session", async ({ page }) => {
   await page.goto("/designsystem/sessions");
   await page.clock.setFixedTime(new Date("2026-09-10T07:00:00Z"));
@@ -198,8 +236,8 @@ test("expired daily context is not carried into the next session", async ({ page
   await expect(stockChart(section)).toContainText("Aktiekurs · 9 sep.");
 });
 
-test("company-session share images support a daily quote, continuous stock chart and volume-only story", async ({ request }, testInfo) => {
-  for (const scenario of ["premarket", "during", "volume-only"]) {
+test("company-session share images support daily fallback, verified quotes, charts and unavailable prices", async ({ request }, testInfo) => {
+  for (const scenario of ["premarket", "during", "volume-only", "older-fallback", "quiet", "stalled"]) {
     const response = await request.get(`/nyhet/session-preview-${scenario}/opengraph-image`);
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toContain("image/png");

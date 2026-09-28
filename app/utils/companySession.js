@@ -6,6 +6,12 @@ const day = value => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Eu
 const symbols = story => new Set([story?.symbol, ...(story?.companies ?? []).map(company => company.symbol)].filter(Boolean));
 const published = story => time(story?.ts ?? story?.publishedAt);
 const usable = field => field?.status === "available" && finite(field.value);
+const verifiedPrice = (field, asOf, now, close) => {
+  const checked = time(field?.checkedAt), at = time(field?.at);
+  return ["yahoo-spark-1m", "yahoo-spark-5m"].includes(field?.source)
+    && Number.isFinite(checked) && checked >= at && checked <= asOf && checked <= now
+    && Math.min(now, close) - checked <= 15 * 60_000;
+};
 
 export function companyContextFor(story) {
   const value = story?.companyContext;
@@ -39,6 +45,7 @@ export function companySessionFor(story, symbol = story?.symbol ?? story?.compan
     const at = time(field?.at);
     let reason = field?.reason;
     let status = field?.status ?? "missing";
+    let freshness;
     if (usable(field)) {
       if (!Number.isFinite(at) || at > now || at > asOf || !field.source
         || (key !== "previousClose" && (at < open || at > close))
@@ -48,10 +55,12 @@ export function companySessionFor(story, symbol = story?.symbol ?? story?.compan
       } else if (now >= validUntil) {
         status = "stale"; reason = "session_outdated";
       } else if (key !== "previousClose" && Math.min(now, close) - at > 15 * 60_000) {
-        status = "stale"; reason = "stale_observation";
+        const price = key === "price" ? field : key === "changePct" ? fields.price : null;
+        if (usable(price) && time(price.at) === at && verifiedPrice(price, asOf, now, close)) freshness = "last_observed";
+        else { status = "stale"; reason = "stale_observation"; }
       }
     } else if (status === "available") status = "unavailable";
-    fields[key] = { ...field, at: Number.isFinite(at) ? at : null, status, reason,
+    fields[key] = { ...field, at: Number.isFinite(at) ? at : null, status, reason, freshness,
       value: status === "available" && usable(field) ? field.value : null };
   }
   if (usable(fields.changePct) && (!usable(fields.price) || !usable(fields.previousClose)
@@ -82,9 +91,15 @@ export function sessionDateLabel(company, now = Date.now()) {
 }
 
 export function sessionPricePreferred(company, eventPct) {
-  return company?.relationship === "event_session" && usable(company.fields?.changePct)
-    && (["before_open", "after_close", "non_trading_day"].includes(company.timing)
-      || (company.timing === "during_session" && !finite(eventPct)));
+  return !finite(eventPct) && ["event_session", "later_session"].includes(company?.relationship)
+    && usable(company.fields?.changePct);
+}
+
+export function sessionQuoteNote(company) {
+  const price = company?.fields?.price;
+  return price?.freshness === "last_observed" && usable(price)
+    ? `kurs kl. ${new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm" }).format(new Date(price.at))}`
+    : null;
 }
 
 export function retainCompanyContext(previous, next) {

@@ -61,11 +61,14 @@ export function sessionPreviewStories() {
     ["volume-only", "Fjäll Energi", "FJALL.TEST", "Ny order — volymen finns men kursuppgifterna saknas", "2026-09-09T09:00:00Z"],
     ["multi", "Norden Industri", "NORD.TEST", "Gemensamt avtal före öppning — två bolag med olika handelsdagar", "2026-09-09T06:00:00Z"],
     ["older", "Skärgården Teknik", "SKAR.TEST", "Förra veckans rapport — sparade minutkurser och oförändrad nyhetsreaktion", "2026-09-01T08:00:00Z"],
+    ["older-fallback", "Äldre Verkstad", "ALDRE.TEST", "Äldre nyhet utan mätning — tydligt märkt dagsförändring", "2026-09-01T08:00:00Z"],
+    ["quiet", "Lugn Handel", "LUGN.TEST", "Äldre kurs nyligen kontrollerad hos leverantören", "2026-09-09T08:00:00Z"],
+    ["stalled", "Fördröjd Källa", "TYST.TEST", "Kontrollen har upphört — ingen aktuell procent visas", "2026-09-09T08:00:00Z"],
   ];
   return scenarios.map(([key, name, symbol, headline, publishedAt]) => {
     const beforeOpen = ["premarket", "multi"].includes(key);
     const timing = beforeOpen ? "before_open" : "during_session";
-    const unavailable = beforeOpen || key === "volume-only";
+    const unavailable = beforeOpen || ["volume-only", "older-fallback", "quiet", "stalled"].includes(key);
     const story = {
       id: `session-preview-${key}`, eventId: `session-preview-event-${key}`, version: 1, status: "flash",
       headline, publishedAt, companies: [{ name, symbol }], tags: ["ORDER"],
@@ -74,10 +77,17 @@ export function sessionPreviewStories() {
       reaction: { pct: 99 }, // Must never leak into a valid v2 presentation.
     };
     const companies = [sessionCompany(symbol, {
-      timing, relationship: key === "older" ? "later_session" : "event_session", rvol: key === "volume-only" ? 1.8 : 2,
+      timing, relationship: key.startsWith("older") ? "later_session" : "event_session", rvol: key === "volume-only" ? 1.8 : 2,
     })];
     if (key === "volume-only") for (const fieldName of ["price", "previousClose", "changePct"]) {
       companies[0].fields[fieldName] = missing("price_source_unavailable");
+    }
+    if (["quiet", "stalled"].includes(key)) {
+      const fields = companies[0].fields;
+      fields.price.at = close - 90 * minute;
+      fields.price.source = "yahoo-spark-1m";
+      fields.price.checkedAt = key === "quiet" ? close : close - 60 * minute;
+      fields.changePct.at = fields.price.at;
     }
     const anchorAt = beforeOpen ? "2026-09-09T07:00:00Z" : publishedAt;
     const measurements = [eventMeasurement(symbol, anchorAt, { timing, unavailable })];
@@ -94,8 +104,8 @@ export function sessionPreviewStories() {
     }
     story.companyContext = { schemaVersion: 1, scope: "session_context", storyId: story.id, storyVersion: 1, publishedAt, asOf, companies };
     story.previewCharts = Object.fromEntries(story.companies.map((company, index) => [company.symbol, previewStockChart(story, company.symbol, {
-      date: key === "older" ? "2026-09-01" : "2026-09-09",
-      source: key === "older" ? "minute_bars" : "live_ticks", price: 10, change: index ? -5 : 10,
+      date: key.startsWith("older") ? "2026-09-01" : "2026-09-09",
+      source: key.startsWith("older") ? "minute_bars" : "live_ticks", price: 10, change: index ? -5 : 10,
       status: key === "volume-only" ? "unavailable" : "available",
     })]));
     return story;

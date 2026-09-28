@@ -70,7 +70,7 @@ test("the tick cache expires for a whole session; stored minute prices stay vali
   const future = chart.session.open + 7 * 86_400_000 + 1;
   assert.equal(storyStockChartFor(story, story.symbol, chart, future), null);
   assert.ok(storyStockChartFor(story, story.symbol, { ...chart, source: "minute_bars", resolution: "1m" }, future));
-  const old = sessionPreviewStories().at(-1), symbol = old.companies[0].symbol;
+  const old = sessionPreviewStories().find(story => story.id === "session-preview-older"), symbol = old.companies[0].symbol;
   assert.ok(storyStockChartFor(old, symbol, old.previewCharts[symbol], now));
 });
 test("pending and unavailable responses cannot leak points from an older result", () => {

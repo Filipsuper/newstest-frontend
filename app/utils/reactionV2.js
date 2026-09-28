@@ -1,6 +1,6 @@
 // One presentation contract for rows and reader. Never rewrite legacy ranking
 // inputs or combine another company's/measurement's percentage and chart.
-import { companySessionFor, sessionDateLabel, sessionPricePreferred } from "./companySession.js";
+import { companySessionFor, sessionDateLabel, sessionPricePreferred, sessionQuoteNote } from "./companySession.js";
 const finite = value => typeof value === "number" && Number.isFinite(value) ? value : null;
 export const reactionTime = value => {
   const result = typeof value === "string" ? Date.parse(value) : finite(value);
@@ -88,7 +88,7 @@ export function rowReaction(story, symbol = story.symbol ?? story.companies?.[0]
     : legacyReactionMatches(story, symbol) ? finite(story.reaction?.pct) : null;
   if (sessionPricePreferred(companySession, eventPct)) return {
     version: v2 ? 2 : 1, scope: "session", companySession, measurement, period: null,
-    pct: companySession.fields.changePct.value, label: `${sessionDateLabel(companySession, now)} · mot föregående stängning`,
+    pct: companySession.fields.changePct.value, label: `${sessionDateLabel(companySession, now)} · mot föregående stängning${sessionQuoteNote(companySession) ? ` · ${sessionQuoteNote(companySession)}` : ""}`,
     asOf: companySession.fields.changePct.at,
   };
   if (!v2) return { version: 1, scope: "event", companySession, pct: eventPct, label: "Sedan publicering",

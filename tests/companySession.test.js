@@ -50,12 +50,44 @@ test("during-session daily fallback only applies when the exact event price is u
   const story = fixture(); story.reactionV2.measurements[0].status = "missing_baseline";
   assert.equal(rowReaction(story, story.symbol, now).scope, "session");
 });
-test("later-session context cannot turn an old story's outcome into today's move", () => {
+test("later-session daily fallback is explicitly labelled and never rewrites the missing outcome", () => {
   const story = fixture({ premarket: true }); company(story).relationship = "later_session";
   const row = rowReaction(story, story.symbol, now);
-  assert.equal(row.scope, "event"); assert.equal(row.pct, null);
+  assert.equal(row.scope, "session"); assert.equal(row.pct, 12);
+  assert.equal(row.label, "Idag · mot föregående stängning");
+  assert.equal(story.reactionV2.measurements[0].status, "missing_baseline");
   assert.equal(row.companySession.fields.changePct.value, 12);
   assert.notEqual(sessionDateLabel(row.companySession, nextOpen), "Idag");
+});
+test("every completed event outcome, including premarket zero, wins over daily change", () => {
+  for (const relationship of ["event_session", "later_session"]) for (const pct of [0, 4.2]) {
+    const story = fixture(); const c = company(story);
+    c.relationship = relationship; c.timing = "before_open";
+    for (const point of Object.values(story.reactionV2.measurements[0].windows)) if (point.status === "complete") point.pct = pct;
+    const row = rowReaction(story, story.symbol, now);
+    assert.equal(row.scope, "event"); assert.equal(row.pct, pct);
+  }
+});
+test("recent provider verification exposes a dated old price, never refreshed volume", () => {
+  const story = fixture({ premarket: true }); const c = company(story);
+  c.fields.price.at -= 60 * 60_000; c.fields.price.source = "yahoo-spark-1m"; c.fields.price.checkedAt = close;
+  c.fields.changePct.at = c.fields.price.at;
+  c.fields.dayVolume.at -= 60 * 60_000;
+  const value = companySessionFor(story, story.symbol, now);
+  assert.equal(value.fields.price.value, 112); assert.equal(value.fields.price.freshness, "last_observed");
+  assert.equal(value.fields.price.at, close - 60 * 60_000);
+  assert.equal(value.fields.dayVolume.value, null); assert.equal(value.fields.dailyRvol.value, null);
+  const row = rowReaction(story, story.symbol, now);
+  assert.equal(row.pct, 12); assert.equal(row.label, "Idag · mot föregående stängning · kurs kl. 16:30");
+});
+test("invalid, unknown or expired verification cannot revive a retained old quote", () => {
+  for (const patch of [{ checkedAt: null }, { checkedAt: now + 1 }, { checkedAt: close - 61 * 60_000 },
+    { checkedAt: close - 16 * 60_000 }, { source: "heartbeat" }, { status: "stale" }]) {
+    const story = fixture({ premarket: true }); const c = company(story);
+    c.fields.price = { ...c.fields.price, at: close - 60 * 60_000, source: "yahoo-spark-1m", checkedAt: close, ...patch };
+    c.fields.changePct.at = c.fields.price.at;
+    assert.equal(rowReaction(story, story.symbol, now).pct, null, JSON.stringify(patch));
+  }
 });
 test("a close snapshot preceding publication cannot be labeled as trading after the news", () => {
   const story = fixture({ premarket: true }); company(story).relationship = "before_event_session";
