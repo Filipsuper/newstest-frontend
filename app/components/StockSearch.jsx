@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiArrowUpRight } from "react-icons/fi";
+import { FiArrowUpRight, FiPlus } from "react-icons/fi";
 import { getCompanies } from "../utils/companies";
 import { Combobox } from "./ui/Combobox";
 import { Text } from "./ui/layout";
 
-const popular = [
+export const STOCK_SEARCH_SUGGESTIONS = [
   "INVE-B.ST",
   "VOLV-B.ST",
   "SAAB-B.ST",
@@ -30,6 +30,7 @@ export default function StockSearch({
   includeNews = false,
   initialCompanies,
   className,
+  selectionAction,
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -49,7 +50,7 @@ export default function StockSearch({
     const q = normalize(query);
     if (!q)
       return showSuggestions
-        ? popular
+        ? STOCK_SEARCH_SUGGESTIONS
             .map((symbol) => companies.find((row) => row.symbol === symbol))
             .filter(Boolean)
         : [];
@@ -95,7 +96,7 @@ export default function StockSearch({
               {row.nativeSymbol || row.symbol}
             </Text>
           </div>
-          <FiArrowUpRight aria-hidden="true" />
+          {selectionAction === "follow" ? <FiPlus aria-hidden="true" /> : <FiArrowUpRight aria-hidden="true" />}
         </>
       )}
       autoFocus={autoFocus}

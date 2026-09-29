@@ -154,7 +154,7 @@ test("guest plan selection signs in first, returns to pricing and restores keybo
     .fill("reader@example.test");
   await dialog.getByRole("button", { name: "Skicka inloggningslänk" }).click();
   await expect(dialog.getByRole("status")).toContainText(
-    "inloggningslänk har skickats",
+    "Öppna länken vi skickat till reader@example.test",
   );
   expect(state.logins).toEqual([
     { email: "reader@example.test", redirectTo: "/pro" },

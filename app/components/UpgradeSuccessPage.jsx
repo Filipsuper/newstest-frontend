@@ -15,7 +15,7 @@ import styles from "./membership.module.css";
 export default function UpgradeSuccessPage() {
   const { user, refreshUser } = useAuthContext();
   const plan = memberPlan(user);
-  const active = plan === "plus" || plan === "pro";
+  const active = user?.trial?.status !== "active" && (plan === "plus" || plan === "pro");
   const planName = plan === "pro" ? "Pro" : "Plus";
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);

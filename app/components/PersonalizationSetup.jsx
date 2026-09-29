@@ -2,19 +2,17 @@
 import { companyLimit as membershipCompanyLimit } from '../utils/membership';
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { FiX } from "react-icons/fi";
+import { FiPlus, FiX } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
 import { setCompanyFollowing } from "../utils/api";
 import { getCompanies } from "../utils/companies";
-import StockSearch from "./StockSearch";
-import PersonalPreview from "./PersonalPreview";
+import StockSearch, { STOCK_SEARCH_SUGGESTIONS } from "./StockSearch";
 import { Button, IconButton } from "./ui/Button";
-import { Heading, Inline, Stack, Text } from "./ui/layout";
+import { Inline, Stack, Text } from "./ui/layout";
 import { Skeleton } from "./ui/data";
 import styles from "./onboarding.module.css";
 
-export default function PersonalizationSetup() {
+export default function PersonalizationSetup({ suggestedSymbol, onBusyChange, onboarding = false, disabled = false }) {
   const { user, refreshUser } = useAuthContext();
   const [companies, setCompanies] = useState([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
@@ -22,6 +20,7 @@ export default function PersonalizationSetup() {
     [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [retry, setRetry] = useState(0);
+  const [showAll, setShowAll] = useState(false);
   const pending = useRef(false);
   useEffect(() => {
     let active = true;
@@ -38,10 +37,14 @@ export default function PersonalizationSetup() {
   }, [retry]);
   const watchlist = user?.watchlist ?? [];
   const cap = membershipCompanyLimit(user?.plan);
-  const hasPreferences =
-    watchlist.length || user?.topics?.length || user?.keywords?.length;
+  const suggested = companies.find(company => company.symbol === suggestedSymbol?.toUpperCase());
+  const suggestions = [...STOCK_SEARCH_SUGGESTIONS.map(symbol => companies.find(company => company.symbol === symbol)).filter(Boolean), ...companies]
+    .filter((company, index, rows) => !watchlist.includes(company.symbol) && company.symbol !== suggested?.symbol
+      && rows.findIndex(row => row.symbol === company.symbol) === index).slice(0, 3);
+  useEffect(() => { onBusyChange?.(Boolean(busy)); }, [busy, onBusyChange]);
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
   async function follow(company, followed) {
-    if (pending.current || (followed && watchlist.includes(company.symbol)))
+    if (disabled || pending.current || (followed && (watchlist.includes(company.symbol) || watchlist.length >= cap)))
       return;
     pending.current = true;
     setBusy(company.symbol);
@@ -69,25 +72,23 @@ export default function PersonalizationSetup() {
   return (
     <Stack gap={8}>
       <Stack gap={4}>
-        <Stack gap={3}>
-          <Heading as="h1" size="page">
-            Vilka bolag vill du följa?
-          </Heading>
-          <Text size="sm" tone="secondary">
-            Börja med ett bolag. Du kan ändra dina val när som helst.
-          </Text>
-        </Stack>
+        {suggested && !watchlist.includes(suggested.symbol) && <div className={styles.company}>
+          <Stack gap={1}><Text size="xs" tone="secondary">Du ville följa</Text><Text size="sm">{suggested.name}</Text></Stack>
+          <Button variant="secondary" disabled={disabled || Boolean(busy) || watchlist.length >= cap} onClick={() => follow(suggested, true)}>Följ {suggested.name}</Button>
+        </div>}
         {companiesLoading ? (
           <Skeleton />
         ) : companies.length > 0 ? (
           <fieldset
             className={styles.search}
-            disabled={Boolean(busy) || watchlist.length >= cap}
+            disabled={disabled || Boolean(busy) || watchlist.length >= cap}
           >
             <StockSearch
               label="Sök ett bolag att följa"
               placeholder="Sök bolag, till exempel Volvo"
               initialCompanies={companies}
+              showSuggestions
+              selectionAction="follow"
               onSelect={(row) => follow(row, true)}
             />
           </fieldset>
@@ -99,18 +100,22 @@ export default function PersonalizationSetup() {
             Hämta bolagslistan igen
           </Button>
         )}
-        <Inline className={styles.between}>
-          <Text size="xs" tone="secondary">
-            {watchlist.length}/{cap} bolag i din plan
-          </Text>
-          <Text size="xs" tone="secondary">
-            {busy ? "Sparar…" : "Sparas direkt"}
-          </Text>
-        </Inline>
+        {onboarding && !companiesLoading && watchlist.length < cap && suggestions.length > 0 && <Stack gap={2}>
+          <Text size="xs" tone="secondary">Till exempel</Text>
+          <Inline gap={2}>
+            {suggestions.map(company => <Button key={company.symbol} variant="secondary" disabled={disabled || Boolean(busy)}
+              onClick={() => follow(company, true)} aria-label={`Följ ${company.name || company.symbol}`}>
+              <FiPlus aria-hidden="true" />{company.name || company.symbol}
+            </Button>)}
+          </Inline>
+        </Stack>}
+        <Text size="xs" tone="secondary" role="status">
+          {watchlist.length}/{cap} bolag{busy ? " · Sparar…" : watchlist.length ? " · Sparat" : ""}
+        </Text>
         {watchlist.length >= cap && (
           <Text size="sm" tone="secondary">
-            Din plan har plats för {cap} bolag. Dina sparade val finns kvar.
-            Ta bort bolag tills du är under gränsen, eller byt plan, för att lägga till fler.
+            {onboarding ? "Alla platser är valda. Ta bort ett bolag för att byta."
+              : `Din plan har plats för ${cap} bolag. Ta bort ett bolag eller byt plan för att lägga till fler.`}
           </Text>
         )}
         {error && (
@@ -118,12 +123,10 @@ export default function PersonalizationSetup() {
             {error}
           </Text>
         )}
-        <Text size="xs" role="status" className={styles.status}>
-          {message}
-        </Text>
+        {message && <Text size="xs" role="status">{message}</Text>}
         {watchlist.length > 0 && (
           <ul className={styles.rows} aria-label="Valda bolag">
-            {watchlist.map((symbol) => {
+            {(onboarding && !showAll ? watchlist.slice(0, 3) : watchlist).map((symbol) => {
               const company = companies.find(
                 (row) => row.symbol === symbol,
               ) || { symbol, name: symbol };
@@ -138,7 +141,7 @@ export default function PersonalizationSetup() {
                   <IconButton
                     label={`Ta bort ${company.name}`}
                     loading={busy === symbol}
-                    disabled={Boolean(busy)}
+                    disabled={disabled || Boolean(busy)}
                     onClick={() => follow(company, false)}
                   >
                     <FiX aria-hidden="true" />
@@ -148,38 +151,9 @@ export default function PersonalizationSetup() {
             })}
           </ul>
         )}
+        {onboarding && watchlist.length > 3 && <Inline><Button variant="ghost" aria-expanded={showAll}
+          onClick={() => setShowAll(value => !value)}>{showAll ? "Visa färre bolag" : `Visa alla ${watchlist.length} bolag`}</Button></Inline>}
       </Stack>
-      {hasPreferences ? (
-        <>
-          <Stack gap={4}>
-            <div className={styles.actions}>
-              <Button
-                disabled={Boolean(busy)}
-                nativeButton={false}
-                role="link"
-                render={<Link href="/marknaden/bevakning" />}
-              >
-                Öppna min bevakning
-              </Button>
-              <Link href="/morgonbrevet" className={styles.link}>
-                Läs Morgonbrevet
-              </Link>
-            </div>
-          </Stack>
-          <PersonalPreview />
-          <Link href="/marknaden/bevakning/hantera" className={styles.link}>
-            Hantera ämnen och nyckelord
-          </Link>
-        </>
-      ) : (
-        <Link href="/morgonbrevet" className={styles.link}>
-          Hoppa över och läs Morgonbrevet
-        </Link>
-      )}
-      <Text size="xs" tone="secondary">
-        Du väljer själv om du vill ha aviseringar. Personliga tillägg i
-        Morgonbrevet ingår i Plus.
-      </Text>
     </Stack>
   );
 }

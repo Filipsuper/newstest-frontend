@@ -8,31 +8,26 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [accountError, setAccountError] = useState(null);
+    const [accountLoading, setAccountLoading] = useState(true);
     const requestVersion = useRef(0);
 
     const refreshUser = useCallback(async () => {
         const version = ++requestVersion.current;
+        setAccountLoading(true);
         try {
             const fetchedUser = await getUser();
-
-            if (!fetchedUser || fetchedUser.error) {
-                if (version === requestVersion.current) setUser({
-                    email: null,
-                    verified: false,
-                    plan: "free"
-                })
-            } else {
-                if (version === requestVersion.current) setUser(fetchedUser);
-                return fetchedUser;
+            if (version === requestVersion.current) {
+                setUser(fetchedUser);
+                setAccountError(null);
             }
-        } catch {
-            // Navigation and the public overview must remain usable when the
-            // account endpoint is temporarily unavailable.
-            if (version === requestVersion.current) setUser({
-                email: null,
-                verified: false,
-                plan: "free"
-            })
+            return fetchedUser.email ? fetchedUser : null;
+        } catch (error) {
+            // Keep the last known account and mounted drafts on transient errors.
+            // An unknown account is not evidence that the reader is signed out.
+            if (version === requestVersion.current) setAccountError(error);
+        } finally {
+            if (version === requestVersion.current) setAccountLoading(false);
         }
         return null;
     }, []);
@@ -58,8 +53,16 @@ export function AuthProvider({ children }) {
         refreshUser();
     }, []);
 
+    useEffect(() => {
+        if (user?.trial?.status !== "active" || !Number.isFinite(user.trial.endsAt)) return;
+        const timer = setTimeout(refreshUser, Math.max(1000, user.trial.endsAt - Date.now() + 100));
+        const visible = () => { if (document.visibilityState === "visible") refreshUser(); };
+        document.addEventListener("visibilitychange", visible);
+        return () => { clearTimeout(timer); document.removeEventListener("visibilitychange", visible); };
+    }, [user?.trial?.status, user?.trial?.endsAt, refreshUser]);
+
     return (
-        <AuthContext.Provider value={{ user, isGuestUser, isPaidUser, isPlusUser, refreshUser, isFreeUser }}>
+        <AuthContext.Provider value={{ user, accountError, accountLoading, isGuestUser, isPaidUser, isPlusUser, refreshUser, isFreeUser }}>
             {children}
         </AuthContext.Provider>
     );

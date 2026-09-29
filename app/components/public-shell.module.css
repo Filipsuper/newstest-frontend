@@ -58,6 +58,11 @@
   align-items: center;
   gap: var(--ui-space-4);
 }
+.focused .account { margin-left: auto; }
+.focused .content { padding-bottom: 0; }
+.lightIcon { display: none; }
+:global(.dark) .lightIcon { display: block; }
+:global(.dark) .darkIcon { display: none; }
 .terminal {
   display: inline-flex;
   gap: var(--ui-space-1);

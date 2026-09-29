@@ -136,7 +136,7 @@ for key in MONGO_HOST MONGO_PORT MONGODB JWT_KEY; do
     fi
 done
 
-if ! grep -Eq "^[[:space:]]*OMXSUM_API_KEY=.+" "${BACKEND_DIR}/.env"; then
+if [[ -z "${OMXSUM_API_KEY:-}" ]] && ! grep -Eq "^[[:space:]]*OMXSUM_API_KEY=.+" "${BACKEND_DIR}/.env"; then
     echo "Warning: OMXsum Market API key is missing; company data and live news will be unavailable." >&2
 fi
 

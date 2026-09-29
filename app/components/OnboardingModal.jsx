@@ -74,7 +74,7 @@ export default function OnboardingModal({
         {message}
       </Text>
       {login ? (
-        <LogInModal redirectTo="/bekrafta" />
+        <LogInModal initialEmail={email} redirectTo="/bekrafta" />
       ) : (
         <div className={styles.actions}>
           {known ? (

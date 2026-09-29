@@ -16,14 +16,24 @@ import { Inline, Stack, Text } from "./ui/layout";
 import styles from "./company-alert-preferences.module.css";
 
 const DESCRIPTIONS = {
-  relevant: "Fler affärsnyheter om dina bolag, med fokus på betydande besked.",
-  important: "Rapporter och andra tydligt betydande bolagshändelser.",
-  major: "De mest betydande beskeden, som vinstvarningar och stora affärer.",
+  relevant: "Fler nyheter om dina bolag, även de som rankas lägre i betydelse.",
+  important: "Viktiga besked, med ett bredare urval än bara de allra största.",
+  major: "Bara de högst rankade nyheterna. För dig som vill bli avbruten mer sällan.",
+};
+const EXAMPLES = {
+  relevant: "Exempel: affärsnyheter och betydande insynsaffärer.",
+  important: "Exempel: rapporter, större order och finansiering.",
+  major: "Exempel: vinstvarningar och stora förvärv.",
 };
 const SLIDER_LEVELS = [...COMPANY_ALERT_LEVELS].reverse();
 const SLIDER_OPTIONS = SLIDER_LEVELS.map((level) => ({
   value: level.value, label: level.label,
-  description: `${DESCRIPTIONS[level.value]} Rutinmeddelanden filtreras bort.`,
+  description: DESCRIPTIONS[level.value],
+  example: EXAMPLES[level.value],
+}));
+const ONBOARDING_SLIDER_OPTIONS = SLIDER_OPTIONS.map(option => ({
+  ...option,
+  label: { major: "Bara viktigast", important: "Viktiga", relevant: "Fler relevanta" }[option.value],
 }));
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const symbolKey = (symbol) => String(symbol).trim().toUpperCase();
@@ -47,12 +57,12 @@ function fromResource(resource, identity) {
   return { identity, base: companyAlertDraft(resource), draft: companyAlertDraft(resource) };
 }
 
-function RouteAction({ href, children }) {
-  return <Button variant="ghost" nativeButton={false} role="link" render={<Link href={href} />}>{children}</Button>;
+function RouteAction({ href, children, disabled = false }) {
+  return <Button variant="ghost" nativeButton={false} role="link" disabled={disabled} render={<Link href={href} />}>{children}</Button>;
 }
 
 /** Draft-only editor; the owning hook supplies authenticated snapshots and writes. */
-export default function CompanyAlertPreferences({ alerts, user, companies = [], collapsible = false, open = true, onOpenChange, onDraftStateChange }) {
+export default function CompanyAlertPreferences({ alerts, user, companies = [], collapsible = false, compact = false, open = true, onOpenChange, onDraftStateChange, upgradeOffer, onContinue, continuationDisabled = false }) {
   const identity = user?.email?.toLowerCase() || "";
   const identityRef = useRef(identity);
   identityRef.current = identity;
@@ -177,7 +187,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
       : "De sparade mejlvalen visas nu.");
   }
 
-  async function save(disableOnly = false) {
+  async function save(disableOnly = false, advance = false) {
     if (!draft || pending.current || alerts.saving || alerts.loading || alerts.error || newerSnapshot || conflict) return;
     const next = disableOnly ? { ...draft, enabled: false } : draft;
     const invalid = {};
@@ -199,6 +209,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
       setMessage(saved.delivery.available
         ? "Dina mejlval har sparats."
         : "Mejlval sparade. Inga mejl skickas ännu.");
+      if (advance) onContinue?.();
     } catch (error) {
       if (identityRef.current === savingIdentity) setFailure(error);
     } finally {
@@ -207,13 +218,16 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
     }
   }
 
+  const continueWithoutChanges = onContinue && <Inline><Button variant="ghost" disabled={busy || dirty || continuationDisabled}
+    onClick={onContinue}>{resource?.entitlement.eligible ? "Välj mejl senare" : "Fortsätt gratis"}</Button></Inline>;
+
   if (!user || (identity && !draft && alerts.loading)) {
     return frame(
       <Stack gap={3} className={styles.root} role="status" aria-label="Hämtar mejlval">
         <Text size="sm" tone="secondary">Hämtar mejlval…</Text>
         <Skeleton className={styles.loadingLine} />
         <Skeleton className={styles.loadingControl} />
-      </Stack>
+      </Stack>, null, continueWithoutChanges
     );
   }
 
@@ -222,7 +236,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
       <Stack gap={2} className={styles.root}>
         <Text size="sm" tone="secondary">Mejlbevakning förbereds för Plus och Pro. Logga in för att hantera dina val.</Text>
         <Inline><RouteAction href="/settings">Logga in</RouteAction></Inline>
-      </Stack>
+      </Stack>, null, continueWithoutChanges
     );
   }
 
@@ -236,7 +250,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
           <Button variant="secondary" loading={alerts.loading} onClick={alerts.reload}>Försök igen</Button>
           {alerts.error?.status === 401 && <RouteAction href="/settings">Logga in igen</RouteAction>}
         </Inline>
-      </Stack>
+      </Stack>, null, continueWithoutChanges
     );
   }
 
@@ -284,21 +298,25 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
   if (!resource.entitlement.eligible) {
     return frame(
       <Stack gap={2} className={styles.root}>
-        <Inline><Label>Plus</Label><Text size="sm">{resource.delivery.available
-          ? "Viktiga nyheter om dina bolag, direkt i mejlen"
-          : "Mejlbevakning förbereds för Plus och Pro"}</Text></Inline>
-        <Text size="sm" tone="secondary">Din bevakning fungerar som tidigare. Mejl kräver Plus eller Pro och ett separat aktivt val.</Text>
-        <Inline>
-          <RouteAction href="/pro">{resource.delivery.available ? "Se Plus" : "Om Plus och Pro"}</RouteAction>
-          {resource.enabled && <Button variant="secondary" loading={busy} onClick={() => save(true)}>Pausa mejlval</Button>}
-        </Inline>
+        {upgradeOffer && continueWithoutChanges}
+        {upgradeOffer || <>
+          <Inline><Label>Plus</Label><Text size="sm">{resource.delivery.available
+            ? "Viktiga nyheter om dina bolag, direkt i mejlen"
+            : "Mejlbevakning förbereds för Plus och Pro"}</Text></Inline>
+          <Text size="sm" tone="secondary">Din bevakning fungerar som tidigare. Mejl kräver Plus eller Pro och ett separat aktivt val.</Text>
+          <Inline>
+            <RouteAction href="/pro">{resource.delivery.available ? "Se Plus" : "Om Plus och Pro"}</RouteAction>
+          </Inline>
+        </>}
+        {resource.enabled && <Inline><Button variant="secondary" loading={busy} onClick={() => save(true)}>Pausa mejlval</Button></Inline>}
         {feedback}
-      </Stack>
+      </Stack>, null, upgradeOffer ? null : continueWithoutChanges
     );
   }
 
   const toggle = <Switch
     label="Mejl om mina bolag"
+    description={onContinue ? alertCount === followed.length ? `${alertCount} följda bolag` : `${alertCount} av ${followed.length} bolag` : undefined}
     className={collapsible ? styles.headerSwitch : undefined}
     checked={draft.enabled}
     disabled={busy || (!draft.enabled && blockedEnable)}
@@ -310,11 +328,11 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
     <Stack gap={4}>
       <Stack gap={2}>
         {!collapsible && toggle}
-        <Text size="sm" tone="secondary">Mejl omfattar bolag du följer. Ämnen och nyckelord används på webbplatsen och i personliga brev, inte i separata mejl ännu.</Text>
-        <Text size="sm" tone="secondary" className={styles.wrap}>
+        {!compact && <Text size="sm" tone="secondary">Mejl omfattar bolag du följer. Ämnen och nyckelord används på webbplatsen och i personliga brev, inte i separata mejl ännu.</Text>}
+        {!compact && <Text size="sm" tone="secondary" className={styles.wrap}>
           {resource.verified ? "Till bekräftad mejladress:" : "Kontots mejladress:"} {resource.destination}
-        </Text>
-        {!resource.delivery.available && <Text id={statusId} size="xs" tone="secondary">Inga mejl skickas ännu.</Text>}
+        </Text>}
+        {!onContinue && !resource.delivery.available && <Text id={statusId} size="xs" tone="secondary">Inga mejl skickas ännu.</Text>}
       </Stack>
 
       {!resource.verified && (
@@ -336,29 +354,35 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
         <Text size="sm">Mejlvalen är pausade. Slå på Mejl om mina bolag och spara för att återuppta ditt val. Tidigare nyheter skickas inte i efterhand.</Text>
       )}
       {overLimit ? (
-        <Text size="sm">Välj upp till {companyLimit} bolag för mejl. Pausa några under Bolagsval nedan; de finns kvar i Bevakning. Slå sedan på mejlvalet och spara.</Text>
+        <Text size="sm">Välj upp till {companyLimit} bolag för mejl. {onContinue
+          ? "Ändra bolagsvalen i inställningar innan du aktiverar mejl."
+          : "Pausa några under Bolagsval nedan; de finns kvar i Bevakning. Slå sedan på mejlvalet och spara."}</Text>
       ) : resource.delivery.status === "over_limit" && (
         <Text size="sm">Bolagen ryms nu inom ditt medlemskap. Slå på mejlvalet och spara för att återuppta. Tidigare nyheter skickas inte i efterhand.</Text>
       )}
       {alertCount === 0 && (
         <Text size="sm">Inga bolag får mejl just nu. {followed.length
-          ? "Du kan välja bolag under Bolagsval utan att ta bort dem från Bevakning."
+          ? onContinue ? "Välj bolag för mejl i inställningar." : "Du kan välja bolag under Bolagsval utan att ta bort dem från Bevakning."
           : "Lägg till ett bolag i Bevakning för att kunna aktivera mejl."}</Text>
       )}
+      {onContinue && (overLimit || alertCount === 0 || alertCount < followed.length) && <Inline>
+        <RouteAction href="/settings#company-email" disabled={dirty || busy}>Ändra bolagsval</RouteAction>
+      </Inline>}
 
       <Stack gap={3}>
         <Slider
           label="Nyhetsnivå"
-          options={SLIDER_OPTIONS}
+          options={onContinue ? ONBOARDING_SLIDER_OPTIONS : SLIDER_OPTIONS}
           value={draft.importanceLevel}
           onValueChange={(importanceLevel) => update({ importanceLevel })}
           disabled={busy}
+          helpPlacement="inline"
         />
-        <CompanyAlertExamples draft={draft} identity={identity} />
+        {!onContinue && <CompanyAlertExamples draft={draft} identity={identity} />}
       </Stack>
 
-      <details className={styles.details}>
-        <summary>Bolagsval · {alertCount} av {followed.length} valda</summary>
+      {!onContinue && <details className={styles.details}>
+        <summary>{`Bolagsval · ${alertCount} av ${followed.length} valda`}</summary>
         <Stack gap={3} className={styles.detailsBody}>
           <ul className={styles.companyList}>
             {followed.map((symbol) => (
@@ -377,9 +401,9 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
             ))}
           </ul>
         </Stack>
-      </details>
+      </details>}
 
-      <details className={styles.details} open={Object.keys(timeErrors).length ? true : undefined}>
+      {(!compact || Object.keys(timeErrors).length > 0) && <details className={styles.details} open={Object.keys(timeErrors).length ? true : undefined}>
         <summary>Tysta timmar · {draft.quietHours.enabled ? `${draft.quietHours.start}–${draft.quietHours.end}` : "Av"}</summary>
         <Stack gap={3} className={styles.detailsBody}>
           <Switch
@@ -397,7 +421,7 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
           </div>
           <Text size="sm" tone="secondary" className={styles.wrap}>Tidszon: {draft.timeZone}. Sommar- och vintertid följer tidszonen.</Text>
         </Stack>
-      </details>
+      </details>}
 
     </Stack>,
     toggle,
@@ -406,14 +430,16 @@ export default function CompanyAlertPreferences({ alerts, user, companies = [], 
       {(!collapsible || open || dirty || busy) &&
       <Stack gap={2}>
         <Inline>
-          <Button loading={busy} disabled={!dirty || alerts.loading || Boolean(alerts.error) || newerSnapshot || conflict || (draft.enabled && blockedEnable)} onClick={() => save()}>
-            {busy ? "Sparar mejlval…" : "Spara mejlval"}
+          <Button loading={busy} disabled={continuationDisabled || (!onContinue && !dirty) || alerts.loading || Boolean(alerts.error) || newerSnapshot || conflict || (dirty && draft.enabled && blockedEnable)}
+            onClick={() => onContinue && !dirty ? onContinue() : save(false, Boolean(onContinue))}>
+            {busy ? "Sparar mejlval…" : onContinue ? dirty ? "Spara och fortsätt" : draft.enabled ? "Fortsätt" : "Fortsätt utan bolagsmejl" : "Spara mejlval"}
           </Button>
-          <Button variant="ghost" disabled={!dirty || busy} onClick={reset}>Ångra</Button>
+          {(!onContinue || dirty) && <Button variant="ghost" disabled={!dirty || busy} onClick={reset}>Ångra</Button>}
         </Inline>
-        {(alerts.loading || dirty) && <Text size="sm" tone="secondary" role="status">
+        {(alerts.loading || (!onContinue && dirty)) && <Text size="sm" tone="secondary" role="status">
           {alerts.loading ? "Uppdaterar sparade mejlval…" : "Du har osparade mejlval."}
         </Text>}
+        {onContinue && !resource.delivery.available && <Text id={statusId} size="xs" tone="secondary">Inga mejl skickas ännu.</Text>}
       </Stack>}
     </Stack> : null
   );

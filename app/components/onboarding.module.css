@@ -3,6 +3,7 @@
   color: var(--ui-text);
   font-family: var(--ui-font);
 }
+.page h1[tabindex="-1"]:focus { outline: none; }
 .confirmed {
   display: flex;
   align-items: center;
@@ -91,6 +92,34 @@
 .search:disabled {
   opacity: 0.6;
 }
+.topicChips { list-style: none; padding: 0; margin: 0; }
+.topicChip { display: inline-flex; align-items: center; gap: var(--ui-space-1); padding-inline-start: var(--ui-space-3); background: var(--ui-surface); border-radius: var(--ui-radius-md); max-width: 100%; }
+.topicChip > span { overflow-wrap: anywhere; min-width: 0; }
+.expanded { transform: rotate(180deg); }
+.topicsPanel[hidden] { display: none; }
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3) var(--ui-space-6);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font: 400 var(--ui-text-sm) / 1.5 var(--ui-font);
+  color: var(--ui-text-secondary);
+}
+.steps li { display: flex; align-items: center; gap: var(--ui-space-2); }
+.steps [aria-current] { color: var(--ui-text); font-weight: 600; }
+.steps span {
+  display: grid;
+  place-items: center;
+  width: var(--ui-space-6);
+  height: var(--ui-space-6);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+}
+.summary { margin: 0; display: grid; gap: var(--ui-space-4); }
+.summary > div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--ui-space-3); }
+.summary dd { margin: 0; overflow-wrap: anywhere; }
 .mailIcon {
   color: var(--ui-text-secondary);
   width: var(--ui-space-8);
@@ -107,4 +136,5 @@
   .actions > a {
     width: 100%;
   }
+  .summary > div { grid-template-columns: 1fr; gap: var(--ui-space-1); }
 }

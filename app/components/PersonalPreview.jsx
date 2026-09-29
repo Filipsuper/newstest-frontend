@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useAuthContext } from "../providers/AuthProvider";
 import { fetchPersonalFeed } from "../utils/api";
 import { personalStoryToItem, preferenceReason } from "../utils/newsroom";
+import { onboardingPreview } from "../utils/onboarding";
 import NewsFeedItem from "./NewsFeedItem";
 import { Button } from "./ui/Button";
 import { Heading, Stack, Text } from "./ui/layout";
 import { Skeleton } from "./ui/data";
 import styles from "./onboarding.module.css";
 
-export default function PersonalPreview() {
+export default function PersonalPreview({ companyOnly = false, limit = 3, compact = false }) {
   const { user } = useAuthContext();
   const [data, setData] = useState(null),
     [loading, setLoading] = useState(true);
@@ -20,11 +21,13 @@ export default function PersonalPreview() {
     user?.watchlist,
     user?.topics,
     user?.keywords,
+    user?.excludedKeywords,
   ]);
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchPersonalFeed({ limit: 3 }).then((result) => {
+    const controller = new AbortController();
+    fetchPersonalFeed({ limit, filter: companyOnly ? "companies" : "all", signal: controller.signal }).then((result) => {
       if (active) {
         setData(result);
         setLoading(false);
@@ -32,9 +35,12 @@ export default function PersonalPreview() {
     });
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [key, retry]);
+  }, [key, retry, companyOnly, limit]);
   const unavailable = !data || data.unavailable || !Array.isArray(data.stories);
+  const preview = onboardingPreview(data, { companySymbols: companyOnly ? user?.watchlist || [] : undefined, limit });
+  const stories = preview.stories;
   return (
     <section
       className={styles.section}
@@ -42,12 +48,12 @@ export default function PersonalPreview() {
     >
       <Stack gap={2}>
         <Heading id="personal-preview-heading" size="subsection">
-          {user?.topics?.length || user?.keywords?.length
+          {compact ? "Det här får du i Mina bolag" : preview.important ? "Viktigt för dina bolag" : user?.topics?.length || user?.keywords?.length
             ? "Nyheter för dina bevakningar"
             : "Nyheter för dina bolag"}
         </Heading>
         <Text size="xs" tone="secondary">
-          Senaste 48 timmarna
+          {loading ? "Hämtar senaste nyheterna…" : preview.period}
         </Text>
       </Stack>
       {loading ? (
@@ -64,21 +70,23 @@ export default function PersonalPreview() {
             Försök igen
           </Button>
         </Stack>
-      ) : data.stories.length ? (
+      ) : stories.length ? (
         <Stack gap={2}>
-          {data.stories.slice(0, 3).map((story) => (
+          {stories.map((story) => (
             <NewsFeedItem
               key={story.id}
               item={personalStoryToItem(story)}
               reason={preferenceReason(story)}
-              summaryPreview
+              summaryPreview={!compact && preview.important}
+              showSummary={!compact}
+              compact={compact}
             />
           ))}
+          <Text size="xs" tone="secondary">Ett urval. {preview.complete ? "Se fler nyheter i Mina bolag." : "Underlaget täcker inte säkert hela perioden. Se Mina bolag för fler nyheter."}</Text>
         </Stack>
       ) : (
         <Text size="sm" tone="secondary">
-          Inga nyheter matchar dina val de senaste 48 timmarna. Dina bevakningar
-          är sparade.
+          {preview.complete ? "Inga nyheter matchar dina val i den här perioden." : "Inga matchningar i det hämtade urvalet. Hela perioden kunde inte kontrolleras."} Dina bolag är sparade.
         </Text>
       )}
     </section>

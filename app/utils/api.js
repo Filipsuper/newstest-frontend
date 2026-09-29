@@ -1,3 +1,5 @@
+import { requestAccount } from "./accountRequest.js";
+
 // On the server (SSR / metadata) we can talk to the backend directly via API_URL
 // (e.g. http://localhost:8000/api on the VPS). In the browser we use the public URL.
 const API_URL =
@@ -11,7 +13,7 @@ export async function fetchAllArticles({ signal } = {}) {
         if (!response.ok) throw new Error("Kunde inte hämta breven");
         return response.json();
     } catch (error) {
-        console.error('Error fetching data:', error);
+        if (error.name !== "AbortError") console.error('Error fetching data:', error);
         throw error;
     }
 }
@@ -422,6 +424,9 @@ export async function fetchPersonalFeed({ limit = 40, filter = "all", cursor, af
         if (!res.ok) return null;
         return await res.json();
     } catch (error) {
+        // Effect cleanup and changing filters intentionally cancel requests.
+        // Keep timeouts and genuine failures visible, but not those cancellations.
+        if (signal?.aborted) return null;
         console.error("Error fetching data:", error);
         return null;
     }
@@ -571,6 +576,7 @@ export async function signUp(email, redirectTo = "/") {
     try {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
+            signal: AbortSignal.timeout(15_000),
             headers: {
                 "Content-Type": "application/json",
             },
@@ -617,23 +623,7 @@ export async function createPortalSession() {
     }
 }
 
-export async function getUser(email) {
-    try {
-        const res = await fetch(`${API_URL}/user`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-
-            },
-            "credentials": "include",
-            "mode": "cors",
-        })
-        return res.json();
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        throw error;
-    }
-}
+export const getUser = requestAccount;
 
 export async function saveActiveNewsletters(newsletters) {
     try {

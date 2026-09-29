@@ -204,26 +204,37 @@ test("free users see a quiet Plus/Pro explanation, never an actionable delivery 
   expect(state.errors).toEqual([]);
 });
 
-test("compact editor keeps explanations on demand with keyboard and hover help", async ({ page }) => {
+test("compact editor previews inline help without changing the selected level or consent", async ({ page }) => {
   const state = await setup(page);
   const panel = await openSettings(page);
   await expect(panel).not.toContainText("Ett separat val");
   await expect(panel).toContainText(state.user.email);
   await expect(panel.getByText("Inga mejl skickas ännu.", { exact: true })).toBeVisible();
+  const help = panel.getByRole("note", { name: /^Förklaring:/ });
+  const slider = panel.getByRole("slider");
+  await expect(help).toContainText("bredare urval");
   const major = panel.getByRole("button", { name: "Bara det viktigaste", exact: true });
   await major.hover();
-  await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
+  await expect(help).toContainText("vinstvarningar och stora förvärv");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await expect(slider).toHaveAttribute("aria-valuetext", "Viktiga nyheter");
+  await expect(major).toHaveAttribute("aria-pressed", "false");
+  const selectedDescription = await slider.evaluate(element => document.getElementById(element.getAttribute("aria-describedby")).textContent);
+  expect(selectedDescription).toContain("rapporter, större order och finansiering");
   expect(state.puts).toHaveLength(0);
   await page.mouse.move(0, 0);
-  await panel.getByRole("slider").focus();
+  await expect(help).toContainText("rapporter, större order och finansiering");
+  await slider.focus();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
+  await expect(help).toContainText("vinstvarningar och stora förvärv");
   await page.keyboard.press("Escape");
+  await expect(help).toContainText("rapporter, större order och finansiering");
   await expect(page.getByRole("tooltip")).toHaveCount(0);
-  await expect(panel.getByRole("slider")).toHaveAttribute("aria-valuetext", "Viktiga nyheter");
+  await expect(slider).toHaveAttribute("aria-valuetext", "Viktiga nyheter");
+  expect(state.puts).toHaveLength(0);
 });
 
-test("level details open on touch inside the existing modal", async ({ browser }) => {
+test("level help follows touch selection without covering the slider or enabling email", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   try {
@@ -232,8 +243,10 @@ test("level details open on touch inside the existing modal", async ({ browser }
     await page.getByRole("button", { name: "Välj mejlbevakning", exact: true }).tap();
     const dialog = page.getByRole("dialog", { name: "Anpassa bevakning", exact: true });
     await dialog.getByRole("button", { name: "Bara det viktigaste", exact: true }).tap();
-    await expect(page.getByRole("tooltip")).toContainText("vinstvarningar och stora affärer");
+    await expect(dialog.getByRole("note", { name: /^Förklaring:/ })).toContainText("vinstvarningar och stora förvärv");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
     await expect(dialog.getByRole("slider")).toHaveAttribute("aria-valuetext", "Bara det viktigaste");
+    await expect(dialog.getByRole("switch", { name: "Mejl om mina bolag", exact: true })).not.toBeChecked();
     await page.screenshot({ path: "test-results/company-alerts-touch-help.png" });
     await dialog.locator("summary", { hasText: /^Bolagsval/ }).tap();
     await expect(page.getByRole("tooltip")).toHaveCount(0);
@@ -316,6 +329,18 @@ for (const width of [320, 390, 1280]) test(`email editor and slider fit ${width}
   const panel = await openSettings(page);
   await panel.getByRole("switch", { name: "Mejl om mina bolag", exact: true }).click();
   await expect(panel.getByRole("slider")).toBeVisible();
+  const help = panel.getByRole("note", { name: /^Förklaring:/ });
+  const slider = panel.getByRole("slider");
+  const action = panel.getByRole("button", { name: "Spara mejlval", exact: true });
+  const actionY = await action.evaluate(element => element.getBoundingClientRect().top + window.scrollY);
+  for (const label of ["Bara det viktigaste", "Fler relevanta nyheter", "Viktiga nyheter"]) {
+    await panel.getByRole("button", { name: label, exact: true }).hover();
+    await expect(help).toHaveAttribute("aria-label", `Förklaring: ${label}`);
+    const helpBox = await help.boundingBox(), sliderBox = await slider.boundingBox();
+    expect(helpBox.y).toBeGreaterThanOrEqual(sliderBox.y + sliderBox.height);
+    expect(await action.evaluate(element => element.getBoundingClientRect().top + window.scrollY)).toBeCloseTo(actionY, 0);
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBe(false);
   for (const button of await panel.getByRole("button").all()) {

@@ -4,6 +4,7 @@ import { useFeedSearchParams } from "../hooks/useFeedSearchParams";
 import { useAuthContext } from "../providers/AuthProvider";
 import { fetchPersonalFeed, markPersonalNewsRead, setCompanyFollowing } from "../utils/api";
 import { personalStoryToItem, preferenceReason } from "../utils/newsroom";
+import { onboardingHref } from "../utils/onboarding";
 import { personalMatchKinds, reconcileNewsSnapshot } from "../utils/personalNews";
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { WatchWorkspaceNav } from "./WorkspaceNav";
@@ -28,7 +29,7 @@ export default function WatchFeedPage() {
   const filter = ['all', 'new', 'companies', 'topics', 'keywords'].includes(params.get('filter')) ? params.get('filter') : 'all';
   const [snapshot, setSnapshot] = useState(null);
   const [error, setError] = useState("");
-  const [login, setLogin] = useState(false);
+  const [login, setLogin] = useState(null);
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [marking, setMarking] = useState(null);
@@ -156,7 +157,7 @@ export default function WatchFeedPage() {
   }
 
   async function follow(company) {
-    if (!user || isGuestUser) { setLogin(true); return; }
+    if (!user || isGuestUser) { setLogin(onboardingHref({ company: company.symbol, returnTo: "/marknaden/bevakning" })); return; }
     if (busy || user.watchlist?.includes(company.symbol)) return;
     setBusy(true);
     setError("");
@@ -237,8 +238,8 @@ export default function WatchFeedPage() {
           {nextCursor && <Inline><Button variant="secondary" loading={loadingOlder} onClick={loadOlder}>Visa äldre matchningar</Button></Inline>}
         </>}
       </section>
-      <Dialog open={login} onOpenChange={setLogin} title="Spara din bevakning">
-        <LogInModal redirectTo="/marknaden/bevakning" />
+      <Dialog open={Boolean(login)} onOpenChange={open => { if (!open) setLogin(null); }} title="Följ dina bolag">
+        <LogInModal createAccount redirectTo={login || "/marknaden/bevakning"} />
       </Dialog>
     </Container>
   );

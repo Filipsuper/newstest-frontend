@@ -37,7 +37,7 @@ export function LandingActions() {
                 <Link href={hasPreferences ? "/marknaden/bevakning" : "/marknaden"} />
               }
             >
-              {hasPreferences ? "Öppna min bevakning" : "Öppna Marknaden"}
+              {hasPreferences ? "Öppna Mina bolag" : "Öppna Marknaden"}
             </Button>
             <Button
               variant="secondary"
@@ -45,7 +45,7 @@ export function LandingActions() {
               role="link"
               render={
                 <Link
-                  href={hasPreferences ? "/marknaden" : "/marknaden/bevakning/hantera"}
+                  href={hasPreferences ? "/marknaden" : "/kom-igang"}
                 />
               }
             >
@@ -58,8 +58,9 @@ export function LandingActions() {
           <Text size="sm">Börja med Morgonbrevet i inkorgen.</Text>
           <EmailInput />
           <Inline>
+            <Button variant="secondary" nativeButton={false} role="link" render={<Link href="/kom-igang" />}>Skapa gratis konto</Button>
             <Button
-              variant="secondary"
+              variant="ghost"
               nativeButton={false}
               role="link"
               render={<Link href="/marknaden" />}

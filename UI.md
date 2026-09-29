@@ -24,6 +24,12 @@ implementation and migration plan is in `docs/design-system.md`.
   Features compose them and retain the existing data/auth contracts.
 - Discrete importance choices use the shared Base UI Slider with named stops,
   keyboard support and clickable 44px labels; never imply predicted price impact.
+  Company-email levels use a filled track and a short, reserved inline help area
+  below the labels, never an overlay covering the track. Hover/focus previews a
+  level without selecting or saving; click/touch/arrow keys select explicitly.
+  Explain relative news importance with illustrative examples, not promised send
+  counts or category guarantees. The thumb's accessible description stays tied
+  to the selected level even while another level is previewed.
 - Email preferences live in a separate section below the interest tabs in the
   shared Bevakning editor, including company exceptions and quiet hours.
   Settings opens this same editor. Keep drafts across refreshes and tabs, save
@@ -119,8 +125,12 @@ desktop density or abbreviated interaction model.
   matching and the existing letters. Plus: 20 followed companies and the normal
   site's paid news, screener, financial research, VD-ord and personal newsletter.
   Pro (stored as `premium`): 100 companies and exclusive Terminal access.
-- Prices remain 0 / 49 / 99 SEK monthly. Checkout IDs, billing and newsletter
-  consent are unchanged. Backend Terminal checks and follow limits are authoritative;
+- Prices remain 0 / 49 / 99 SEK monthly. Eligible verified Free accounts can
+  explicitly try Plus or Pro once for seven days, without a card or automatic
+  billing. The native trial ends at Gratis; Stripe is used only for an explicit
+  paid subscription. Keep the end date and free continuation visible. Existing
+  billing relationships are not eligible. Newsletter consent is unchanged.
+  Backend Terminal checks and follow limits are authoritative;
   frontend pricing, gateway, onboarding and preference counts mirror them.
 - Preserve saved follows for accounts above a new limit. Block new additions
   until below the cap; allow removals and idempotent retries. Do not bulk-delete
@@ -542,23 +552,89 @@ desktop density or abbreviated interaction model.
 
 ## Signup and confirmation
 
+- `/kom-igang` is the optional account-first setup: Konto → Brev → Bolag →
+  Mejl, ending at Mina bolag. Use one compact, single-column step at a time,
+  shared controls and a wrapping progress list. No mandatory tour or checkout.
+- After account verification, show Morgonbrevet → Dina bolag → Mejl as the
+  progress list. Lead each step with its benefit/question, not settings language.
+  The morning step previews the latest actual morning edition with its date;
+  one Continue saves explicit changes, while unavailable choices can be skipped.
+  Company selection offers visible follow actions and one genuine direct-company
+  news preview. Do not use navigation arrows for follows or invent preview news.
+  Keep saved company lists to three rows with an explicit Show all action. Empty
+  selections need one skip action, not two equivalent Continue/Skip buttons.
+  Offer topics as a collapsed, optional "Följ även ämnen" below companies, using
+  actual server vocabulary, Swedish labels, search and six results per page.
+  Topics affect news selection, not company-email scope; keywords stay in the
+  full editor. Preserve existing IDs on unrelated edits, including unknown IDs.
+  Quiet the surrounding shell: logo/theme, no product navigation, search or dock.
+  Store only the bounded step position per account in sessionStorage; never
+  consent, authorization or unsaved drafts. Restore from authoritative choices.
+- In the email step, offer the optional no-card trial using two compact
+  shared Plus/Pro surfaces, not during company selection. Unlock the email
+  editor in place after activation. Put `Fortsätt gratis` before the plan cards.
+  Remove duplicate benefit kickers; retain prices and the no-card/no-auto-payment
+  terms. A trial is not newsletter or company-email consent, and does not expand
+  the private email pilot. Settings shows the exact Stockholm end date and that
+  nothing will be charged. Paid checkout during a trial explicitly starts a
+  paid subscription immediately.
+- Login/account creation must not subscribe, resubscribe or verify newsletter
+  delivery. New accounts start with no letters. Returning logins retain their
+  intended destination; first verification offers setup. Company intent survives
+  the login link but is saved only after an explicit follow action.
+- Newsletter choices come from the server catalog and authoritative Mail
+  subscription state, shared with Settings. Save explicitly with revision checks;
+  a failed/unknown load is not an unchecked preference. Future editions need
+  implemented senders before becoming selectable, and never become opted in
+  automatically. Keep the existing newsletter lead magnet and confirmation path.
 - Signup uses the shared email field and a single Base UI confirmation dialog.
   Show the submitted address, edit/resend actions and server-backed cooldowns.
   Never claim a message was sent when the provider rejected it. Existing
   subscribers get a sign-in path, not another promotional wizard.
-- `/bekrafta` confirms first, then optionally asks for companies. Topics and
-  keywords remain in Hantera bevakning; existing choices and paid plans survive.
-  One company is sufficient and skipping to Morgonbrevet is always possible.
-- Show up to three real matching news rows from the 48-hour personal feed,
-  including available AI copy and explicitly labelled reactions. Errors are
-  retryable and distinct from no matches. Do not manufacture a demo or turn
-  onboarding into an upgrade gate. Personalized letter additions require Plus.
+- `/bekrafta` confirms first, then enters the same setup at Bolag with the
+  letter step already completed. Topics are optional in the company step;
+  full topic/keyword management remains in the shared editor. Existing choices,
+  plans and independent consents survive.
+  One company is sufficient; every optional step can be skipped without a write.
+- Company emails reuse CompanyAlertPreferences and its existing server gate,
+  explicit save, revision conflicts, suppression and delivery-availability states.
+  The onboarding variant shows a simple switch with followed-company count,
+  and the importance slider with short labels and concise inline explanations.
+  Company exceptions, matching examples and quiet hours remain in settings;
+  existing exceptions survive unchanged, with a settings handoff if they block
+  activation. Trial end/free-continuation information is a quiet line after the
+  primary action, not a block between the heading and the choices. Do not repeat
+  a dirty-draft paragraph when the Save and Continue action already names saving.
+  Onboarding uses one Save and Continue action,
+  advancing only after a successful revision-checked write; unchanged Continue
+  performs no write. Never go back over dirty email drafts.
+  Free users can continue without upgrading. Missing delivery still says no
+  emails are being sent; this flow does not activate or expand the private pilot.
+- At completion, show up to three real matching news rows, preferring the
+  separate important-company selection. Use the API's declared window and
+  coverage, including candidate caps. AI copy belongs to important stories.
+  Incomplete coverage cannot support an empty-period claim. Errors are retryable
+  and distinct from no matches. Personalized letter additions require Plus/Pro.
+  Show actual saved companies, authoritative letter selections and company-email
+  delivery status before the primary news handoff. Unknown is not Off; a paused
+  delivery remains paused even when preferences are enabled. Offer Edit my choices
+  without resetting any saved selections, trial eligibility or consents.
+  Without companies, topics or keywords, finish with "Du är igång" and a
+  "Till Marknaden" handoff, not a claim that personalized news is ready.
+  Show selected topics in the saved summary. Unchanged off email/letter choices
+  use explicit Continue without wording and make no write.
 - Save explicit follow/unfollow state, not a toggle that can reverse on retry.
   Show pending/error/saved feedback and respect server-enforced plan limits.
 - Confirmation, account session, delivery and news-loading states are separate.
+  Failed account reads offer Retry, not an account-creation form. A temporary
+  refresh failure preserves the known account and mounted drafts; pause editing
+  until retry succeeds. Only explicit authentication rejection means signed out.
   A consumed/invalid link cannot establish a new session. After success strip
   the token from the URL; reload verifies newsletter status with the server.
-  Do not load third-party embeds or analytics on the confirmation route.
+  Do not load third-party embeds or analytics on confirmation or account setup.
+- Welcome mail uses the public reading palette and sans-serif hierarchy,
+  one primary follow-companies action, plain text, settings and unsubscribe.
+  Authentication emails remain simple single-action messages.
 - Use a narrow, single-column reading container, normal page scrolling and
   shared type/spacing tokens. No oversized celebration screen or nested cards.
 

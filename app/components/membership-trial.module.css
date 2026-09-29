@@ -1,0 +1,5 @@
+.options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); }
+.option { padding: var(--ui-space-4); min-width: 0; }
+.option > div { height: 100%; }
+.option button { margin-top: auto; }
+@media (max-width: 600px) { .options { grid-template-columns: 1fr; } }

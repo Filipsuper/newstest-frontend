@@ -7,7 +7,7 @@ export default function SiteScripts() {
   // The confirmation URL contains an inbox-ownership credential. No ads,
   // analytics or third-party embeds belong on this route, even after success.
   const path = usePathname();
-  if (path === "/bekrafta") return null;
+  if (path === "/bekrafta" || path === "/kom-igang") return null;
   return (
     <>
       <Script

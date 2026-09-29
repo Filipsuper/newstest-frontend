@@ -22,10 +22,16 @@
 }
 
 .track {
+  position: relative;
   width: 100%;
   height: var(--ui-space-1);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-control-border);
+}
+
+.indicator {
+  border-radius: inherit;
+  background: var(--ui-action);
 }
 
 .stop {
@@ -36,6 +42,10 @@
   transform: translate(-50%, -50%);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-text-secondary);
+}
+
+.stop[data-filled] {
+  background: var(--ui-action);
 }
 
 .thumb {
@@ -96,6 +106,40 @@
   margin: var(--ui-space-3) 0 0;
   color: var(--ui-text-secondary);
   font: 400 var(--ui-text-sm)/var(--ui-leading-body) var(--ui-font);
+}
+
+/* All levels share a grid cell: reserve exactly the longest explanation at
+   this width, without a fixed height, overlay or jump when previewing. */
+.help {
+  display: grid;
+  margin-block-start: var(--ui-space-3);
+}
+
+.helpContent {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.helpContent[data-active] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.helpDescription,
+.helpExample {
+  margin: 0;
+  color: var(--ui-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.helpDescription {
+  font: 400 var(--ui-text-sm)/var(--ui-leading-body) var(--ui-font);
+}
+
+.helpExample {
+  margin-block-start: var(--ui-space-1);
+  font: 400 var(--ui-text-xs)/var(--ui-leading-body) var(--ui-font);
 }
 
 .srOnly {

@@ -84,3 +84,27 @@ test("a broken personal-feed response becomes unavailable rather than an unhandl
   }));
   assert.equal(await fetchPersonalFeed(), null);
 });
+
+test("personal-feed cancellation is quiet but network failures remain diagnostic", async (t) => {
+  const errors = [];
+  t.mock.method(console, "error", (...args) => errors.push(args));
+  t.mock.method(globalThis, "fetch", async (_, { signal }) => {
+    signal.throwIfAborted();
+    throw new TypeError("Network unavailable");
+  });
+  assert.equal(await fetchPersonalFeed({ signal: AbortSignal.abort() }), null);
+  assert.equal(errors.length, 0);
+  assert.equal(await fetchPersonalFeed(), null);
+  assert.equal(errors.length, 1);
+});
+
+test("company previews request their own small company-only page", async (t) => {
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const params = new URL(url, "http://test.local").searchParams;
+    assert.equal(params.get("filter"), "companies");
+    assert.equal(params.get("limit"), "1");
+    assert.equal(options.credentials, "include");
+    return Response.json({ stories: [] });
+  });
+  assert.deepEqual(await fetchPersonalFeed({ limit: 1, filter: "companies" }), { stories: [] });
+});

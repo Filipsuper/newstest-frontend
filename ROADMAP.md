@@ -69,6 +69,42 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
 
+### Seven-day no-card trial — release candidate (30 September)
+
+- [x] Optional Plus/Pro offer in onboarding and pricing, with the free path.
+- [x] One explicit seven-day trial per verified Free account without billing
+  history. No card, automatic renewal or notification opt-in.
+- [x] Server-owned expiry returns to Free and pauses company alerts without
+  deleting follows or newsletter preferences. Startup/background reconciliation,
+  authenticated checks and send-time entitlement checks use the actual end time.
+- [x] Settings shows the end date. Explicit paid conversion uses existing Stripe
+  prices (49/99 SEK monthly); webhook conversion fences expiry and stale events.
+- [ ] Deploy backend and frontend together; user-owned production smoke test.
+- [ ] Verify an actual paid conversion in Stripe test mode. Local provider mocks
+  are not evidence of a completed external payment flow.
+- Follow-up: measure offer → trial → paid conversion and abandoned-checkout
+  recovery. No trial marketing mail without a separate consent/delivery policy.
+
+### Account-first onboarding — release candidate (30 September)
+
+- [x] `/kom-igang`: account → optional letters → companies and optional topics
+  → separate company-email choices → news/Mina bolag. Confirmation joins the
+  same flow without repeating newsletter subscription.
+- [x] Authentication no longer silently subscribes/resubscribes. Preserve guest
+  company intent, saved interests, plan and return destination.
+- [x] Shared server-catalog letter preferences with authoritative Mail state and
+  revision-checked saves. Future letters stay unavailable until senders exist.
+- [x] Reuse existing company-email consent, importance, mutes and availability;
+  no pilot expansion, new channel or automatic email activation.
+- [x] Real morning-letter/news previews, bounded company lists, optional topics,
+  clear skip/free paths, saved-choice summary and empty completion.
+- [x] Mobile/keyboard/error paths, quiet shell and account-scoped step restoration.
+  Retry account failures without losing known accounts or mounted drafts.
+- [ ] Deploy backend and frontend together; user-owned production smoke test.
+
+Implementation and release checks: [account onboarding](docs/account-onboarding-2026-09-29.md)
+and [cardless trials](docs/cardless-trials-2026-09-29.md).
+
 ### Company briefing beside the price chart
 
 - [x] Local approved Nanexa prototype: one title and one description, sources

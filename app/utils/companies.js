@@ -5,7 +5,7 @@ let companiesPromise = null;
 
 export function getCompanies() {
     if (!companiesPromise) {
-        companiesPromise = fetch(`${API_URL}/feed/companies`)
+        companiesPromise = fetch(`${API_URL}/feed/companies`, { signal: AbortSignal.timeout(10_000) })
             .then((res) => { if (!res.ok) throw new Error("Company list unavailable"); return res.json(); })
             .then((rows) => {
                 if (!Array.isArray(rows) || !rows.length) { companiesPromise = null; return []; }

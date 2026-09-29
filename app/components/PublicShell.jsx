@@ -34,8 +34,9 @@ export default function PublicShell({ children }) {
   const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [login, setLogin] = useState(null);
+  const focused = ["/kom-igang", "/bekrafta"].includes(pathname);
   return (
-    <div className={cx(ui.scope, styles.shell)}>
+    <div className={cx(ui.scope, styles.shell, focused && styles.focused)}>
       <a href="#site-main" className={styles.skip}>
         Hoppa till innehållet
       </a>
@@ -50,7 +51,7 @@ export default function PublicShell({ children }) {
             {BRAND_NAME}
             <Label aria-hidden="true" tone="accent">{BRAND_VERSION}</Label>
           </Link>
-          <nav className={styles.navigation} aria-label="Huvudmeny">
+          {!focused && <nav className={styles.navigation} aria-label="Huvudmeny">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -60,23 +61,28 @@ export default function PublicShell({ children }) {
                 {link.label}
               </Link>
             ))}
-          </nav>
-          <div className={styles.search}>
+          </nav>}
+          {!focused && <div className={styles.search}>
             <StockSearch
               placeholder="Sök bolag eller ticker"
               showSuggestions
               includeNews
             />
-          </div>
-          <div className={styles.mobileSearch}>
+          </div>}
+          {!focused && <div className={styles.mobileSearch}>
             <IconButton
               label="Sök bolag och nyheter"
               onClick={() => setSearchOpen(true)}
             >
               <FiSearch aria-hidden="true" />
             </IconButton>
-          </div>
+          </div>}
           <div className={styles.account}>
+            {focused ? <IconButton label="Växla färgtema"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+              <FiSun className={styles.lightIcon} aria-hidden="true" />
+              <FiMoon className={styles.darkIcon} aria-hidden="true" />
+            </IconButton> : <>
             <Link href="/terminal" className={styles.terminal}>
               Terminal <FiArrowUpRight aria-hidden="true" />
             </Link>
@@ -122,6 +128,7 @@ export default function PublicShell({ children }) {
                 ]}
               />
             )}
+            </>}
           </div>
         </Container>
       </header>
@@ -130,13 +137,13 @@ export default function PublicShell({ children }) {
         <footer className={styles.footer}>
           <Container className={styles.footerInner}>
             <span>© {new Date().getFullYear()} OMXsum</span>
-            <nav aria-label="Sidfot">
+            {!focused && <nav aria-label="Sidfot">
               <Link href="/om-oss">Om OMXsum</Link>
               <Link href="/pro">Plus & Pro</Link>
               <Link href="/nyhetsbrev">Breven</Link>
               <Link href="/terminal">Terminal</Link>
               <a href="https://blog.omxsum.com">Blogg</a>
-            </nav>
+            </nav>}
             <Button
               variant="ghost"
               size="sm"
@@ -147,7 +154,7 @@ export default function PublicShell({ children }) {
           </Container>
         </footer>
       </div>
-      <nav className={styles.bottomNav} aria-label="Snabbmeny">
+      {!focused && <nav className={styles.bottomNav} aria-label="Snabbmeny">
         {links.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
@@ -158,7 +165,7 @@ export default function PublicShell({ children }) {
             <span>{label}</span>
           </Link>
         ))}
-      </nav>
+      </nav>}
       <Dialog
         open={searchOpen}
         onOpenChange={setSearchOpen}

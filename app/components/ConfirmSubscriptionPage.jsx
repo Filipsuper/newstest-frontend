@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FiCheckCircle } from "react-icons/fi";
 import { confirmSubscription, fetchSubscriptionStatus } from "../utils/api";
 import { useAuthContext } from "../providers/AuthProvider";
-import PersonalizationSetup from "./PersonalizationSetup";
+import { OnboardingSetup } from "./AccountOnboarding";
 import EmailInput from "./EmailInput";
 import LogInModal from "../modals/logInModal";
 import { Button } from "./ui/Button";
@@ -134,7 +134,7 @@ export default function ConfirmSubscriptionPage() {
               </Text>
             </Stack>
             {canPersonalize ? (
-              <PersonalizationSetup />
+              <OnboardingSetup confirmedLetter />
             ) : (
               <Stack gap={4}>
                 <Heading as="h1" size="page">

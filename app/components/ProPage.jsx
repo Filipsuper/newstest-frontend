@@ -17,11 +17,13 @@ import { Badge } from "./ui/data";
 import { Label } from "./ui/Label";
 import { Container, Heading, Inline, Stack, Surface, Text } from "./ui/layout";
 import styles from "./membership.module.css";
+import MembershipTrial from "./MembershipTrial";
 
 export default function ProPage() {
   const { user } = useAuthContext();
   const plan = memberPlan(user);
-  const paid = plan === "plus" || plan === "pro";
+  const trialActive = user?.trial?.status === "active";
+  const paid = !trialActive && (plan === "plus" || plan === "pro");
   const [loginTier, setLoginTier] = useState(null);
   const loginTrigger = useRef(null);
   const checkoutPending = useRef(false);
@@ -98,12 +100,14 @@ export default function ProPage() {
           </Stack>
         </header>
 
+        <MembershipTrial />
+        {trialActive && <Text size="sm" tone="secondary">Provperioden avslutas automatiskt. Om du väljer en betalplan nedan börjar prenumerationen direkt när du slutför köpet.</Text>}
         <section aria-label="Jämför medlemskap" className={styles.plans}>
           {membershipPlans.map((tier) => {
-            const current = plan === tier.id;
+            const current = !trialActive && plan === tier.id;
             const included =
               (paid && tier.id === "free") ||
-              (plan === "pro" && tier.id === "plus");
+              (paid && plan === "pro" && tier.id === "plus");
             return (
               <Surface
                 as="section"

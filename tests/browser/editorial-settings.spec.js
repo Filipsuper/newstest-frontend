@@ -27,15 +27,18 @@ test("settings switches use the keyboard, persist theme, and save mail preferenc
     active_newsletters: ["Morgonbrev", "LegacyEdition"],
   };
   let writes = 0;
+  let selected = ["morning"];
+  const letters = () => ({ revision: writes, selected, catalog: [{ id: "morning", title: "Morgonbrevet", description: "Börsnyheter varje vardag." }] });
   await page.route("**/api/user", (route) => route.fulfill({ json: user }));
   await page.route("**/api/user/newsletters", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: letters() });
     writes++;
     if (writes === 1)
       return route.fulfill({ status: 503, json: { error: "Unavailable" } });
     const body = route.request().postDataJSON();
-    expect(body.newsletters).toEqual(["LegacyEdition"]);
-    user = { ...user, active_newsletters: body.newsletters };
-    return route.fulfill({ json: { message: "Saved" } });
+    expect(body.selected).toEqual([]);
+    selected = body.selected;
+    return route.fulfill({ json: letters() });
   });
   await page.goto("/settings");
   const theme = page.getByRole("switch", { name: /^Mörkt läge/ });
@@ -67,11 +70,11 @@ test("settings switches use the keyboard, persist theme, and save mail preferenc
   expect(writes).toBe(0);
   await page.getByRole("button", { name: "Spara brevval" }).click();
   await expect(page.getByRole("region", { name: "Nyhetsbrev i mejlen" }).getByRole("alert")).toContainText(
-    "Dina ändringar finns kvar",
+    "Försök igen",
   );
   await expect(morning).not.toBeChecked();
   await page.getByRole("button", { name: "Spara brevval" }).click();
-  await expect(page.getByText("Dina brevval har sparats.")).toBeVisible();
+  await expect(page.getByText("Brevval sparade.")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Spara brevval" }),
   ).toBeDisabled();
@@ -120,13 +123,17 @@ test("missing mail preferences are disabled until they can be loaded", async ({
   page,
 }) => {
   let user = { email: "missing@example.test", verified: true, plan: "free" };
+  let available = false;
   await page.route("**/api/user", (route) => route.fulfill({ json: user }));
+  await page.route("**/api/user/newsletters", route => available ? route.fulfill({ json: {
+    revision: 0, selected: ["morning"], catalog: [{ id: "morning", title: "Morgonbrevet", description: "Börsnyheter varje vardag." }],
+  } }) : route.fulfill({ status: 503, json: { error: true } }));
   await page.goto("/settings");
   const morning = page.getByRole("switch", { name: /^Morgonbrevet/ });
-  await expect(morning).toBeDisabled();
-  await expect(page.getByText("Brevvalen kunde inte hämtas.")).toBeVisible();
-  user = { ...user, active_newsletters: ["Morgonbrev"] };
-  await page.getByRole("button", { name: "Hämta brevval igen" }).click();
+  await expect(morning).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Nyhetsbrev i mejlen" }).getByRole("alert")).toBeVisible();
+  available = true;
+  await page.getByRole("region", { name: "Nyhetsbrev i mejlen" }).getByRole("button", { name: "Försök igen" }).click();
   await expect(morning).toBeEnabled();
   await expect(morning).toBeChecked();
   await expect(
