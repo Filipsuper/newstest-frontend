@@ -23,8 +23,27 @@ export function valuationFixture(symbol = 'VALUE.TEST', now = Date.now()) {
   const multiples = [['pe', 'P/E', 20, 17.5, 15, 21], ['evEbit', 'EV/EBIT', 41.6, 38, 31, 44], ['ps', 'P/S', 5, 4.4, 3.8, 5.2], ['evSales', 'EV/S', 5.2, 4.6, 3.9, 5.4]]
     .map(([id, label, current, median, p25, p75]) => ({ id, label, available: true, reliable: true, stats: { current, median, p25, p75, min: p25 - 2, max: p75 + 3, count: 740 }, displayMax: p75 + 4,
       from: new Date(now - 129 * 7 * 86400_000).toISOString().slice(0, 10), to: asOf, series: Array.from({ length: 130 }, (_, i) => ({ date: new Date(now - (129 - i) * 7 * 86400_000).toISOString().slice(0, 10), value: i === 129 ? current : median + Math.sin(i / 7) * (p75 - median) + Math.sin(i / 2) * .4 })) }));
-  return { financials, estimates, valuation: { symbol, asOf, latestClose: 100, reportingCurrency: 'SEK', tradingCurrency: 'SEK', currency: 'SEK', basis: 'annual_reported',
+  const result = { financials, estimates, valuation: { symbol, asOf, latestClose: 100, reportingCurrency: 'SEK', tradingCurrency: 'SEK', currency: 'SEK', basis: 'annual_reported',
     method: { publicationLagDays: 90, notMeaningfulAbove: 200 }, multiples,
     capitalization: { currency: 'SEK', current: { asOf, basisPeriodEnd: `${year - 1}-12-31`, marketCap: 5000e6, enterpriseValue: 5200e6, netDebt: 200e6 } },
     periods: financials.annual.map(row => ({ ...row, eps: row.dilutedEps, effectiveFrom: `${row.fiscalYear + 1}-03-31`, netDebt: 200e6 })), rejectedPeriods: [] } };
+  if (symbol.startsWith('VALUE-R12')) {
+    for (const row of financials.quarterly) row.sharesOutstanding = 50e6;
+    const quarters = financials.quarterly.slice(-4).map(q => ({ fiscalPeriod: q.fiscalPeriod, periodEnd: q.periodEnd,
+      currency: q.currency, source: q.source, revenue: q.revenue, ebit: q.ebit, eps: q.dilutedEps, sharesOutstanding: q.sharesOutstanding }));
+    const window = { ...quarters.at(-1), fiscalPeriod: quarters.at(-1).fiscalPeriod, quarters, epsBasis: 'dilutedEps',
+      revenue: quarters.reduce((v, q) => v + q.revenue, 0), ebit: quarters.reduce((v, q) => v + q.ebit, 0),
+      eps: quarters.reduce((v, q) => v + q.eps, 0), netDebt: 200e6, effectiveFrom: `${year}-08-27` };
+    result.valuation.r12 = { ...structuredClone(result.valuation), schemaVersion: 1, basis: 'r12_reported',
+      epsBasis: 'dilutedEps', currentWindow: window, periods: [window],
+      capitalization: { currency: 'SEK', current: { ...result.valuation.capitalization.current, basisPeriodEnd: window.periodEnd } },
+      multiples: multiples.map(m => {
+        const denominator = m.id === 'pe' ? window.eps : m.id === 'evEbit' ? window.ebit : window.revenue;
+        const current = (m.id === 'pe' ? 100 : m.id === 'ps' ? 5000e6 : 5200e6) / denominator;
+        const series = m.series.slice(-25).map((p, i) => ({ ...p, value: current * (1 + Math.sin(i / 4) * .08) }));
+        series.at(-1).value = current;
+        return { ...m, series, from: series[0].date, stats: { ...m.stats, current, median: current, p25: current * .95, p75: current * 1.05 }, displayMax: current * 1.3 };
+      }) };
+  }
+  return result;
 }

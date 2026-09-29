@@ -21,7 +21,8 @@ for (const width of [320, 390, 820, 1440]) for (const theme of ['light', 'dark']
   await section.getByRole('button', { name: 'EV/EBIT', exact: true }).click();
   await expect(section.getByRole('heading', { name: 'EV/EBIT över tid' })).toBeVisible();
   await expect(section.getByText('OMXsum-estimat', { exact: true })).toBeVisible();
-  await expect(section.getByText('Kvartalsestimat · ingen helårsmultipel')).toBeVisible();
+  await expect(section.getByText('Kvartalsestimat · R12E-underlag saknas')).toBeVisible();
+  await expect(section.locator('.recharts-line-curve[stroke-dasharray="1 6"]')).toHaveCount(0);
   await expect(section.locator('pattern')).toHaveCount(1);
   const bars = section.locator('.recharts-bar-rectangle');
   const firstBar = await bars.first().boundingBox(), lastBar = await bars.last().boundingBox();
@@ -46,6 +47,25 @@ for (const width of [320, 390, 820, 1440]) for (const theme of ['light', 'dark']
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`R12E reference uses matching history ${width}px ${theme}`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/VALUE-R12.TEST#valuation');
+  await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+  const section = page.locator('#valuation');
+  for (const metric of ['P/E', 'P/S', 'EV/EBIT', 'EV/S']) {
+    await section.getByRole('button', { name: metric, exact: true }).click();
+    await expect(section.getByText('R12 → R12E', { exact: true })).toBeVisible();
+    await expect(section.getByRole('img', { name: /Prickad linje: R12E/ })).toBeVisible();
+    await expect(section.locator('.recharts-line-curve[stroke-dasharray="1 6"]')).toHaveCount(1);
+    await expect(section.getByText(/3 rapporterade kvartal/)).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await section.screenshot({ path: testInfo.outputPath(`r12e-${width}-${theme}.png`) });
+  await section.getByText('Beräkning & underlag', { exact: true }).click();
+  await expect(section.getByText(/Det är inte en prognos för de kommande tolv månaderna/)).toBeVisible();
+  expect((await new AxeBuilder({ page }).include('#valuation').analyze()).violations).toEqual([]);
+});
+
 test('annual forward multiples retain sources and keyboard-driven metric control', async ({ page }) => {
   await page.goto('/aktie/VALUE-ANNUAL.TEST#valuation');
   const section = page.locator('#valuation');
@@ -56,6 +76,45 @@ test('annual forward multiples retain sources and keyboard-driven metric control
   await expect(section.getByRole('heading', { name: 'EV/EBIT över tid' })).toBeVisible();
   await expect(section.getByText('EV/EBIT 35,1×', { exact: true })).toBeVisible();
   await section.screenshot({ path: '/private/tmp/omx-valuation-live-annual.png' });
+});
+
+for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`annual estimate reference is labelled and visible ${width}px ${theme}`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/VALUE-ANNUAL.TEST#valuation');
+  await page.evaluate(async theme => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await Promise.all(document.getAnimations().filter(animation => Number.isFinite(animation.effect?.getComputedTiming().iterations))
+      .map(animation => animation.finished.catch(() => {})));
+  }, theme);
+  const section = page.locator('#valuation');
+  for (const [metric, value] of [['P/E', '17,2'], ['EV/EBIT', '35,1'], ['P/S', '4,5'], ['EV/S', '4,7']]) {
+    await section.getByRole('button', { name: metric, exact: true }).click();
+    const line = section.locator('.recharts-line-curve[stroke-dasharray="1 6"]');
+    await expect(line).toHaveCount(1);
+    const chart = section.getByRole('img', { name: new RegExp(`Prickad linje:.*${value}×`) });
+    await expect(chart).toBeVisible();
+    await expect(chart).toHaveAccessibleName(/Konsensus, vid kurs 100 SEK/);
+    await expect(chart.locator('.recharts-reference-dot').filter({ hasText: `${new Date().getUTCFullYear()}E · ${value}×` })).toHaveCount(1);
+    const lineBox = await line.boundingBox(), chartBox = await chart.boundingBox();
+    // Compare path coordinates; browser bounding boxes include stroke padding.
+    const endpoints = await chart.evaluate(element => {
+      const history = element.querySelector('.recharts-line-curve:not([stroke-dasharray])');
+      const estimate = element.querySelector('.recharts-line-curve[stroke-dasharray="1 6"]');
+      const point = (path, length) => { const p = path.getPointAtLength(length); return { x: p.x, y: p.y }; };
+      return { first: point(history, 0), last: point(history, history.getTotalLength()),
+        start: point(estimate, 0), end: point(estimate, estimate.getTotalLength()) };
+    });
+    expect((endpoints.end.x - endpoints.start.x) / (endpoints.end.x - endpoints.first.x)).toBeCloseTo(.1, 2);
+    expect(endpoints.start.x).toBeCloseTo(endpoints.last.x, 2);
+    expect(endpoints.start.y).toBeCloseTo(endpoints.last.y, 2);
+    expect(lineBox.y).toBeGreaterThan(chartBox.y);
+    expect(lineBox.y).toBeLessThan(chartBox.y + chartBox.height);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await section.getByRole('button', { name: 'P/E', exact: true }).click();
+  expect((await new AxeBuilder({ page }).include('#valuation').analyze()).violations).toEqual([]);
+  await section.screenshot({ path: testInfo.outputPath(`estimate-reference-${width}-${theme}.png`) });
 });
 
 test('failed valuation can be retried and failed estimates do not claim an absence', async ({ page }) => {

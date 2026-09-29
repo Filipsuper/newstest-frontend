@@ -1,9 +1,115 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { valuationChartData, valuationForecasts, forwardMultiple } from '../app/utils/companyValuation.js';
+import { valuationChartData, valuationForecasts, forwardMultiple, valuationHistoryData } from '../app/utils/companyValuation.js';
 import { valuationFixture } from './fixtures/valuation.mjs';
 
 const now = Date.parse('2026-09-25T12:00:00Z');
+test('explicit EPS model extension is allowed only on its matching current financial inputs', () => {
+  const f = valuationFixture('VALUE-R12.TEST', now);
+  f.estimates.snapshots = [];
+  const model = f.estimates.models[0];
+  model.epsEstimate = { version: 1, unavailableReason: null, method: 'common_profit_blended_margin_at_unchanged_shares',
+    inputs: f.financials.quarterly.slice(-4).map(q => ({ ...q })), forecasts: { dilutedEps: { value: 1.4, basis: 'diluted' } } };
+  const options = { ...f, id: 'pe', symbol: f.financials.symbol, availability: 'available', now };
+  assert.equal(valuationChartData(options).r12.source, 'model');
+  model.epsEstimate.inputs[0].basicAverageShares = 123;
+  assert.equal(valuationChartData(options).r12, null);
+  delete model.epsEstimate.inputs[0].basicAverageShares;
+  model.epsEstimate.forecasts.dilutedEps.basis = 'basic';
+  assert.equal(valuationChartData(options).r12, null);
+});
+test('R12E rolls the window forward using three actual quarters plus the next estimate', () => {
+  const f = valuationFixture('VALUE-R12.TEST', now);
+  const before = structuredClone(f);
+  for (const id of ['pe', 'ps', 'evEbit', 'evSales']) {
+    const model = valuationChartData({ ...f, id, symbol: f.financials.symbol, availability: 'available', now });
+    assert.equal(model.r12.basis, 'r12_estimated');
+    assert.equal(model.historyValuation.basis, 'r12_reported');
+    const metric = id === 'pe' ? 'eps' : id === 'evEbit' ? 'ebit' : 'revenue';
+    const sum = f.valuation.r12.currentWindow.quarters.slice(1).reduce((v, q) => v + q[metric], 0);
+    assert.equal(model.r12.value, sum + model.r12.quarterEstimate);
+    assert.notEqual(model.r12.value, model.r12.quarterEstimate * 4);
+    const history = valuationHistoryData(model.historyValuation.multiples.find(m => m.id === id), model.historyForecasts);
+    assert.equal(history.reference.displayLabel, 'R12E');
+    assert.equal(history.chartData.at(-1).date, undefined);
+  }
+  assert.deepEqual(f, before);
+});
+test('R12E withholds mismatched revisions, missing quarters and unsafe EPS share basis', () => {
+  for (const mutate of [f => f.financials.quarterly.at(-1).revenue += 1,
+    f => f.financials.quarterly.at(-1).currency = 'EUR', f => f.financials.quarterly.splice(-2, 1),
+    f => f.valuation.r12.currentWindow = null, f => f.valuation.r12.currentWindow.quarters.at(-1).sharesOutstanding += 1,
+    f => f.valuation.r12.multiples.find(m => m.id === 'ps').series.at(-1).value = null]) {
+    const f = valuationFixture('VALUE-R12.TEST', now); mutate(f);
+    const model = valuationChartData({ ...f, id: 'ps', symbol: f.financials.symbol, availability: 'available', now });
+    assert.equal(model.r12, null); assert.equal(model.historyValuation.basis, 'annual_reported');
+  }
+  const f = valuationFixture('VALUE-R12.TEST', now);
+  f.valuation.r12.currentWindow.epsUnavailableReason = 'share_basis_requires_review';
+  assert.equal(valuationChartData({ ...f, id: 'pe', symbol: f.financials.symbol, availability: 'available', now }).r12, null);
+});
+test('R12E respects next-quarter consensus loss, stale prices and exact explicit EPS basis', () => {
+  const f = valuationFixture('VALUE-R12.TEST', now);
+  f.estimates.snapshots[0].metrics.find(m => m.key === 'revenue').amount = -1e10;
+  const m = valuationChartData({ ...f, id: 'ps', symbol: f.financials.symbol, availability: 'available', now });
+  assert.equal(m.r12.source, 'consensus'); assert.equal(m.r12.multiple.reason, 'not_meaningful');
+  assert.equal(valuationHistoryData(m.historyValuation.multiples[0], m.historyForecasts).reference, null);
+  f.valuation.r12.asOf = '2025-01-01';
+  assert.equal(valuationChartData({ ...f, id: 'ps', symbol: f.financials.symbol, availability: 'available', now }).r12, null);
+  f.valuation.r12.asOf = f.valuation.asOf;
+  f.estimates.snapshots[0].metrics.find(m => m.key === 'eps_diluted').key = 'eps';
+  assert.equal(valuationChartData({ ...f, id: 'pe', symbol: f.financials.symbol, availability: 'available', now }).r12, null);
+});
+test('estimate reference uses the nearest annual multiple without changing historical values or statistics', () => {
+  const value = args('VALUE-ANNUAL.TEST');
+  for (const id of ['pe', 'ps', 'evEbit', 'evSales']) {
+    const model = valuationChartData({ ...value, id });
+    const multiple = value.valuation.multiples.find(row => row.id === id);
+    const before = structuredClone(multiple);
+    const chart = valuationHistoryData(multiple, model.forecasts);
+    assert.equal(chart.reference, model.forecasts[0]);
+    assert.ok(chart.displayMax > chart.reference.multiple.value);
+    const last = chart.series.at(-1), endpoint = chart.chartData.at(-1);
+    assert.equal(chart.chartData.at(-2).estimated, last.value);
+    assert.equal(endpoint.estimated, model.forecasts[0].multiple.value);
+    assert.equal(endpoint.date, undefined);
+    assert.equal(endpoint.plotted, null);
+    assert.ok(Math.abs((endpoint.time - last.time) / (endpoint.time - chart.series[0].time) - .1) < .000001);
+    assert.deepEqual(chart.series.map(({ time, plotted, ...row }) => row), multiple.series);
+    assert.deepEqual(multiple, before);
+  }
+});
+test('estimate reference never annualises a quarter, skips a loss, or displays an invalid multiple', () => {
+  const quarterly = valuationChartData({ ...args(), id: 'ps' });
+  assert.equal(valuationHistoryData({}, quarterly.forecasts).reference, null);
+  const value = args('VALUE-ANNUAL.TEST');
+  for (const multiple of [{ value: null, reason: 'currency' }, { value: 0, reason: null }, { value: -2, reason: null }, { value: NaN, reason: null }, { value: Infinity, reason: null }]) {
+    const model = valuationChartData({ ...value, id: 'pe' });
+    model.forecasts[0].multiple = multiple;
+    assert.equal(valuationHistoryData(value.valuation.multiples[0], model.forecasts).reference, null);
+  }
+  const stale = valuationChartData({ ...value, id: 'pe', valuation: { ...value.valuation, asOf: '2025-01-01' } });
+  assert.equal(valuationHistoryData({}, stale.forecasts).reference, null);
+});
+test('an estimate outside the historical display limit is visible without resurrecting clipped observations', () => {
+  const multiple = { displayMax: 10, series: [{ date: '2026-09-24', value: 99 }, { date: '2026-09-25', value: 5 }] };
+  const reference = { period: { frequency: 'annual' }, multiple: { value: 30, reason: null } };
+  const chart = valuationHistoryData(multiple, [reference]);
+  assert.ok(chart.displayMax > 30);
+  assert.equal(chart.series[0].plotted, null);
+  assert.equal(chart.series[1].plotted, 5);
+  assert.equal(valuationHistoryData(multiple).displayMax, 10);
+});
+test('a missing or clipped historical endpoint never gets a fabricated estimate connector', () => {
+  const reference = { period: { frequency: 'annual' }, multiple: { value: 30, reason: null } };
+  for (const value of [null, 99]) {
+    const multiple = { displayMax: 10, series: [{ date: '2026-09-24', value: 5 }, { date: '2026-09-25', value }] };
+    const chart = valuationHistoryData(multiple, [reference]);
+    assert.equal(chart.reference, null);
+    assert.equal(chart.chartData.length, 2);
+    assert.equal(chart.estimateEnd, null);
+  }
+});
 function args(symbol = 'VALUE.TEST') { const fixture = valuationFixture(symbol, now); return { symbol, ...fixture, availability: 'available', currency: 'SEK', metric: 'ebit', now }; }
 test('metric-specific precedence uses consensus for revenue, model for EBIT, explicit EPS only', () => {
   const value = args();
