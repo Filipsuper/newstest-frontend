@@ -1,6 +1,6 @@
 # Val av estimatår i Värdering
 
-Lokalt tillägg efter releasen med prickad estimatlinje; ännu inte deployat.
+Deployat 29 september 2026 efter releasen med prickad estimatlinje.
 
 - Gemensam Estimatår-väljare byggd av SegmentedControl, bredvid måttvalet.
 - Visas endast när det valda måttet har flera kvalificerade helårsestimat.
@@ -22,3 +22,8 @@ R12E, samt UI-byte för alla fyra värderingsmått med tangentbord och på mobil
 passerade de fyra riktade årsväljartesterna igen. Bilder på 320/1440 px och
 ljust/mörkt tema granskade; ingen horisontell sidoöverströmning och minst
 44 px mål för årvalen. Testservrarna avslutades efter kontrollerna.
+
+Kodcommit: b771170. Produktionens startsida, bolagssida, Marknaden och
+bolagslistans API gav HTTP 200. Den offentliga bolagssidans JavaScript
+verifierades innehålla årsväljaren. Endast frontend byttes; API, backend,
+insamlare, inställningar och data lämnades oförändrade.
