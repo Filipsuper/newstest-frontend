@@ -4,6 +4,49 @@ import { valuationChartData, valuationForecasts, forwardMultiple, valuationHisto
 import { valuationFixture } from './fixtures/valuation.mjs';
 
 const now = Date.parse('2026-09-25T12:00:00Z');
+test('explicit annual year selection updates only the reference, preserving actuals and all forecast bars', () => {
+  const value = args('VALUE-ANNUAL.TEST');
+  const before = structuredClone(value);
+  for (const id of ['pe', 'ps', 'evEbit', 'evSales']) {
+    const initial = valuationChartData({ ...value, id });
+    const selected = valuationChartData({ ...value, id, estimatePeriod: '2027' });
+    assert.equal(initial.selectedForecast.period.key, '2026');
+    assert.equal(selected.selectedForecast.period.key, '2027');
+    assert.deepEqual(selected.bars, initial.bars);
+    assert.deepEqual(selected.forecasts, initial.forecasts);
+    const chart = valuationHistoryData(selected.historyValuation.multiples.find(m => m.id === id), selected.historyForecasts);
+    assert.equal(chart.reference.period.key, '2027');
+    assert.equal(chart.reference.multiple.value, selected.forecasts[1].multiple.value);
+    assert.deepEqual(selected.historyValuation, initial.historyValuation);
+  }
+  assert.deepEqual(value, before);
+});
+test('an unavailable or removed estimate year falls back to the nearest actual qualified period', () => {
+  const value = args('VALUE-ANNUAL.TEST');
+  const options = { ...value, id: 'pe', estimatePeriod: '2027' };
+  value.estimates.snapshots[1].metrics = value.estimates.snapshots[1].metrics.filter(m => m.key !== 'eps_diluted');
+  assert.equal(valuationChartData(options).selectedForecast.period.key, '2026');
+  assert.equal(valuationChartData({ ...options, estimatePeriod: '2099' }).selectedForecast.period.key, '2026');
+  assert.equal(valuationChartData({ ...options, availability: 'unavailable' }).selectedForecast, null);
+});
+test('a selected loss year keeps its selection without substituting another annual reference', () => {
+  const value = args('VALUE-ANNUAL.TEST');
+  value.estimates.snapshots[1].metrics.find(m => m.key === 'eps_diluted').amount = -1;
+  const selected = valuationChartData({ ...value, id: 'pe', estimatePeriod: '2027' });
+  assert.equal(selected.selectedForecast.period.key, '2027');
+  assert.equal(selected.selectedForecast.multiple.reason, 'not_meaningful');
+  assert.equal(valuationHistoryData(value.valuation.multiples[0], selected.historyForecasts).reference, null);
+  assert.ok(valuationHistoryData(value.valuation.multiples[0], valuationChartData({ ...value, id: 'pe' }).historyForecasts).reference);
+});
+test('annual selection never replaces or annualises a quarterly R12E', () => {
+  const f = valuationFixture('VALUE-R12.TEST', now);
+  const options = { ...f, id: 'ps', symbol: f.financials.symbol, availability: 'available', now };
+  const initial = valuationChartData(options);
+  const selected = valuationChartData({ ...options, estimatePeriod: '2027' });
+  assert.equal(selected.selectedForecast, null);
+  assert.deepEqual(selected.r12, initial.r12);
+  assert.deepEqual(selected.historyForecasts, initial.historyForecasts);
+});
 test('explicit EPS model extension is allowed only on its matching current financial inputs', () => {
   const f = valuationFixture('VALUE-R12.TEST', now);
   f.estimates.snapshots = [];

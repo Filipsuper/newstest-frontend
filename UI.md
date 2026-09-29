@@ -840,6 +840,13 @@ desktop density or abbreviated interaction model.
   cannot become a forward annual multiple. EPS needs an explicit share basis.
   Unknown data and upstream failures are distinct from confirmed absence.
   Historical publication lag is assumed, not a verified disclosure timestamp.
+  Multiple qualified annual estimates expose a shared Estimatår segmented
+  control. Default to the nearest year; explicitly chosen years update the
+  dotted reference, never the historical curve or statistics. Keep the choice
+  between metrics where available, visibly fall back when missing, and reset
+  for another company. A selected loss keeps its year but has no connector.
+  Hide the selector for a single period or quarterly R12E. Never manufacture
+  annual forecasts from quarters.
 - VD-ord has its own anchor and navigation entry, using the shared reading
   type and controls. Separate labelled AI interpretation from expandable original
   text; show the actual report period, source link and supplied PDF page range.

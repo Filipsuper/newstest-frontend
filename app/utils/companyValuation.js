@@ -176,7 +176,7 @@ export function r12Projection({ id, symbol, financials, valuation, forecast, now
     multiple, reason: null };
 }
 
-export function valuationChartData({ id, symbol, financials, estimates, availability, valuation, now = Date.now() }) {
+export function valuationChartData({ id, symbol, financials, estimates, availability, valuation, estimatePeriod, now = Date.now() }) {
   const config = VALUATION_METRICS.find(item => item.value === id) ?? VALUATION_METRICS[0];
   const currency = valuation?.reportingCurrency ?? financials?.currency;
   const allActuals = [...valuationActuals(financials, symbol, 'annual'), ...valuationActuals(financials, symbol, 'quarterly')];
@@ -197,8 +197,13 @@ export function valuationChartData({ id, symbol, financials, estimates, availabi
   const projection = frequency === 'quarterly' ? r12Projection({ id, symbol, financials, valuation, forecast: upcoming[0], now }) : null;
   const rolling = projection?.basis === 'r12_estimated';
   const forecastRows = upcoming.map(row => ({ ...row, multiple: forwardMultiple(id, row, valuation ?? {}, now) }));
+  // Selecting a later year is explicit. Default to the nearest year, including
+  // a loss/unavailable multiple: never choose a more flattering year for it.
+  const selectedForecast = frequency === 'annual'
+    ? forecastRows.find(row => row.period.key === estimatePeriod) ?? forecastRows[0] ?? null : null;
   return { config, currency, frequency, epsBasis, bars, forecasts: forecastRows,
+    selectedForecast,
     r12: rolling ? projection : null, r12UnavailableReason: projection?.reason ?? null,
     historyValuation: rolling ? valuation.r12 : valuation,
-    historyForecasts: rolling ? [projection] : forecastRows };
+    historyForecasts: rolling ? [projection] : selectedForecast ? [selectedForecast] : forecastRows };
 }

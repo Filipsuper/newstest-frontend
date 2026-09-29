@@ -119,11 +119,13 @@ export default function CompanyValuation({ symbol, financials, estimates, estima
   const [request, setRequest] = useState({ symbol: null, data: null, error: null });
   const [attempt, setAttempt] = useState(0);
   const [selected, setSelected] = useState('pe');
+  const [estimateSelection, setEstimateSelection] = useState({ symbol: null, period: null });
   const patternId = `valuation-estimate-${useId().replace(/:/g, '')}`;
   const data = request.symbol === symbol ? request.data : null;
   const error = request.symbol === symbol ? request.error : null;
   useEffect(() => {
     const controller = new AbortController();
+    setEstimateSelection(current => current.symbol === symbol ? current : { symbol, period: null });
     setRequest({ symbol, data: null, error: null });
     fetchValuation(symbol, { signal: controller.signal }).then(body => {
       if (controller.signal.aborted) return;
@@ -134,13 +136,21 @@ export default function CompanyValuation({ symbol, financials, estimates, estima
     });
     return () => controller.abort();
   }, [symbol, attempt]);
-  const model = useMemo(() => valuationChartData({ id: selected, symbol, financials, estimates, availability: estimateAvailability, valuation: data }), [selected, symbol, financials, estimates, estimateAvailability, data]);
+  const estimatePeriod = estimateSelection.symbol === symbol ? estimateSelection.period : null;
+  const model = useMemo(() => valuationChartData({ id: selected, symbol, financials, estimates, availability: estimateAvailability, valuation: data, estimatePeriod }), [selected, symbol, financials, estimates, estimateAvailability, data, estimatePeriod]);
   const history = model.historyValuation ?? data;
   const active = history?.multiples?.find(row => row.id === selected);
   if (error) return <EmptyState title="Värderingen kunde inte hämtas" description={error} action={<Button variant="secondary" onClick={() => setAttempt(value => value + 1)}>Försök igen</Button>} />;
   if (!data) return <div role="status" aria-label="Hämtar värdering" className={styles.loading}><Skeleton /><div className={styles.grid}><Skeleton /><Skeleton /></div></div>;
   return <Stack className={styles.root} gap={4}>
-    <SegmentedControl label="Värderingsmått" options={VALUATION_METRICS} value={selected} onValueChange={setSelected} className={styles.controls} />
+    <Inline className={styles.controlRow} gap={4}>
+      <SegmentedControl label="Värderingsmått" options={VALUATION_METRICS} value={selected} onValueChange={setSelected} className={styles.controls} />
+      {model.frequency === 'annual' && model.forecasts.length > 1 && <Inline gap={2}>
+        <Text as="span" size="xs" tone="secondary">Estimatår</Text>
+        <SegmentedControl label="Estimatår" options={model.forecasts.map(row => ({ value: row.period.key, label: `${row.period.label}E` }))}
+          value={model.selectedForecast.period.key} onValueChange={period => setEstimateSelection({ symbol, period })} className={styles.controls} />
+      </Inline>}
+    </Inline>
     <div className={styles.grid}>
       <Surface className={styles.panel}>
         <Inline className={styles.panelHeader}><Heading as="h3" size="subsection">{model.config.label} över tid</Heading><Label>{model.r12 ? 'R12 → R12E' : 'Historik'}</Label></Inline>
@@ -168,7 +178,7 @@ export default function CompanyValuation({ symbol, financials, estimates, estima
         {model.r12 && <Text size="sm">R12E ersätter {model.r12.droppedQuarter} med estimatet för {model.r12.period.label}. Övriga tre kvartal är rapporterade: {model.r12.retainedQuarters.join(', ')}. Det är inte en prognos för de kommande tolv månaderna. Den raka prickade linjen visar multipeln vid oförändrad kurs och upptar 10 % av grafbredden, inte en kalenderperiod. Ingen riktkurs.</Text>}
         {active && !active.reliable && <Text size="sm">{active.unreliableReason === 'mostly_not_meaningful' ? 'Resultatet är ofta nära noll. Vinstmultipeln saknar därför meningsfull historik.' : 'Historiken är kort. Median och spann bör läsas med försiktighet.'}</Text>}
         {active?.outliersAbove > 0 && <Text size="sm">{active.outliersAbove} observationer över historikens visningsgräns har utelämnats ur kurvan. De ingår fortfarande i statistiken.</Text>}
-        {model.frequency === 'annual' && model.forecasts.length > 0 && <Text size="sm">Den prickade förlängningen förbinder senaste historiska multipeln med närmaste helårsestimatets multipel vid den angivna kursen. Estimatdelen upptar 10 % av grafbredden, inte en kalenderperiod. Det är ingen riktkurs eller prognos för aktiekursens väg. Estimatet ingår inte i historisk median eller spann och visas inte om en jämförbar multipel eller historisk slutpunkt saknas.</Text>}
+        {model.frequency === 'annual' && model.forecasts.length > 0 && <Text size="sm">Den prickade förlängningen förbinder senaste historiska multipeln med det valda helårsestimatets multipel ({model.selectedForecast.period.label}E) vid den angivna kursen. Närmaste estimatår är förvalt. Estimatdelen upptar 10 % av grafbredden, inte en kalenderperiod. Det är ingen riktkurs eller prognos för aktiekursens väg. Estimatet ingår inte i historisk median eller spann och visas inte om en jämförbar multipel eller historisk slutpunkt saknas.</Text>}
         <Text size="sm">Konsensus prioriteras per mått och period, därefter ett kvalificerat OMXsum-estimat. Konsensus får vara högst 90 dagar gammalt, modellen 30 dagar. Justerade resultat blandas inte med rapporterade. {selected === 'pe' ? `Vinstgrafen använder ${model.epsBasis === 'dilutedEps' ? 'utspädd' : 'outspädd'} vinst per aktie. Generiskt EPS utan angiven aktiebas används inte som estimat.` : ''}</Text>
         {model.forecasts.some(row => row.source === 'model') && <Text size="sm">OMXsum-modellen skattar nästa kvartal från samma kvartal föregående år, medianen av senare årstillväxt och en blandning av säsongs- och senaste marginaler. En kvartalsprognos multipliceras aldrig med fyra.</Text>}
         {selected === 'pe' && model.forecasts.some(row => row.source === 'model' && !row.shareBasis) && <Text size="sm">EPS-estimatet använder vinst hänförlig till stamaktieägarna och verifierade EPS-/aktieantalsfält. Beräkningen antar oförändrat aktieantal och utspädning sedan senaste rapporten; senare emissioner och återköp är inte prognostiserade. Saknat underlag eller oförklarade förändringar i aktieantalet spärrar modellen.</Text>}

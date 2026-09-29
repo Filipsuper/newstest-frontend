@@ -52,6 +52,7 @@ for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`R1
   await page.goto('/aktie/VALUE-R12.TEST#valuation');
   await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
   const section = page.locator('#valuation');
+  await expect(section.getByRole('group', { name: 'Estimatår', exact: true })).toHaveCount(0);
   for (const metric of ['P/E', 'P/S', 'EV/EBIT', 'EV/S']) {
     await section.getByRole('button', { name: metric, exact: true }).click();
     await expect(section.getByText('R12 → R12E', { exact: true })).toBeVisible();
@@ -76,6 +77,36 @@ test('annual forward multiples retain sources and keyboard-driven metric control
   await expect(section.getByRole('heading', { name: 'EV/EBIT över tid' })).toBeVisible();
   await expect(section.getByText('EV/EBIT 35,1×', { exact: true })).toBeVisible();
   await section.screenshot({ path: '/private/tmp/omx-valuation-live-annual.png' });
+});
+
+for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`estimate year selection changes the endpoint ${width}px ${theme}`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/VALUE-ANNUAL.TEST#valuation');
+  await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+  const section = page.locator('#valuation');
+  const year = new Date().getUTCFullYear();
+  const first = section.getByRole('button', { name: `${year}E`, exact: true });
+  const second = section.getByRole('button', { name: `${year + 1}E`, exact: true });
+  await expect(first).toHaveAttribute('aria-pressed', 'true');
+  await second.click();
+  await expect(second).toHaveAttribute('aria-pressed', 'true');
+  for (const [metric, multiple] of [['P/E', '15,6'], ['EV/EBIT', '30,2'], ['P/S', '4,1'], ['EV/S', '4,2']]) {
+    await section.getByRole('button', { name: metric, exact: true }).click();
+    await expect(second).toHaveAttribute('aria-pressed', 'true');
+    const chart = section.getByRole('img', { name: new RegExp(`Prickad linje: ${year + 1}E · ${multiple}×`) });
+    await expect(chart).toBeVisible();
+    await expect(chart.locator('.recharts-reference-dot').filter({ hasText: `${year + 1}E · ${multiple}×` })).toHaveCount(1);
+    await expect(section.locator('.recharts-line-curve[stroke-dasharray="1 6"]')).toHaveCount(1);
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  for (const button of [first, second]) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(43);
+  expect((await new AxeBuilder({ page }).include('#valuation').analyze()).violations).toEqual([]);
+  await section.screenshot({ path: testInfo.outputPath(`estimate-year-${width}-${theme}.png`) });
+  await second.focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Space');
+  await expect(first).toHaveAttribute('aria-pressed', 'true');
+  await expect(section.getByRole('img', { name: new RegExp(`Prickad linje: ${year}E · 4,7×`) })).toBeVisible();
 });
 
 for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`annual estimate reference is labelled and visible ${width}px ${theme}`, async ({ page }, testInfo) => {
