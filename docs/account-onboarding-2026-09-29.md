@@ -1,6 +1,7 @@
 # Account-first onboarding — 29 September 2026
 
-Release candidate staged on 30 September. Existing unrelated valuation and
+Deployed on 30 September (Stockholm), frontend `0fb64cc`, backend `277d685`.
+See [verified release](onboarding-release-2026-09-30.md). Existing unrelated valuation and
 About-page work is outside this change; already released valuation features are
 retained from the latest production branch.
 
@@ -109,10 +110,12 @@ and plain text. No new mail is sent merely by loading or finishing setup.
 
 ## Release safety
 
-Deploy backend before/with frontend; the new UI needs the catalog endpoint.
+Backend was deployed before frontend; the new UI needs the catalog endpoint.
 Old clients remain compatible with the backend. No subscription migration or
 bulk opt-in is required. Rolling back the old backend would restore its implicit
-account-to-newsletter coupling; retain the consent fix in any rollback.
+account-to-newsletter coupling; retain the consent fix in any rollback. Once
+native trials are used, a backend rollback must also retain expiry/entitlement
+fences, since the older backend cannot enforce their end dates.
 
 Before release, inspect only the scoped changes. Other local valuation/About
 changes must not be included accidentally. After release, the account owner

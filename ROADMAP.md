@@ -69,7 +69,7 @@ and compatible backend releases are in the release history, not pending tasks.
 
 ## Now
 
-### Seven-day no-card trial — release candidate (30 September)
+### Seven-day no-card trial — deployed (30 September)
 
 - [x] Optional Plus/Pro offer in onboarding and pricing, with the free path.
 - [x] One explicit seven-day trial per verified Free account without billing
@@ -79,13 +79,14 @@ and compatible backend releases are in the release history, not pending tasks.
   authenticated checks and send-time entitlement checks use the actual end time.
 - [x] Settings shows the end date. Explicit paid conversion uses existing Stripe
   prices (49/99 SEK monthly); webhook conversion fences expiry and stale events.
-- [ ] Deploy backend and frontend together; user-owned production smoke test.
+- [x] Backend and frontend deployed together; public mobile/desktop checks passed.
+- [ ] Account-owner smoke test of trial activation and expiry/access.
 - [ ] Verify an actual paid conversion in Stripe test mode. Local provider mocks
   are not evidence of a completed external payment flow.
 - Follow-up: measure offer → trial → paid conversion and abandoned-checkout
   recovery. No trial marketing mail without a separate consent/delivery policy.
 
-### Account-first onboarding — release candidate (30 September)
+### Account-first onboarding — deployed (30 September)
 
 - [x] `/kom-igang`: account → optional letters → companies and optional topics
   → separate company-email choices → news/Mina bolag. Confirmation joins the
@@ -100,10 +101,12 @@ and compatible backend releases are in the release history, not pending tasks.
   clear skip/free paths, saved-choice summary and empty completion.
 - [x] Mobile/keyboard/error paths, quiet shell and account-scoped step restoration.
   Retry account failures without losing known accounts or mounted drafts.
-- [ ] Deploy backend and frontend together; user-owned production smoke test.
+- [x] Backend and frontend deployed together; public mobile/desktop checks passed.
+- [ ] Account-owner signup, explicit newsletter/follow/email-choice smoke test.
 
 Implementation and release checks: [account onboarding](docs/account-onboarding-2026-09-29.md)
 and [cardless trials](docs/cardless-trials-2026-09-29.md).
+Live release evidence: [30 September deployment](docs/onboarding-release-2026-09-30.md).
 
 ### Company briefing beside the price chart
 

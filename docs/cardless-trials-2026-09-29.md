@@ -1,6 +1,7 @@
 # Seven-day cardless trials
 
-Local only; not deployed. Builds on the account-first onboarding change.
+Deployed on 30 September (Stockholm), frontend `0fb64cc`, backend `277d685`.
+Builds on account-first onboarding. See [verified release](onboarding-release-2026-09-30.md).
 
 ## Contract
 
@@ -57,7 +58,8 @@ does not broaden the private company-email delivery pilot.
 Ship backend and frontend together. Existing price lookup keys are reused;
 no Stripe trial products or billing configuration are needed. Keep the existing
 signed Checkout/subscription webhooks and add subscription.created if absent
-(completed/updated remain supported). No production mutations were performed.
+(completed/updated remain supported). No Stripe/provider configuration changes,
+private production-account tests, live checkout or outbound test mail were performed.
 
 Validation uses fictional browser accounts, mocked Stripe and an isolated,
 owned local MongoDB. Before accepting real payment, verify checkout, signed
@@ -76,4 +78,5 @@ integration checks are not claimed by mocked tests.
   environment-related navigation/timeouts in the broad run passed a targeted
   single-worker rerun; all trial tests passed. Trial screenshots and accessibility
   audits covered 320/390/1440px in light/dark themes.
-- No production database, live Stripe session, outbound email or deployment.
+- Local QA used no production database, live Stripe session or outbound email.
+  Deployment and anonymous public checks are recorded separately in the release note.
