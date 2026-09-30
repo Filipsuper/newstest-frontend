@@ -28,4 +28,27 @@ About and reviewed-share-basis work stays out of the release.
 - Do not edit runtime environment, compose configuration or production user data.
 - Live verification is read-only; no newsletter consent, trial, mail or billing write.
 
-Final revision, image identifiers and live evidence are recorded after deployment.
+## Deployment result
+
+- Runtime source: `0b90969c152a419e360e87f82bc975cf1aab8843`, pushed to
+  `Filipsuper/newstest-frontend`, branch `nextjs`, with explicit public-repository
+  publication approval.
+- Image: `newsweb-frontend:personal-dashboard-20260930-4pnkdh`,
+  `sha256:254bf6ec23c70bf93d9149de95836012c6f16d0310b33a04797c86c93cd83be0`.
+- Verification: 328 unit tests, optimized production build, 59 browser regressions;
+  candidate and live checks at 320, 390 and 1440 px. Both quote strips render four
+  actual public-data curves, with edge-to-edge mobile graphs and no page overflow
+  or page errors. Personal visual checks use an isolated example watchlist, not a
+  production login or a claim about any specific user's private feed.
+- Live HTTP 200 checks: landing page, market overview, personal dashboard, news
+  feed, onboarding, plans, settings, stocks, SAAB stock page, market overview API
+  and company directory API.
+- Cutover on 30 September 2026: only the frontend container was replaced. Backend,
+  Mongo, nginx and stonks container identities/start times were unchanged; runtime
+  configuration hashes were unchanged. Nginx configuration checked and reloaded.
+- Exact prior frontend image retained under
+  `newsweb-frontend:before-personal-dashboard-20260930-4pnkdh`. The temporary
+  candidate container was removed after successful verification.
+- Evidence on VPS:
+  `/root/omxsum-market/releases/personal-dashboard-20260930-4pnkdh/`.
+  No production account writes, mail sends, billing writes or worker restarts.
