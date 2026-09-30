@@ -23,7 +23,7 @@ const belowChrome = async (page, id) => {
   // Assert uniqueness once navigation settles before measuring its position.
   await expect(page.locator(`#${id}`)).toHaveCount(1);
   await expect.poll(() => page.locator(`#${id}`).evaluate(element => {
-    const offset = parseFloat(getComputedStyle(element).getPropertyValue("--report-offset"));
+    const offset = parseFloat(getComputedStyle(element).scrollMarginTop);
     return Math.abs(element.getBoundingClientRect().top - offset);
   })).toBeLessThan(12);
 };

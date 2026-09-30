@@ -3,22 +3,18 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useAuthContext } from "../providers/AuthProvider";
-import { startMembershipTrial, trialEndLabel } from "../utils/membershipTrial";
+import { startMembershipTrial } from "../utils/membershipTrial";
 import { Button } from "./ui/Button";
 import { Heading, Inline, Stack, Surface, Text } from "./ui/layout";
-import { Label } from "./ui/Label";
+import { TrialLabel } from "./ActiveTrial";
 import styles from "./membership-trial.module.css";
 
 export function TrialStatus({ trial, subscribe = false, compact = false }) {
   if (trial?.status !== "active") return null;
-  if (compact) return <Text size="xs" tone="secondary" role="status">
-    {trial.plan === "pro" ? "Pro" : "Plus"} · Provperiod till {trialEndLabel(trial, { includeTime: false })}. Därefter Gratis – inget dras.
-  </Text>;
-  return <Stack gap={2} role="status">
-    <Inline><Label tone="accent">{trial.plan === "pro" ? "Pro" : "Plus"} · Provperiod</Label></Inline>
-    <Text size="sm">Till {trialEndLabel(trial)}. Därefter Gratis – inget dras.</Text>
-    {subscribe && <Inline><Button variant="secondary" nativeButton={false} render={<Link href="/pro" />}>Se betalplaner</Button></Inline>}
-  </Stack>;
+  return <Inline role="status">
+    <TrialLabel trial={trial} details={!compact} />
+    {subscribe && <Button variant="secondary" nativeButton={false} render={<Link href="/pro" />}>Se betalplaner</Button>}
+  </Inline>;
 }
 
 export default function MembershipTrial({ disabled = false, onBusyChange, context }) {

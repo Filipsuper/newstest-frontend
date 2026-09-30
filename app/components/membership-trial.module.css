@@ -2,4 +2,12 @@
 .option { padding: var(--ui-space-4); min-width: 0; }
 .option > div { height: 100%; }
 .option button { margin-top: auto; }
+.active { padding: var(--ui-space-6); }
+.statusLine { justify-content: space-between; }
+.planLink { color: var(--ui-text); font: 500 var(--ui-text-xs) / 1.5 var(--ui-font); text-underline-offset: 3px; min-height: var(--ui-control-md); display: inline-flex; align-items: center; }
+.planLink:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; border-radius: var(--ui-radius-sm); }
+.badgeLink { display: inline-flex; align-items: center; min-height: var(--ui-control-md); text-decoration: none; border-radius: var(--ui-radius-sm); }
+.labelTrigger, .labelTrigger:hover { padding: 0; min-height: var(--ui-control-md); background: transparent; border-radius: var(--ui-radius-sm); }
+.badgeLink:hover [data-trial-label], .labelTrigger:hover [data-trial-label] { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) { .active { padding: var(--ui-space-4); } }
 @media (max-width: 600px) { .options { grid-template-columns: 1fr; } }

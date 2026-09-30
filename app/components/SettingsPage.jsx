@@ -16,7 +16,7 @@ import { Label } from "./ui/Label";
 import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
 import { EmptyState, Skeleton } from "./ui/data";
 import styles from "./settings.module.css";
-import { TrialStatus } from "./MembershipTrial";
+import { TrialLabel } from "./ActiveTrial";
 
 function AccountSettings({ user }) {
   const { theme, setTheme } = useTheme();
@@ -95,7 +95,7 @@ function AccountSettings({ user }) {
           />
         </div>
       </section>
-      <section aria-labelledby="plan-title" className={styles.section}>
+      <section id="plan" aria-labelledby="plan-title" className={styles.section}>
         <Heading id="plan-title" size="subsection">
           Prenumeration
         </Heading>
@@ -103,7 +103,8 @@ function AccountSettings({ user }) {
           <div className={styles.row}>
             <Inline gap={3}>
               <Text size="sm">Din plan</Text>
-              <Label tone={paid ? "accent" : "neutral"}>{plan}</Label>
+              <TrialLabel trial={user.trial} details
+                fallback={<Label tone={paid ? "accent" : "neutral"}>{plan}</Label>} />
             </Inline>
             {paid && user.trial?.status !== "active" ? (
               <Button variant="secondary" loading={portalBusy} onClick={manage}>
@@ -116,7 +117,6 @@ function AccountSettings({ user }) {
             )}
           </div>
         </div>
-        <TrialStatus trial={user.trial} />
         {user.trial?.status === "expired" && !paid && <Text size="sm" tone="secondary">Provperioden är slut. Du använder Gratis och dina följda bolag finns kvar.</Text>}
         {portalError && (
           <Text size="sm" role="alert">

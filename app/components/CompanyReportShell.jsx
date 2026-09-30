@@ -121,8 +121,10 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
     const update = () => {
       frame = 0;
       if (window.location.pathname !== pathname || document.querySelector('[role="dialog"]')) return;
-      const offset = parseFloat(getComputedStyle(main.current).getPropertyValue("--report-offset")) + 16;
       const sections = [...main.current.querySelectorAll("[data-report-section]")];
+      if (!sections.length) return;
+      // Read the resolved CSS length: the offset includes the actual shell height.
+      const offset = parseFloat(getComputedStyle(sections[0]).scrollMarginTop) + 16;
       const current = sections.filter((section) => section.getBoundingClientRect().top <= offset).at(-1) ?? sections[0];
       if (current) setActive(current.id);
     };

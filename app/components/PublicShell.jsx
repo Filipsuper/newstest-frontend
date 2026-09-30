@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FiArrowUpRight,
   FiBookOpen,
@@ -22,6 +22,7 @@ import LogInModal from "../modals/logInModal";
 import { BRAND_LABEL, BRAND_NAME, BRAND_VERSION } from "../utils/brand";
 import { PRIMARY_NAVIGATION, isPrimaryNavigationActive } from "../utils/navigation";
 import { Label } from "./ui/Label";
+import { ActiveTrialBadge } from "./ActiveTrial";
 import ui from "./ui/ui.module.css";
 import styles from "./public-shell.module.css";
 
@@ -30,17 +31,26 @@ const links = PRIMARY_NAVIGATION.map((link) => ({ ...link, icon: icons[link.href
 
 export default function PublicShell({ children }) {
   const pathname = usePathname();
-  const { user, isGuestUser } = useAuthContext();
+  const { user, isGuestUser, accountError } = useAuthContext();
   const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [login, setLogin] = useState(null);
+  const shell = useRef(null), header = useRef(null);
   const focused = ["/kom-igang", "/bekrafta"].includes(pathname);
+  useEffect(() => {
+    const element = header.current;
+    const update = () => shell.current?.style.setProperty("--ui-header-height", `${Math.ceil(element.getBoundingClientRect().height)}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header.current);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className={cx(ui.scope, styles.shell, focused && styles.focused)}>
+    <div ref={shell} className={cx(ui.scope, styles.shell, focused && styles.focused)}>
       <a href="#site-main" className={styles.skip}>
         Hoppa till innehållet
       </a>
-      <header className={styles.header}>
+      <header ref={header} className={styles.header}>
         <Container className={styles.bar}>
           <Link
             href="/"
@@ -76,6 +86,9 @@ export default function PublicShell({ children }) {
             >
               <FiSearch aria-hidden="true" />
             </IconButton>
+          </div>}
+          {!focused && user?.email && !accountError && <div className={styles.trialInfo}>
+            <ActiveTrialBadge trial={user.trial} className={styles.trialBadge} />
           </div>}
           <div className={styles.account}>
             {focused ? <IconButton label="Växla färgtema"

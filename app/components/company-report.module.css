@@ -1,5 +1,5 @@
 .report {
-  --report-offset: 104px;
+  --report-offset: calc(var(--ui-header-height, 80px) + var(--ui-space-6));
   --company-surface: var(--ui-surface);
   --company-surface-soft: var(--ui-inset);
   --company-panel: var(--ui-surface);
@@ -160,17 +160,17 @@
   .driver { display: none; } /* The same event remains in the news section. */
 }
 @media (max-width: 900px) {
-  .report { --report-offset: 164px; display: block; padding-top: 0; }
+  .report { --report-offset: calc(var(--ui-header-height, 80px) + 84px); display: block; padding-top: 0; }
   .sidebar { display: none; }
-  .mobileBar { position: sticky; top: 80px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); background: var(--ui-canvas); padding-block: var(--ui-space-3); margin-bottom: var(--ui-space-6); }
+  .mobileBar { position: sticky; top: var(--ui-header-height, 80px); z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); background: var(--ui-canvas); padding-block: var(--ui-space-3); margin-bottom: var(--ui-space-6); }
   .contentsTrigger { flex-shrink: 0; }
   .context { gap: var(--ui-space-1); }
   .contextQuote { font-size: var(--ui-text-xs); }
   .section { margin-bottom: var(--ui-space-12); }
 }
 @media (max-width: 860px) {
-  .report { --report-offset: 144px; }
-  .mobileBar { top: 64px; }
+  .report { --report-offset: calc(var(--ui-header-height, 64px) + 80px); }
+  .mobileBar { top: var(--ui-header-height, 64px); }
 }
 @media (max-width: 700px) {
   .quote > strong { font-size: var(--ui-text-xl); }

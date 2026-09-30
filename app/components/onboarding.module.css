@@ -120,6 +120,17 @@
 .summary { margin: 0; display: grid; gap: var(--ui-space-4); }
 .summary > div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--ui-space-3); }
 .summary dd { margin: 0; overflow-wrap: anywhere; }
+.companyName { font-weight: 600; overflow-wrap: anywhere; }
+.exploreCompany { padding: var(--ui-space-4); }
+.exploreCompany > div { min-width: 0; }
+.exploreCompany a { min-height: var(--ui-control-md); }
+.nextStep { position: relative; padding: var(--ui-space-4); }
+.nextStep > div { min-width: 0; }
+.nextLink { color: var(--ui-text); text-decoration: none; }
+.nextLink::after { content: ""; position: absolute; inset: 0; border-radius: var(--ui-radius-md); }
+.nextLink:focus-visible { outline: none; }
+.nextLink:focus-visible::after { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.nextStep svg { color: var(--ui-text-secondary); }
 .mailIcon {
   color: var(--ui-text-secondary);
   width: var(--ui-space-8);
@@ -137,4 +148,6 @@
     width: 100%;
   }
   .summary > div { grid-template-columns: 1fr; gap: var(--ui-space-1); }
+  .exploreCompany { flex-wrap: wrap; }
+  .exploreCompany > div:first-child { flex-basis: 10rem; }
 }

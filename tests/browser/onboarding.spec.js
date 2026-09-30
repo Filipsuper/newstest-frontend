@@ -182,6 +182,7 @@ async function setup(page, options = {}) {
             })),
       });
     }
+    if (path === "/api/feed/companies" && state.companies !== undefined) return json(state.companies);
     if (path.startsWith("/api/"))
       return route.fulfill({
         response: await route.fetch({
@@ -585,16 +586,126 @@ for (const width of [1440, 390, 320]) test(`no-card trial ${width}: optional, re
   const action = await page.getByRole("button", { name: "Fortsätt utan bolagsmejl", exact: true }).boundingBox();
   const trialStatus = await main(page).getByRole("status").filter({ hasText: "Plus · Provperiod" }).boundingBox();
   expect(trialStatus.y).toBeGreaterThan(action.y + action.height);
+  await expect(main(page).getByRole("status").filter({ hasText: "Plus · Provperiod" })).not.toContainText("automatisk betalning");
   expect(state.trialWrites).toEqual([{ tier: "plus" }]);
   expect(state.letterWrites).toEqual([]); expect(state.alertWrites).toEqual([]); expect(state.writes).toEqual([]);
+  await page.getByRole("button", { name: "Fortsätt utan bolagsmejl", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Din bevakning är klar" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toContainText("Din Plus-provperiod är igång");
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toContainText("7 dagar kvar");
+  await expect(page.getByRole("region", { name: "Din provperiod" })).not.toContainText("Provperiod till");
+  await expect(page.getByRole("region", { name: "Din provperiod" })).not.toContainText("automatisk betalning");
+  await expect(page.getByRole("region", { name: "Din provperiod" }).getByRole("link", { name: "Se min plan" })).toHaveAttribute("href", "/settings#plan");
+  await expect(page.getByRole("link", { name: "Utforska Norden Industri", exact: true })).toHaveAttribute("href", "/aktie/NORD.TEST");
+  await expect(page.getByRole("link", { name: "Hitta fler bolag", exact: true })).toHaveAttribute("href", "/aktier/screener");
+  await expect(page.getByRole("link", { name: "Öppna Terminal", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Plus-provperiod/ })).toHaveCount(0); // The setup header stays quiet.
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(async value => {
+      document.documentElement.classList.toggle("dark", value === "dark");
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await Promise.all(document.getAnimations().filter(animation => Number.isFinite(animation.effect?.getComputedTiming().iterations))
+        .map(animation => animation.finished.catch(() => {})));
+    }, theme);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect((await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath(`completion-trial-${width}-${theme}.png`), fullPage: true });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await page.screenshot({ path: testInfo.outputPath(`completion-top-${width}-${theme}.png`) });
+  }
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toContainText("Din Plus-provperiod är igång");
+  expect(state.trialWrites).toHaveLength(1);
   await page.goto("/settings");
-  await expect(main(page)).toContainText("Därefter Gratis – inget dras");
+  const planSection = main(page).locator("#plan");
+  await expect(planSection.locator("[data-trial-label]")).toHaveCount(1);
+  await expect(planSection.locator("[data-trial-label]")).toHaveText("Plus · Provperiod · 7 d kvar");
+  await expect(planSection).not.toContainText("Provperiod till");
+  await expect(planSection).not.toContainText("gratisversionen");
+  const labelDetails = planSection.getByRole("button", { name: /^Plus-provperiod.*Visa villkor$/ });
+  await labelDetails.focus();
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toContainText("När provperioden är slut fortsätter du med gratisversionen. Ingen automatisk betalning.");
+  await expect(tooltip).toContainText(`Provperiod till ${new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm" }).format(state.user.trial.endsAt)}.`);
+  expect((await new AxeBuilder({ page }).include("main").include('[role="tooltip"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(tooltip).toHaveCount(0);
+  await labelDetails.click(); // Details work by tap/click too, not only hover.
+  await expect(tooltip).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tooltip).toHaveCount(0);
+  expect(state.trialWrites).toHaveLength(1);
+  expect(state.alertWrites).toEqual([]); expect(state.letterWrites).toEqual([]);
+  const labelGeometry = label => label.evaluate(element => {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(["fontSize", "lineHeight", "borderRadius", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"]
+      .map(key => [key, style[key]]));
+  });
+  const standardLabel = page.locator('header a[aria-label$="startsida"] > span').last();
+  expect(await labelGeometry(page.locator("header [data-trial-label]"))).toEqual(await labelGeometry(standardLabel));
+  expect(await labelGeometry(planSection.locator("[data-trial-label]"))).toEqual(await labelGeometry(standardLabel));
+  expect((await labelDetails.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  expect((await page.getByRole("link", { name: /^Plus-provperiod/ }).boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole("link", { name: /^Plus-provperiod/ })).toHaveAttribute("href", "/settings#plan");
+  await page.getByRole("link", { name: /^Plus-provperiod/ }).click();
+  await expect(page).toHaveURL(/\/settings#plan$/);
+  await expect(main(page).locator("#plan")).toBeInViewport();
+  await expect.poll(async () => {
+    const header = await page.locator("header").first().boundingBox(), plan = await page.locator("#plan").boundingBox();
+    return plan.y >= header.y + header.height;
+  }).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).include("header").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath(`trial-header-${width}.png`), fullPage: true });
   await expect(main(page).getByRole("button", { name: /Hantera prenumeration/ })).toHaveCount(0);
   await page.goto("/pro");
+  await expect(main(page).locator("[data-trial-label]")).toHaveText("Plus · Provperiod · 7 d kvar");
   await expect(main(page).getByRole("button", { name: "Välj Plus", exact: true })).toBeEnabled();
   await expect(main(page).getByRole("button", { name: "Välj Pro", exact: true })).toBeEnabled();
   await page.goto("/pro/klart");
   await expect(main(page).getByRole("heading", { name: "Din plan är redo" })).toHaveCount(0);
+});
+
+for (const width of [320, 1440]) test(`trial badge ${width}: sticky company contents stay below the expanded header`, async ({ page }) => {
+  await setup(page, { confirmed: true, user: { plan: "plus", watchlist: ["NORD.TEST"],
+    trial: { status: "active", plan: "plus", endsAt: Date.now() + 604800000 } } });
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto("/aktie/NORD.TEST#profile");
+  await expect(page.getByRole("link", { name: /^Plus-provperiod/ })).toBeVisible();
+  await expect(page.locator("#profile")).toBeVisible();
+  await expect.poll(async () => {
+    const header = await page.locator("header").first().boundingBox(), section = await page.locator("#profile").boundingBox();
+    return section.y >= header.y + header.height;
+  }).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const contents = width === 320 ? page.getByRole("button", { name: "Avsnitt", exact: true })
+    : page.getByRole("navigation", { name: "Bolagsavsnitt", exact: true });
+  await expect(contents).toBeVisible();
+  const header = await page.locator("header").first().boundingBox(), contentsBox = await contents.boundingBox();
+  expect(contentsBox.y).toBeGreaterThanOrEqual(header.y + header.height);
+  if (width === 320) expect((await page.locator("#profile-heading").boundingBox()).y).toBeGreaterThanOrEqual(contentsBox.y + contentsBox.height);
+  if (width === 320) {
+    await contents.click();
+    await page.getByRole("dialog").getByRole("link", { name: "Nyheter & reaktioner", exact: true }).click();
+  } else await contents.getByRole("link", { name: "Nyheter & reaktioner", exact: true }).click();
+  await expect(page.locator("#news-heading")).toBeFocused();
+  await expect.poll(async () => {
+    const header = await page.locator("header").first().boundingBox(), heading = await page.locator("#news-heading").boundingBox();
+    return heading.y >= header.y + header.height;
+  }).toBe(true);
+  if (width === 320) {
+    await page.goto("/marknaden/bevakning/hantera");
+    const tabs = page.getByRole("tablist", { name: "Anpassa bevakning", exact: true });
+    await expect(tabs).toBeVisible();
+    await page.evaluate(() => window.scrollTo({ top: 400, behavior: "instant" }));
+    await expect.poll(async () => {
+      const header = await page.locator("header").first().boundingBox(), tabBox = await tabs.boundingBox();
+      return tabBox.y >= header.y + header.height;
+    }).toBe(true);
+    await tabs.getByRole("tab", { name: /^Nyckelord/ }).click();
+    await expect(main(page).getByRole("textbox", { name: /nyckelord/i }).first()).toBeVisible();
+  }
 });
 
 test("declining the offer completes onboarding without a trial or consent write", async ({ page }) => {
@@ -604,6 +715,10 @@ test("declining the offer completes onboarding without a trial or consent write"
   await page.getByRole("button", { name: "Fortsätt till mejl" }).click();
   await page.getByRole("button", { name: "Fortsätt gratis", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Din bevakning är klar" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Utforska Norden Industri", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Utforska börsens bolag", exact: true })).toHaveAttribute("href", "/aktier");
+  await expect(page.getByRole("link", { name: "Hitta fler bolag", exact: true })).toHaveCount(0);
   expect(state.trialWrites).toEqual([]); expect(state.user.plan).toBe("free");
   expect(state.letterWrites).toEqual([]); expect(state.alertWrites).toEqual([]);
 });
@@ -652,10 +767,59 @@ test("skip choices never subscribes or follows; unavailable letters can be skipp
   await expect(page.getByRole("heading", { name: "Du är igång" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Till Marknaden", exact: true })).toHaveAttribute("href", "/marknaden");
   await expect(page.getByRole("link", { name: "Se nyheterna för mina bolag", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Dina bolag att utforska" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toHaveCount(0);
   expect(await main(page).locator("p").allTextContents()).not.toContain("0");
   expect(state.writes).toEqual([]);
   expect(state.letterWrites).toEqual([]);
   expect(state.alertWrites).toEqual([]);
+});
+
+test("Pro completion bounds long lists, handles missing directory names and keeps paid tools separate from trial status", async ({ page }, testInfo) => {
+  const state = await setup(page, { confirmed: true, empty: true, user: { plan: "premium",
+    watchlist: ["SAAB-B", "EGET", "UNKNOWN.TEST", "NORD.TEST", "SKAR.TEST"],
+    trial: { status: "active", plan: "pro", endsAt: Date.now() + 2 * 86400000 } },
+    companies: [{ symbol: "SAAB-B", nativeSymbol: "SAAB B", name: "Saab B" },
+      { symbol: "EGET", nativeSymbol: "EGET", name: "Egetis Therapeutics med ett väldigt långt testnamn" }] });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.addInitScript(() => sessionStorage.setItem("omxsum:onboarding-step:account:reader@example.test", "4"));
+  await page.goto("/kom-igang");
+  const companies = page.getByRole("list", { name: "Dina bolag att utforska" });
+  await expect(companies.getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByRole("link", { name: "Utforska Saab B", exact: true })).toHaveAttribute("href", "/aktie/SAAB-B");
+  await expect(page.getByRole("link", { name: "Utforska UNKNOWN.TEST", exact: true })).toHaveAttribute("href", "/aktie/UNKNOWN.TEST");
+  await expect(page.getByRole("link", { name: "Visa alla 5 bolag", exact: true })).toHaveAttribute("href", "/marknaden/bevakning/hantera");
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toContainText("Din Pro-provperiod är igång");
+  await expect(page.getByRole("link", { name: "Öppna Terminal", exact: true })).toHaveAttribute("href", "/terminal");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("completion-pro-long-mobile.png"), fullPage: true });
+  state.user.trial = { ...state.user.trial, status: "converted" };
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Öppna Terminal", exact: true })).toBeVisible();
+  await page.goto("/settings");
+  await expect(page.getByRole("link", { name: /^Pro-provperiod/ })).toHaveCount(0);
+  await expect(main(page).locator("#plan [data-trial-label]")).toHaveCount(0);
+  await expect(main(page).locator("#plan")).toContainText("Pro");
+  expect(state.trialWrites).toEqual([]); expect(state.writes).toEqual([]);
+  expect(state.alertWrites).toEqual([]); expect(state.letterWrites).toEqual([]);
+});
+
+test("expired trial completion does not claim access or offer paid-tool shortcuts", async ({ page }) => {
+  await setup(page, { confirmed: true, user: { watchlist: ["NORD.TEST"],
+    trial: { status: "expired", plan: "pro", endsAt: Date.now() - 1000 } } });
+  await page.addInitScript(() => sessionStorage.setItem("omxsum:onboarding-step:account:reader@example.test", "4"));
+  await page.goto("/kom-igang");
+  await expect(page.getByRole("heading", { name: "Din bevakning är klar" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Din provperiod" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Öppna Terminal", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Hitta fler bolag", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Utforska Norden Industri", exact: true })).toBeVisible();
+  await page.goto("/settings");
+  await expect(page.getByRole("link", { name: /^Pro-provperiod/ })).toHaveCount(0);
+  await expect(main(page).locator("#plan [data-trial-label]")).toHaveCount(0);
+  await expect(main(page).locator("#plan")).toContainText("Gratis");
 });
 
 test("minimal email step preserves existing company exceptions and quiet hours", async ({ page }) => {

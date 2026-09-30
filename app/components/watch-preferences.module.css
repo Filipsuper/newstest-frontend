@@ -55,7 +55,7 @@
 }
 
 .pageEditor .tabs {
-  top: calc(var(--ui-space-16) + var(--ui-space-4));
+  top: var(--ui-header-height, 80px);
 }
 
 .tabs .tab {
@@ -154,7 +154,7 @@
 
 @media (max-width: 860px) {
   .pageEditor .tabs {
-    top: var(--ui-space-16);
+    top: var(--ui-header-height, 64px);
   }
 }
 

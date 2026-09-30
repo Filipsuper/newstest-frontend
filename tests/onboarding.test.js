@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { onboardingEmailSummary, onboardingHref, onboardingPreview, restoredOnboardingStep, safeOnboardingReturn } from "../app/utils/onboarding.js";
+import { onboardingCompanies, onboardingEmailSummary, onboardingHref, onboardingPreview, restoredOnboardingStep, safeOnboardingReturn } from "../app/utils/onboarding.js";
 import { requestNewsletterPreferences } from "../app/utils/newsletterPreferences.js";
 
 test("company intent is bounded and encoded; external redirects are rejected", () => {
@@ -49,4 +49,17 @@ test("completion distinguishes unknown, saved, paused and actually active compan
   assert.equal(onboardingEmailSummary({ ...resource, delivery: { status: "service_paused", available: false } }), "Mejlval sparade · inga mejl skickas ännu");
   assert.equal(onboardingEmailSummary({ ...resource, delivery: { status: "resume_required", available: true } }), "Pausade");
   assert.equal(onboardingEmailSummary({ ...resource, entitlement: { eligible: false } }), "Pausade · Plus eller Pro krävs");
+});
+
+test("completion shortcuts are bounded actual follows, with encoded routes and identity-only fallback", () => {
+  const directory = [{ symbol: "SAAB-B", name: "Saab B", nativeSymbol: "SAAB B" },
+    { symbol: "EGET", name: "Egetis Therapeutics", nativeSymbol: "EGET" }];
+  const result = onboardingCompanies(["SAAB-B", "EGET", "SAAB-B", "X/Y", "OTHER", null, ""], directory);
+  assert.deepEqual(result, [
+    { symbol: "SAAB-B", name: "Saab B", ticker: "SAAB B", href: "/aktie/SAAB-B" },
+    { symbol: "EGET", name: "Egetis Therapeutics", ticker: "EGET", href: "/aktie/EGET" },
+    { symbol: "X/Y", name: "X/Y", ticker: "X/Y", href: "/aktie/X%2FY" },
+  ]);
+  assert.deepEqual(onboardingCompanies(undefined, directory), []);
+  assert.deepEqual(onboardingCompanies(["MISSING"], []), [{ symbol: "MISSING", name: "MISSING", ticker: "MISSING", href: "/aktie/MISSING" }]);
 });

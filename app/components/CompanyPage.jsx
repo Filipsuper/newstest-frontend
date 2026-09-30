@@ -1087,7 +1087,8 @@ function FinancialsTab({ symbol, financials, estimates }) {
         const align = () => {
             frame = 0;
             const table = thead.parentElement;
-            const offset = parseFloat(getComputedStyle(table).getPropertyValue("--report-offset")) || 0;
+            const section = table.closest("[data-report-section]");
+            const offset = section ? parseFloat(getComputedStyle(section).scrollMarginTop) || 0 : 0;
             const shift = Math.min(Math.max(offset - table.getBoundingClientRect().top, 0), table.clientHeight - thead.clientHeight);
             thead.style.transform = shift > 0 ? `translateY(${shift}px)` : "";
         };

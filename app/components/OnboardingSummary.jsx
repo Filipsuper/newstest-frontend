@@ -8,7 +8,6 @@ import { requestNewsletterPreferences } from "../utils/newsletterPreferences";
 import { onboardingEmailSummary } from "../utils/onboarding";
 import { TOPIC_LABELS } from "../utils/topicLabels";
 import { Stack, Surface, Text } from "./ui/layout";
-import { TrialStatus } from "./MembershipTrial";
 import styles from "./onboarding.module.css";
 
 export default function OnboardingSummary({ user }) {
@@ -39,6 +38,5 @@ export default function OnboardingSummary({ user }) {
         {companyAlertsEnabled() && <div><Text as="dt" size="sm" tone="secondary">Bolagsmejl</Text><Text as="dd" size="sm">{alerts.loading ? "Hämtar mejlstatus…" : onboardingEmailSummary(alerts.error ? null : alerts.resource)}</Text></div>}
       </dl>
     </Surface>
-    <TrialStatus trial={user.trial} />
   </Stack>;
 }

@@ -108,6 +108,18 @@ Implementation and release checks: [account onboarding](docs/account-onboarding-
 and [cardless trials](docs/cardless-trials-2026-09-29.md).
 Live release evidence: [30 September deployment](docs/onboarding-release-2026-09-30.md).
 
+### Onboarding completion and trial visibility — approved release (30 September)
+
+- [x] Calm completion with active-trial access, time remaining and next steps.
+- [x] Shortcuts to actual followed companies and plan-appropriate discovery.
+- [x] One shared trial label in Settings and the public header; exact expiry and
+  terms available through an accessible tooltip, not duplicate paragraphs.
+- [x] Mobile sticky navigation and anchors respect the measured header height.
+- [x] 306 unit tests and seven focused browser checks passed locally.
+- [ ] Production build and cutover verification.
+
+Implementation: [completion and trial visibility](docs/onboarding-completion-2026-09-30.md).
+
 ### Company briefing beside the price chart
 
 - [x] Local approved Nanexa prototype: one title and one description, sources

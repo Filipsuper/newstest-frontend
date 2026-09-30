@@ -128,7 +128,9 @@ desktop density or abbreviated interaction model.
 - Prices remain 0 / 49 / 99 SEK monthly. Eligible verified Free accounts can
   explicitly try Plus or Pro once for seven days, without a card or automatic
   billing. The native trial ends at Gratis; Stripe is used only for an explicit
-  paid subscription. Keep the end date and free continuation visible. Existing
+  paid subscription. Make the end date and free continuation available from
+  Settings' trial label through hover, keyboard focus or tap;
+  the completion screen only needs plan, time remaining and a plan link. Existing
   billing relationships are not eligible. Newsletter consent is unchanged.
   Backend Terminal checks and follow limits are authoritative;
   frontend pricing, gateway, onboarding and preference counts mirror them.
@@ -574,10 +576,10 @@ desktop density or abbreviated interaction model.
   shared Plus/Pro surfaces, not during company selection. Unlock the email
   editor in place after activation. Put `Fortsätt gratis` before the plan cards.
   Remove duplicate benefit kickers; retain prices and the no-card/no-auto-payment
-  terms. A trial is not newsletter or company-email consent, and does not expand
-  the private email pilot. Settings shows the exact Stockholm end date and that
-  nothing will be charged. Paid checkout during a trial explicitly starts a
-  paid subscription immediately.
+  terms. A trial is not newsletter or
+  company-email consent, and does not expand the private email pilot. Settings
+  exposes the exact Stockholm end date and no-auto-payment terms on demand. Paid
+  checkout during a trial explicitly starts a paid subscription immediately.
 - Login/account creation must not subscribe, resubscribe or verify newsletter
   delivery. New accounts start with no letters. Returning logins retain their
   intended destination; first verification offers setup. Company intent survives
@@ -602,8 +604,9 @@ desktop density or abbreviated interaction model.
   and the importance slider with short labels and concise inline explanations.
   Company exceptions, matching examples and quiet hours remain in settings;
   existing exceptions survive unchanged, with a settings handoff if they block
-  activation. Trial end/free-continuation information is a quiet line after the
-  primary action, not a block between the heading and the choices. Do not repeat
+  activation. Active-trial status is a quiet plan/time-remaining label after the
+  primary action, not a block between the heading and the choices. Full terms
+  stay in the trial offer and Settings. Do not repeat
   a dirty-draft paragraph when the Save and Continue action already names saving.
   Onboarding uses one Save and Continue action,
   advancing only after a successful revision-checked write; unchanged Continue
@@ -615,14 +618,39 @@ desktop density or abbreviated interaction model.
   coverage, including candidate caps. AI copy belongs to important stories.
   Incomplete coverage cannot support an empty-period claim. Errors are retryable
   and distinct from no matches. Personalized letter additions require Plus/Pro.
-  Show actual saved companies, authoritative letter selections and company-email
-  delivery status before the primary news handoff. Unknown is not Off; a paused
+  Finish with a calm next-steps screen, not only a settings receipt. Put the
+  active Plus/Pro trial and remaining time above the primary personal-news
+  handoff, with a link to the plan in Settings. Do not repeat end-date, free
+  continuation or payment terms here. In Settings, replace the ordinary plan
+  label with one shared accent Label: "Plus · Provperiod · 7 d kvar" (actual
+  remaining time; under one day stays qualified). Do not add a duplicate trial
+  block or end-date paragraph. On Settings and the plan page, expose the exact
+  end date and "När provperioden är slut fortsätter du med gratisversionen.
+  Ingen automatisk betalning." in the shared touchable Tooltip, with an explicit
+  keyboard-accessible trigger. Never silently start or extend a trial.
+  Show at most three actual followed-company
+  shortcuts (name/ticker and a direct stock-page action), never example follows
+  or invented quotes. Missing directory names fall back to saved symbols.
+  Offer a few plan-appropriate actions: the letter and company discovery for
+  Free, Screener for Plus/Pro, Terminal for Pro only. Saved companies, authoritative
+  letter selections and company-email delivery status remain in a secondary
+  saved-choice summary. Unknown is not Off; a paused
   delivery remains paused even when preferences are enabled. Offer Edit my choices
   without resetting any saved selections, trial eligibility or consents.
   Without companies, topics or keywords, finish with "Du är igång" and a
   "Till Marknaden" handoff, not a claim that personalized news is ready.
   Show selected topics in the saved summary. Unchanged off email/letter choices
   use explicit Continue without wording and make no write.
+- Outside the focused setup routes, an active trial has a compact, amber-tinted
+  header link to Settings' plan section. Its visible child is the exact shared
+  Label (12px type, standard padding and 8px radius), not a pill-shaped Button.
+  Keep the surrounding transparent link/tooltip trigger at least 44px high
+  without inflating the visible label. Do not label unused, expired, converted
+  or malformed trials as active. The countdown is presentation, not authorization;
+  backend entitlement remains authoritative. On mobile keep the badge on its own
+  row rather than squeezing search/account controls. Measure the shell's header
+  height for sticky report navigation, watch-editor tabs and anchor offsets so
+  the extra row cannot cover content. Keep the setup header quiet.
 - Save explicit follow/unfollow state, not a toggle that can reverse on retry.
   Show pending/error/saved feedback and respect server-enforced plan limits.
 - Confirmation, account session, delivery and news-loading states are separate.

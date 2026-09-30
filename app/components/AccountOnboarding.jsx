@@ -11,7 +11,7 @@ import { onboardingHref, restoredOnboardingStep, safeOnboardingReturn } from "..
 import LogInModal from "../modals/logInModal";
 import NewsletterPreferences from "./NewsletterPreferences";
 import OnboardingLetterPreview from "./OnboardingLetterPreview";
-import OnboardingSummary from "./OnboardingSummary";
+import OnboardingComplete from "./OnboardingComplete";
 import PersonalizationSetup from "./PersonalizationSetup";
 import OnboardingTopics from "./OnboardingTopics";
 import PersonalPreview from "./PersonalPreview";
@@ -76,6 +76,7 @@ function Setup({ user, confirmedLetter = false, company, returnTo }) {
       <Heading as="h1" size="page" tabIndex={-1} ref={heading}>{titles[step]}</Heading>
       {step === 1 && <Text size="sm" tone="secondary">Börsnyheter och sammanhang varje vardag. Morgonbrevet är gratis.</Text>}
       {step === 2 && <Text size="sm" tone="secondary">Börja med ett bolag. Du kan lägga till fler och ändra dina val senare.</Text>}
+      {step === 4 && <Text size="sm" tone="secondary">{hasPreferences ? "Följ nyheterna som berör dig och utforska dina bolag." : "Börja med börsdagen. Lägg till dina bolag när du vill."}</Text>}
     </Stack>
     {step === 1 && <Stack gap={6}>
       <OnboardingLetterPreview />
@@ -93,20 +94,7 @@ function Setup({ user, confirmedLetter = false, company, returnTo }) {
     </Stack>}
     {step === 3 && <EmailStep user={user} onDraftStateChange={setDraft} onTrialBusyChange={setTrialBusy} trialBusy={trialBusy}
       onNext={() => setStep(4)} />}
-    {step === 4 && <Stack gap={6}>
-      <OnboardingSummary user={user} />
-      <Inline gap={3}>
-        <Button nativeButton={false} role="link" render={<Link href={hasPreferences ? "/marknaden/bevakning" : "/marknaden"} />}>{hasPreferences ? hasCompanies ? "Se nyheterna för mina bolag" : "Se mina nyheter" : "Till Marknaden"}</Button>
-        <Button variant="ghost" onClick={() => setStep(1)}>Ändra mina val</Button>
-      </Inline>
-      {hasPreferences && <PersonalPreview />}
-      <Inline gap={4}>
-        <Link href="/marknaden/bevakning/hantera" className={styles.link}>Lägg till ämnen och nyckelord</Link>
-        <Link href="/settings#letters" className={styles.link}>Brev och inställningar</Link>
-        <Link href="/morgonbrevet" className={styles.link}>Läs Morgonbrevet</Link>
-        {returnTo !== "/marknaden/bevakning" && <Link href={returnTo} className={styles.link}>Tillbaka där du började</Link>}
-      </Inline>
-    </Stack>}
+    {step === 4 && <OnboardingComplete user={user} onEdit={() => setStep(1)} returnTo={returnTo} />}
     {step > 1 && step < 4 && <Inline><Button variant="ghost" disabled={blocked} onClick={() => setStep(step - 1)}>Tillbaka</Button></Inline>}
   </Stack>;
 }

@@ -51,3 +51,15 @@ export function onboardingEmailSummary(resource) {
   if (!resource.delivery.available || resource.delivery.status !== "active") return "Mejlval sparade · inga mejl skickas ännu";
   return "På";
 }
+
+// Preserve saved order and use the ticker when the company directory is unavailable.
+// No additional quote/profile request is needed for each completion shortcut.
+export function onboardingCompanies(symbols, companies = [], limit = 3) {
+  const directory = new Map(companies.map(company => [company.symbol, company]));
+  return [...new Set((Array.isArray(symbols) ? symbols : []).filter(symbol => typeof symbol === "string" && symbol.trim()))]
+    .slice(0, limit).map(symbol => {
+      const company = directory.get(symbol);
+      return { symbol, name: company?.name || symbol, ticker: company?.nativeSymbol || symbol,
+        href: `/aktie/${encodeURIComponent(symbol)}` };
+    });
+}
