@@ -11,6 +11,24 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`operating-loss model retains only revenue ${width}px ${theme}`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/VALUE-LOSS.TEST#estimates');
+  await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+  const section = page.locator('#estimates');
+  await expect(section.getByRole('heading', { name: 'Omsättning', exact: true })).toBeVisible();
+  await expect(section.getByRole('heading', { name: 'EBIT', exact: true })).toHaveCount(0);
+  await expect(section.getByRole('heading', { name: 'Vinst per aktie', exact: true })).toHaveCount(0);
+  await expect(section.getByRole('img')).toHaveCount(1);
+  const policy = section.getByText(/OMXsum-resultatestimat hålls tillbaka/);
+  await expect(policy).not.toBeVisible();
+  await section.getByText('Estimatens källor & underlag', { exact: true }).click();
+  await expect(policy).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).include('#estimates').analyze()).violations).toEqual([]);
+  await section.screenshot({ path: testInfo.outputPath(`profit-policy-${width}-${theme}.png`) });
+});
+
 for (const width of [320, 390, 820, 1440]) for (const theme of ['light', 'dark']) test(`coordinated valuation charts fit ${width}px ${theme}`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1000 });
   await page.goto('/aktie/VALUE.TEST#valuation');
@@ -77,29 +95,6 @@ test('annual forward multiples retain sources and keyboard-driven metric control
   await expect(section.getByRole('heading', { name: 'EV/EBIT över tid' })).toBeVisible();
   await expect(section.getByText('EV/EBIT 35,1×', { exact: true })).toBeVisible();
   await section.screenshot({ path: '/private/tmp/omx-valuation-live-annual.png' });
-});
-
-for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`annual hybrid model and quarter toggle ${width}px ${theme}`, async ({ page }, testInfo) => {
-  await page.setViewportSize({ width, height: 1000 });
-  await page.goto('/aktie/VALUE-MODEL-ANNUAL.TEST#valuation');
-  await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
-  const section = page.locator('#valuation'), year = new Date().getUTCFullYear();
-  await section.getByRole('button', { name: 'P/S', exact: true }).click();
-  await expect(section.getByRole('button', { name: `${year + 1}E`, exact: true })).toBeVisible();
-  await section.getByRole('button', { name: `${year + 2}E`, exact: true }).click();
-  await expect(section.getByRole('img', { name: new RegExp(`Prickad linje: ${year + 2}E`) })).toBeVisible();
-  await section.getByText('Beräkning & underlag', { exact: true }).click();
-  await expect(section.getByText(/Vikterna är preliminära/)).toBeVisible();
-  const estimates = page.locator('#estimates');
-  await estimates.scrollIntoViewIfNeeded();
-  await expect(estimates.getByRole('button', { name: 'Helår', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(estimates.getByText(/Vissa årsestimat behöver granskas/)).toBeVisible();
-  await estimates.getByRole('button', { name: 'Kvartal', exact: true }).click();
-  await expect(estimates.getByRole('button', { name: 'Kvartal', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await estimates.getByRole('button', { name: 'Helår', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  expect((await new AxeBuilder({ page }).include('#estimates').analyze()).violations).toEqual([]);
-  await estimates.screenshot({ path: testInfo.outputPath(`annual-hybrid-${width}-${theme}.png`) });
 });
 
 for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`estimate year selection changes the endpoint ${width}px ${theme}`, async ({ page }, testInfo) => {

@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from 'react';
 import { Bar, Cell, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { estimateViews, researchNumber, researchMoney, researchDate } from '../utils/companyResearchViews';
 import { finite } from '../utils/companyValuation';
+import { modelProfitEligibility } from '../utils/modelProfitEligibility';
 import { safeSourceUrl } from '../utils/newsroom';
 import { EmptyState } from './ui/data';
 import { Button } from './ui/Button';
@@ -49,6 +50,7 @@ export default function CompanyEstimates({ symbol, financials, estimates, availa
   const available = views.filter(view => view.forecasts.length);
   const held = (estimates?.models ?? []).filter(row => row.origin === 'annual_model'
     && Object.values(row.metricStatus ?? {}).includes('needs_review'));
+  const profitWithheld = financials?.symbol === symbol && modelProfitEligibility(financials.quarterly, financials.currency).status === 'withheld_operating_loss';
   if (availability === 'unavailable' || financialAvailability === 'unavailable' || !estimates) return <EmptyState title="Estimatunderlaget kunde inte hämtas" action={<Button variant="secondary" onClick={() => window.location.reload()}>Försök igen</Button>} />;
   if (!available.length) return <EmptyState title={held.length ? 'Årsestimat behöver granskas' : 'Inga jämförbara estimat ännu'} description={held.length ? 'Prognosspåren eller rapportunderlagen skiljer sig. Osäkra mått visas inte som estimat.' : 'Konsensus och kvalificerade OMXsum-estimat visas här när underlag finns för kommande perioder.'} />;
   return <Stack className={styles.root} gap={4}>
@@ -61,6 +63,7 @@ export default function CompanyEstimates({ symbol, financials, estimates, availa
       <summary>Estimatens källor & underlag</summary>
       <Stack gap={4}>
         <Text size="sm">Konsensus prioriteras för varje mått och period. När jämförbart konsensus saknas används ett kvalificerat OMXsum-estimat. Streckade staplar är estimat, inte rapporterade utfall. Kvartal räknas inte om till helår.</Text>
+        {profitWithheld && <Text size="sm">OMXsum-resultatestimat hålls tillbaka vid rörelseförlust över de senaste fyra kvartalen. Kvalificerade omsättningsestimat och analytikerkonsensus visas fortfarande.</Text>}
         <div className={styles.tableWrap} role="region" aria-label="Estimatens underlag" tabIndex={0}><table className={styles.table}>
           <thead><tr><th>Mått</th><th>Period</th><th>Värde</th><th>Källa</th><th>Datum</th></tr></thead>
           <tbody>{available.flatMap(view => view.bars.map(row => <tr key={`${view.metric}-${row.label}`}><th>{view.title}</th><td>{row.label}</td><td>{researchNumber(row.value, 2)} {view.currency}{view.metric === 'eps' ? '/aktie' : ''}</td><td>{row.sourceLabel}{row.publisher && ` · ${row.publisher}`}{safeSourceUrl(row.url) && <a href={safeSourceUrl(row.url)} target="_blank" rel="noreferrer">Öppna källa ↗</a>}</td><td>{researchDate(row.asOf)}</td></tr>))}</tbody>

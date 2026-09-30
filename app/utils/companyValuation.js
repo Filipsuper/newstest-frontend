@@ -1,3 +1,4 @@
+import { modelProfitEligibility, isModelProfitMetric } from './modelProfitEligibility.js';
 // Display adapter only: never generate forecasts or annualise a single quarter.
 export const VALUATION_METRICS = [
   { value: 'pe', label: 'P/E', metric: 'eps', title: 'Vinst per aktie' },
@@ -31,6 +32,7 @@ const actualValue = (row, metric, epsBasis) => metric === 'eps' ? row[epsBasis] 
 export function valuationForecasts({ symbol, financials, estimates, availability, metric, currency, epsBasis = 'dilutedEps', now = Date.now() }) {
   if (availability === 'unavailable' || !estimates || estimates.symbol !== symbol || financials?.symbol !== symbol || !currency) return [];
   const quarterly = valuationActuals(financials, symbol, 'quarterly');
+  const profitEligibility = modelProfitEligibility(quarterly, currency);
   const annual = valuationActuals(financials, symbol, 'annual');
   const latestReport = valuationPeriod(financials.latestReport?.fiscalPeriod);
   const lastQuarter = Math.max(-Infinity, ...quarterly.map(row => row.period.rank), ...annual.map(row => row.period.rank), latestReport?.rank ?? -Infinity);
@@ -56,6 +58,11 @@ export function valuationForecasts({ symbol, financials, estimates, availability
   // Only the public, qualified model contract is eligible. Never use the
   // internal Terminal's manual estimates or old rows without provenance.
   for (const model of estimates.models ?? []) {
+    // Defence against older cached API responses, including the optional EPS
+    // extension. Consensus above and all reported history are unaffected.
+    if (isModelProfitMetric(metric) && (profitEligibility.status !== 'eligible'
+      || (model.profitEligibility && (model.profitEligibility.version !== 1
+        || model.profitEligibility.status !== 'eligible')))) continue;
     const period = valuationPeriod(model.fiscalPeriod);
     const annualModel = model.origin === 'annual_model' && model.publicAnnualModelVersion === 1
       && model.modelVersion === 'annual_hybrid_v1_pilot' && period?.frequency === 'annual'

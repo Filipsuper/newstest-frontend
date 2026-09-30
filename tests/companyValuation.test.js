@@ -214,7 +214,11 @@ test('annual multiple withholds incomplete, zero, stale, unaligned or FX-missing
   assert.equal(forwardMultiple('evEbit', forecast, value.valuation, now).reason, 'capitalization');
 });
 test('missing actuals stay null, not zero; future actuals are excluded', () => {
-  const value = args(); value.financials.quarterly.at(-1).ebit = null;
+  const value = args();
+  // A separate, complete operating-income series qualifies the profit model;
+  // the absent historical EBIT must still be displayed as missing.
+  for (const q of value.financials.quarterly) q.operatingIncome = q.ebit;
+  value.financials.quarterly.at(-1).ebit = null;
   value.financials.quarterly.push({ ...value.financials.quarterly.at(-1), fiscalPeriod: '2026-Q3', estimate: true, ebit: 999e6 });
   const chart = valuationChartData({ ...value, id: 'evEbit' });
   assert.equal(chart.bars.at(-2).value, null); assert.equal(chart.forecasts[0].value, 44e6);
