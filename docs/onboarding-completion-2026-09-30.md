@@ -1,6 +1,6 @@
 # Onboarding completion and trial visibility — 30 September 2026
 
-Local frontend implementation; **not pushed or deployed**. Extends the released
+Frontend implementation **deployed and verified on 30 September at 13:58 CEST**. Extends the released
 account-first flow without changing account creation, billing, trial eligibility,
 newsletter subscriptions or company-email consent/delivery.
 
@@ -73,3 +73,27 @@ newsletter subscriptions or company-email consent/delivery.
 - Deployment must stage the scoped changes on the latest frontend release,
   retaining already deployed valuation features and excluding unrelated local
   valuation/About work. No backend deployment is required for this change.
+
+## Production release
+
+- Source revision: `61de68daf97ce88c47e9d3b13948106a5417b24e`, pushed to
+  `origin/nextjs`. Preserved the already deployed annual-estimates baseline and
+  the concurrently completed model-profit policy; unrelated local work excluded.
+- Final combination: 317 unit tests, seven onboarding/browser checks and eight
+  estimate regression/browser checks passed. ARM64 production image built on
+  the server with production API URL and the existing alerts flag.
+- Verified isolated candidate before replacing frontend only. Public homepage,
+  setup, confirmation, plans, settings, Terminal, market/watch/news, stocks and
+  Nanexa routes returned 200; company/market APIs returned 200; unauthorized
+  Terminal API remained 401; development briefing route remained 404.
+- Live image: `sha256:1b95b6a5f8face36889c30e3152f5622e35fa6869c58fa09d68cd5145b163f21`.
+  Container running with zero restarts; image revision matches the source.
+- Backend, stonks-web, MongoDB and nginx container identities/start times stayed
+  unchanged. nginx configuration was tested and reloaded only. Backend environment
+  and Compose checksums unchanged. No account, email, worker or database writes.
+- Exact prior frontend image retained as rollback. Removed only this release's
+  temporary candidate container; no images, build caches or user data pruned.
+- Server evidence: `/root/omxsum-market/releases/trial-labels-20260930-70db946/`
+  (`candidate.verified`, `live.verified`, source checksum, protected fingerprints,
+  config checksums, build/cutover logs). Directory name reflects the initial UI
+  revision; the actual final source/image revision is `61de68d`.
