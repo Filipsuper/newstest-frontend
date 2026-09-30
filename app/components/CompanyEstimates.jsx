@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Bar, Cell, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { estimateViews, researchNumber, researchMoney, researchDate } from '../utils/companyResearchViews';
 import { finite } from '../utils/companyValuation';
@@ -8,6 +8,7 @@ import { safeSourceUrl } from '../utils/newsroom';
 import { EmptyState } from './ui/data';
 import { Button } from './ui/Button';
 import { Label } from './ui/Label';
+import { SegmentedControl } from './ui/SegmentedControl';
 import { Heading, Inline, Stack, Surface, Text } from './ui/layout';
 import styles from './company-research-panels.module.css';
 import { FiscalPeriodTick } from './ResearchPanelParts';
@@ -40,13 +41,22 @@ function ForecastPanel({ view }) {
 }
 
 export default function CompanyEstimates({ symbol, financials, estimates, availability, financialAvailability }) {
-  const views = useMemo(() => estimateViews({ symbol, financials, estimates, availability }), [symbol, financials, estimates, availability]);
+  const [selectedFrequency, setSelectedFrequency] = useState('annual');
+  const allViews = useMemo(() => estimateViews({ symbol, financials, estimates, availability }), [symbol, financials, estimates, availability]);
+  const frequencies = [...new Set(allViews.flatMap(view => view.frequencies))];
+  const frequency = frequencies.includes(selectedFrequency) ? selectedFrequency : frequencies[0];
+  const views = useMemo(() => estimateViews({ symbol, financials, estimates, availability, frequency }), [symbol, financials, estimates, availability, frequency]);
   const available = views.filter(view => view.forecasts.length);
+  const held = (estimates?.models ?? []).filter(row => row.origin === 'annual_model'
+    && Object.values(row.metricStatus ?? {}).includes('needs_review'));
   if (availability === 'unavailable' || financialAvailability === 'unavailable' || !estimates) return <EmptyState title="Estimatunderlaget kunde inte hämtas" action={<Button variant="secondary" onClick={() => window.location.reload()}>Försök igen</Button>} />;
-  if (!available.length) return <EmptyState title="Inga jämförbara estimat ännu" description="Konsensus och kvalificerade OMXsum-estimat visas här när underlag finns för kommande perioder." />;
+  if (!available.length) return <EmptyState title={held.length ? 'Årsestimat behöver granskas' : 'Inga jämförbara estimat ännu'} description={held.length ? 'Prognosspåren eller rapportunderlagen skiljer sig. Osäkra mått visas inte som estimat.' : 'Konsensus och kvalificerade OMXsum-estimat visas här när underlag finns för kommande perioder.'} />;
   return <Stack className={styles.root} gap={4}>
+    {frequencies.length > 1 && <SegmentedControl label="Estimatperiod" value={frequency} onValueChange={setSelectedFrequency}
+      options={[{ value: 'annual', label: 'Helår' }, { value: 'quarterly', label: 'Kvartal' }].filter(option => frequencies.includes(option.value))} />}
     <div className={`${styles.grid} ${styles.estimateGrid}`}>{available.map(view => <ForecastPanel key={view.metric} view={view} />)}</div>
     {available.length < views.length && <Text size="sm" tone="secondary">Estimat saknas för {views.filter(view => !view.forecasts.length).map(view => view.title.toLowerCase()).join(' och ')}.</Text>}
+    {held.length > 0 && <Text size="sm" tone="secondary">Vissa årsestimat behöver granskas och visas inte. Övriga mått kan fortfarande användas.</Text>}
     <details className={styles.details}>
       <summary>Estimatens källor & underlag</summary>
       <Stack gap={4}>
@@ -56,6 +66,7 @@ export default function CompanyEstimates({ symbol, financials, estimates, availa
           <tbody>{available.flatMap(view => view.bars.map(row => <tr key={`${view.metric}-${row.label}`}><th>{view.title}</th><td>{row.label}</td><td>{researchNumber(row.value, 2)} {view.currency}{view.metric === 'eps' ? '/aktie' : ''}</td><td>{row.sourceLabel}{row.publisher && ` · ${row.publisher}`}{safeSourceUrl(row.url) && <a href={safeSourceUrl(row.url)} target="_blank" rel="noreferrer">Öppna källa ↗</a>}</td><td>{researchDate(row.asOf)}</td></tr>))}</tbody>
         </table></div>
         {available.some(view => view.forecasts.some(row => row.source === 'model')) && <Text size="sm">OMXsum-modellen använder rapporthistorik för tillväxt, säsong och marginaler. Ett modellestimat är inte analytikerkonsensus eller en riktkurs.</Text>}
+        {available.some(view => view.forecasts.some(row => row.annualModel)) && <Text size="sm">Helårsmodellen väger samman kvartalshistorik och tidigare årsrapporter. Vikterna är preliminära och prognosprecisionen är ännu inte validerad. Mått med granskningsflaggor hålls tillbaka.</Text>}
         {available.some(view => view.metric === 'eps') && <Text size="sm">Vinst per aktie jämför {views.find(view => view.metric === 'eps').epsBasis === 'dilutedEps' ? 'utspädd' : 'outspädd'} EPS i både historik och estimat.</Text>}
         <Text size="xs" tone="secondary">Konsensus: högst 90 dagar gammalt. OMXsum-modell: högst 30 dagar. Valuta, period och resultatdefinition måste matcha. EPS visas endast med angiven aktiebas.</Text>
       </Stack>

@@ -57,9 +57,15 @@ export function valuationForecasts({ symbol, financials, estimates, availability
   // internal Terminal's manual estimates or old rows without provenance.
   for (const model of estimates.models ?? []) {
     const period = valuationPeriod(model.fiscalPeriod);
-    if (!upcoming(period) || byPeriod.has(period.key) || model.origin !== 'model' || model.symbol !== symbol
-      || model.publicModelVersion !== 1 || model.currency !== currency || model.basis !== 'reported'
+    const annualModel = model.origin === 'annual_model' && model.publicAnnualModelVersion === 1
+      && model.modelVersion === 'annual_hybrid_v1_pilot' && period?.frequency === 'annual'
+      && model.method?.weightsCalibrated === false && model.annualInputs?.length >= 2;
+    const quarterModel = model.origin === 'model' && model.publicModelVersion === 1 && period?.frequency === 'quarterly';
+    if (!upcoming(period) || byPeriod.has(period.key) || (!annualModel && !quarterModel) || model.symbol !== symbol
+      || model.currency !== currency || model.basis !== 'reported'
       || model.locked || !fresh(model.updatedAt, now, 30) || !model.inputPeriods?.length) continue;
+    if (annualModel && (metric === 'eps' || model.metricStatus?.[metric] !== 'ready_for_review'
+      || model.reviewFlags?.some(flag => flag.metric == null || flag.metric === metric))) continue;
     const eps = model.epsEstimate?.forecasts?.[epsBasis];
     const epsInputsMatch = model.epsEstimate?.inputs?.length === 4 && model.epsEstimate.inputs.every(input => {
       const actual = quarterly.find(q => q.period.key === input.fiscalPeriod);
@@ -89,6 +95,8 @@ export function valuationForecasts({ symbol, financials, estimates, availability
     byPeriod.set(period.key, { period, value, currency, source: 'model',
       sourceLabel: reviewed && metric === 'eps' ? 'OMXsum · daterat aktieantal' : 'OMXsum-estimat',
       asOf: model.updatedAt, publisher: 'OMXsum', method: model.method, inputPeriods: model.inputPeriods,
+      ...(annualModel ? { annualModel: true, annualInputs: model.annualInputs,
+        metricStatus: model.metricStatus[metric], weightsCalibrated: false } : {}),
       basis: reviewed && metric === 'eps' ? 'model_current_shares' : 'reported',
       ...(reviewed && metric === 'eps' ? { shareBasis: share, r12Compatible: false } : {}) });
   }

@@ -79,6 +79,29 @@ test('annual forward multiples retain sources and keyboard-driven metric control
   await section.screenshot({ path: '/private/tmp/omx-valuation-live-annual.png' });
 });
 
+for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`annual hybrid model and quarter toggle ${width}px ${theme}`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/VALUE-MODEL-ANNUAL.TEST#valuation');
+  await page.evaluate(theme => document.documentElement.classList.toggle('dark', theme === 'dark'), theme);
+  const section = page.locator('#valuation'), year = new Date().getUTCFullYear();
+  await section.getByRole('button', { name: 'P/S', exact: true }).click();
+  await expect(section.getByRole('button', { name: `${year + 1}E`, exact: true })).toBeVisible();
+  await section.getByRole('button', { name: `${year + 2}E`, exact: true }).click();
+  await expect(section.getByRole('img', { name: new RegExp(`Prickad linje: ${year + 2}E`) })).toBeVisible();
+  await section.getByText('Beräkning & underlag', { exact: true }).click();
+  await expect(section.getByText(/Vikterna är preliminära/)).toBeVisible();
+  const estimates = page.locator('#estimates');
+  await estimates.scrollIntoViewIfNeeded();
+  await expect(estimates.getByRole('button', { name: 'Helår', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(estimates.getByText(/Vissa årsestimat behöver granskas/)).toBeVisible();
+  await estimates.getByRole('button', { name: 'Kvartal', exact: true }).click();
+  await expect(estimates.getByRole('button', { name: 'Kvartal', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await estimates.getByRole('button', { name: 'Helår', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).include('#estimates').analyze()).violations).toEqual([]);
+  await estimates.screenshot({ path: testInfo.outputPath(`annual-hybrid-${width}-${theme}.png`) });
+});
+
 for (const width of [320, 1440]) for (const theme of ['light', 'dark']) test(`estimate year selection changes the endpoint ${width}px ${theme}`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: 1000 });
   await page.goto('/aktie/VALUE-ANNUAL.TEST#valuation');

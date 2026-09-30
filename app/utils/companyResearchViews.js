@@ -9,17 +9,18 @@ export const researchMoney = (value, currency = 'SEK') => {
 export const researchDate = value => value && Number.isFinite(Date.parse(value))
   ? new Date(value).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' }) : 'Datum saknas';
 
-export function estimateViews({ symbol, financials, estimates, availability, now = Date.now() }) {
+export function estimateViews({ symbol, financials, estimates, availability, frequency: requestedFrequency, now = Date.now() }) {
   const currency = financials?.currency;
   const actuals = [...valuationActuals(financials, symbol, 'annual'), ...valuationActuals(financials, symbol, 'quarterly')];
   const epsBasis = actuals.some(row => finite(row.dilutedEps)) ? 'dilutedEps' : 'basicEps';
   return [['revenue', 'Omsättning'], ['ebit', 'EBIT'], ['eps', 'Vinst per aktie']].map(([metric, title]) => {
     const forecasts = valuationForecasts({ symbol, financials, estimates, availability, metric, currency, epsBasis, now });
-    const frequency = forecasts.some(row => row.period.frequency === 'quarterly') ? 'quarterly' : 'annual';
+    const frequencies = [...new Set(forecasts.map(row => row.period.frequency))];
+    const frequency = requestedFrequency ?? (frequencies.includes('annual') ? 'annual' : 'quarterly');
     const selected = forecasts.filter(row => row.period.frequency === frequency).slice(0, 2);
     const reported = valuationActuals(financials, symbol, frequency).filter(row => row.currency === currency).slice(-4)
       .map(row => ({ period: row.period, value: row[metric === 'eps' ? epsBasis : metric], source: 'reported', sourceLabel: 'Rapporterat', asOf: row.periodEnd, url: row.sourceUrl }));
-    return { metric, title, currency, frequency, epsBasis, forecasts: selected,
+    return { metric, title, currency, frequency, frequencies, epsBasis, forecasts: selected,
       bars: [...reported, ...selected].map(row => ({ ...row, value: finite(row.value) ? row.value : null,
         label: `${row.period.label}${row.source === 'reported' ? '' : 'E'}` })) };
   });

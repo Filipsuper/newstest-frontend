@@ -20,6 +20,15 @@ export function valuationFixture(symbol = 'VALUE.TEST', now = Date.now()) {
       currency: 'SEK', basis: 'reported', locked: false, updatedAt: new Date(now).toISOString(),
       metrics: { revenue: 300e6, ebit: 44e6 }, inputPeriods: financials.quarterly,
       method: { basis: 'median_yoy_growth_x_blended_margin' } }] };
+  if (symbol === 'VALUE-MODEL-ANNUAL.TEST') estimates.models.push(...[year + 1, year + 2].map(y => ({
+    symbol, fiscalPeriod: `${y}-FY`, origin: 'annual_model', publicAnnualModelVersion: 1,
+    modelVersion: 'annual_hybrid_v1_pilot', currency: 'SEK', basis: 'reported', locked: false,
+    updatedAt: new Date(now).toISOString(), inputPeriods: financials.quarterly, annualInputs: financials.annual,
+    metrics: { revenue: y === year + 1 ? 1200e6 : 1300e6, ebit: 150e6 },
+    metricStatus: { revenue: 'ready_for_review', ebit: 'ready_for_review', ebitda: 'needs_review' },
+    reviewFlags: [{ code: 'annual_quarter_profit_mismatch', metric: 'ebitda' }],
+    method: { weightsCalibrated: false },
+  })));
   const multiples = [['pe', 'P/E', 20, 17.5, 15, 21], ['evEbit', 'EV/EBIT', 41.6, 38, 31, 44], ['ps', 'P/S', 5, 4.4, 3.8, 5.2], ['evSales', 'EV/S', 5.2, 4.6, 3.9, 5.4]]
     .map(([id, label, current, median, p25, p75]) => ({ id, label, available: true, reliable: true, stats: { current, median, p25, p75, min: p25 - 2, max: p75 + 3, count: 740 }, displayMax: p75 + 4,
       from: new Date(now - 129 * 7 * 86400_000).toISOString().slice(0, 10), to: asOf, series: Array.from({ length: 130 }, (_, i) => ({ date: new Date(now - (129 - i) * 7 * 86400_000).toISOString().slice(0, 10), value: i === 129 ? current : median + Math.sin(i / 7) * (p75 - median) + Math.sin(i / 2) * .4 })) }));
