@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const clientOverviewReads = new WeakMap();
+
 test.beforeEach(async ({ page }) => {
+  const overview = { count: 0 };
+  clientOverviewReads.set(page, overview);
   await page.addInitScript(() => {
     window.EventSource = class extends EventTarget {
       close() {}
@@ -8,6 +12,7 @@ test.beforeEach(async ({ page }) => {
   });
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === '/api/feed/market-overview') overview.count++;
     if (url.pathname.startsWith("/api/")) {
       return route.fulfill({
         response: await route.fetch({
@@ -54,30 +59,30 @@ for (const width of [320, 390, 600, 768, 820]) {
     test(`workspace choices fit and remain usable at ${width}px`, async ({
       page,
     }, testInfo) => {
+      test.setTimeout(60000);
       await page.setViewportSize({ width, height: 850 });
       for (const [path, label, lastChoice] of [
         ["/marknaden/nyheter", "Nyhetskategori", "Insyn"],
         ["/aktier", "Utforska bolag", "Alla bolag"],
         ["/nyhetsbrev", "Välj brev", "Kvällsbrevet"],
-        ["/bevakning", "Filtrera bevakning", "Nyckelord"],
+        ["/marknaden/bevakning", "Filtrera bevakning", "Nyckelord"],
         ["/aktie/NORD.TEST", "Kursperiod", "5 år"],
       ]) {
         await page.goto(path);
-        // Exercise the extra catch-up choice through a real return visit, not
-        // browser storage manipulation.
-        if (path === "/bevakning") {
+        // Explicit account-backed read state remains available after reload.
+        if (path === "/marknaden/bevakning") {
           await expect(page.getByRole("group", { name: label })).toBeVisible();
           await page.reload();
           await expect(
-            page.getByRole("button", { name: "Sedan sist", exact: true }),
+            page.getByRole("button", { name: "Olästa", exact: true }),
           ).toBeVisible();
         }
         const group = page.getByRole("group", { name: label, exact: true });
         await expectChoicesToFit(group);
         if (path === "/marknaden/nyheter") {
-          await expectChoicesToFit(
-            page.getByRole("group", { name: "Sortera nyheter" }),
-          );
+          for (const filter of ['Nyhetsurval', 'Bolagsurval', 'Visa kursdata']) {
+            await expectChoicesToFit(page.getByRole('group', { name: filter, exact: true }));
+          }
         }
         for (const navigation of await page.locator("main nav").all()) {
           if (await navigation.isVisible())
@@ -94,6 +99,7 @@ for (const width of [320, 390, 600, 768, 820]) {
         for (const theme of ["light", "dark"]) {
           await page.evaluate(async (mode) => {
             document.documentElement.classList.toggle("dark", mode === "dark");
+            document.documentElement.classList.toggle("light", mode === "light");
             await new Promise((resolve) => requestAnimationFrame(resolve));
             await Promise.all(
               document
@@ -131,8 +137,14 @@ for (const width of [320, 390, 600, 768, 820]) {
 test("featured news shows AI context while latest news stays compact on mobile", async ({
   page,
 }, testInfo) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto("/marknaden");
+  // SSR headlines can be visible before their client navigation is hydrated.
+  // This effect-owned request proves the market page's client code mounted.
+  await expect.poll(() => clientOverviewReads.get(page).count, { timeout: 15000 }).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
   const featured = page.getByRole("region", {
     name: "Viktigast just nu",
     exact: true,
@@ -176,4 +188,5 @@ test("featured news shows AI context while latest news stays compact on mobile",
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL(/\/marknaden$/);
   await expect(story).toBeFocused();
+  expect(errors).toEqual([]);
 });

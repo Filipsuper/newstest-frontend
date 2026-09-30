@@ -10,6 +10,15 @@ explicitly; queued items are not committed release dates.
 
 ## Direction
 
+### Personal overview and compact market widgets — 30 September 2026
+
+- Implemented: Mina bolag combines four paged company quote widgets, independent
+  important company news and a live chronological feed with interest filters.
+- Implemented: consistent compact value/change hierarchy and edge-to-edge mobile
+  curves for market and followed-company cards. No comparison or personal letter.
+- Release verification is recorded in `docs/personal-dashboard-release-2026-09-30.md`.
+- Later: an AI company overview widget, after validating the news-first experience.
+
 One Swedish-market platform, two product surfaces. The public site helps
 everyday readers understand news, inspect observed stock reactions and follow
 what matters to them. Company research adds depth; Terminal remains the dense

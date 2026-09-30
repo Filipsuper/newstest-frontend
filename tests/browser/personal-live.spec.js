@@ -74,7 +74,7 @@ function newStory(source, id, headline) {
 
 async function openPersonal(page) {
   await page.goto("/marknaden/bevakning?filter=companies");
-  const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
+  const region = page.getByRole("region", { name: "Senaste nytt i din bevakning", exact: true });
   await expect(region.locator("article")).toHaveCount(3);
   await expect(region.getByText("AI-sammanfattning", { exact: true })).toHaveCount(0);
   await expect(region.getByRole("list", { name: "AI-sammanfattningens huvudpunkter" })).toHaveCount(0);
@@ -92,9 +92,9 @@ test('personal filtering requests its own page and older matches remain while re
   state.byFilter.keywords = { stories: [keyword], nextCursor: 'older-page', coverage: { complete: true } };
   state.pages['older-page'] = { stories: [older], nextCursor: null, coverage: { complete: true } };
   await page.goto('/marknaden/bevakning?filter=keywords');
-  const region = page.getByRole('region', { name: 'Personliga nyheter', exact: true });
+  const region = page.getByRole('region', { name: 'Senaste nytt i din bevakning', exact: true });
   await expect(region.locator('article')).toHaveCount(1);
-  expect(state.requests.at(-1).filter).toBe('keywords');
+  expect(state.requests.some(query => query.filter === 'keywords')).toBe(true);
   await region.getByRole('button', { name: 'Visa äldre matchningar' }).click();
   await expect(region.locator('article')).toHaveCount(2);
   expect(state.requests.at(-1).cursor).toBe('older-page');
@@ -153,7 +153,7 @@ test("a company and keyword match remains visible in both URL-backed filters aft
   };
   state.personal = { ...state.personal, stories: [overlap] };
   await page.goto("/marknaden/bevakning?filter=companies");
-  const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
+  const region = page.getByRole("region", { name: "Senaste nytt i din bevakning", exact: true });
   const filters = region.getByRole("group", { name: "Filtrera bevakning", exact: true });
   await expect(filters.getByRole("button", { name: "Bolag", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(region.locator("article")).toHaveCount(1);
@@ -243,7 +243,7 @@ test("a shared unread URL explains unavailable account read state and offers all
   const state = await setup(page, request);
   state.personal.readStateAvailable = false;
   await page.goto("/marknaden/bevakning?filter=new");
-  const region = page.getByRole("region", { name: "Personliga nyheter", exact: true });
+  const region = page.getByRole("region", { name: "Senaste nytt i din bevakning", exact: true });
   await expect(region.getByRole("button", { name: "Olästa", exact: true }))
     .toHaveAttribute("aria-pressed", "true");
   await expect(region.getByText("Lässtatus är inte tillgänglig just nu", { exact: true })).toBeVisible();
@@ -251,8 +251,8 @@ test("a shared unread URL explains unavailable account read state and offers all
   await expect(region.locator("article")).toHaveCount(0);
   await region.getByRole("button", { name: "Visa alla matchningar", exact: true }).click();
   await expect(page).toHaveURL(/\/marknaden\/bevakning$/);
-  await expect(region.getByRole('region', { name: 'Viktigt i dina bolag', exact: true }).locator('article')).toHaveCount(3);
-  await expect(region.getByRole("button", { name: "Översikt", exact: true }))
+  await expect(page.getByRole('region', { name: 'Viktigast för dig', exact: true }).locator('article')).toHaveCount(3);
+  await expect(region.getByRole("button", { name: "Alla", exact: true }))
     .toHaveAttribute("aria-pressed", "true");
   expect(state.errors).toEqual([]);
 });

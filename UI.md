@@ -229,13 +229,24 @@ desktop density or abbreviated interaction model.
   preview, personal matches, and a chronological preview. The full feed is the
   extended reading/search destination, not another product.
 - Index widgets are a compact strip, not a dominant 2×2 dashboard. Show
-  OMXSPI, OMXS30 and S&P 500, honest session dates and small actual sparklines.
+  OMXSPI, OMXS30 and S&P 500, actual index values and small actual sparklines.
   Brent futures share the strip with an absolute USD/fat price, provider quote
-  time and previous-close change. All four reuse MarketQuote: name and secondary
-  value/date, change badge, actual intraday sparkline. Brent's curve uses the
+  time and previous-close change. All four reuse MarketQuote: name, value,
+  change badge, actual intraday sparkline. Do not render session dates in these
+  compact cards; retain actual periods in accessible labels and source details.
+  Brent's curve uses the
   provider's futures session and five-minute closes, not the Swedish equity day.
   Quote source/time is available on the widget; never call it spot or realtime.
-  Four compact widgets wrap into two columns on phones. Do not show the separate
+  Four compact widgets wrap into two columns on phones.
+  Place the value directly beneath the name in muted metadata typography,
+  combining Brent's price and USD/fat unit on that line. On phones place change
+  beside this identity and the curve beneath both. At 360px and below stack
+  name/value, change, then the curve.
+  Mobile curves span the full card width, without horizontal padding; keep
+  padding around text and clip the curve to the card's rounded shape.
+  Keep actual market sparklines visible; only per-story curves may be hidden.
+  Never substitute an invented curve when session history is missing.
+  Do not show the separate
   market-breadth block or a strip-wide "Kurser per" footer.
   Overview selections and the latest-news preview use Swedish-listed companies
   (including cross-border stories) plus unassigned Riksbank releases, not a
@@ -451,8 +462,36 @@ desktop density or abbreviated interaction model.
   intact. The canonical story URL must not reset the mounted feed to defaults;
   closing and browser Back/Forward restore the same selection.
 - The personal destination is `Mina bolag`, before Nyhetsflöde in market
-  navigation. Its overview leads with important direct-company developments,
-  followed by expandable company timelines and separate topic/keyword matches.
+  navigation. Its personal overview starts with compact followed-company
+  quote/curve widgets, then `Viktigast för dig` and a chronological
+  `Senaste nytt i din bevakning` feed. Companies, topics, keywords and unread
+  filtering belong to that feed, not competing overview sections. Display
+  four quote widgets at a time, two columns on mobile, with explicit paging
+  for longer watchlists; never request prices for the whole watchlist at once.
+  Use the market widgets' visual hierarchy: company name with a smaller muted
+  price directly beneath, daily-change badge beside it. Desktop keeps the
+  compact curve to the right; mobile puts a full-width edge-to-edge curve below
+  the identity while preserving text padding. Align curves within each grid row
+  even when company names wrap. At 360px and below place the
+  change badge beneath the company/price so the name can use the full card width.
+  Quote observations have actual dates and currencies; missing prices or
+  curves are unavailable, not zero. Intraday curves and daily-history fallbacks
+  name their own period and must not imply an event reaction.
+  Personal quote curves use the same daily-change tone as their ChangeBadge,
+  not their first-to-last plotted direction. Zero or an unknown daily change
+  stays neutral. Hide missing-currency notices and provider names in these
+  compact widgets; do not invent a currency instead. Cards show company,
+  price, daily change and minigraph only: no info button, tooltip, date footer
+  or visible history-period row. Preserve actual timestamps/periods in the data
+  and accessible graph/badge labels; do not relabel old observations as realtime.
+  Failed refreshes retain the existing earlier-data warning and retry.
+  Mina bolag has no letter preview. The latest published letter remains on
+  Marknaden's overview and the landing page. Mina bolag has no company-comparison
+  control or supporting sidebar; important and chronological news use the full
+  available width. The document scrolls normally without nested feed scrollbars.
+  Load news and quotes independently, retain dated last-known data
+  on refresh failure and provide retries. Unknown accounts retry without
+  claiming the user is a guest. Do not add an AI overview widget yet.
   Existing AI context belongs to important developments, not every row.
   Marknaden links into this experience below the index strip. Selection from
   bounded fetched results must disclose pagination/partial coverage. Show the

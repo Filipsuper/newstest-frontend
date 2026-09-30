@@ -90,6 +90,16 @@
   flex-direction: column;
   gap: var(--ui-space-1);
 }
+.indexNumbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+.indexValue {
+  font-variant-numeric: tabular-nums;
+}
 .index strong {
   font-size: var(--ui-text-sm);
   font-weight: 500;
@@ -254,15 +264,50 @@
   }
   .index {
     padding: var(--ui-space-3);
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    overflow: hidden;
+  }
+  .indexText {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    justify-self: end;
+    text-align: right;
+  }
+  .indexNumbers {
+    grid-column: 1;
+    grid-row: 1;
     flex-direction: column;
-    flex-wrap: nowrap;
     align-items: flex-start;
+    gap: var(--ui-space-1);
   }
   .indexChart {
-    display: none;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: block;
+    width: calc(100% + var(--ui-space-3) * 2);
+    margin-inline: calc(var(--ui-space-3) * -1);
+    min-width: 0;
+    height: 40px;
   }
   .heading {
     padding-block: var(--ui-space-6) var(--ui-space-4);
+  }
+}
+@media (max-width: 360px) {
+  .indexText {
+    grid-column: 1 / -1;
+    justify-self: start;
+    text-align: left;
+  }
+  .indexNumbers {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .indexChart {
+    grid-row: 3;
   }
 }
 .companyIdentity {

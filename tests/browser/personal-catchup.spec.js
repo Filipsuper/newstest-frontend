@@ -1,5 +1,18 @@
 import { test, expect } from '@playwright/test';
 
+// Keep the optimized, production-URL build on the isolated fixture too.
+// Specific per-test routes registered later still override these defaults.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => { window.EventSource = class extends EventTarget { close() {} }; });
+  await page.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith('/api/')) return route.fulfill({ response: await route.fetch({
+      url: `http://127.0.0.1:8100${url.pathname}${url.search}`,
+    }) });
+    return ['127.0.0.1', 'localhost'].includes(url.hostname) ? route.continue() : route.abort();
+  });
+});
+
 test('seven-day important selection is separate from the recent chronological page', async ({ page, request }) => {
   const fixture = await (await request.get('http://127.0.0.1:8100/api/user/personal-feed')).json();
   const old = { ...fixture.stories[0], id: 'older-important', eventId: 'older-important', importance: 99,
@@ -16,11 +29,15 @@ test('seven-day important selection is separate from the recent chronological pa
   });
   await page.goto('/marknaden/bevakning');
   await expect(page.getByText(/Uppdateras automatiskt · Senaste 7 dagarna/)).toBeVisible();
-  const important = page.getByRole('region', { name: 'Viktigt i dina bolag' });
+  const important = page.getByRole('region', { name: 'Viktigast för dig' });
   await expect(important).toContainText(old.headline);
   await expect(important).toContainText('Urvalet är ofullständigt');
-  await expect(page.getByRole('region', { name: 'Bolag för bolag' })).not.toContainText(old.headline);
-  await important.getByRole('button', { name: 'Markera som läst' }).click();
+  await expect(page.getByRole('region', { name: 'Senaste nytt i din bevakning' })).not.toContainText(old.headline);
+  const readAction = important.getByRole('button', { name: 'Markera som läst' });
+  // Desktop read actions are revealed on row hover or keyboard focus.
+  await readAction.focus();
+  await expect(readAction).toBeFocused();
+  await readAction.click();
   await expect(important).not.toContainText(old.headline);
 });
 
@@ -104,12 +121,13 @@ test('explicit read actions survive reload; a failed write does not hide unread 
     return route.fulfill({ json: { stories: [{ ...story, readState: { status: read ? 'read' : 'unread', receipt: 'fixture-receipt' } }], readStateAvailable: true, coverage: { complete: true } } });
   });
   await page.goto('/marknaden/bevakning?filter=new');
-  await expect(page.getByRole('button', { name: 'Markera som läst', exact: true })).toBeVisible();
-  const readAction = page.locator('article').getByRole('button', { name: 'Markera som läst', exact: true });
+  const latest = page.getByRole('region', { name: 'Senaste nytt i din bevakning', exact: true });
+  await expect(latest.getByRole('button', { name: 'Markera som läst', exact: true })).toBeVisible();
+  const readAction = latest.locator('article').getByRole('button', { name: 'Markera som läst', exact: true });
   await expect(readAction).toBeVisible();
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    const card = await page.locator('article').boundingBox();
+    const card = await latest.locator('article').boundingBox();
     const action = await readAction.boundingBox();
     expect(action.x).toBeGreaterThanOrEqual(card.x);
     expect(action.x + action.width).toBeLessThanOrEqual(card.x + card.width);
@@ -117,12 +135,14 @@ test('explicit read actions survive reload; a failed write does not hide unread 
   }
   await page.reload();
   expect(writes).toBe(0);
-  await page.getByRole('button', { name: 'Markera som läst', exact: true }).click();
+  await readAction.focus();
+  await expect(readAction).toBeFocused();
+  await readAction.click();
   await expect(page.getByRole('alert').filter({ hasText: 'Lässtatus kunde inte sparas' })).toBeVisible();
-  await expect(page.locator('article')).toHaveCount(1);
+  await expect(latest.locator('article')).toHaveCount(1);
   fail = false;
-  await page.getByRole('button', { name: 'Markera som läst', exact: true }).click();
-  await expect(page.locator('article')).toHaveCount(0);
+  await readAction.click();
+  await expect(latest.locator('article')).toHaveCount(0);
   await page.reload();
   await expect(page.getByText('Inga olästa nyheter i det hämtade urvalet', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Visa alla matchningar' }).click();

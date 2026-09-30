@@ -12,7 +12,8 @@ import WatchPreferencesButton from "./WatchPreferencesButton";
 import CompanyAlertStatus from "./CompanyAlertStatus";
 import CompanyAlertIntroduction from "./CompanyAlertIntroduction";
 import PersonalNewsItem from "./PersonalNewsItem";
-import PersonalCompanyOverview from "./PersonalCompanyOverview";
+import PersonalImportantNews from "./PersonalImportantNews";
+import PersonalCompanyQuotes from "./PersonalCompanyQuotes";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import StockSearch from "./StockSearch";
 import LogInModal from "../modals/logInModal";
@@ -22,12 +23,16 @@ import { SegmentedControl } from "./ui/SegmentedControl";
 import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
 import { EmptyState } from "./ui/data";
 import styles from "./workspace.module.css";
+import dashboard from "./personal-dashboard.module.css";
 
 export default function WatchFeedPage() {
-  const { user, isGuestUser, refreshUser } = useAuthContext();
+  const { user, isGuestUser, refreshUser, accountError } = useAuthContext();
   const params = useFeedSearchParams();
   const filter = ['all', 'new', 'companies', 'topics', 'keywords'].includes(params.get('filter')) ? params.get('filter') : 'all';
   const [snapshot, setSnapshot] = useState(null);
+  const [importantSnapshot, setImportantSnapshot] = useState(null);
+  const [importantError, setImportantError] = useState("");
+  const importantCache = useRef(null);
   const [error, setError] = useState("");
   const [login, setLogin] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -41,10 +46,12 @@ export default function WatchFeedPage() {
   const olderRequest = useRef(null);
   const rows = useRef([]);
   const loadedKey = useRef(null);
+  const loadedPreferences = useRef(null);
   const { listRef, captureAnchor } = useLiveScrollAnchor();
-  const key = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords, user?.excludedKeywords, filter]);
+  const preferenceKey = JSON.stringify([user?.email, user?.watchlist, user?.topics, user?.keywords, user?.excludedKeywords]);
+  const key = JSON.stringify([preferenceKey, filter]);
   const items = snapshot?.key === key ? snapshot.items : null;
-  const importantItems = snapshot?.key === key ? snapshot.importantItems : null;
+  const important = importantSnapshot?.key === preferenceKey ? importantSnapshot : null;
   const period = snapshot?.key === key && snapshot.sinceHours === 168 ? 'de senaste 7 dagarna' : 'de senaste 48 timmarna';
   const coverage = snapshot?.key === key ? snapshot.coverage : null;
   const nextCursor = snapshot?.key === key ? snapshot.nextCursor : null;
@@ -58,6 +65,12 @@ export default function WatchFeedPage() {
   }
 
   useEffect(() => {
+    if (loadedPreferences.current !== preferenceKey) {
+      loadedPreferences.current = preferenceKey;
+      importantCache.current = null;
+      setImportantSnapshot(null);
+      setImportantError("");
+    }
     if (loadedKey.current !== key) {
       loadedKey.current = key;
       rows.current = [];
@@ -68,15 +81,39 @@ export default function WatchFeedPage() {
       setLoadingOlder(false);
       setPaused(false);
     }
-    if (paused || !user || isGuestUser || !hasPreferences) return;
+    if (paused || !user || isGuestUser || !hasPreferences || accountError) return;
+    const controller = new AbortController();
     let active = true, refreshing = false;
-    async function refresh() {
-      if (!active || refreshing || document.visibilityState === 'hidden') return;
-      refreshing = true;
+    const sourceFilter = filter === 'new' ? 'all' : filter;
+    const companySource = ['all', 'companies'].includes(sourceFilter);
+    function acceptImportant(data, incoming) {
+      if (!active) return;
+      const separate = Array.isArray(data.importantStories);
+      const result = { key: preferenceKey, at: Date.now(),
+        items: separate ? data.importantStories.map(personalStoryToItem) : incoming,
+        coverage: separate ? data.importantCoverage : data.coverage,
+        limited: !separate && Boolean(data.nextCursor) };
+      captureAnchor();
+      importantCache.current = result;
+      setImportantSnapshot(result);
+      setImportantError("");
+    }
+    async function refreshImportant() {
+      // The latest feed's topic/keyword filter must not replace the independent
+      // company selection. This purposeful source request is only needed when
+      // that selection is missing or stale; ordinary all/company loads supply it.
+      if (companySource || !user.watchlist?.length || (importantCache.current?.key === preferenceKey
+        && Date.now() - importantCache.current.at < 30_000)) return;
       try {
-        const data = await fetchPersonalFeed({ limit: 50,
-          filter: filter === 'new' ? 'all' : filter,
-        });
+        const data = await fetchPersonalFeed({ limit: 1, filter: 'companies', signal: controller.signal });
+        if (!active) return;
+        if (!data || data.unavailable || !Array.isArray(data.stories)) throw new Error('Selection unavailable');
+        acceptImportant(data, data.stories.map(personalStoryToItem));
+      } catch { if (active) setImportantError('Urvalet kunde inte hämtas.'); }
+    }
+    async function refreshLatest() {
+      try {
+        const data = await fetchPersonalFeed({ limit: 20, filter: sourceFilter, signal: controller.signal });
         if (!active) return;
         if (!data || data.unavailable || !Array.isArray(data.stories)) throw new Error('Bevakningsflödet kunde inte hämtas. Dina val är fortfarande sparade.');
         const incoming = data.stories.map(story => ({
@@ -84,12 +121,22 @@ export default function WatchFeedPage() {
         }));
         captureAnchor();
         rows.current = reconcileNewsSnapshot(rows.current, incoming);
-        setSnapshot({ key, items: rows.current, nextCursor: data.nextCursor, coverage: data.coverage, readStateAvailable: data.readStateAvailable,
-          sinceHours: data.sinceHours, importantCoverage: data.importantCoverage,
-          importantItems: Array.isArray(data.importantStories) ? data.importantStories.map(personalStoryToItem) : null });
+        setSnapshot({ key, items: rows.current, nextCursor: data.nextCursor, coverage: data.coverage,
+          readStateAvailable: data.readStateAvailable, sinceHours: data.sinceHours });
+        if (companySource) acceptImportant(data, incoming);
         setError("");
       } catch (failure) {
-        if (active) { captureAnchor(); setError(failure.message); }
+        if (active) {
+          captureAnchor(); setError(failure.message);
+          if (companySource) setImportantError('Urvalet kunde inte uppdateras.');
+        }
+      }
+    }
+    async function refresh() {
+      if (!active || refreshing || document.visibilityState === 'hidden') return;
+      refreshing = true;
+      try {
+        await Promise.all([refreshLatest(), refreshImportant()]);
       } finally { refreshing = false; }
     }
     refresh();
@@ -97,10 +144,11 @@ export default function WatchFeedPage() {
     document.addEventListener('visibilitychange', refresh);
     return () => {
       active = false;
+      controller.abort();
       clearInterval(timer);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [key, hasPreferences, isGuestUser, retry, paused, captureAnchor]);
+  }, [key, hasPreferences, isGuestUser, retry, paused, accountError, captureAnchor]);
   useEffect(() => {
     return () => { olderRequest.current?.abort(); olderRequest.current = null; };
   }, [key]);
@@ -122,9 +170,12 @@ export default function WatchFeedPage() {
       captureAnchor();
       rows.current = rows.current.map(row => row.readState?.receipt === receipt
         ? { ...row, readState: { ...row.readState, status: 'read' } } : row);
-      setSnapshot(previous => previous?.key === requestKey ? { ...previous, items: rows.current,
-        importantItems: previous.importantItems?.map(row => row.readState?.receipt === receipt
-          ? { ...row, readState: { ...row.readState, status: 'read' } } : row) } : previous);
+      setSnapshot(previous => previous?.key === requestKey ? { ...previous, items: rows.current } : previous);
+      const updateImportant = previous => previous?.key === preferenceKey ? { ...previous,
+        items: previous.items.map(row => row.readState?.receipt === receipt
+          ? { ...row, readState: { ...row.readState, status: 'read' } } : row) } : previous;
+      importantCache.current = updateImportant(importantCache.current);
+      setImportantSnapshot(updateImportant);
       setRetry(value => value + 1);
     } catch (failure) { if (loadedKey.current === requestKey) setReadError(failure.message); }
     finally { markingRequest.current = false; setMarking(null); }
@@ -174,14 +225,14 @@ export default function WatchFeedPage() {
       <header className={styles.heading}>
         <Stack gap={2}>
           <Heading as="h1" size="page">Mina bolag</Heading>
-          <Text size="sm" tone="secondary">Viktiga händelser och senaste nytt i bolagen du följer.</Text>
+          <Text size="sm" tone="secondary">Nyheterna och kursutvecklingen i bolagen du följer.</Text>
         </Stack>
-        <Inline>
+        <Inline className={dashboard.headingActions}>
           <CompanyAlertStatus />
           <WatchPreferencesButton />
         </Inline>
       </header>
-      {user && !isGuestUser && <Inline className={styles.watchSummary}>
+      {user && !isGuestUser && <Inline className={dashboard.summary}>
         <Text size="sm" tone="secondary">
           {user.watchlist?.length ?? 0} bolag · {user.topics?.length ?? 0} ämnen · {user.keywords?.length ?? 0} nyckelord
         </Text>
@@ -190,22 +241,37 @@ export default function WatchFeedPage() {
         </WatchPreferencesButton>}
       </Inline>}
       <CompanyAlertIntroduction user={user} />
+      {user && !isGuestUser && Boolean(user.watchlist?.length) && <PersonalCompanyQuotes
+        watchlist={user.watchlist} accountKey={user.email} paused={paused || Boolean(accountError)} />}
       <section className={styles.section} aria-label="Personliga nyheter">
-        {error && <EmptyState role="alert" title={error}
-          action={<Button variant="secondary" onClick={() => setRetry(value => value + 1)}>Försök igen</Button>} />}
-        {!user ? <NewsListSkeleton count={3} /> : isGuestUser || !hasPreferences ? (
-          <Stack gap={4}>
+        {accountError && <EmptyState role="alert" title={user ? "Kontot kunde inte uppdateras. Dina val är fortfarande sparade." : "Kontot kunde inte hämtas."}
+          action={<Button variant="secondary" onClick={refreshUser}>Försök hämta kontot igen</Button>} />}
+        {!user ? !accountError && <NewsListSkeleton count={3} /> : isGuestUser || !hasPreferences ? (
+          <Stack gap={4} className={dashboard.empty}>
             <Heading size="subsection">Börja med ett bolag</Heading>
             <Text size="sm" tone="secondary">Välj ett bolag för att samla dess nyheter här.</Text>
             <StockSearch placeholder="Sök ett bolag att följa" onSelect={follow} showSuggestions />
+            {error && <Text size="sm" role="alert">{error}</Text>}
             <Text size="xs" tone="secondary" role="status">{busy ? 'Sparar bevakningen…' : 'Du kan även följa ett bolag direkt från en nyhet.'}</Text>
           </Stack>
-        ) : <>
-          <SegmentedControl label="Filtrera bevakning" value={filter} onValueChange={setFilter} options={[
-            { value: 'all', label: 'Översikt' }, { value: 'new', label: 'Olästa' },
+        ) : <div className={dashboard.layout}>
+          <div className={dashboard.important}>
+            {user.watchlist?.length ? <PersonalImportantNews items={important?.items}
+              coverage={important?.coverage} limited={important?.limited} watchlist={user.watchlist}
+              now={Date.now()} loading={!important && !paused && !importantError && !accountError} paused={paused} error={importantError}
+              onRetry={() => { setPaused(false); importantCache.current = null; setRetry(value => value + 1); }}
+              onMarkRead={markRead} marking={marking} /> : <Inline className={dashboard.topicsHint}>
+              <Text size="sm" tone="secondary">Du följer ämnen och nyckelord. Lägg till ett bolag för en personlig bolagsöverblick.</Text>
+              <WatchPreferencesButton initialTab="companies" variant="secondary">Lägg till bolag</WatchPreferencesButton>
+            </Inline>}
+          </div>
+          <Stack as="section" gap={4} className={dashboard.latest} aria-labelledby="personal-latest-title" id="personligt-senaste-nytt">
+            <Heading id="personal-latest-title" size="section">Senaste nytt i din bevakning</Heading>
+            <SegmentedControl label="Filtrera bevakning" value={filter} onValueChange={setFilter} options={[
+            { value: 'all', label: 'Alla' }, { value: 'new', label: 'Olästa' },
             { value: 'companies', label: 'Bolag' }, { value: 'topics', label: 'Ämnen' }, { value: 'keywords', label: 'Nyckelord' },
           ]} />
-          <Inline className={styles.between}>
+          <Inline className={dashboard.feedToolbar}>
             <Text size="xs" tone="secondary" role="status">
               {paused ? 'Pausat' : 'Uppdateras automatiskt'} · {coverage?.complete === false ? `Delar av ${period}` : period.replace(/^de senaste/, 'Senaste')}
             </Text>
@@ -217,12 +283,16 @@ export default function WatchFeedPage() {
             <Text size="sm" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Det kan finnas fler matchningar.</Text>
             <Button variant="ghost" onClick={() => { setPaused(false); setRetry(value => value + 1); }}>Kontrollera igen</Button>
           </Inline>}
-          {nextCursor && <Text size="xs" tone="secondary">Urvalet bygger på hämtade nyheter. Visa äldre matchningar för att ta med fler.</Text>}
+          {nextCursor && <Text size="xs" tone="secondary">Visar hämtade nyheter · fler matchningar finns längre bak i flödet.</Text>}
+          {error && <Inline role="alert" className={dashboard.notice}>
+            <Text size="sm">{error}</Text>
+            <Button variant="ghost" onClick={() => { setPaused(false); setRetry(value => value + 1); }}>Försök igen</Button>
+          </Inline>}
           {readError && <Text size="sm" role="alert">{readError}</Text>}
           {!items && !error ? (paused
             ? <Text size="sm" tone="secondary">Uppdateringar pausade.</Text>
-            : <NewsListSkeleton count={3} />) : shown.length || (filter === 'all' && importantItems?.length) ? (
-            filter === 'all' ? <PersonalCompanyOverview items={shown} importantItems={importantItems} importantCoverage={snapshot?.importantCoverage} watchlist={user.watchlist ?? []} now={Date.now()} onMarkRead={markRead} marking={marking} /> : <div className={styles.news}>
+            : <NewsListSkeleton count={3} />) : shown.length ? (
+            <div className={dashboard.news}>
               {shown.map(item => <div key={item.id} data-live-news-id={item.id}>
                 <PersonalNewsItem item={item} reason={item.reason} showSummary={false} onMarkRead={markRead} marking={marking} />
               </div>)}
@@ -231,12 +301,14 @@ export default function WatchFeedPage() {
             ? readsAvailable ? 'Inga olästa nyheter i det hämtade urvalet' : 'Lässtatus är inte tillgänglig just nu'
             : 'Inga matchningar just nu'}
             description={filter === 'new'
-              ? 'Översikten visar alla hämtade matchningar. Äldre sidor kan innehålla fler olästa nyheter.'
-              : 'Dina bevakningar är sparade. Nya matchningar visas automatiskt.'}
+              ? 'Flödet visar hämtade matchningar. Äldre sidor kan innehålla fler olästa nyheter.'
+              : coverage?.complete === false ? 'Det hämtade underlaget är ofullständigt. Fler matchningar kan finnas.'
+                : 'Dina bevakningar är sparade. Nya matchningar visas automatiskt.'}
             action={filter !== 'all' && <Button variant="secondary" onClick={() => setFilter('all')}>Visa alla matchningar</Button>} />}
           {olderError && <Text size="sm" role="alert">{olderError} Försök igen nedan.</Text>}
           {nextCursor && <Inline><Button variant="secondary" loading={loadingOlder} onClick={loadOlder}>Visa äldre matchningar</Button></Inline>}
-        </>}
+          </Stack>
+        </div>}
       </section>
       <Dialog open={Boolean(login)} onOpenChange={open => { if (!open) setLogin(null); }} title="Följ dina bolag">
         <LogInModal createAccount redirectTo={login || "/marknaden/bevakning"} />

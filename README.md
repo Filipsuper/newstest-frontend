@@ -30,6 +30,19 @@ OMXSUM_BACKEND_DIR=/path/to/newsbackend FRONTEND_PORT=3000 ./scripts/dev-local.s
 
 Run `./scripts/dev-local.sh --help` for all supported overrides.
 
+To preview real server news and market prices with local accounts:
+
+```bash
+./scripts/dev-local.sh --server-data
+```
+
+This requires existing SSH access to `root@omxsum.com` (or `OMXSUM_REMOTE`).
+The launcher reads the server's Market API credential into backend memory only;
+it does not save it to `.env` or pass it to the frontend. Account MongoDB must
+remain on a loopback host. Alert delivery and payment keys are disabled in this
+mode; newsletter signup/delivery should be tested separately. Keep frontend and
+backend on the same hostname so local session cookies work.
+
 In development mode, login does not send an email. Submitting the login form
 returns a localhost-only magic link and opens it immediately. The same link is
 also printed in the backend log. To test actual email delivery, set

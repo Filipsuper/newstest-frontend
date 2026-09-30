@@ -64,12 +64,16 @@ function MarketStrip({ overview }) {
           index?.session?.date ||
           bars.at(-1)?.date ||
           marketDateKey(bars.at(-1)?.time);
-        return <MarketQuote key={id} name={name} subtitle={session || "Kursdata saknas"}
+        const price = finiteNumber(index?.session?.latestPrice)
+          ?? finiteNumber(bars.at(-1)?.close)
+          ?? finiteNumber(index?.session?.points?.at(-1)?.[1]);
+        return <MarketQuote key={id} name={name}
+          value={price !== null ? price.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null}
           change={change} points={index?.session?.points} period={session || "senaste session"} />;
       })}
-      <MarketQuote name="Brentolja" subtitle={oilPrice !== null
-        ? `${oilPrice.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD/fat`
-        : "Kursdata saknas"}
+      <MarketQuote name="Brentolja" value={oilPrice !== null
+        ? oilPrice.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : null} unit="USD/fat"
         change={finiteNumber(oil?.changePct)} points={oil?.session?.points}
         chartLabel={`senaste handelspass${oil?.session?.asOf ? ` · ${newsDate(oil.session.asOf)}` : ""}`}
         period={`mot föregående stängning${oil?.asOf ? ` · ${newsDate(oil.asOf)}` : ""}`}

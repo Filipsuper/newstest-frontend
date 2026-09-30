@@ -3,7 +3,7 @@ import { finiteNumber } from "../utils/newsroom";
 import styles from "./workspace.module.css";
 
 // Index and commodity widgets share geometry, typography and real-price curves.
-export default function MarketQuote({ name, subtitle, change, points = [], period, chartLabel, details }) {
+export default function MarketQuote({ name, value, unit, change, points = [], period, chartLabel, details }) {
   const rows = (Array.isArray(points) ? points : []).filter(point => Array.isArray(point)
     && finiteNumber(point[0]) !== null && finiteNumber(point[1]) !== null);
   const values = rows.map(point => Number(point[1]));
@@ -14,14 +14,19 @@ export default function MarketQuote({ name, subtitle, change, points = [], perio
   return <div className={styles.index} aria-label={name} title={details}>
     <div className={styles.indexText}>
       <strong>{name}</strong>
-      <small>{subtitle}</small>
+      {(value !== null && value !== undefined || unit) && <small className={styles.indexValue}>
+        {value}{value !== null && value !== undefined && unit ? ' ' : ''}{unit}
+      </small>}
     </div>
-    <ChangeBadge value={change} label={`${name}, ${period}`} />
+    <div className={styles.indexNumbers}>
+      <ChangeBadge value={change} label={`${name}, ${period}`} />
+    </div>
     {rows.length > 1 && <svg viewBox="0 0 72 24" className={styles.indexChart}
+      preserveAspectRatio="none"
       role="img" aria-label={`${name}, kursförlopp ${chartLabel || period}`}>
       <path d={path} fill="none"
         stroke={change === null ? "var(--ui-text-secondary)" : change < 0 ? "var(--ui-negative)" : "var(--ui-positive)"}
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
     </svg>}
   </div>;
 }

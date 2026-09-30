@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+# Runtime-only credentials must never appear in shell trace output.
+set +x
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -8,17 +10,26 @@ FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_HOST="${FRONTEND_HOST:-localhost}"
-BACKEND_HOST="${BACKEND_HOST:-localhost}"
+# Session cookies are SameSite=Lax; localhost and 127.0.0.1 are different
+# sites. Keep both URLs on the same hostname unless explicitly overridden.
+BACKEND_HOST="${BACKEND_HOST:-${FRONTEND_HOST}}"
 INSTALL_MISSING="${INSTALL_MISSING:-1}"
 OPEN_BROWSER="${OPEN_BROWSER:-1}"
 MARKET_API_URL="${OMXSUM_MARKET_API_URL:-https://terminal.omxsum.com/api/v1}"
+SERVER_DATA=0
+SERVER_DATA_REMOTE="${OMXSUM_REMOTE:-root@omxsum.com}"
+server_market_key=""
 
 usage() {
     cat <<'EOF'
 Start the OMXsum frontend and backend for local development.
 
 Usage:
-  ./scripts/dev-local.sh [--no-install] [--no-browser]
+  ./scripts/dev-local.sh [--no-install] [--no-browser] [--server-data]
+
+  --server-data       Read real market news/prices with the server's existing
+                      credential in backend memory only. Accounts/Mongo stay
+                      local; email delivery and payment keys are disabled.
 
 The frontend repository and newsbackend repository should normally be sibling
 directories. Override discovery with OMXSUM_BACKEND_DIR when needed.
@@ -29,6 +40,7 @@ Environment overrides:
   BACKEND_PORT        Express port (default: 8000)
   OMXSUM_MARKET_API_URL
                        Market API base URL (default: production v1 API)
+  OMXSUM_REMOTE        Existing SSH server for --server-data (default: root@omxsum.com)
   INSTALL_MISSING     Run npm ci when node_modules is absent (default: 1)
   OPEN_BROWSER        Open the site after startup (default: 1)
 EOF
@@ -41,6 +53,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-browser)
             OPEN_BROWSER=0
+            ;;
+        --server-data)
+            SERVER_DATA=1
             ;;
         -h|--help)
             usage
@@ -136,7 +151,7 @@ for key in MONGO_HOST MONGO_PORT MONGODB JWT_KEY; do
     fi
 done
 
-if [[ -z "${OMXSUM_API_KEY:-}" ]] && ! grep -Eq "^[[:space:]]*OMXSUM_API_KEY=.+" "${BACKEND_DIR}/.env"; then
+if [[ "${SERVER_DATA}" == "0" && -z "${OMXSUM_API_KEY:-}" ]] && ! grep -Eq "^[[:space:]]*OMXSUM_API_KEY=.+" "${BACKEND_DIR}/.env"; then
     echo "Warning: OMXsum Market API key is missing; company data and live news will be unavailable." >&2
 fi
 
@@ -158,6 +173,37 @@ install_dependencies() {
 
 install_dependencies "backend" "${BACKEND_DIR}" "node_modules"
 install_dependencies "frontend" "${FRONTEND_DIR}" "node_modules/.bin/next"
+
+if [[ "${SERVER_DATA}" == "1" ]]; then
+    command -v ssh >/dev/null 2>&1 || { echo "SSH is required for --server-data." >&2; exit 1; }
+    # main.js expires trials on startup and during requests. This mode must
+    # never connect that writable account database to production.
+    (
+        cd "${BACKEND_DIR}"
+        node --input-type=module -e '
+            import { config } from "dotenv";
+            config({ quiet: true });
+            if (!["127.0.0.1", "localhost", "::1", "[::1]"].includes(process.env.MONGO_HOST)) {
+                console.error("--server-data requires a local MongoDB host.");
+                process.exit(1);
+            }
+            const source = new URL(process.argv[1]);
+            if (source.protocol !== "https:" || source.hostname !== "terminal.omxsum.com"
+                || source.username || source.password || source.pathname !== "/api/v1"
+                || source.search || source.hash || (source.port && source.port !== "443")) {
+                console.error("--server-data requires the trusted production Market API URL.");
+                process.exit(1);
+            }
+        ' "${MARKET_API_URL}"
+    )
+    echo "Connecting to real server market data (accounts remain local)…"
+    if ! server_market_key="$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${SERVER_DATA_REMOTE}" \
+        'docker exec backend node --input-type=module -e '\''import {config} from "dotenv";config({quiet:true});if(!process.env.OMXSUM_API_KEY)process.exit(1);process.stdout.write(process.env.OMXSUM_API_KEY)'\''')" \
+        || [[ -z "${server_market_key}" ]]; then
+        echo "Could not read the existing server market credential. No configuration changed." >&2
+        exit 1
+    fi
+fi
 
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/omxsum-local.XXXXXX")"
 BACKEND_LOG="${LOG_DIR}/backend.log"
@@ -224,23 +270,25 @@ wait_for_url() {
 echo "Starting OMXsum backend on ${BACKEND_URL}…"
 (
     cd "${BACKEND_DIR}"
-    exec env \
-        MODE=dev \
-        NODE_ENV=development \
-        PORT="${BACKEND_PORT}" \
-        CLIENT_URL="${FRONTEND_URL}" \
-        API_URL="${BACKEND_URL}/api" \
-        STONKS_API_URL="${MARKET_API_URL}" \
-        node --watch main.js
+    backend_environment=(MODE=dev NODE_ENV=development PORT="${BACKEND_PORT}"
+        CLIENT_URL="${FRONTEND_URL}" API_URL="${BACKEND_URL}/api" STONKS_API_URL="${MARKET_API_URL}")
+    if [[ "${SERVER_DATA}" == "1" ]]; then
+        backend_environment+=(OMXSUM_API_KEY="${server_market_key}"
+            COMPANY_ALERTS_PILOT_ENABLED=false DEV_SEND_EMAIL=0 RESEND_API_KEY=re_local_preview_disabled
+            STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET= STRIPE_WEBHOOK_SECRET_PROD=)
+    fi
+    exec env "${backend_environment[@]}" node --watch main.js
 ) >"${BACKEND_LOG}" 2>&1 &
 backend_pid=$!
+# The shell/front-end never need the server credential after spawning backend.
+unset server_market_key
 
 wait_for_url "Backend" "${BACKEND_URL}/api/feed/companies" "${backend_pid}" "${BACKEND_LOG}"
 
 echo "Starting OMXsum frontend on ${FRONTEND_URL}…"
 (
     cd "${FRONTEND_DIR}"
-    exec env \
+    exec env -u OMXSUM_API_KEY \
         API_URL="${BACKEND_URL}/api" \
         NEXT_PUBLIC_API_URL="${BACKEND_URL}/api" \
         "${FRONTEND_DIR}/node_modules/.bin/next" dev \

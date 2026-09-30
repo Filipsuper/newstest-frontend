@@ -1,0 +1,132 @@
+.strip {
+  min-width: 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+}
+.cardLink {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-width: 0;
+  min-height: var(--ui-control-md);
+  padding: 0;
+  width: 100%;
+  color: var(--ui-text);
+  text-decoration: none;
+  border-radius: var(--ui-radius-md);
+}
+.company {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.companyDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+.identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-space-1);
+  width: 100%;
+}
+.cardLink:hover .company {
+  text-decoration: underline;
+}
+.cardLink:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 4px;
+  border-radius: var(--ui-radius-sm);
+}
+.values {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+}
+.values > span {
+  min-width: 0;
+}
+.curve {
+  flex: 0 1 72px;
+  min-width: 40px;
+  width: 72px;
+  height: 28px;
+  overflow: visible;
+}
+.priceSkeleton {
+  width: 72px;
+  height: var(--ui-space-4);
+}
+.footer {
+  justify-content: space-between;
+}
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ui-space-2);
+  }
+  .card {
+    overflow: hidden;
+  }
+  .cardLink {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .identity {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--ui-space-2);
+  }
+  .companyDetails {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+  .change {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .values {
+    grid-row: 2;
+  }
+  .curve {
+    flex: none;
+    min-width: 0;
+    width: calc(100% + var(--ui-space-3) * 2);
+    height: 40px;
+    margin-inline: calc(var(--ui-space-3) * -1);
+  }
+}
+@media (max-width: 360px) {
+  .identity {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .companyDetails {
+    grid-column: 1;
+    text-align: left;
+  }
+  .change {
+    grid-row: 2;
+    justify-self: start;
+  }
+}
