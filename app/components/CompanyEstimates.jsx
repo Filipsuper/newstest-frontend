@@ -5,6 +5,7 @@ import { Bar, Cell, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, 
 import { estimateViews, researchNumber, researchMoney, researchDate } from '../utils/companyResearchViews';
 import { finite } from '../utils/companyValuation';
 import { modelProfitEligibility } from '../utils/modelProfitEligibility';
+import { legacyModelPublicationHidden, REVENUE_BETA_METHOD, REVENUE_BETA_UNCERTAINTY } from '../utils/revenueBeta';
 import { safeSourceUrl } from '../utils/newsroom';
 import { EmptyState } from './ui/data';
 import { Button } from './ui/Button';
@@ -23,7 +24,7 @@ function ForecastPanel({ view }) {
   const value = amount => view.metric === 'eps' ? `${researchNumber(amount, 2)} ${view.currency}/aktie` : researchMoney(amount, view.currency);
   return <Surface className={styles.panel}><Stack gap={4}>
     <div className={styles.forecastHeader}>
-      <Inline className={styles.toolbar}><Heading as="h3" size="subsection">{view.title}</Heading><Label>{first.sourceLabel}</Label></Inline>
+      <Inline className={styles.toolbar}><Heading as="h3" size="subsection">{view.title}</Heading><Label tone={first.revenueBeta ? 'accent' : 'neutral'}>{first.sourceLabel}</Label></Inline>
       <span className={styles.forecastValue}>{value(first.value)}</span>
       <Text size="xs" tone="secondary">{first.period.label}E · {view.frequency === 'quarterly' ? 'Kvartal' : 'Helår'}</Text>
     </div>
@@ -38,6 +39,7 @@ function ForecastPanel({ view }) {
       </ComposedChart></ResponsiveContainer>
     </div>
     <Inline gap={4} className={styles.legend}><span><i className={styles.mark} />Rapporterat</span><span><i className={`${styles.mark} ${styles.estimateMark}`} />Estimat</span><span>{unit}</span></Inline>
+    {view.forecasts.some(row => row.revenueBeta) && <Text size="xs" tone="secondary">{REVENUE_BETA_UNCERTAINTY}</Text>}
   </Stack></Surface>;
 }
 
@@ -49,8 +51,10 @@ export default function CompanyEstimates({ symbol, financials, estimates, availa
   const views = useMemo(() => estimateViews({ symbol, financials, estimates, availability, frequency }), [symbol, financials, estimates, availability, frequency]);
   const available = views.filter(view => view.forecasts.length);
   const held = (estimates?.models ?? []).filter(row => row.origin === 'annual_model'
+    && !legacyModelPublicationHidden(estimates?.modelPublicationPolicy, 'revenue', 'annual')
     && Object.values(row.metricStatus ?? {}).includes('needs_review'));
-  const profitWithheld = financials?.symbol === symbol && modelProfitEligibility(financials.quarterly, financials.currency).status === 'withheld_operating_loss';
+  const profitWithheld = !legacyModelPublicationHidden(estimates?.modelPublicationPolicy, 'ebit', 'quarterly')
+    && financials?.symbol === symbol && modelProfitEligibility(financials.quarterly, financials.currency).status === 'withheld_operating_loss';
   if (availability === 'unavailable' || financialAvailability === 'unavailable' || !estimates) return <EmptyState title="Estimatunderlaget kunde inte hämtas" action={<Button variant="secondary" onClick={() => window.location.reload()}>Försök igen</Button>} />;
   if (!available.length) return <EmptyState title={held.length ? 'Årsestimat behöver granskas' : 'Inga jämförbara estimat ännu'} description={held.length ? 'Prognosspåren eller rapportunderlagen skiljer sig. Osäkra mått visas inte som estimat.' : 'Konsensus och kvalificerade OMXsum-estimat visas här när underlag finns för kommande perioder.'} />;
   return <Stack className={styles.root} gap={4}>
@@ -68,7 +72,8 @@ export default function CompanyEstimates({ symbol, financials, estimates, availa
           <thead><tr><th>Mått</th><th>Period</th><th>Värde</th><th>Källa</th><th>Datum</th></tr></thead>
           <tbody>{available.flatMap(view => view.bars.map(row => <tr key={`${view.metric}-${row.label}`}><th>{view.title}</th><td>{row.label}</td><td>{researchNumber(row.value, 2)} {view.currency}{view.metric === 'eps' ? '/aktie' : ''}</td><td>{row.sourceLabel}{row.publisher && ` · ${row.publisher}`}{safeSourceUrl(row.url) && <a href={safeSourceUrl(row.url)} target="_blank" rel="noreferrer">Öppna källa ↗</a>}</td><td>{researchDate(row.asOf)}</td></tr>))}</tbody>
         </table></div>
-        {available.some(view => view.forecasts.some(row => row.source === 'model')) && <Text size="sm">OMXsum-modellen använder rapporthistorik för tillväxt, säsong och marginaler. Ett modellestimat är inte analytikerkonsensus eller en riktkurs.</Text>}
+        {available.some(view => view.forecasts.some(row => row.revenueBeta)) && <Text size="sm">{REVENUE_BETA_METHOD}</Text>}
+        {available.some(view => view.forecasts.some(row => row.source === 'model' && !row.revenueBeta)) && <Text size="sm">Övriga OMXsum-modeller använder rapporthistorik för tillväxt, säsong och marginaler. Ett modellestimat är inte analytikerkonsensus eller en riktkurs.</Text>}
         {available.some(view => view.forecasts.some(row => row.annualModel)) && <Text size="sm">Helårsmodellen väger samman kvartalshistorik och tidigare årsrapporter. Vikterna är preliminära och prognosprecisionen är ännu inte validerad. Mått med granskningsflaggor hålls tillbaka.</Text>}
         {available.some(view => view.metric === 'eps') && <Text size="sm">Vinst per aktie jämför {views.find(view => view.metric === 'eps').epsBasis === 'dilutedEps' ? 'utspädd' : 'outspädd'} EPS i både historik och estimat.</Text>}
         <Text size="xs" tone="secondary">Konsensus: högst 90 dagar gammalt. OMXsum-modell: högst 30 dagar. Valuta, period och resultatdefinition måste matcha. EPS visas endast med angiven aktiebas.</Text>

@@ -1,78 +1,71 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
     FiArrowDown,
     FiArrowUp,
     FiInfo,
+    FiLock,
     FiPlus,
     FiRefreshCw,
     FiX,
 } from "react-icons/fi";
-import { fetchCompanyProfiles, fetchScreener } from "../utils/api";
+import { fetchScreener } from "../utils/api";
+import { Checkbox } from "./ui/Choices";
+import { SCREENER_METRICS as METRICS, DEFAULT_COLUMNS, FREE_DEFAULT_COLUMNS, FREE_METRICS, DISCOVERABLE_METRICS, isLegacyIntradayMetric, matchesMetricSearch, restrictScreenerState, finite, dailyHistoryDate as historyDate, screenerMetricText, screenerValue as valueFor, matchesFilter, validFilter, readScreenerQuery, writeScreenerQuery } from "../utils/screener";
+import { readScreenerCompany, screenerCompanyQuery } from "../utils/screenerCompany";
 import { Button, IconButton } from "./ui/Button";
 import { Select } from "./ui/Select";
+import { SearchableSelect } from "./ui/SearchableSelect";
+import { Label } from "./ui/Label";
 import { TextField } from "./ui/TextField";
 import { Dialog } from "./ui/overlays";
 import { Container, Heading, Inline, Stack, Text, cx } from "./ui/layout";
 import { EmptyState, Skeleton } from "./ui/data";
 import styles from "./screener.module.css";
 import CompanyProfileRadar from "./CompanyProfileRadar";
-import PlusPaywall from "./PlusPaywall";
+import { useAuthContext } from "../providers/AuthProvider";
+import UpgradeLink from "./UpgradeLink";
+import LogInModal from "../modals/logInModal";
 import { StockWorkspaceNav } from "./WorkspaceNav";
+import ScreenerPreview from './ScreenerPreview';
 
 const REFRESH_MS = 60_000;
-
-const METRICS = {
-    marketCap: { label: "Börsvärde", unit: "mdr kr", step: "1", description: "Aktiekurs multiplicerad med senast rapporterat antal utestående aktier. Visas i miljarder kronor." },
-    revenueGrowthPct: { label: "Omsättningstillväxt", unit: "%", step: "1", description: "Förändringen i omsättning jämfört med föregående rapporterade helår." },
-    ebitMarginPct: { label: "EBIT-marginal", unit: "%", step: "1", description: "Rörelseresultat, EBIT, som andel av omsättningen för senast rapporterade helår." },
-    roePct: { label: "Avkastning på eget kapital", unit: "%", step: "1", description: "Årets nettoresultat dividerat med eget kapital för senast rapporterade helår." },
-    pe: { label: "P/E", unit: "x", step: "1", description: "Aktiekurs dividerad med rapporterad vinst per aktie. Negativ eller extremt hög P/E visas som Saknas." },
-    ps: { label: "P/S", unit: "x", step: "0.1", description: "Bolagets börsvärde dividerat med omsättningen för senast rapporterade helår." },
-    evEbit: { label: "EV/EBIT", unit: "x", step: "1", description: "Börsvärde plus nettoskuld dividerat med rapporterat EBIT. Negativt EBIT ger inget värde." },
-    netDebtToEbitda: { label: "Nettoskuld/EBITDA", unit: "x", step: "0.5", description: "Rapporterad nettoskuld dividerad med EBITDA för senaste helåret. Ett negativt värde kan indikera nettokassa." },
-    changePct: { label: "Dagens utveckling", unit: "%", step: "1", description: "Kursförändringen sedan föregående handelsdags stängning." },
-    rvolAtTime: { label: "Relativ volym", unit: "x", step: "0.1", description: "Dagens ackumulerade volym jämförd med normal volym vid samma tidpunkt under tidigare handelsdagar." },
-    return15mPct: { label: "Utveckling 15 min", unit: "%", step: "0.5", description: "Kursförändringen under de senaste 15 minuterna i OMXsums sparade marknadsflöde." },
-    gapPct: { label: "Öppningsgap", unit: "%", step: "0.5", description: "Skillnaden mellan dagens öppningskurs och föregående handelsdags stängningskurs." },
-};
-
-const FILTER_GROUPS = [
-    {
-        label: "Finansiellt",
-        metrics: ["marketCap", "revenueGrowthPct", "ebitMarginPct", "roePct", "netDebtToEbitda"],
-    },
-    { label: "Värdering", metrics: ["pe", "ps", "evEbit"] },
-    { label: "Tekniskt", metrics: ["changePct", "rvolAtTime", "return15mPct", "gapPct"] },
-];
-
-const METRIC_DROPDOWN_GROUPS = FILTER_GROUPS.map((group) => ({
-    label: group.label,
-    options: group.metrics.map((value) => ({ value, label: METRICS[value].label })),
-}));
+const ScreenerCompanyDrawer = dynamic(() => import("./ScreenerCompanyDrawer"));
 
 const OPERATOR_OPTIONS = [
     { value: "gt", label: "Över" },
     { value: "lt", label: "Under" },
+    { value: "between", label: "Mellan" },
 ];
 
 const PRESETS = [
     {
-        id: "unusual-volume",
-        label: "Ovanligt hög handel",
-        filters: [{ metric: "rvolAtTime", operator: "gt", value: 1.5 }],
-        sort: { key: "rvolAtTime", direction: "desc" },
+        id: "positive-trend", label: "Positiv långsiktig trend",
+        filters: [{ metric: "dailyDistanceSma50Pct", operator: "gt", value: 0 }, { metric: "dailyDistanceSma200Pct", operator: "gt", value: 0 }],
+        sort: { key: "dailyReturn1yPct", direction: "desc" },
     },
     {
-        id: "rising-volume",
-        label: "Stiger med volym",
+        id: "insider-buying", label: "Insiders nettoköper",
+        filters: [{ metric: "insider_netValue90d", operator: "gt", value: 0 }, { metric: "insider_buyers90d", operator: "gt", value: 1 }],
+        sort: { key: "insider_netValue90d", direction: "desc" },
+    },
+    {
+        id: "completed-volume",
+        label: "Hög volym, avslutad dag",
+        filters: [{ metric: "dailyCompletedRvol", operator: "gt", value: 1.5 }],
+        sort: { key: "dailyCompletedRvol", direction: "desc" },
+    },
+    {
+        id: "rising-month",
+        label: "Stiger på en månad",
         filters: [
-            { metric: "changePct", operator: "gt", value: 2 },
-            { metric: "rvolAtTime", operator: "gt", value: 1.3 },
+            { metric: "dailyReturn1moPct", operator: "gt", value: 5 },
+            { metric: "dailyDistanceSma20Pct", operator: "gt", value: 0 },
         ],
-        sort: { key: "changePct", direction: "desc" },
+        sort: { key: "dailyReturn1moPct", direction: "desc" },
     },
     {
         id: "profitable-growth",
@@ -101,45 +94,7 @@ const PILL_LABELS = {
     return15mPct: "15 min",
 };
 
-const COLUMNS = [
-    { key: "company", label: "Bolag", align: "left" },
-    { key: "price", label: "Kurs", format: "price" },
-    { key: "changePct", label: "Dagsförändring", format: "signedPct" },
-    { key: "marketCap", label: "Börsvärde", format: "marketCap" },
-    { key: "revenueGrowthPct", label: "Oms.tillväxt", format: "signedPct" },
-    { key: "ebitMarginPct", label: "EBIT-marginal", format: "signedPct" },
-    { key: "roePct", label: "ROE", format: "signedPct" },
-    { key: "pe", label: "P/E", format: "multiple" },
-    { key: "evEbit", label: "EV/EBIT", format: "multiple" },
-    { key: "rvolAtTime", label: "Rel. volym", format: "multiple" },
-    { key: "return15mPct", label: "15 min", format: "signedPct" },
-];
-
 const svNumber = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 1 });
-const svPrice = new Intl.NumberFormat("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function finite(value) {
-    if (value === null || value === undefined || value === "") return null;
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-}
-
-function valueFor(row, key) {
-    if (key === "company") return row.name ?? row.symbol ?? "";
-    if (key in (row.fundamentals ?? {})) return finite(row.fundamentals[key]);
-    if (key in (row.metrics ?? {})) return finite(row.metrics[key]);
-    return finite(row[key]);
-}
-
-function formatValue(value, format) {
-    const number = finite(value);
-    if (number == null) return "Saknas";
-    if (format === "price") return `${svPrice.format(number)} kr`;
-    if (format === "marketCap") return `${svNumber.format(number)} mdr`;
-    if (format === "multiple") return `${svNumber.format(number)}x`;
-    if (format === "signedPct") return `${number > 0 ? "+" : ""}${svNumber.format(number)}%`;
-    return svNumber.format(number);
-}
 
 function signedClass(value) {
     const number = finite(value);
@@ -149,17 +104,22 @@ function signedClass(value) {
 
 function activeFilterParts(filter) {
     const metric = METRICS[filter.metric];
-    const unit = metric.unit === "%"
-        ? "%"
-        : filter.metric === "marketCap"
-            ? " mdr kr"
-            : filter.metric === "netDebtToEbitda" || filter.metric === "rvolAtTime"
-                ? "x"
-                : "";
-    return {
-        label: PILL_LABELS[filter.metric] ?? metric.label,
-        condition: `${filter.operator === "gt" ? ">" : "<"} ${svNumber.format(filter.value)}${unit}`,
-    };
+    const value = metric.type === "enum" ? metric.options.find(option => option.value === filter.value)?.label : svNumber.format(filter.value);
+    const condition = filter.operator === "between" ? `${value}–${svNumber.format(filter.upper)} ${metric.unit}`
+        : filter.operator === "eq" ? value : `${filter.operator === "gt" ? ">" : "<"} ${value}${metric.unit === "%" ? "" : " "}${metric.unit}`;
+    const label = PILL_LABELS[filter.metric] ?? metric.shortLabel ?? metric.label;
+    return { label: isLegacyIntradayMetric(filter.metric) ? `Äldre intradag · ${label}` : label, condition: condition.trim() };
+}
+
+function historyContext(row) {
+    const date = historyDate(row);
+    const status = row.daily?.status;
+    const statusLabel = { missing: "Historiskt underlag saknas.", unsupported: "Historik stöds inte för detta instrument.", unavailable: "Historik kunde inte hämtas." }[status];
+    if (statusLabel || !date) return `${statusLabel ?? "Historiskt underlag saknas."}${date ? ` Sista datum i underlaget: ${date}.` : ""} Saknade värden matchar inte filter.`;
+    const basis = row.daily?.priceBasis === "provider_close" ? "Leverantörens dagskurser. Justering för bolagshändelser är inte verifierad; inte totalavkastning."
+        : "Kursgrund saknas; justering för bolagshändelser är inte verifierad.";
+    const stale = status === "stale" ? `Äldre underlag: siffrorna avser ${date}, inte senaste handelsdagen.${row.daily?.expectedAsOfDate ? ` Förväntat senaste datum: ${row.daily.expectedAsOfDate}.` : ""} ` : "";
+    return `Senaste avslutade dag i underlaget: ${date}. ${stale}${status === "partial" ? "Delvis historik; vissa mått saknas. " : ""}${basis}`;
 }
 
 const segmentLabel = (value) => ({ LARGE_CAP: "Large Cap", MID_CAP: "Mid Cap", SMALL_CAP: "Small Cap", FIRST_NORTH: "First North" })[value] ?? value;
@@ -173,9 +133,11 @@ function FilterChip({ label, condition, onRemove }) {
     );
 }
 
-function ScreenerTable() {
+function ScreenerTable({ plus }) {
     const [items, setItems] = useState(null);
     const [meta, setMeta] = useState(null);
+    const pendingResearch = useRef(false);
+    pendingResearch.current = meta?.profileStatus === "pending" || meta?.insiderStatus === "pending";
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [segment, setSegment] = useState("all");
@@ -188,7 +150,77 @@ function ScreenerTable() {
     const [draftValue, setDraftValue] = useState("10");
     const [sort, setSort] = useState({ key: "marketCap", direction: "desc" });
     const [resultLimit, setResultLimit] = useState(50);
-    const [profiles, setProfiles] = useState({});
+    const [columns, setColumns] = useState(plus ? DEFAULT_COLUMNS : FREE_DEFAULT_COLUMNS);
+    const [queryReady, setQueryReady] = useState(false);
+    const [restrictedQuery, setRestrictedQuery] = useState(false);
+    const [lockedPreset, setLockedPreset] = useState(null);
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const [drawerVisited, setDrawerVisited] = useState(false);
+    const companyTrigger = useRef(null);
+    const screenerScroll = useRef(null);
+    const resultRegion = useRef(null);
+    const [draftUpper, setDraftUpper] = useState("20");
+    const [columnSearch, setColumnSearch] = useState("");
+    const [legacyColumnChoices, setLegacyColumnChoices] = useState([]);
+    const columnDefinitions = [{ key: "company", label: "Bolag" }, ...columns.map(key => ({
+        key, label: `${["pe", "ps"].includes(key) ? METRICS[key].label : METRICS[key].shortLabel ?? METRICS[key].label}${isLegacyIntradayMetric(key) ? " (intradag)" : ""}`,
+        format: METRICS[key].format ?? (METRICS[key].unit === "%" ? METRICS[key].signed ? "signedPct" : "pct" : METRICS[key].unit === "x" ? "multiple" : null),
+    }))];
+    const paidAccess = plus && meta?.access?.tier !== "free";
+    const previewCache = useMemo(() => new Map(), [paidAccess]);
+    useEffect(() => { if (selectedCompany) setDrawerVisited(true); }, [selectedCompany]);
+    useEffect(() => {
+        const pathname = window.location.pathname;
+        const restoreCompany = () => {
+            if (window.location.pathname === pathname) setSelectedCompany(readScreenerCompany(window.location.search));
+        };
+        restoreCompany();
+        window.addEventListener("popstate", restoreCompany);
+        return () => window.removeEventListener("popstate", restoreCompany);
+    }, []);
+    const selectCompany = (symbol, { push = false } = {}) => {
+        const query = screenerCompanyQuery(window.location.search, symbol);
+        const href = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+        window.history[push ? "pushState" : "replaceState"]({ ...window.history.state, omxsumScreenerCompany: push || window.history.state?.omxsumScreenerCompany }, "", href);
+        setSelectedCompany(symbol);
+    };
+    const closeCompany = () => {
+        if (window.history.state?.omxsumScreenerCompany) window.history.back();
+        else selectCompany(null);
+    };
+    const openCompany = (event, symbol) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        companyTrigger.current = event.currentTarget;
+        screenerScroll.current = { left: window.scrollX, top: window.scrollY };
+        selectCompany(symbol, { push: true });
+    };
+    const unlocked = key => paidAccess || FREE_METRICS.includes(key);
+    const defaultColumns = paidAccess ? DEFAULT_COLUMNS : FREE_DEFAULT_COLUMNS;
+    const metricOptions = useMemo(() => DISCOVERABLE_METRICS.map(value => ({ value, label: METRICS[value].label, group: METRICS[value].group })), []);
+    const selectMetric = key => {
+        if (!METRICS[key]) return;
+        setDraftMetric(key);
+        setDraftOperator(METRICS[key].type === "enum" ? "eq" : "gt");
+        setDraftValue(METRICS[key].type === "enum" ? METRICS[key].options[0].value : "0");
+    };
+    useEffect(() => {
+        const restore = () => {
+            const state = restrictScreenerState(readScreenerQuery(window.location.search), paidAccess);
+            setFilters(state.filters); setSegment(state.segment); setSector(state.sector);
+            setColumns(state.columns); setSort(state.sort); setActivePreset(null); setQueryReady(true);
+            setRestrictedQuery(state.restricted);
+        };
+        restore();
+        window.addEventListener("popstate", restore);
+        return () => window.removeEventListener("popstate", restore);
+    }, [paidAccess]);
+    useEffect(() => {
+        if (!queryReady) return;
+        const query = writeScreenerQuery(window.location.search, { filters, segment, sector, columns, sort });
+        const url = window.location.pathname + (query ? "?" + query : "") + window.location.hash;
+        window.history.replaceState(window.history.state, "", url);
+    }, [queryReady, filters, segment, sector, columns, sort]);
 
     const load = async ({ silent = false } = {}) => {
         if (silent) setRefreshing(true);
@@ -224,7 +256,7 @@ function ScreenerTable() {
         };
         initialLoad();
         const timer = setInterval(() => {
-            if (active) load({ silent: true });
+            if (active && !document.hidden && !pendingResearch.current) load({ silent: true });
         }, REFRESH_MS);
         return () => {
             active = false;
@@ -233,6 +265,14 @@ function ScreenerTable() {
     // The interval intentionally keeps the same unfiltered universe fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (meta?.profileStatus !== "pending" && meta?.insiderStatus !== "pending") return;
+        const timer = setInterval(() => { if (!document.hidden) load({ silent: true }); }, 30_000);
+        return () => clearInterval(timer);
+    // Same whole-universe snapshot, independent of the current filter/page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [meta?.profileStatus, meta?.insiderStatus]);
 
     const segments = useMemo(() => [...new Set((items ?? []).map((row) => row.segment).filter(Boolean))].sort(), [items]);
     const sectors = useMemo(() => [...new Set((items ?? []).map((row) => row.sector).filter(Boolean))].sort(), [items]);
@@ -249,11 +289,7 @@ function ScreenerTable() {
         const result = (items ?? []).filter((row) => {
             if (segment !== "all" && row.segment !== segment) return false;
             if (sector !== "all" && row.sector !== sector) return false;
-            return filters.every((filter) => {
-                const value = valueFor(row, filter.metric);
-                if (value == null) return false;
-                return filter.operator === "gt" ? value > filter.value : value < filter.value;
-            });
+            return filters.every(filter => matchesFilter(row, filter));
         });
 
         result.sort((left, right) => {
@@ -273,41 +309,11 @@ function ScreenerTable() {
     }, [segment, sector, filters]);
 
     const shownItems = visibleItems.slice(0, resultLimit);
-    const shownSymbolsKey = shownItems.map((row) => row.symbol).join("|");
-
-    useEffect(() => {
-        const symbols = shownSymbolsKey.split("|").filter(Boolean);
-        // Retry unfinished batches when a filter/sort cancels the previous page.
-        const requested = symbols.filter((symbol) => profiles[symbol] === undefined || profiles[symbol] === null);
-        if (!requested.length) return undefined;
-        setProfiles((current) => {
-            const next = { ...current };
-            requested.forEach((symbol) => { next[symbol] = null; });
-            return next;
-        });
-        let active = true;
-        const loadProfiles = async () => {
-            for (let start = 0; active && start < requested.length; start += 12) {
-                const batch = requested.slice(start, start + 12);
-                const response = await fetchCompanyProfiles(batch);
-                if (!active) return;
-                const bySymbol = new Map(response.items.map((item) => [item.symbol, item]));
-                setProfiles((current) => {
-                    const next = { ...current };
-                    batch.forEach((symbol) => { next[symbol] = bySymbol.get(symbol) ?? false; });
-                    return next;
-                });
-            }
-        };
-        loadProfiles();
-        return () => { active = false; };
-        // The key captures the exact visible result page; cached profiles stay in state.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shownSymbolsKey]);
-
     const addFilter = (filter) => {
-        if (!METRICS[filter.metric] || String(filter.value).trim() === "" || !Number.isFinite(Number(filter.value))) return;
-        const normalized = { ...filter, value: Number(filter.value) };
+        if (!unlocked(filter.metric) || !validFilter(filter)) return;
+        const normalized = { ...filter, value: METRICS[filter.metric].type === "enum" ? filter.value : Number(filter.value),
+            ...(filter.operator === "between" ? { upper: Number(filter.upper) } : {}) };
+        setColumns(current => current.includes(filter.metric) ? current : [...current, filter.metric]);
         setFilters((current) => [
             ...current.filter((item) => !(item.metric === normalized.metric && item.operator === normalized.operator)),
             normalized,
@@ -316,7 +322,7 @@ function ScreenerTable() {
     };
 
     const addDraftFilter = () => {
-        addFilter({ metric: draftMetric, operator: draftOperator, value: draftValue });
+        addFilter({ metric: draftMetric, operator: draftOperator, value: draftValue, ...(draftOperator === "between" ? { upper: draftUpper } : {}) });
     };
 
     const resetFilters = () => {
@@ -327,6 +333,7 @@ function ScreenerTable() {
     };
 
     const applyPreset = (preset) => {
+        if (preset.filters.some(filter => !unlocked(filter.metric))) { setLockedPreset(preset); return; }
         if (activePreset === preset.id) {
             resetFilters();
             return;
@@ -334,6 +341,7 @@ function ScreenerTable() {
         setSegment("all");
         setSector("all");
         setFilters(preset.filters);
+        setColumns(current => [...new Set([...current, ...preset.filters.map(filter => filter.metric)])]);
         setSort(preset.sort);
         setActivePreset(preset.id);
     };
@@ -341,6 +349,7 @@ function ScreenerTable() {
     const hasFilters = Boolean(segment !== "all" || sector !== "all" || filters.length);
 
     const toggleSort = (key) => {
+        if (key !== "company" && !unlocked(key)) return;
         setSort((current) => ({
             key,
             direction: current.key === key
@@ -355,19 +364,34 @@ function ScreenerTable() {
     };
     const changeSegment = (value) => { setSegment(value); setActivePreset(null); };
     const changeSector = (value) => { setSector(value); setActivePreset(null); };
-    const draftValid = draftValue.trim() !== "" && finite(draftValue) !== null;
+    const draftUnlocked = unlocked(draftMetric);
+    const draftValid = draftUnlocked && validFilter({ metric: draftMetric, operator: draftOperator, value: draftValue, upper: draftUpper });
     const dataTime = meta?.dataAsOf ? new Date(meta.dataAsOf) : null;
     const validDataTime = dataTime && Number.isFinite(dataTime.getTime());
     const filterCount = filters.length + Number(segment !== "all") + Number(sector !== "all");
+    const legacyRules = filters.filter(filter => isLegacyIntradayMetric(filter.metric));
+    const legacyColumns = columns.filter(isLegacyIntradayMetric);
+    const historyDates = [...new Set((items ?? []).map(historyDate).filter(Boolean))].sort();
+    const dailyCoverage = (items ?? []).filter(row => historyDate(row) && valueFor(row, "dailyClose") !== null).length;
+    const activeDailyMetrics = [...columns, ...filters.map(filter => filter.metric), sort.key].filter(key => METRICS[key]?.dailyField);
+    const staleHistoryCount = (items ?? []).filter(row => row.daily?.status === "stale" && activeDailyMetrics.some(key => valueFor(row, key) !== null)).length;
 
     return (
         <section aria-label="Aktiescreener">
             <header className={styles.intro}>
                 <Heading as="h1" size="page">Hitta bolag</Heading>
-                <Text size="sm" tone="secondary">Börja med ett färdigt urval eller bygg ett eget.</Text>
+                <Text size="sm" tone="secondary">Avslutade dagskurser och rapporterade nyckeltal.</Text>
+                {!paidAccess && <Inline className={styles.freeAccess}>
+                    <Text size="xs" tone="secondary">6 nyckeltal ingår gratis. Fler filter med Plus och Pro.</Text>
+                    <UpgradeLink tier="plus" inline />
+                </Inline>}
             </header>
+            {(legacyRules.length > 0 || legacyColumns.length > 0 || isLegacyIntradayMetric(sort.key)) && <Text size="sm" tone="secondary" className={styles.legacyNotice} role="status">
+                Äldre intradagsurval har behållits: {legacyRules.length} villkor och {legacyColumns.length} kolumner{isLegacyIntradayMetric(sort.key) ? " samt intradagssortering" : ""}. Dessa använder pågående eller senast sparad marknadsdata, inte avslutade dagskurser. Villkor kan tas bort; Standardkolumner återställer dagliga kolumner och sortering. För nya intradagsurval, använd <Link href="/terminal">Terminalen</Link>.
+            </Text>}
+            {restrictedQuery && <Text size="sm" tone="secondary" role="status">Urvalet innehöll Plus-nyckeltal. Gratisfiltren visas här.</Text>}
             <Inline className={styles.presets} role="group" aria-label="Färdiga urval">
-                {PRESETS.map((preset) => (
+                {(paidAccess ? PRESETS : [...PRESETS].sort((a, b) => Number(a.filters.some(filter => !unlocked(filter.metric))) - Number(b.filters.some(filter => !unlocked(filter.metric))))).map((preset) => (
                     <Button
                         key={preset.id}
                         variant={activePreset === preset.id ? "primary" : "secondary"}
@@ -376,9 +400,21 @@ function ScreenerTable() {
                         onClick={() => applyPreset(preset)}
                     >
                         {preset.label}
+                        {preset.filters.some(filter => !unlocked(filter.metric)) && <Label className={styles.accessLabel} tone="accent" icon={<FiLock />}>Plus</Label>}
                     </Button>
                 ))}
             </Inline>
+            <Dialog open={Boolean(lockedPreset)} onOpenChange={open => { if (!open) setLockedPreset(null); }}
+                title={lockedPreset?.label ?? "Fler filter med Plus"}
+                footer={<UpgradeLink tier="plus" />}>
+                <Stack gap={4}>
+                    <Text size="sm">Kombinera fler nyckeltal med Plus eller Pro.</Text>
+                    {lockedPreset?.filters.map(filter => <div key={filter.metric}>
+                        <Text size="sm">{METRICS[filter.metric].label}</Text>
+                        <Text size="xs" tone="secondary">{METRICS[filter.metric].description}</Text>
+                    </div>)}
+                </Stack>
+            </Dialog>
 
             <div className={styles.toolbar}>
                 <Dialog
@@ -398,23 +434,37 @@ function ScreenerTable() {
                             <Select label="Sektor" value={sector} onValueChange={changeSector} options={sectorOptions} />
                         </div>
                         <div className={styles.rule}>
-                            <Select label="Nyckeltal" value={draftMetric} onValueChange={setDraftMetric} groups={METRIC_DROPDOWN_GROUPS} />
+                            <SearchableSelect label="Nyckeltal" placeholder="Sök exempelvis P/E, RSI, 1 månad eller insyn" value={draftMetric}
+                                onValueChange={selectMetric} options={metricOptions} filter={(option, query) => matchesMetricSearch(option.value, query)}
+                                renderOption={option => <span className={styles.metricOption}>
+                                    <span>{option.label}<small>{option.group}</small></span>
+                                    {!unlocked(option.value) && <Label tone="accent" icon={<FiLock />}>Plus</Label>}
+                                </span>} />
                             <Text size="xs" tone="secondary">{METRICS[draftMetric].description}</Text>
+                            {draftUnlocked ? <>
+                            <Text size="xs" tone="secondary">Underlag för {items?.filter(row => valueFor(row, draftMetric) !== null).length ?? 0} av {items?.length ?? 0} bolag.</Text>
                             <div className={styles.fieldPair}>
+                                {METRICS[draftMetric].type === "enum" ? <Select label="Position" value={draftValue} onValueChange={setDraftValue} options={METRICS[draftMetric].options} /> : <>
                                 <Select label="Villkor" value={draftOperator} onValueChange={setDraftOperator} options={OPERATOR_OPTIONS} />
                                 <TextField
                                     label={`Värde (${METRICS[draftMetric].unit})`}
                                     type="number"
                                     inputMode="decimal"
                                     step={METRICS[draftMetric].step}
+                                    min={METRICS[draftMetric].min}
+                                    max={METRICS[draftMetric].max}
                                     value={draftValue}
                                     onValueChange={setDraftValue}
                                     onKeyDown={(event) => { if (event.key === "Enter" && draftValid) addDraftFilter(); }}
                                 />
+                                {draftOperator === "between" && <TextField label={`Till (${METRICS[draftMetric].unit})`} type="number" inputMode="decimal" step={METRICS[draftMetric].step}
+                                    value={draftUpper} onValueChange={setDraftUpper} min={METRICS[draftMetric].min} max={METRICS[draftMetric].max} />}
+                                </>}
                             </div>
                             <Button variant="secondary" disabled={!draftValid} onClick={addDraftFilter}>
                                 <FiPlus aria-hidden="true" /> Lägg till villkor
                             </Button>
+                            </> : <Inline><Label tone="accent" icon={<FiLock />}>Plus</Label><UpgradeLink tier="plus" inline /></Inline>}
                         </div>
                         <div role="status">
                             <Text size="xs" tone="secondary">
@@ -428,6 +478,24 @@ function ScreenerTable() {
                                 {filters.map((filter) => <FilterChip key={`${filter.metric}-${filter.operator}`} {...activeFilterParts(filter)} onRemove={() => removeFilter(filter)} />)}
                             </Inline>
                         )}
+                    </Stack>
+                </Dialog>
+                <Dialog title="Välj kolumner" className={styles.filterDialog}
+                    onOpenChange={open => setLegacyColumnChoices(open ? columns.filter(isLegacyIntradayMetric) : [])}
+                    trigger={<Button variant="secondary" size="sm">Kolumner</Button>}
+                    footer={<Button variant="secondary" onClick={() => { setColumns(defaultColumns); if (isLegacyIntradayMetric(sort.key)) setSort({ key: "marketCap", direction: "desc" }); }}>Standardkolumner</Button>}>
+                    <Stack gap={4}>
+                        <TextField label="Sök kolumn" value={columnSearch} onValueChange={setColumnSearch} />
+                        <div className={styles.columnChoices}>
+                            {DISCOVERABLE_METRICS.filter(key => matchesMetricSearch(key, columnSearch)).map(key =>
+                                <Checkbox key={key} label={<Inline>{METRICS[key].label}{!unlocked(key) && <Label tone="accent">Plus</Label>}</Inline>} checked={columns.includes(key)} disabled={!unlocked(key)}
+                                    onCheckedChange={checked => setColumns(current => checked ? [...current, key] : current.filter(item => item !== key))} />)}
+                            {legacyColumnChoices.filter(key => matchesMetricSearch(key, columnSearch)).map(key =>
+                                <Checkbox key={key} label={<Inline>Äldre intradag · {METRICS[key].label}</Inline>} checked={columns.includes(key)} disabled={!unlocked(key)}
+                                    onCheckedChange={checked => setColumns(current => checked ? [...new Set([...current, key])] : current.filter(item => item !== key))} />)}
+                            {![...DISCOVERABLE_METRICS, ...legacyColumnChoices].some(key => matchesMetricSearch(key, columnSearch)) && <Text size="sm" tone="secondary">Inga kolumner matchar.</Text>}
+                        </div>
+                        {!paidAccess && <UpgradeLink tier="plus" inline />}
                     </Stack>
                 </Dialog>
                 <Inline className={styles.chips} role="group" aria-label="Aktiva filter">
@@ -449,6 +517,7 @@ function ScreenerTable() {
             <div className={styles.resultBar}>
                 <Text size="sm" numeric role="status">
                     {items == null ? "Hämtar bolag…" : `${visibleItems.length} av ${items.length} bolag`}
+                    {meta?.preview === true && <span> · Exempeldata</span>}
                 </Text>
                 <Text size="xs" tone="secondary">
                     {validDataTime
@@ -456,7 +525,13 @@ function ScreenerTable() {
                         : "Uppdateringstid saknas"}
                 </Text>
             </div>
-
+            {(filters.some(filter => filter.metric.startsWith("profile") || filter.metric.startsWith("insider_"))) && (
+                <Text size="xs" tone="secondary" role="status">
+                    {filters.some(filter => filter.metric.startsWith("profile")) && `Profiler: ${meta?.profileCount ?? 0} av ${items?.length ?? 0} bolag. ${meta?.profileStatus === "pending" ? "Underlaget hämtas i bakgrunden. " : ""}`}
+                    {filters.some(filter => filter.metric.startsWith("insider_")) && (meta?.insiderStatus === "pending" ? "Insynsunderlaget hämtas i bakgrunden." : "Endast registrerade aktieaffärer; saknat underlag är inte noll.")}
+                </Text>
+            )}
+            {meta?.count > (items?.length ?? 0) && <Text size="xs" tone="secondary">Urvalet omfattar {items?.length} av {meta.count} bolag i källan.</Text>}
             {error && Boolean(items?.length) && (
                 <div className={styles.error} role="alert">
                     <Text size="sm">{error} Tidigare hämtade värden visas.</Text>
@@ -473,26 +548,27 @@ function ScreenerTable() {
                     action={<Button variant="secondary" loading={refreshing} onClick={() => load({ silent: true })}>Försök igen</Button>} />
             ) : visibleItems.length === 0 ? (
                 <EmptyState
-                    title={hasFilters ? "Inga bolag matchar urvalet" : "Ingen screenerdata att visa ännu"}
-                    description={hasFilters ? "Ta bort ett filter eller välj ett bredare intervall." : "Försök igen om en liten stund."}
+                    title={hasFilters ? ((meta?.profileStatus === "pending" && filters.some(filter => filter.metric.startsWith("profile"))) || (meta?.insiderStatus === "pending" && filters.some(filter => filter.metric.startsWith("insider_"))) ? "Filterunderlaget hämtas" : "Inga bolag matchar urvalet") : "Ingen screenerdata att visa ännu"}
+                    description={hasFilters ? "Saknade värden matchar inte filtret. Pågående hämtning uppdateras automatiskt; annars kan du bredda urvalet." : "Försök igen om en liten stund."}
                     action={hasFilters
                         ? <Button variant="secondary" onClick={resetFilters}>Visa alla bolag</Button>
                         : <Button variant="secondary" loading={refreshing} onClick={() => load({ silent: true })}>Försök igen</Button>}
                 />
             ) : (
                 <div className={styles.tableShell}>
-                    <div className={styles.tableScroll} role="region" tabIndex={0} aria-label="Screenerresultat, skrolla i sidled för fler nyckeltal">
-                        <table className={styles.table} aria-label="Bolag och nyckeltal">
+                    <div ref={resultRegion} className={styles.tableScroll} role="region" tabIndex={0} aria-label="Screenerresultat, skrolla i sidled för fler nyckeltal">
+                        <table className={styles.table} style={{ minWidth: 248 + columns.length * 104 }} aria-label="Bolag och nyckeltal">
                             <thead>
                                 <tr>
-                                    {COLUMNS.map((column) => {
+                                    {columnDefinitions.map((column) => {
                                         const active = sort.key === column.key;
                                         return (
                                             <th scope="col" key={column.key}
+                                                data-metric={column.key}
                                                 className={column.key === "company" ? styles.companyColumn : undefined}
                                                 aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                                             >
-                                                <Button variant="ghost" size="sm" className={styles.sortButton} onClick={() => toggleSort(column.key)}>
+                                                <Button variant="ghost" size="sm" className={styles.sortButton} title={METRICS[column.key]?.description} onClick={() => toggleSort(column.key)}>
                                                     {column.label}
                                                     {active && (sort.direction === "asc" ? <FiArrowUp aria-hidden="true" /> : <FiArrowDown aria-hidden="true" />)}
                                                 </Button>
@@ -505,12 +581,14 @@ function ScreenerTable() {
                                 {shownItems.map((row) => (
                                     <tr key={row.symbol}>
                                         <td className={styles.companyColumn}>
-                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`} className={styles.companyLink}>
+                                            <Link href={`/aktie/${encodeURIComponent(row.symbol)}`} className={styles.companyLink}
+                                                aria-haspopup="dialog" title={historyContext(row)} aria-description={historyContext(row)}
+                                                onClick={event => openCompany(event, row.symbol)}>
                                                 <CompanyProfileRadar
                                                     compact
                                                     companyName={row.name ?? row.symbol}
-                                                    loading={profiles[row.symbol] === undefined || profiles[row.symbol] === null}
-                                                    profile={profiles[row.symbol] || null}
+                                                    loading={!row.profile && meta?.profileStatus === "pending"}
+                                                    profile={row.profile ?? null}
                                                 />
                                                 <span className={styles.companyCopy}>
                                                     <strong>{row.name ?? row.symbol}</strong>
@@ -518,14 +596,14 @@ function ScreenerTable() {
                                                 </span>
                                             </Link>
                                         </td>
-                                        {COLUMNS.slice(1).map((column) => {
+                                        {columnDefinitions.slice(1).map((column) => {
                                             const value = valueFor(row, column.key);
                                             return (
-                                                <td key={column.key} className={cx(
+                                                <td key={column.key} title={METRICS[column.key].dailyField ? historyContext(row) : METRICS[column.key].description} className={cx(
                                                     value == null && styles.missing,
-                                                    ["changePct", "revenueGrowthPct", "return15mPct"].includes(column.key) && signedClass(value),
+                                                    METRICS[column.key].signed && signedClass(value),
                                                 )}>
-                                                    {formatValue(value, column.format)}
+                                                    {screenerMetricText(row, column.key)}
                                                 </td>
                                             );
                                         })}
@@ -543,9 +621,23 @@ function ScreenerTable() {
                     trigger={<Button variant="ghost" size="sm"><FiInfo aria-hidden="true" /> Om nyckeltalen</Button>}
                 >
                     <Stack gap={4}>
+                        {items !== null && <Text size="sm">
+                            {historyDates.length ? `Historik till ${historyDates.at(-1)}${historyDates.length > 1 ? ` · vissa bolag till ${historyDates[0]}` : ""}. Stängning: ${dailyCoverage}/${items.length} bolag.` : "Dagskurshistorik saknas i det hämtade underlaget."}
+                            {" "}Saknade historiska värden markeras med — och matchar inte filter.
+                        </Text>}
+                        <Text size="sm">Historiska tekniska mått använder enbart avslutade handelsdagar. Datum och underlag visas när du för muspekaren över bolaget eller ett historiskt värde; äldre eller kortare historik kan ge saknade värden. Kursgrund och täckning kommer från historikkällan, utan intradagskurser som reserv.</Text>
+                        <Text size="sm">
+                            {staleHistoryCount > 0 && `Äldre underlag används för ${staleHistoryCount} bolag i det hämtade underlaget. `}
+                            Äldre underlag får användas för daglig bolagsresearch, men siffrorna gäller historikdatumet i bolagets underlag, inte senaste handelsdagen. Saknade eller för korta perioder ger inget värde; detta är inte historisk återspelning vid valfritt datum.
+                        </Text>
+                        <Text size="sm">Utveckling 1 månad avser 21 handelsdagar, inte 1 minut. 1 vecka, 3 månader, 6 månader och 1 år avser 5, 63, 126 respektive 252 handelsdagar. I år jämför med föregående års sista handelsdag. 52-veckorsnivåer kräver 365 kalenderdagars täckning.</Text>
+                        <Text size="sm">Historiken använder leverantörens sparade dagskurser (provider_close, stored-yahoo). Justering för split och andra bolagshändelser är inte verifierad. Måtten är kursförändringar, inte totalavkastning med utdelningar.</Text>
+                        <Text size="sm">Relativ volym, avslutad dag jämför en avslutad dags volym med 20 tidigare avslutade dagar. Detta skiljer sig från Terminalens pågående Day RVOL och RVOL vid samma klockslag.</Text>
                         <Text size="sm">Finansiella nyckeltal bygger på senast rapporterade helår. Värderingsmultiplar visas bara när kurs, antal aktier och jämförbar rapporteringsvaluta finns.</Text>
-                        <Text size="sm">Tekniska mått bygger på OMXsums sparade marknadsflöde. Tider visas i svensk tid. Saknade värden visas som Saknas och sorteras sist.</Text>
+                        <Text size="sm">Börsvärde och värderingsmultiplar använder senast tillgängliga marknadskurs tillsammans med rapporterade helårsvärden, inte en historisk värdering vid valfritt datum. Äldre intradagsvillkor i delade länkar behåller sin ursprungliga betydelse. Tider visas i svensk tid. Saknade värden sorteras sist.</Text>
                         {meta?.financialCoverage != null && <Text size="sm">Helårsdata finns för {meta.financialCoverage} bolag.</Text>}
+                        <Text size="sm">Bolag utan färska kurser finns kvar för fundamental screening. Saknade värden matchar inte ett filter. Alla villkor måste vara uppfyllda; Mellan inkluderar båda gränserna.</Text>
+                        <Text size="sm">Insynsfilter summerar registrerade aktieförvärv och försäljningar efter transaktionsdatum, inte antalet nyhetsartiklar. Belopp kräver SEK. Underlaget kan vara ofullständigt; bolag utan registrerade affärer i underlaget visas som Saknas.</Text>
                         <Text size="sm">Bolagsprofilens sex axlar sammanfattar underliggande nyckeltal. Färgen visar genomsnittet av tillgängliga poäng, inte ett köp- eller säljråd. Saknade axlar får inga poäng.</Text>
                     </Stack>
                 </Dialog>
@@ -554,17 +646,29 @@ function ScreenerTable() {
                 )}
                 <Text size="xs" tone="secondary" numeric>{items?.length ? `Visar ${shownItems.length} av ${visibleItems.length}` : ""}</Text>
             </div>
+            {(selectedCompany || drawerVisited) && <ScreenerCompanyDrawer symbol={selectedCompany} row={items?.find(row => row.symbol === selectedCompany)}
+                rows={visibleItems} columns={columns} cache={previewCache} onSelect={selectCompany} onClose={closeCompany}
+                onClosed={() => { if (screenerScroll.current) window.scrollTo({ ...screenerScroll.current, behavior: "instant" }); }}
+                finalFocus={() => {
+                    const target = companyTrigger.current?.isConnected ? companyTrigger.current : resultRegion.current;
+                    target?.focus({ preventScroll: true });
+                    return false;
+                }} />}
         </section>
     );
 }
 
 export default function ScreenerPage() {
+    const { user, isPlusUser, accountError, refreshUser } = useAuthContext();
+    const [login, setLogin] = useState(false);
     return (
         <Container as="main" className={styles.workspace}>
             <StockWorkspaceNav foundation />
-            <PlusPaywall redirectTo="/aktier/screener" title="Utforska aktier med Plus" description="Hitta bolag med screenerns urval och egna filter. Marknadsöversikten och bolagens nyheter är fortsatt öppna.">
-                <ScreenerTable />
-            </PlusPaywall>
+            {accountError ? <EmptyState title="Kunde inte hämta ditt konto" action={<Button onClick={refreshUser}>Försök igen</Button>} />
+                : !user ? <Skeleton className={styles.loadingRow} />
+                : user.email ? <ScreenerTable key={`${user.email}:${isPlusUser ? "plus" : "free"}`} plus={Boolean(isPlusUser)} />
+                : <ScreenerPreview onLogin={() => setLogin(true)} />}
+            <Dialog open={login} onOpenChange={setLogin} title="Logga in på OMXsum"><LogInModal redirectTo="/aktier/screener" /></Dialog>
         </Container>
     );
 }

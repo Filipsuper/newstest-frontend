@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchPersonalQuoteSnapshot, mergePersonalQuoteSnapshot, personalCompanyQuote,
   personalCompanySparkGeometry, personalDailyHistory, personalIntradayHistory, personalQuotePage,
-  personalQuoteSymbols, PERSONAL_QUOTE_REFRESH_MS } from '../app/utils/personalCompanyQuotes.js';
+  personalQuoteSymbols, cachedPersonalQuoteSnapshot, prefetchPersonalQuotes, PERSONAL_QUOTE_REFRESH_MS } from '../app/utils/personalCompanyQuotes.js';
 
 const at = value => Date.parse(value);
 const now = at('2026-09-30T13:00:00Z');
@@ -12,6 +12,49 @@ const symbol = 'ONE.ST';
 const body = { symbol, timezone: 'Europe/Stockholm', sessionDate: '2026-09-30', previousClose: 100,
   current: [{ time: first, close: 100 }, { time: last, close: 102 }],
   quote: { price: 102, changePct: 2, quoteTime: last, currency: 'SEK', sourceName: 'Testkälla' } };
+
+test('quote prefetch warms only four plus the next four and exposes synchronous stale snapshots', async () => {
+  let time = now;
+  const calls = [], follows = Array.from({ length: 100 }, (_, index) => `W${index}.ST`);
+  const options = { apiUrl: 'https://prefetch-bounded.test', now: () => time,
+    fetcher: async url => {
+      const requested = decodeURIComponent(url.split('/').at(-2)); calls.push(requested);
+      return { ok: true, json: async () => ({ ...body, symbol: requested }) };
+    } };
+  await prefetchPersonalQuotes(follows, options);
+  assert.deepEqual(calls, follows.slice(0, 8));
+  assert.equal(cachedPersonalQuoteSnapshot(follows[0], options).quote.price, 102);
+  await fetchPersonalQuoteSnapshot(follows[0], options);
+  assert.equal(calls.length, 8);
+  time += 30_000;
+  assert.equal(cachedPersonalQuoteSnapshot(follows[0], options).quote.price, 102);
+  time += 300_000;
+  assert.equal(cachedPersonalQuoteSnapshot(follows[0], options), null);
+  const controller = new AbortController(); controller.abort();
+  await prefetchPersonalQuotes(follows, { ...options, signal: controller.signal });
+  assert.equal(calls.length, 8);
+});
+
+test('quote prefetch and a mounted card share one request even when one consumer unmounts', async () => {
+  let release, calls = 0;
+  const options = { apiUrl: 'https://shared-quote.test', now: () => now,
+    fetcher: () => { calls++; return new Promise(resolve => { release = resolve; }); } };
+  const controller = new AbortController();
+  const first = fetchPersonalQuoteSnapshot(symbol, { ...options, signal: controller.signal });
+  const second = fetchPersonalQuoteSnapshot(symbol, options);
+  controller.abort();
+  await assert.rejects(first, { name: 'AbortError' });
+  release({ ok: true, json: async () => body });
+  assert.equal((await second).quote.price, 102); assert.equal(calls, 1);
+});
+
+test('a successfully cached empty daily fallback is missing history, not another loader', async () => {
+  const options = { apiUrl: 'https://empty-history-cache.test', now: () => now,
+    fetcher: async url => ({ ok: true, json: async () => url.endsWith('/intraday')
+      ? { ...body, current: [] } : { symbol, points: [] } }) };
+  assert.equal((await fetchPersonalQuoteSnapshot(symbol, options)).historyStatus, 'missing');
+  assert.equal(cachedPersonalQuoteSnapshot(symbol, options).historyStatus, 'missing');
+});
 
 test('preserve follow order and page just four exact symbols, including 100 follows', () => {
   assert.deepEqual(personalQuoteSymbols(['one.st', 'TWO.ST', 'ONE.ST', '', 'WRONG/SYMBOL']), ['ONE.ST', 'TWO.ST']);

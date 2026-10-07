@@ -6,6 +6,7 @@ import { FiArrowUpRight, FiPlus } from "react-icons/fi";
 import { getCompanies } from "../utils/companies";
 import { Combobox } from "./ui/Combobox";
 import { Text } from "./ui/layout";
+import { CompanyIdentity } from "./ui/CompanyLogo";
 
 export const STOCK_SEARCH_SUGGESTIONS = [
   "INVE-B.ST",
@@ -88,14 +89,14 @@ export default function StockSearch({
       itemLabel={(row) => row.name || row.symbol}
       renderItem={(row) => (
         <>
-          <div>
+          <CompanyIdentity company={row} loading="eager">
             <Text as="span" size="sm">
               {row.name}
             </Text>
             <Text size="xs" tone="secondary">
               {row.nativeSymbol || row.symbol}
             </Text>
-          </div>
+          </CompanyIdentity>
           {selectionAction === "follow" ? <FiPlus aria-hidden="true" /> : <FiArrowUpRight aria-hidden="true" />}
         </>
       )}

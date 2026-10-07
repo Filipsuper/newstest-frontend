@@ -15,10 +15,12 @@ export function Dialog({
   description,
   children,
   footer,
+  headerActions,
   className,
   variant,
   initialFocus,
   finalFocus,
+  bodyRef,
   ...props
 }) {
   return (
@@ -30,18 +32,20 @@ export function Dialog({
           className={cx(
             styles.dialogViewport,
             variant === "reader" && styles.readerViewport,
+            variant === "drawer" && styles.drawerViewport,
           )}
         >
-          <BaseDialog.Popup className={cx(styles.dialog, className)} initialFocus={initialFocus} finalFocus={finalFocus}>
+          <BaseDialog.Popup className={cx(styles.dialog, variant === "drawer" && styles.drawer, className)} initialFocus={initialFocus} finalFocus={finalFocus}>
             <div className={styles.dialogHeader}>
               <BaseDialog.Title
                 className={cx(styles.heading, styles.heading_section)}
               >
                 {title}
               </BaseDialog.Title>
+              {headerActions && <div className={styles.dialogHeaderActions}>{headerActions}</div>}
               <BaseDialog.Close
                 render={
-                  <IconButton label="Stäng dialog">
+                  <IconButton label="Stäng dialog" className={styles.dialogClose}>
                     <FiX aria-hidden="true" />
                   </IconButton>
                 }
@@ -52,7 +56,7 @@ export function Dialog({
                 {description}
               </BaseDialog.Description>
             )}
-            <div className={styles.dialogBody}>{children}</div>
+            <div ref={bodyRef} className={styles.dialogBody}>{children}</div>
             {footer && <div className={styles.dialogFooter}>{footer}</div>}
           </BaseDialog.Popup>
         </BaseDialog.Viewport>

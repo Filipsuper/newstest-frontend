@@ -20,6 +20,7 @@ export const membershipPlans = [
       "Aktieöversikter med kursgraf och nyheter",
       `Följ upp till ${companyLimit('free')} bolag i Mina bolag`,
       "Nyheter som matchar dina ämnen och nyckelord",
+      "Screener med sex grundnyckeltal och egna filter",
     ],
   },
   {
@@ -34,7 +35,7 @@ export const membershipPlans = [
       "Finansiella grafer: resultat, kassaflöde och skuld",
       "Korta AI-sammanfattningar av VD-ord",
       "Estimat, värdering, insyn och blankning",
-      "Screener för att filtrera och jämföra bolag",
+      "Alla screenerfilter: bolagsprofil, insyn, nyheter och tekniska mått",
     ],
   },
   {

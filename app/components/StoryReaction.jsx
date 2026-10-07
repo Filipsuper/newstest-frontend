@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Select } from "./ui/Select";
 import { SegmentedControl } from "./ui/SegmentedControl";
@@ -27,6 +27,11 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
   const data = reactionV2For(story);
   const companies = story.companies ?? [];
   const [selectedSymbol, setSelectedSymbol] = useState(null);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("company");
+    setSelectedSymbol(requested);
+    // Validation below only accepts a company actually present in this story.
+  }, [story.id]);
   if (!data && !companyContextFor(story)) return null;
   const symbol = companies.some(company => company.symbol === selectedSymbol) ? selectedSymbol : companies[0]?.symbol;
   const observation = rowReaction(story, symbol);
@@ -37,13 +42,13 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
   const sessionLabel = sessionDateLabel(context);
   const measurement = data?.measurements.find(item => item.symbol === symbol);
   const period = preferredReactionPeriod(measurement);
-  const window = measurement?.windows?.[period];
-  const complete = measurement?.status === "measured" && completedReaction(window);
-  const pending = measurement?.status === "waiting_for_session" || window?.status === "pending";
+  const reactionWindow = measurement?.windows?.[period];
+  const complete = measurement?.status === "measured" && completedReaction(reactionWindow);
+  const pending = measurement?.status === "waiting_for_session" || reactionWindow?.status === "pending";
   const label = reactionPeriodLabel(period, measurement);
   const shortPeriod = REACTION_PERIODS.find(([key]) => key === period)?.[1];
   const afterOpen = startsAtOpen(measurement);
-  const status = measurement?.status === "measured" ? window?.status : measurement?.status;
+  const status = measurement?.status === "measured" ? reactionWindow?.status : measurement?.status;
   const volumePeriod = preferredVolumePeriod(measurement);
   const volume = measurement?.volume?.[volumePeriod];
   const post = volume?.post;
@@ -136,8 +141,8 @@ export default function StoryReaction({ story, loading = false, error, onRefresh
           </dl>
           <dl className={styles.provenance}>
             <div><dt>{measurement?.baseline?.kind === "previous_session_close_proxy" ? "Föregående stängning (minutkurs)" : "Utgångskurs före nyheten"}</dt><dd>{measurement?.baseline ? newsDate(measurement.baseline.priceAt) : "Saknas"}</dd></div>
-            <div><dt>Önskad mättid</dt><dd>{window?.targetAt ? newsDate(window.targetAt) : "Saknas"}</dd></div>
-            <div><dt>Faktisk avläsning</dt><dd>{window?.endpoint ? newsDate(window.endpoint.priceAt) : "Saknas"}</dd></div>
+            <div><dt>Önskad mättid</dt><dd>{reactionWindow?.targetAt ? newsDate(reactionWindow.targetAt) : "Saknas"}</dd></div>
+            <div><dt>Faktisk avläsning</dt><dd>{reactionWindow?.endpoint ? newsDate(reactionWindow.endpoint.priceAt) : "Saknas"}</dd></div>
             <div><dt>Beräkning uppdaterad</dt><dd>{measurement?.asOf ? newsDate(measurement.asOf) : "Saknas"}</dd></div>
           </dl>
           {volumeComplete ? <Stack gap={2}>

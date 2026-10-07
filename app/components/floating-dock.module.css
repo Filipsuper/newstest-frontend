@@ -1,3 +1,27 @@
 .dock > .navigation {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.dock > .navigation > a {
+  min-height: var(--ui-control-md);
+  min-width: 0;
+  font-size: var(--ui-text-xs);
+}
+.searchToggle {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--ui-space-2));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-md);
+  height: var(--ui-control-md);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  cursor: pointer;
+}
+.searchToggle:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 3px;
 }

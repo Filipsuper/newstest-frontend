@@ -6,25 +6,17 @@ import { useRouter } from "next/navigation";
 import { useAuthContext } from "../providers/AuthProvider";
 import EmailInput from "./EmailInput";
 import { Button } from "./ui/Button";
-import { Skeleton } from "./ui/data";
 import { Inline, Stack, Text } from "./ui/layout";
 import styles from "./landing.module.css";
 
 export function LandingActions() {
-  const { user } = useAuthContext();
+  const { user, accountError } = useAuthContext();
   const hasPreferences = Boolean(
     user?.watchlist?.length || user?.topics?.length || user?.keywords?.length,
   );
   return (
     <Stack gap={4} className={styles.actions} id="kom-igang" tabIndex={-1}>
-      {!user ? (
-        <Stack gap={3} aria-busy="true">
-          <Text size="sm" tone="secondary" role="status">
-            Hämtar ditt konto…
-          </Text>
-          <Skeleton className={styles.actionSkeleton} />
-        </Stack>
-      ) : user.email ? (
+      {user?.email && !accountError ? (
         <>
           <Text size="sm" tone="secondary">
             Välkommen tillbaka
@@ -55,10 +47,9 @@ export function LandingActions() {
         </>
       ) : (
         <>
-          <Text size="sm">Börja med Morgonbrevet i inkorgen.</Text>
+          <Text size="sm">Börja med Morgonbrevet. Gratis, varje vardag.</Text>
           <EmailInput />
           <Inline>
-            <Button variant="secondary" nativeButton={false} role="link" render={<Link href="/kom-igang" />}>Skapa gratis konto</Button>
             <Button
               variant="ghost"
               nativeButton={false}

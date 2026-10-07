@@ -1,3 +1,12 @@
+// Navigation only; /pro retains the explicit trial selection/activation flow.
+export function membershipTrialOffer(user) {
+  if (!user || user.trial?.status === "active") return false;
+  if (!user.email) return true;
+  return user.plan === "free" && user.verified === true
+    && user.trial?.eligible === true && user.trial.status === "unused";
+}
+export const TRIAL_CTA = "Testa 7 dagar gratis";
+
 export async function startMembershipTrial(tier, { fetcher = fetch } = {}) {
   if (!["plus", "pro"].includes(tier)) throw new Error("Välj Plus eller Pro.");
   const controller = new AbortController();

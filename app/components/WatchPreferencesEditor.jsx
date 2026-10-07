@@ -20,6 +20,7 @@ import { TextField } from "./ui/TextField";
 import { Tab, TabList, TabPanel, Tabs } from "./ui/Tabs";
 import { Heading, Inline, Stack, Text } from "./ui/layout";
 import { Skeleton } from "./ui/data";
+import CompanyLogo, { CompanyIdentity } from "./ui/CompanyLogo";
 import styles from "./watch-preferences.module.css";
 
 const TOPIC_LIMIT = 10;
@@ -32,11 +33,12 @@ const GROUPS = [
 ];
 const normalize = (value) => String(value || "").toLocaleLowerCase("sv-SE").trim();
 
-function SelectedChips({ label, values, itemLabel = (value) => value, removeLabel, busy, onRemove }) {
+function SelectedChips({ label, values, itemLabel = (value) => value, renderIcon, removeLabel, busy, onRemove }) {
   return values.length ? (
     <Inline as="ul" className={styles.chips} aria-label={label}>
       {values.map((value) => (
         <li className={styles.chip} key={value}>
+          {renderIcon?.(value)}
           <Text as="span" size="sm">{itemLabel(value)}</Text>
           <IconButton
             label={`${removeLabel} ${itemLabel(value)}`}
@@ -229,6 +231,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
             <SelectedChips
               label="Valda bolag" values={watchlist} busy={busy}
               itemLabel={(symbol) => companyNames.get(symbol) || symbol}
+              renderIcon={(symbol) => <CompanyLogo size="sm" company={companies.find(company => company.symbol === symbol) || { symbol, logo: null }} />}
               removeLabel="Sluta följa"
               onRemove={(symbol) => followCompany({ symbol, name: companyNames.get(symbol) }, false)}
             />
@@ -248,7 +251,7 @@ export default function WatchPreferencesEditor({ initialTab = "companies", initi
               </Stack>
             )}
             {selected && <Inline className={styles.candidate}>
-              <Text size="sm">{selected.name || selected.symbol}</Text>
+              <CompanyIdentity company={selected} size="sm"><Text size="sm">{selected.name || selected.symbol}</Text></CompanyIdentity>
               <Button
                 variant="secondary" loading={busy}
                 disabled={watchlist.includes(selected.symbol) || watchlist.length >= companyLimit}

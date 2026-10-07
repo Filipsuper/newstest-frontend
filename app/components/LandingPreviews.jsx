@@ -1,4 +1,5 @@
 import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
+import LandingScreenerPreview from './LandingScreenerPreview';
 import { landingLetter, landingNews } from "../utils/landing";
 import NewsFeedItem from "./NewsFeedItem";
 import LetterCard from "./LetterCard";
@@ -6,6 +7,10 @@ import { LandingRetry } from "./LandingActions";
 import { EmptyState, Skeleton } from "./ui/data";
 import { Stack, Text } from "./ui/layout";
 import styles from "./landing.module.css";
+
+export function LandingScreenerSample() {
+  return <LandingScreenerPreview />;
+}
 
 export function LandingPreviewLoading({ type }) {
   return (
@@ -41,17 +46,17 @@ export async function LandingNewsPreview() {
       />
     );
   return (
-    <Stack gap={3}>
+    <div className={styles.newsGrid}>
       {result.stories.map((item) => (
-        <NewsFeedItem key={item.id} item={item} summaryPreview />
+        <NewsFeedItem key={item.id} item={item} summaryPreview variant="editorial" />
       ))}
-      <Text size="xs" tone="secondary">
+      <Text size="xs" tone="secondary" className={styles.newsNote}>
         {result.stale
           ? "Senaste tillgängliga urval · tillfälligt fördröjt. "
-          : "Ett urval, inte hela nyhetsflödet. "}
-        Öppna en nyhet för källor och mer om reaktionen.
+          : "Ur Marknadens nyhetsurval. "}
+        Källor och mätperiod finns i nyheten.
       </Text>
-    </Stack>
+    </div>
   );
 }
 

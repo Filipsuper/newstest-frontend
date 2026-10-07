@@ -2,12 +2,15 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
+import { shouldLoadSiteScripts } from "../utils/siteScriptsPolicy";
 
 export default function SiteScripts() {
   // The confirmation URL contains an inbox-ownership credential. No ads,
   // analytics or third-party embeds belong on this route, even after success.
   const path = usePathname();
-  if (path === "/bekrafta" || path === "/kom-igang") return null;
+  if (!shouldLoadSiteScripts(path)) return null;
+  // Third-party code disqualifies this document from private admin reads.
+  if (typeof window !== 'undefined') window.__OMXSUM_PRIVATE_DOCUMENT__ = false;
   return (
     <>
       <Script

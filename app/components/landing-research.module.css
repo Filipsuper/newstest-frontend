@@ -1,0 +1,50 @@
+.preview {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0;
+  padding: var(--ui-space-4);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.header {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company {
+  display: flex;
+  min-width: 0;
+  min-height: var(--ui-control-md);
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ui-space-1);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--ui-radius-sm);
+}
+
+.company:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
+.company:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 4px; }
+
+.legend { gap: var(--ui-space-2) var(--ui-space-4); }
+.legendItem { display: inline-flex; align-items: center; gap: var(--ui-space-2); }
+.legend > :last-child { margin-left: auto; }
+.mark { width: var(--ui-space-2); height: var(--ui-space-2); border-radius: 2px; flex-shrink: 0; }
+.revenue { background: var(--ui-accent); fill: var(--ui-accent); }
+.ebit { background: var(--ui-text-secondary); fill: var(--ui-text-secondary); }
+
+.chart { display: block; flex-shrink: 0; overflow: visible; }
+.chart text { fill: var(--ui-text-secondary); font: 400 var(--ui-text-xs) var(--ui-font); font-variant-numeric: tabular-nums; }
+.grid { stroke: var(--ui-border); stroke-dasharray: 2 4; }
+.baseline { stroke: var(--ui-border); }
+.caption { justify-content: space-between; }
+.caption time { white-space: nowrap; }
+
+@media (max-width: 380px) {
+  .legend > :last-child { flex-basis: 100%; margin-left: 0; }
+  .header { gap: var(--ui-space-2); }
+  .company h3 { font-size: var(--ui-text-md); }
+}

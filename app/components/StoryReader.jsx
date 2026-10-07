@@ -13,6 +13,7 @@ import {
 } from "../utils/newsroom";
 import { reactionV2For, retainReactionV2 } from "../utils/reactionV2";
 import { companyContextFor, retainCompanyContext } from "../utils/companySession";
+import { newsDescription } from "../utils/newsSummary";
 import NewsTypeLabel from "./NewsTypeLabel";
 import NewsSummary from "./NewsSummary";
 import { Button } from "./ui/Button";
@@ -23,7 +24,9 @@ import NewsFeedItem from "./NewsFeedItem";
 import StoryVolume from "./StoryVolume";
 import StoryReaction from "./StoryReaction";
 import StoryStockHistory from "./StoryStockHistory";
+import OmxsumStoriesRelated from './OmxsumStoriesRelated';
 import styles from "./story-reader.module.css";
+import CompanyLogo from './ui/CompanyLogo';
 
 const windows = [
   ["Första avslut", "tickPct"],
@@ -101,6 +104,7 @@ export default function StoryReader({
   const reaction = finiteNumber(story.reaction?.pct);
   const sources = story.sources ?? [];
   const release = detail?.document;
+  const description = newsDescription(story);
   const published = Number.isFinite(story.ts)
     ? new Date(story.ts).toISOString()
     : null;
@@ -166,7 +170,7 @@ export default function StoryReader({
         <Heading as="h1" size="page" className={styles.title}>
           {story.title}
         </Heading>
-        <NewsSummary value={story.aiSummary} reading />
+        {description && <NewsSummary {...description} reading />}
         {hasReactionV2 || hasCompanyContext ? <StoryReaction key={`${story.id}:${story.version}`} story={story} loading={loading} error={error} refreshKey={retry}
           onRefresh={() => setRetry(value => value + 1)} /> : <section
           className={styles.reaction}
@@ -226,6 +230,7 @@ export default function StoryReader({
                 className={styles.company}
                 href={`/aktie/${encodeURIComponent(company.symbol)}`}
               >
+                <CompanyLogo company={company} size="sm" />
                 {company.name || company.symbol}
                 <FiArrowUpRight aria-hidden="true" />
               </Link>
@@ -254,8 +259,8 @@ export default function StoryReader({
         )}
         {release?.body && (
           <details className={styles.details}>
-            <summary>Läs hela källtexten</summary>
-            {release.preamble && <Text>{release.preamble}</Text>}
+            <summary>{story.sourceExcerpt?.kind === 'rss' ? `Läs texten från ${story.sourceExcerpt.publisher} (RSS)` : "Läs hela källtexten"}</summary>
+            {release.preamble && !release.body.startsWith(release.preamble) && <Text>{release.preamble}</Text>}
             <div className={styles.release}>
               {release.body
                 .split(/\n{2,}|\s+[•*]\s+/)
@@ -314,6 +319,7 @@ export default function StoryReader({
             )}
           </Inline>
         </section>
+        <OmxsumStoriesRelated newsId={storyId} />
         <Inline className={styles.between}>
           <Link className={styles.company} href="/marknaden/nyheter">
             Fortsätt till nyhetsflödet <FiArrowUpRight aria-hidden="true" />

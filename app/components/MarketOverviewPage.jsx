@@ -22,6 +22,7 @@ import MarketQuote from "./MarketQuote";
 import { Container, Heading, Inline, Stack, Text, cx } from "./ui/layout";
 import NewsFeedItem from "./NewsFeedItem";
 import LetterPreview from "./LetterPreview";
+import OmxsumStoryCard from './OmxsumStoryCard';
 import WatchPreview from "./WatchPreview";
 import LiveNewsFeed from "./LiveNewsFeed";
 import { useAuthContext } from "../providers/AuthProvider";
@@ -86,6 +87,7 @@ export default function MarketOverviewPage({
   overview = {},
   articles = [],
   referenceTime,
+  stories = [],
 }) {
   const { isPlusUser } = useAuthContext();
   const [data, setData] = useState(overview);
@@ -234,7 +236,7 @@ export default function MarketOverviewPage({
           <div className={styles.news}>
             {featured.length ? (
               featured.map((item) => <div key={item.id} data-live-news-id={`featured:${item.id}`}>
-                <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary />
+                <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary variant="editorial" />
               </div>)
             ) : (
               <EmptyState
@@ -246,6 +248,10 @@ export default function MarketOverviewPage({
         </section>
         <div className={styles.context}>
           <LetterPreview article={edition} />
+          {stories.length > 0 && <Stack as="section" gap={3} aria-label="OMXsum Stories">
+            <Heading size="subsection"><Link href="/marknaden/stories">OMXsum Stories</Link></Heading>
+            {stories.map(article => <OmxsumStoryCard key={article.id} article={article} />)}
+          </Stack>}
         </div>
         <section
           id="senaste-nytt"
@@ -268,7 +274,7 @@ export default function MarketOverviewPage({
               <div className={styles.news}>
                 {visibleItems.slice(0, 12).map((item) => (
                   <div key={item.id} data-live-news-id={`latest:${item.id}`}>
-                    <NewsFeedItem item={item} showSummary={false} />
+                    <NewsFeedItem item={item} showSummary={false} variant="brief" />
                   </div>
                 ))}
               </div>

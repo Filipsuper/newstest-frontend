@@ -216,6 +216,7 @@ export default function ProPage() {
                   Morgon- och kvällsbreven, Marknadens nyhetsurval och
                   aktieöversikterna. Med ett konto kan du följa två bolag och se
                   nyheter som matchar dina bolag, ämnen och nyckelord i Mina bolag.
+                  Screenern har sex gratis nyckeltal för egna filter och jämförelser.
                 </Text>
               </Stack>
               <Stack gap={2}>
@@ -223,7 +224,7 @@ export default function ProPage() {
                   Vad skiljer Plus från Pro?
                 </Heading>
                 <Text size="sm" tone="secondary">
-                  Plus innehåller hela nyhetsflödet, screenern, finansiella
+                  Plus innehåller hela nyhetsflödet, alla screenerfilter, finansiella
                   grafer, VD-ord och fördjupad bolagsanalys. Du kan följa upp till
                   20 bolag i Mina bolag. Pro innehåller allt i Plus, upp till 100 följda
                   bolag och exklusiv tillgång till Terminal.

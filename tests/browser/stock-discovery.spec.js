@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+const fixtureOrigin = `http://127.0.0.1:${process.env.NEWS_FIXTURE_PORT || 8100}`;
 
 test.describe.configure({ mode: "serial" });
 test.use({ hasTouch: true });
@@ -7,7 +8,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { window.EventSource = class extends EventTarget { close() {} }; });
   await page.route("**/*", async route => {
     const url = new URL(route.request().url());
-    if (url.pathname.startsWith("/api/")) return route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:8100${url.pathname}${url.search}` }) });
+    if (url.pathname.startsWith("/api/")) return route.fulfill({ response: await route.fetch({ url: `${fixtureOrigin}${url.pathname}${url.search}` }) });
     if (["localhost", "127.0.0.1"].includes(url.hostname)) return route.continue();
     return route.abort();
   });
@@ -21,7 +22,7 @@ test("compact discovery is company-first, uses shared palette and does not fetch
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/aktier");
   await expect(resultList(page).getByRole("listitem")).toHaveCount(3);
-  await expect(page.getByRole("navigation", { name: "Aktier", exact: true }).getByRole("link", { name: "Screener" })).toHaveAttribute("href", "/aktier/screener");
+  await expect(page.getByRole("navigation", { name: "Huvudmeny", exact: true }).getByRole("link", { name: "Screener" })).toHaveAttribute("href", "/aktier/screener");
   const row = resultList(page).getByRole("listitem").first();
   expect((await row.boundingBox()).y).toBeLessThan(520);
   expect((await row.boundingBox()).height).toBeLessThan(150);
@@ -49,10 +50,10 @@ test("filters, report choice and story dialog roundtrip through URL without losi
   await page.getByRole("searchbox", { name: "Sök bolag eller ticker", exact: true }).fill("nord");
   await page.getByRole("combobox", { name: "Sektor", exact: true }).click();
   await page.getByRole("option", { name: "Industri", exact: true }).click();
-  await expect(page).toHaveURL(/view=reports.*q=nord.*sector=Industri/);
+  await expect(page).toHaveURL(/view=all.*q=nord.*sector=Industri/);
   const original = page.url();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Rapporter", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Alla bolag", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("searchbox", { name: "Sök bolag eller ticker", exact: true })).toHaveValue("nord");
   const story = resultList(page).locator('a[href^="/nyhet/"][href$="~fixture-0"]');
   await story.click();
@@ -88,8 +89,9 @@ test("complete directory, load more, missing data, search and clearing filters",
   await expect(resultList(page)).toContainText("Ingen nyhet i urvalet");
   await expect(resultList(page)).not.toContainText("0,00 kr");
   await page.getByRole("button", { name: "I nyheterna", exact: true }).click();
-  await expect(page.getByText("Inga bolag matchar filtren", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Visa alla bolag", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await expect(resultList(page).getByRole("listitem")).toHaveCount(3);
+  await search.fill("Övrigt Testbolag 30");
   await expect(resultList(page).getByRole("listitem")).toHaveCount(1);
   await page.getByRole("button", { name: "Rensa filter", exact: true }).click();
   await expect(search).toHaveValue("");
@@ -99,16 +101,17 @@ test("complete directory, load more, missing data, search and clearing filters",
 test("following is separate from navigation and preserves the failed-save state", async ({ page }) => {
   let watchlist = [], fail = false, writes = 0;
   await page.route("**/api/user", route => route.fulfill({ json: { email: "directory@example.test", verified: true, plan: "plus", watchlist } }));
-  await page.route("**/api/user/watchlist/toggle", async route => {
+  await page.route("**/api/user/watchlist/*", async route => {
     writes++;
     if (fail) return route.fulfill({ status: 403, json: { error: "Din bevakningslista är full." } });
-    const symbol = route.request().postDataJSON().symbol;
-    watchlist = watchlist.includes(symbol) ? [] : [symbol];
+    const symbol = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
+    watchlist = route.request().postDataJSON().followed ? [...new Set([...watchlist, symbol])] : watchlist.filter(value => value !== symbol);
     return route.fulfill({ json: { watchlist } });
   });
   await page.goto("/aktier");
   await page.getByRole("button", { name: "Följ Norden Industri", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sluta följa Norden Industri", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(resultList(page).getByRole('link', { name: 'Mina bolag', exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/aktier$/);
   fail = true;
   await page.getByRole("button", { name: "Följ Skärgården Teknik", exact: true }).click();
@@ -119,20 +122,20 @@ test("following is separate from navigation and preserves the failed-save state"
 
 test("guests get login, and selection failure is recoverable without hiding the directory", async ({ page, request }) => {
   await page.route("**/api/user", route => route.fulfill({ json: { error: "No token provided" } }));
-  await request.post("http://127.0.0.1:8100/__discovery_failure", { data: { fail: true } });
+  await request.post(`${fixtureOrigin}/__discovery_failure`, { data: { fail: true } });
   try {
     await page.goto("/aktier");
     await expect(page.getByText("Bolagsurvalet är inte tillgängligt", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Visa alla bolag", exact: true }).click();
     await expect(resultList(page).getByRole("listitem")).toHaveCount(24);
-    await request.post("http://127.0.0.1:8100/__discovery_failure", { data: { fail: false } });
+    await request.post(`${fixtureOrigin}/__discovery_failure`, { data: { fail: false } });
     await page.getByRole("button", { name: "Försök igen", exact: true }).click();
     await expect(page.getByText("Nyhetsurvalet kunde inte hämtas.", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Följ Norden Industri", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Spara din bevakning" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Följ dina bolag" })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page).toHaveURL(/view=all/);
-  } finally { await request.post("http://127.0.0.1:8100/__discovery_failure", { data: { fail: false } }); }
+  } finally { await request.post(`${fixtureOrigin}/__discovery_failure`, { data: { fail: false } }); }
 });
 
 test("small screens reflow without clipped headlines or nested vertical scrolling", async ({ page }, testInfo) => {

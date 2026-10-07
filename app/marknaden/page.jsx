@@ -1,4 +1,4 @@
-import { fetchAllArticles, fetchMarketOverview } from "../utils/api";
+import { fetchAllArticles, fetchMarketOverview, fetchOmxsumStories } from "../utils/api";
 import MarketOverviewPage from "../components/MarketOverviewPage";
 import { SITE_OG_IMAGE } from "../utils/brand";
 
@@ -30,9 +30,10 @@ export const metadata = {
 };
 
 export default async function MarketPage() {
-  const [articlesResult, overviewResult] = await Promise.allSettled([
+  const [articlesResult, overviewResult, storiesResult] = await Promise.allSettled([
     fetchAllArticles(),
     fetchMarketOverview(),
+    fetchOmxsumStories(),
   ]);
 
   const articles = articlesResult.status === "fulfilled" && Array.isArray(articlesResult.value)
@@ -47,6 +48,7 @@ export default async function MarketPage() {
       overview={overview}
       articles={articles}
       referenceTime={referenceTime}
+      stories={storiesResult.status === 'fulfilled' ? storiesResult.value.items.slice(0, 2) : []}
     />
   );
 }

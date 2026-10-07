@@ -18,6 +18,12 @@ export const SITE_OG_IMAGE = {
   height: 630,
   alt: "OMXsum 2.0 – Förstå vad som driver börsen. Nyheter, kursreaktioner och Morgonbrevet.",
 };
+export const SCREENER_OG_IMAGE = {
+  url: '/og/screener?v=20261003-results',
+  width: 1200,
+  height: 630,
+  alt: 'OMXsum 2.0 – Hitta nästa bolag att utforska. Aktiescreener med bolagsprofiler och jämförbara nyckeltal.',
+};
 export const LANDING_HEADLINE = ["Förstå börsnyheterna.", "Följ dina bolag."];
 export const LANDING_DESCRIPTION =
   "Följ dina bolag och intressen med börsnyheter, kursreaktioner, finansiella grafer och VD-ord i korthet. Börja gratis med OMXsum och Morgonbrevet.";

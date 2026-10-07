@@ -36,9 +36,12 @@ export const stockSegmentLabel = company => STOCK_SEGMENTS.find(option => option
 
 export function stockFilters(params = new URLSearchParams()) {
   const value = (key, fallback, options) => options.some(option => option.value === params.get(key)) ? params.get(key) : fallback;
-  const view = value("view", "news", STOCK_VIEWS);
+  const q = (params.get("q") || "").slice(0, 80);
+  // A company search always covers the directory, including companies with
+  // no selected story. Old bookmarked news/report searches behave the same.
+  const view = q.trim() ? "all" : value("view", "news", STOCK_VIEWS);
   return {
-    view, q: (params.get("q") || "").slice(0, 80),
+    view, q,
     segment: value("list", "all", STOCK_SEGMENTS),
     sector: (params.get("sector") || "all").slice(0, 80),
     sort: value("sort", view === "all" ? "name" : "recent", STOCK_SORTS),
@@ -69,7 +72,7 @@ export function discoverStocks(companies, snapshot, filters) {
     return true;
   }).map(company => ({ ...company, story: stories.get(symbolKey(company.symbol)) ?? null }))
     .filter(company => {
-      if (filters.view !== "all" && !company.story) return false;
+      if (!needle && filters.view !== "all" && !company.story) return false;
       if (filters.segment !== "all" && stockSegment(company) !== filters.segment) return false;
       if (filters.sector !== "all" && companySector(company) !== filters.sector) return false;
       return !needle || normalized([company.name, company.symbol, company.nativeSymbol, companySector(company)].join(" ")).includes(needle);

@@ -1,0 +1,46 @@
+.intro { padding-block: var(--ui-space-6) var(--ui-space-2); }
+.examples { padding-top: var(--ui-space-2); }
+.sampleHeader { justify-content: space-between; padding: var(--ui-space-4) var(--ui-space-6); }
+.tableScroll { min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.tableScroll:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+.table { width: 100%; min-width: 900px; border-collapse: separate; border-spacing: 0; font: inherit; font-size: var(--ui-text-sm); font-variant-numeric: tabular-nums; }
+.table th, .table td { padding: var(--ui-space-3) var(--ui-space-4); text-align: right; white-space: nowrap; height: 64px; border-bottom: 1px solid var(--ui-border); }
+.table th { font-size: var(--ui-text-xs); font-weight: 500; color: var(--ui-text-secondary); height: 44px; }
+.table th:first-child, .table td:first-child { text-align: left; position: sticky; left: 0; background: var(--ui-surface); z-index: 1; width: 248px; }
+.company { display: flex; align-items: center; gap: var(--ui-space-3); color: var(--ui-text); text-decoration: none; min-height: 44px; }
+.company:hover strong { text-decoration: underline; }
+.company:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; border-radius: var(--ui-radius-sm); }
+.company > span { display: grid; gap: var(--ui-space-1); }
+.company strong { font-weight: 600; }
+.company small { font-size: var(--ui-text-xs); color: var(--ui-text-secondary); }
+.company :global(.stock-profile) { --stock-profile-tone: var(--ui-accent); width: 40px; height: 40px; flex: 0 0 40px; margin: 0; }
+.company :global(.stock-profile--low) { --stock-profile-tone: var(--ui-negative); }
+.company :global(.stock-profile--high) { --stock-profile-tone: var(--ui-positive); }
+.company :global(.stock-profile__ring), .company :global(.stock-profile__spoke) { stroke: var(--ui-border); }
+.company :global(.stock-profile__point) { stroke: var(--ui-surface); }
+.company :global(.stock-profile__missing-point) { fill: var(--ui-surface); }
+.company :global(.stock-profile__placeholder) { fill: var(--ui-inset); stroke: var(--ui-border); }
+.placeholder { padding: var(--ui-space-6); min-height: 180px; }
+.tableLoader { width: 100%; height: 300px; }
+.financialSample { padding: var(--ui-space-6); }
+.financialTable { width: 100%; border-collapse: collapse; font-size: var(--ui-text-xs); font-variant-numeric: tabular-nums; }
+.financialTable th, .financialTable td { padding: var(--ui-space-2); text-align: right; border-bottom: 1px solid var(--ui-border); }
+.financialTable th:first-child, .financialTable td:first-child { text-align: left; }
+.financialTable th { font-weight: 500; color: var(--ui-text-secondary); }
+.sourceToggle { min-height: 44px; display: list-item; align-content: center; cursor: pointer; color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
+.sourceToggle:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+.continuation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); padding: var(--ui-space-6); }
+.continuation > div { display: grid; gap: var(--ui-space-2); background: var(--ui-inset); border-radius: var(--ui-radius-md); padding: var(--ui-space-4); }
+@media (max-width: 600px) {
+  .sampleHeader { padding-inline: var(--ui-space-4); }
+  .table { min-width: 780px; }
+  .table th, .table td { padding-inline: var(--ui-space-3); }
+  .table th:first-child, .table td:first-child { width: 180px; min-width: 180px; }
+  /* Keep the offer within reach on a phone, without shrinking real data. */
+  .table tbody tr:nth-child(n + 5) { display: none; }
+  .company { gap: var(--ui-space-2); white-space: normal; }
+  .company :global(.stock-profile) { width: 32px; height: 32px; flex-basis: 32px; }
+  .company strong { display: block; max-width: 116px; }
+  .financialSample { padding: var(--ui-space-4); }
+  .continuation { padding: var(--ui-space-4); gap: var(--ui-space-2); }
+}

@@ -186,7 +186,7 @@ async function setup(page, options = {}) {
     if (path.startsWith("/api/"))
       return route.fulfill({
         response: await route.fetch({
-          url: `http://127.0.0.1:8100${path}${url.search}`,
+          url: `http://127.0.0.1:${process.env.NEWS_FIXTURE_PORT || 8100}${path}${url.search}`,
         }),
       });
     if (["127.0.0.1", "localhost"].includes(url.hostname))
@@ -255,9 +255,8 @@ for (const width of [1440, 390, 320])
     await expect(main(page).locator("article").first()).toContainText(
       "AI-sammanfattning",
     );
-    await expect(main(page).locator("article").first()).toContainText(
-      "Sedan publicering",
-    );
+    await expect(main(page).locator("article").first()
+      .getByLabel("Sedan publicering: +2,4 %", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Se nyheterna för mina bolag", exact: true }),
     ).toBeVisible();
@@ -300,7 +299,7 @@ for (const width of [1440, 390, 320])
         fullPage: true,
       });
     }
-    const headline = main(page).locator("article a").first();
+    const headline = main(page).locator('article a[href^="/nyhet/"]').first();
     await headline.click();
     // The first intercepted reader route is compiled lazily by the dev server.
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
@@ -564,7 +563,7 @@ for (const width of [1440, 390, 320]) test(`no-card trial ${width}: optional, re
   await page.getByRole("button", { name: "Fortsätt till mejl" }).click();
   await expect(page.getByRole("heading", { name: "Håll koll på vad som händer i dina bolag" })).toBeVisible();
   await expect(offer).toContainText("Ingen automatisk betalning");
-  await expect(offer.getByRole("button", { name: "Prova Plus gratis" })).toBeVisible();
+  await expect(offer.getByRole("button", { name: "Testa Plus gratis i 7 dagar" })).toBeVisible();
   const freeAction = page.getByRole("button", { name: "Fortsätt gratis", exact: true });
   expect((await freeAction.boundingBox()).y).toBeLessThan((await offer.boundingBox()).y);
   expect((await freeAction.boundingBox()).y + (await freeAction.boundingBox()).height).toBeLessThan(844);
@@ -578,7 +577,7 @@ for (const width of [1440, 390, 320]) test(`no-card trial ${width}: optional, re
     expect((await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath(`trial-${width}-${theme}.png`), fullPage: true });
   }
-  await offer.getByRole("button", { name: "Prova Plus gratis" }).click();
+  await offer.getByRole("button", { name: "Testa Plus gratis i 7 dagar" }).click();
   await expect(main(page).getByRole("status").filter({ hasText: "Plus · Provperiod" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Håll koll på vad som händer i dina bolag" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Mejl om mina bolag" })).not.toBeChecked();
@@ -728,7 +727,7 @@ test("declining or failing a trial never blocks free onboarding", async ({ page 
   await page.goto("/kom-igang");
   await page.getByRole("button", { name: /^(Fortsätt|Fortsätt utan Morgonbrevet)$/ }).click();
   await page.getByRole("button", { name: "Fortsätt till mejl" }).click();
-  await page.getByRole("button", { name: "Prova Pro gratis" }).click();
+  await page.getByRole("button", { name: "Testa Pro gratis i 7 dagar" }).click();
   await expect(main(page).getByRole("alert")).toContainText("Provperioden kunde inte startas");
   await page.getByRole("button", { name: "Fortsätt gratis", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Din bevakning är klar" })).toBeVisible();

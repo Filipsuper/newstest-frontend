@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 import { useAuthContext } from "../providers/AuthProvider";
-import { fetchPersonalFeed } from "../utils/api";
+import { fetchPersonalFeed, fetchPersonalPreviewObservations } from "../utils/api";
 import { personalStoryToItem, preferenceReason } from "../utils/newsroom";
 import { reconcileNewsSnapshot } from "../utils/personalNews";
-import { followedCompanies, importantPersonalNews } from "../utils/personalOverview";
+import { personalFeedCache, personalFeedScope } from '../utils/personalFeedCache';
+import { followedCompanies } from "../utils/personalOverview";
+import { PERSONAL_PREVIEW_QUERY, PERSONAL_OBSERVATION_FIELDS } from '../utils/personalPreview';
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { Heading, Inline, Text } from "./ui/layout";
 import { Button } from "./ui/Button";
@@ -15,73 +17,98 @@ import NewsFeedItem from "./NewsFeedItem";
 import WatchPreferencesButton from "./WatchPreferencesButton";
 import styles from "./workspace.module.css";
 
+const query = PERSONAL_PREVIEW_QUERY;
+function previewData(result, key, previous = []) {
+  return { key, stories: reconcileNewsSnapshot(previous, result.stories.slice(0, 2).map(story => {
+    const item = { ...personalStoryToItem(story), reason: preferenceReason(story) };
+    for (const field of PERSONAL_OBSERVATION_FIELDS) if (!(field in story)) item[field] = undefined;
+    return item;
+  })), coverage: result.coverage, nextCursor: result.nextCursor };
+}
+
 export default function WatchPreview({ paused = false }) {
   const { user, isGuestUser } = useAuthContext();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  useSyncExternalStore(personalFeedCache.subscribe, personalFeedCache.getRevision, () => 0);
+  const key = personalFeedScope(user);
+  const cached = personalFeedCache.get(user, query)?.data;
+  const [data, setData] = useState(() => cached ? previewData(cached, key) : null);
   const [retry, setRetry] = useState(0);
   const [error, setError] = useState(false);
   const rows = useRef([]);
   const loadedKey = useRef(null);
-  const hasSnapshot = useRef(false);
+  const retryCount = useRef(0);
   const { listRef, captureAnchor } = useLiveScrollAnchor();
-  const key = JSON.stringify([
-    user?.email,
-    user?.watchlist,
-    user?.topics,
-    user?.keywords,
-  ]);
-  const hasPreferences = Boolean(
-    user?.watchlist?.length || user?.topics?.length || user?.keywords?.length,
-  );
+  const hasPreferences = Boolean(user?.watchlist?.length);
   useEffect(() => {
-    let active = true, busy = false;
+    let active = true, busy = false, snapshot;
+    const controller = new AbortController();
     if (loadedKey.current !== key) {
       loadedKey.current = key;
-      rows.current = [];
-      hasSnapshot.current = false;
-      setData(null);
+      const initial = cached ? previewData(cached, key) : null;
+      rows.current = initial?.stories ?? [];
+      setData(initial);
       setError(false);
     }
     if (!user || isGuestUser || !hasPreferences) {
-      setLoading(false);
       return;
     }
     if (paused) {
-      setLoading(false);
+      setData(previous => previous?.key === key ? previous : cached ? previewData(cached, key)
+        : { key, stories: [], coverage: undefined });
       return;
     }
-    async function refresh() {
+    async function enrich(result) {
+      try {
+        const enriched = await fetchPersonalPreviewObservations({ user, ...query, snapshot: result, signal: controller.signal });
+        if (!active || snapshot !== result || !enriched) return;
+        captureAnchor();
+        const next = previewData(enriched, key, rows.current);
+        rows.current = next.stories;
+        setData(next);
+      } catch { /* Optional observations never hide available headlines. */ }
+    }
+    async function refresh(revalidate = false) {
       if (!active || busy || document.visibilityState === 'hidden') return;
       busy = true;
-      if (!hasSnapshot.current) setLoading(true);
+      const force = revalidate || retryCount.current !== retry;
+      retryCount.current = retry;
       try {
-        const result = await fetchPersonalFeed({ limit: 50, filter: 'companies' });
+        const result = await fetchPersonalFeed({ user, ...query, force, signal: controller.signal });
         if (!active) return;
         if (!result || result.unavailable || !Array.isArray(result.stories)) throw new Error('unavailable');
         captureAnchor();
-        rows.current = reconcileNewsSnapshot(rows.current, result.stories.map(story => ({
-          ...personalStoryToItem(story), reason: preferenceReason(story),
-        })));
-        setData({ key, stories: rows.current, coverage: result.coverage, nextCursor: result.nextCursor,
-          importantStories: Array.isArray(result.importantStories) ? result.importantStories.map(personalStoryToItem) : null });
-        hasSnapshot.current = true;
+        const next = previewData(result, key, rows.current);
+        rows.current = next.stories;
+        snapshot = result;
+        setData(next);
         setError(false);
+        // Paint the headlines now; this separate request must not block them.
+        void enrich(result);
       } catch { if (active) { captureAnchor(); setError(true); } }
-      finally { busy = false; if (active) setLoading(false); }
+      finally { busy = false; }
     }
     refresh();
-    const timer = setInterval(refresh, 30_000);
-    document.addEventListener('visibilitychange', refresh);
+    const timer = setInterval(() => refresh(true), 30_000);
+    const visible = () => refresh();
+    document.addEventListener('visibilitychange', visible);
     return () => {
       active = false;
+      controller.abort();
       clearInterval(timer);
-      document.removeEventListener('visibilitychange', refresh);
+      document.removeEventListener('visibilitychange', visible);
     };
   }, [key, hasPreferences, isGuestUser, retry, paused, captureAnchor]);
-  const stories = data?.key === key ? data.stories.filter(item => followedCompanies(item, user?.watchlist ?? []).length) : [];
-  const important = importantPersonalNews(data?.key === key ? data.importantStories ?? stories : stories, user?.watchlist ?? [], Date.now(), 2);
-  const selected = important.length ? important : stories.slice(0, 2);
+  const visibleData = data?.key === key ? data : cached ? previewData(cached, key) : null;
+  const stories = visibleData ? visibleData.stories.filter(item => followedCompanies(item, user?.watchlist ?? []).length) : [];
+  const selected = stories.slice(0, 2);
+  // The overview's first job is market news, not a large empty account panel.
+  // Keep a single clear route into personalisation before the first follow.
+  if (user && (isGuestUser || !hasPreferences)) return <section className={styles.section} aria-label="Dina bevakningar">
+    <Inline className={styles.between}>
+      <Text size="sm">Nyheter om dina bolag, samlade här.</Text>
+      <Link className={styles.textLink} href="/marknaden/bevakning">Följ ditt första bolag <FiArrowRight aria-hidden="true" /></Link>
+    </Inline>
+  </section>;
   return (
     <section className={styles.section} aria-label="Dina bevakningar" ref={listRef}>
       <Inline className={styles.between}>
@@ -103,8 +130,8 @@ export default function WatchPreview({ paused = false }) {
         <Text size="xs" tone="secondary" role="status">Kunde inte uppdatera. Visar senast hämtade nyheter.</Text>
         <Button variant="ghost" size="sm" onClick={() => setRetry((value) => value + 1)}>Försök igen</Button>
       </Inline>}
-      {data?.key === key && data.coverage?.complete === false && <Text size="xs" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Öppna Mina bolag för att försöka igen.</Text>}
-      {!user || (loading && !stories.length) ? (
+      {visibleData?.coverage?.complete === false && visibleData.coverage.reason !== 'preview_limit' && <Text size="xs" tone="secondary" role="status">Alla nyheter kunde inte kontrolleras. Öppna Mina bolag för att försöka igen.</Text>}
+      {!user || (!visibleData && !error && !isGuestUser && hasPreferences && !paused) ? (
         <NewsListSkeleton count={2} compact label="Hämtar dina bevakningar" />
       ) : isGuestUser || !hasPreferences ? (
         <>
@@ -130,16 +157,16 @@ export default function WatchPreview({ paused = false }) {
         </>
       ) : stories.length ? (
         <div className={styles.watchRows}>
-          <Text size="xs" tone="secondary">{important.length ? 'Viktigt i dina bolag' : 'Senaste i dina bolag'} · ur hämtade nyheter</Text>
+          <Text size="xs" tone="secondary">Senaste i dina bolag</Text>
           {selected.map((story) => (
             <div key={story.id} data-live-news-id={story.id}>
-              <NewsFeedItem item={story} reason={story.reason} showSummary={false} compact />
+              <NewsFeedItem item={story} reason={story.reason} showSummary={false} compact variant="brief" />
             </div>
           ))}
         </div>
       ) : (
         <Text size="sm" tone="secondary">
-          {paused ? 'Uppdateringar pausade.' : data?.coverage?.complete === true ? 'Inga bolagsnyheter i den hämtade perioden.' : 'Inga bolagsnyheter i det hämtade underlaget. Öppna Mina bolag för fler bevakningar.'}
+          {paused ? 'Uppdateringar pausade.' : visibleData?.coverage?.complete === true ? 'Inga bolagsnyheter i den hämtade perioden.' : 'Inga bolagsnyheter i det hämtade underlaget. Öppna Mina bolag för fler bevakningar.'}
         </Text>
       )}
     </section>

@@ -108,3 +108,19 @@ test("company previews request their own small company-only page", async (t) => 
   });
   assert.deepEqual(await fetchPersonalFeed({ limit: 1, filter: "companies" }), { stories: [] });
 });
+
+test('overview explicitly requests two deferred company headlines without changing the full-feed default', async t => {
+  const urls = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    urls.push(new URL(url, 'http://test.local'));
+    assert.equal(options.credentials, 'include');
+    assert.equal(options.cache, 'no-store');
+    return Response.json({ stories: [] });
+  });
+  await fetchPersonalFeed({ limit: 2, filter: 'companies', view: 'preview' });
+  assert.equal(urls[0].searchParams.get('view'), 'preview');
+  assert.equal(urls[0].searchParams.get('limit'), '2');
+  await fetchPersonalFeed();
+  assert.equal(urls[1].searchParams.get('limit'), '40');
+  assert.equal(urls[1].searchParams.get('view'), null);
+});

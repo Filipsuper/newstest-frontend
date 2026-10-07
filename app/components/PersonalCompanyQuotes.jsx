@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { getCompanies } from '../utils/companies';
+import { getCompanies, getCachedCompanies } from '../utils/companies';
 import { fetchPersonalQuoteSnapshot, mergePersonalQuoteSnapshot, personalCompanySparkGeometry,
-  personalQuotePage, personalQuoteSymbols, PERSONAL_QUOTE_REFRESH_MS } from '../utils/personalCompanyQuotes';
+  personalQuotePage, personalQuoteSymbols, cachedPersonalQuoteSnapshot, prefetchPersonalQuotes,
+  PERSONAL_QUOTE_REFRESH_MS } from '../utils/personalCompanyQuotes';
 import { Button, IconButton } from './ui/Button';
+import CompanyLogo from './ui/CompanyLogo';
 import { ChangeBadge, DataList, Skeleton } from './ui/data';
 import { changeTone } from './ui/format';
 import { Inline, Stack, Surface, Text } from './ui/layout';
@@ -21,6 +23,10 @@ function CompanyQuote({ symbol, company, snapshot, busy, paused }) {
     minimumFractionDigits: 2, maximumFractionDigits: quote.price < 1 ? 4 : 2,
   })}${quote.currency ? ` ${quote.currency === 'SEK' ? 'kr' : quote.currency}` : ''}` : null;
   const name = company?.name || symbol;
+  const priceLabel = price || (snapshot?.quoteStatus === 'unavailable' ? 'Kursen kunde inte hämtas'
+    : !snapshot && paused ? 'Kurser pausade' : 'Kurs saknas');
+  const curveLabel = paused ? 'Kurvan är pausad' : snapshot?.historyStatus === 'unavailable'
+    ? 'Kurvan kunde inte hämtas' : 'Kurvhistorik saknas';
   // The badge and curve share the daily reference. First-to-last intraday
   // movement can have the opposite sign after an opening gap.
   const curveTone = changeTone(quote?.change);
@@ -29,13 +35,15 @@ function CompanyQuote({ symbol, company, snapshot, busy, paused }) {
   return <Surface as="li" tone="inset" className={styles.card} aria-label={name} aria-busy={loading || undefined} data-nosnippet="">
     <Link href={`/aktie/${encodeURIComponent(symbol)}`} prefetch={false} className={styles.cardLink} aria-label={name}>
     <div className={styles.identity}>
-      <div className={styles.companyDetails}>
-        <Text as="span" size="sm" className={styles.company}>{name}</Text>
-        {loading ? <Skeleton className={styles.priceSkeleton} /> : <Text as="span" size="xs" tone="secondary" numeric>
-          {price || (snapshot?.quoteStatus === 'unavailable' ? 'Kursen kunde inte hämtas' : !snapshot && paused ? 'Kurser pausade' : 'Kurs saknas')}
+      <CompanyLogo company={company ?? { symbol, name }} size="sm" />
+      <Text as="span" size="sm" className={styles.company} title={name} data-company-quote-name="">{name}</Text>
+      <div className={styles.priceSlot} data-company-quote-price="">
+        {loading ? <Skeleton className={styles.priceSkeleton} /> : <Text as="span" size="xs" tone="secondary" numeric className={styles.price} title={priceLabel}>
+          {priceLabel}
         </Text>}
       </div>
-      {quote && <ChangeBadge className={styles.change} value={quote.change} label={`Dagsförändring, ${quote.period}`} />}
+      {quote ? <ChangeBadge className={styles.change} value={quote.change} label={`Dagsförändring, ${quote.period}`} />
+        : <span className={styles.changeSlot} aria-hidden="true">{loading && <Skeleton className={styles.changeSkeleton} />}</span>}
     </div>
     <div className={styles.values}>
       {geometry ?
@@ -43,8 +51,9 @@ function CompanyQuote({ symbol, company, snapshot, busy, paused }) {
           {geometry.dot ? <circle cx={geometry.dot.x} cy={geometry.dot.y} r="2" fill={curveColor} />
             : <path d={geometry.path} fill="none" stroke={curveColor} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />}
         </svg>
-        : loading || snapshot?.historyStatus === 'loading' ? <Text as="span" size="xs" tone="secondary">{paused ? 'Kurvan är pausad' : 'Hämtar kurva…'}</Text>
-        : <Text as="span" size="xs" tone="secondary">{snapshot?.historyStatus === 'unavailable' ? 'Kurvan kunde inte hämtas' : 'Kurvhistorik saknas'}</Text>}
+        : loading || snapshot?.historyStatus === 'loading' ? paused ? <Text as="span" size="xs" tone="secondary" className={styles.curveNotice} title={curveLabel}>{curveLabel}</Text>
+          : <Skeleton className={styles.curveSkeleton} />
+        : <Text as="span" size="xs" tone="secondary" className={styles.curveNotice} title={curveLabel}>{curveLabel}</Text>}
     </div>
     </Link>
     {(snapshot?.quoteRetained || snapshot?.historyRetained) && <Text as="span" size="xs" tone="secondary">Uppdateringen misslyckades · visar tidigare data</Text>}
@@ -59,14 +68,16 @@ export default function PersonalCompanyQuotes({ watchlist = [], paused = false, 
   const page = personalQuotePage(symbols, pageState.scope === accountScope ? pageState.index : 0);
   const visibleKey = JSON.stringify(page.symbols);
   const scope = JSON.stringify([accountScope, visibleKey]);
-  const [companies, setCompanies] = useState([]);
-  const [data, setData] = useState({ scope, rows: {} });
+  const [companies, setCompanies] = useState(getCachedCompanies);
+  const cachedRows = useMemo(() => Object.fromEntries(page.symbols.map(symbol =>
+    [symbol, cachedPersonalQuoteSnapshot(symbol)]).filter(([, row]) => row)), [scope]);
+  const [data, setData] = useState(() => ({ scope, rows: cachedRows }));
   const [pendingScope, setPendingScope] = useState(null);
   const [retry, setRetry] = useState(0);
   const retryCount = useRef(0);
   const activeScope = useRef(scope);
   activeScope.current = scope;
-  const snapshots = data.scope === scope ? data.rows : {};
+  const snapshots = data.scope === scope ? data.rows : cachedRows;
   const busy = pendingScope === scope;
 
   useEffect(() => {
@@ -92,16 +103,16 @@ export default function PersonalCompanyQuotes({ watchlist = [], paused = false, 
     function update(symbol, snapshot) {
       if (!active || controller?.signal.aborted || activeScope.current !== scope) return;
       setData(previous => {
-        const rows = previous.scope === scope ? previous.rows : {};
+        const rows = previous.scope === scope ? previous.rows : cachedRows;
         return { scope, rows: { ...rows, [symbol]: mergePersonalQuoteSnapshot(rows[symbol], snapshot) } };
       });
     }
-    async function refresh() {
+    async function refresh(revalidate = false) {
       if (!active || running || document.visibilityState === 'hidden') return;
       running = true;
       controller = new AbortController();
       const request = controller;
-      const force = retryCount.current !== retry;
+      const force = revalidate || retryCount.current !== retry;
       retryCount.current = retry;
       setPendingScope(scope);
       try {
@@ -110,6 +121,8 @@ export default function PersonalCompanyQuotes({ watchlist = [], paused = false, 
             onPartial: partial => update(symbol, partial) });
           update(symbol, snapshot);
         }));
+        if (active && page.page < page.lastPage && !request.signal.aborted && document.visibilityState !== 'hidden')
+          void prefetchPersonalQuotes(symbols, { page: page.page + 1, includeNext: false, signal: request.signal });
       } finally {
         running = false;
         if (active && activeScope.current === scope) setPendingScope(null);
@@ -120,7 +133,7 @@ export default function PersonalCompanyQuotes({ watchlist = [], paused = false, 
       else void refresh();
     }
     void refresh();
-    const timer = setInterval(refresh, PERSONAL_QUOTE_REFRESH_MS);
+    const timer = setInterval(() => refresh(true), PERSONAL_QUOTE_REFRESH_MS);
     document.addEventListener('visibilitychange', visibilityChanged);
     return () => { active = false; controller?.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', visibilityChanged); };
   }, [scope, visibleKey, paused, retry]);

@@ -10,6 +10,9 @@ import { rowReaction } from "../utils/reactionV2";
 import { sessionDateLabel } from "../utils/companySession";
 import { newsPublicationSession } from '../utils/newsPublicationSession';
 import NewsSessionLabel from './NewsSessionLabel';
+import { newsCardHeadline } from '../utils/newsCardPreview';
+import { newsDescription } from '../utils/newsSummary';
+import { companyStoryHref } from '../utils/storyUrls';
 
 export default function NewsFeedItem({
   item,
@@ -19,11 +22,14 @@ export default function NewsFeedItem({
   showSummary = true,
   summaryPreview = false,
   compact = false,
+  variant = showSummary ? "editorial" : "brief",
   metadataAction,
   className,
   onOpen,
 }) {
   const marketContext = newsMarketContext(item);
+  const description = newsDescription(item);
+  const publisher = item.sourceExcerpt?.publisher ?? item.source;
   const reaction = rowReaction(item);
   const publicationSession = newsPublicationSession(item);
   const volume = reaction.measurement?.volume?.m30;
@@ -35,42 +41,51 @@ export default function NewsFeedItem({
   const sameTime = sessionVolume === session?.fields.rvolAtTime;
   const mainTag =
     (item.labels ?? []).find((tag) => tag !== "REGULATORY") ?? item.labels?.[0];
+  const editorial = variant === "editorial";
+  const scan = variant === "scan" || editorial;
+  const separated = scan || variant === "brief";
+  const company = showSymbol ? (item.company ?? item.symbol) : null;
+  const publicationTime = <time dateTime={Number.isFinite(item.ts) ? new Date(item.ts).toISOString() : undefined}>
+      {newsDate(item.ts)}
+    </time>;
+  const publicationMetadata = <>
+    {publicationTime}
+    {publisher && <span>{publisher}</span>}
+  </>;
 
   return (
     <NewsRow
       className={className}
       highlighted={highlighted}
       compact={compact}
+      variant={variant}
+      identityLabel={separated && mainTag ? <NewsTypeLabel type={mainTag} /> : null}
+      publicationMetadata={publicationMetadata}
       metadataAction={metadataAction}
-      company={showSymbol ? (item.company ?? item.symbol) : null}
-      title={item.title}
+      company={company}
+      companyData={company ? item.companies?.find(member => member.symbol === item.symbol) ?? { symbol: item.symbol, name: company } : undefined}
+      companyHref={company && item.symbol ? `/aktie/${encodeURIComponent(item.symbol)}` : undefined}
+      title={separated ? newsCardHeadline(item.title, company) : item.title}
       description={
-        showSummary ? (
-          <NewsSummary value={item.aiSummary} preview={summaryPreview} />
+        showSummary && description ? (
+          <NewsSummary {...description} preview={summaryPreview} compact={scan} />
         ) : null
       }
       reaction={reaction.pct}
       leadingLabel={publicationSession ? <NewsSessionLabel session={publicationSession} /> : null}
-      href={onOpen ? undefined : storyHref(item.id, item.title)}
+      href={onOpen ? undefined : item.readerCompany ? companyStoryHref(item.id, item.title, item.readerCompany) : storyHref(item.id, item.title)}
       onOpen={onOpen}
       reactionLabel={reaction.pct !== null ? reaction.label : reaction.status ?? "Nyhet"}
       metadata={
         <>
-          <time
-            dateTime={
-              Number.isFinite(item.ts)
-                ? new Date(item.ts).toISOString()
-                : undefined
-            }
-          >
-            {newsDate(item.ts)}
-          </time>
+          {!editorial && publicationTime}
+          {item.relatedCompany && <span>Berör även {item.relatedCompany}</span>}
           {reaction.pct !== null && <NewsSessionLabel session={publicationSession} />}
-          {!compact && mainTag && <NewsTypeLabel type={mainTag} />}
-          {reaction.pct !== null && <span>{reaction.label}</span>}
+          {!compact && !separated && mainTag && <NewsTypeLabel type={mainTag} />}
+          {reaction.pct !== null && (!scan || reaction.scope === "session") && <span>{reaction.label}</span>}
           {reaction.version === 2 && reaction.pct === null && <span>{reaction.status}</span>}
           {!compact && sessionVolume && <span title={`Bolagets kumulativa handel per ${newsDate(sessionVolume.at)}. Inte volym orsakad av nyheten.${sameTime && !session.baselineMature ? " Preliminärt jämförelseunderlag." : ""}`}>
-            RVOL {volumeRatioLabel(sessionVolume.value)}{sameTime && !session.baselineMature ? "*" : ""} · {sameTime ? "samma tid" : "mot heldag"} · {sessionDateLabel(session)}
+            {scan ? "Volym" : "RVOL"} {volumeRatioLabel(sessionVolume.value)}{sameTime && !session.baselineMature ? "*" : ""} · {sameTime ? "samma tid" : scan ? "normal heldag" : "mot heldag"} · {sessionDateLabel(session)}
           </span>}
           {!compact && !sessionVolume && reaction.scope !== "session" && reaction.version === 2 && ["measured", "missing_baseline"].includes(reaction.measurement?.status)
             && volume?.post?.status === "complete" && volume.baselineMature
@@ -84,12 +99,12 @@ export default function NewsFeedItem({
               Volym {volumeRatioLabel(marketContext.rvolAtTime)} kl. {newsDate(marketContext.asOf, { day: undefined, month: undefined })}
             </span>
           )}
-          {item.source && <span>{item.source}</span>}
+          {!editorial && publisher && <span>{publisher}</span>}
           {reason && <span>{reason}</span>}
           {!compact && (item.sourceCount ?? 0) > 1 && (
             <span>{item.sourceCount} källor</span>
           )}
-          {!compact && showSymbol && item.symbol && (
+          {!compact && !separated && showSymbol && item.symbol && (
             <Link href={`/aktie/${encodeURIComponent(item.symbol)}`}>
               {item.symbol.replace(".ST", "")}
             </Link>

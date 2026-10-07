@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { Bar, Cell, ComposedChart, LabelList, Line, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fetchValuation } from '../utils/api';
 import { finite, VALUATION_METRICS, valuationChartData, valuationHistoryData } from '../utils/companyValuation';
+import { REVENUE_BETA_METHOD, REVENUE_BETA_UNCERTAINTY } from '../utils/revenueBeta';
 import { safeSourceUrl } from '../utils/newsroom';
 import { Button } from './ui/Button';
 import { EmptyState, Skeleton } from './ui/data';
@@ -162,12 +163,13 @@ export default function CompanyValuation({ symbol, financials, estimates, estima
         {model.forecasts.length ? <>
           <ul className={styles.forecasts} aria-label="Framåtblickande värden">
             {model.forecasts.map(row => <li key={row.period.key}>
-              <div><Text as="span" size="sm">{row.period.label}E</Text><Label>{row.sourceLabel}</Label></div>
+              <div><Text as="span" size="sm">{row.period.label}E</Text><Label tone={row.revenueBeta ? 'accent' : 'neutral'}>{row.sourceLabel}</Label></div>
               <Text as="span" numeric size="md">{row.period.frequency === 'annual' ? (finite(row.multiple.value) ? `${model.config.label} ${multipleValue(row.multiple.value)}` : row.multiple.reason === 'not_meaningful' ? 'Ej meningsfull' : 'Multipel saknas') : `${compactAmount(row.value, model.currency)}${model.config.metric === 'eps' ? '/aktie' : ''}`}</Text>
             </li>)}
           </ul>
           {model.r12 && <Inline className={styles.panelHeader}><Text size="sm">R12E · {model.config.label}</Text><Text numeric>{finite(model.r12.multiple.value) ? multipleValue(model.r12.multiple.value) : model.r12.multiple.reason === 'not_meaningful' ? 'Ej meningsfull' : 'Multipel saknas'}</Text></Inline>}
           <Text size="xs" tone="secondary">{model.r12 ? `3 rapporterade kvartal + ${model.r12.period.label}E` : model.frequency === 'quarterly' ? 'Kvartalsestimat · R12E-underlag saknas' : `Vid kurs ${number(data.latestClose, 2)} ${data.tradingCurrency} · ${date(data.asOf)}`}</Text>
+          {model.forecasts.some(row => row.revenueBeta) && <Text size="xs" tone="secondary">{REVENUE_BETA_UNCERTAINTY}</Text>}
         </> : <Text size="sm" tone="secondary">{estimateAvailability === 'unavailable' || !estimates ? 'Estimat kunde inte hämtas.' : 'Inget jämförbart estimat för detta mått.'}</Text>}
       </Surface>
     </div>
@@ -180,7 +182,8 @@ export default function CompanyValuation({ symbol, financials, estimates, estima
         {active?.outliersAbove > 0 && <Text size="sm">{active.outliersAbove} observationer över historikens visningsgräns har utelämnats ur kurvan. De ingår fortfarande i statistiken.</Text>}
         {model.frequency === 'annual' && model.forecasts.length > 0 && <Text size="sm">Den prickade förlängningen förbinder senaste historiska multipeln med det valda helårsestimatets multipel ({model.selectedForecast.period.label}E) vid den angivna kursen. Närmaste estimatår är förvalt. Estimatdelen upptar 10 % av grafbredden, inte en kalenderperiod. Det är ingen riktkurs eller prognos för aktiekursens väg. Estimatet ingår inte i historisk median eller spann och visas inte om en jämförbar multipel eller historisk slutpunkt saknas.</Text>}
         <Text size="sm">Konsensus prioriteras per mått och period, därefter ett kvalificerat OMXsum-estimat. Konsensus får vara högst 90 dagar gammalt, modellen 30 dagar. Justerade resultat blandas inte med rapporterade. {selected === 'pe' ? `Vinstgrafen använder ${model.epsBasis === 'dilutedEps' ? 'utspädd' : 'outspädd'} vinst per aktie. Generiskt EPS utan angiven aktiebas används inte som estimat.` : ''}</Text>
-        {model.forecasts.some(row => row.source === 'model' && !row.annualModel) && <Text size="sm">OMXsum-modellen skattar nästa kvartal från samma kvartal föregående år, medianen av senare årstillväxt och en blandning av säsongs- och senaste marginaler. En kvartalsprognos multipliceras aldrig med fyra.</Text>}
+        {model.forecasts.some(row => row.revenueBeta) && <Text size="sm">{REVENUE_BETA_METHOD}</Text>}
+        {model.forecasts.some(row => row.source === 'model' && !row.annualModel && !row.revenueBeta) && <Text size="sm">OMXsum-modellen skattar nästa kvartal från samma kvartal föregående år, medianen av senare årstillväxt och en blandning av säsongs- och senaste marginaler. En kvartalsprognos multipliceras aldrig med fyra.</Text>}
         {model.forecasts.some(row => row.annualModel) && <Text size="sm">Helårsmodellen väger samman kvartalshistorik och tidigare årsrapporter. Vikterna är preliminära och prognosprecisionen är ännu inte validerad. Mått med granskningsflaggor får ingen estimatlinje.</Text>}
         {selected === 'pe' && model.forecasts.some(row => row.source === 'model' && !row.shareBasis) && <Text size="sm">EPS-estimatet använder vinst hänförlig till stamaktieägarna och verifierade EPS-/aktieantalsfält. Beräkningen antar oförändrat aktieantal och utspädning sedan senaste rapporten; senare emissioner och återköp är inte prognostiserade. Saknat underlag eller oförklarade förändringar i aktieantalet spärrar modellen.</Text>}
         {selected === 'pe' && model.forecasts.filter(row => row.shareBasis).map(row => <ReviewedShareBasisNote key={row.period.key} basis={row.shareBasis} />)}

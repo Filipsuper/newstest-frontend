@@ -48,6 +48,9 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
   const [target, setTarget] = useState(companySection(initialTab));
   const [active, setActive] = useState(companySection(initialTab));
   const [contentsOpen, setContentsOpen] = useState(false);
+  const [headerPassed, setHeaderPassed] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   const pathname = `/aktie/${encodeURIComponent(symbol)}`;
 
   const goTo = (id, focus = false) => {
@@ -121,6 +124,11 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
     const update = () => {
       frame = 0;
       if (window.location.pathname !== pathname || document.querySelector('[role="dialog"]')) return;
+      const identity = main.current.querySelector('[data-company-identity]');
+      const headerHeight = parseFloat(getComputedStyle(main.current).getPropertyValue('--ui-header-height')) || 64;
+      // The company/quote already leads the document. Repeat it in the mobile
+      // sticky navigation only after it has scrolled behind the global header.
+      setHeaderPassed(Boolean(identity && identity.getBoundingClientRect().bottom <= headerHeight));
       const sections = [...main.current.querySelectorAll("[data-report-section]")];
       if (!sections.length) return;
       // Read the resolved CSS length: the offset includes the actual shell height.
@@ -169,12 +177,12 @@ export default function CompanyReportShell({ symbol, name, quote, currency = "SE
 
   return <ReportContext.Provider value={{ target, navigate }}>
     <Container as="main" className={styles.report} ref={main}>
-      <div className={styles.mobileBar}>
-        {context}
+      <div className={styles.mobileBar} data-company-mobile-context={headerPassed ? "visible" : "hidden"}>
+        {headerPassed ? context : <Text size="xs" tone="secondary">På den här sidan</Text>}
         <Dialog open={contentsOpen} onOpenChange={(open) => { if (open) pendingFocus.current = null; setContentsOpen(open); }}
           onOpenChangeComplete={(open) => { if (!open && pendingFocus.current) { goTo(pendingFocus.current, true); pendingFocus.current = null; } }}
           finalFocus={() => pendingFocus.current ? document.getElementById(`${pendingFocus.current}-heading`) : true}
-          title="På den här sidan" trigger={<Button variant="secondary" className={styles.contentsTrigger}>Avsnitt <FiChevronDown aria-hidden="true" /></Button>}>
+          title="På den här sidan" trigger={<Button disabled={!interactive} variant="secondary" className={styles.contentsTrigger}>Avsnitt <FiChevronDown aria-hidden="true" /></Button>}>
           <Text tone="secondary" size="sm">{name}</Text>
           {links("Välj bolagsavsnitt")}
         </Dialog>

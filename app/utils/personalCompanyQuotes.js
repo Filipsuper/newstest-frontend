@@ -1,10 +1,13 @@
 // Public company observations only. These display values never enter news
 // ranking, saved event returns or a sum of the reader's followed companies.
+import { waitForSharedRequest } from './sharedRequest.js';
 export const PERSONAL_QUOTE_PAGE_SIZE = 4;
 export const PERSONAL_QUOTE_REFRESH_MS = 30_000;
 const DAILY_CACHE_MS = 15 * 60_000;
 const CACHE_LIMIT = 24;
 const cache = new Map();
+const pending = new Map();
+const MAX_STALE_MS = 5 * 60_000;
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const timestamp = value => typeof value === 'string' ? Date.parse(value) : finite(value) ? value : NaN;
@@ -109,21 +112,47 @@ export function personalCompanySparkGeometry(points = []) {
 }
 
 async function sourceSnapshot(symbol, kind, { signal, force, fetcher, apiUrl, now }) {
+  if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
   const key = `${apiUrl}:${kind}:${symbol}`;
   const retained = cache.get(key);
   const ttl = kind === 'session' ? PERSONAL_QUOTE_REFRESH_MS : DAILY_CACHE_MS;
   if (!force && retained && now() - retained.at < ttl) return retained.data;
-  const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(12_000)]) : AbortSignal.timeout(12_000);
-  const path = kind === 'session' ? `/feed/company/${encodeURIComponent(symbol)}/intraday` : `/feed/spark/${encodeURIComponent(symbol)}`;
-  const response = await fetcher(`${apiUrl}${path}`, { credentials: 'include', cache: 'no-store', signal: requestSignal });
-  if (!response.ok) throw new Error('Bolagskursen kunde inte hämtas');
-  const data = await response.json();
-  if (data?.error || data?.symbol !== symbol) throw new Error('Bolagsdata saknar rätt aktiesymbol');
-  if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
-  cache.delete(key);
-  cache.set(key, { at: now(), data });
-  while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
-  return data;
+  let request = pending.get(key);
+  if (!request) {
+    request = (async () => {
+      const path = kind === 'session' ? `/feed/company/${encodeURIComponent(symbol)}/intraday` : `/feed/spark/${encodeURIComponent(symbol)}`;
+      const response = await fetcher(`${apiUrl}${path}`, { credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(12_000) });
+      if (!response.ok) throw new Error('Bolagskursen kunde inte hämtas');
+      const data = await response.json();
+      if (data?.error || data?.symbol !== symbol) throw new Error('Bolagsdata saknar rätt aktiesymbol');
+      cache.delete(key);
+      cache.set(key, { at: now(), data });
+      while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
+      return data;
+    })().finally(() => { if (pending.get(key) === request) pending.delete(key); });
+    pending.set(key, request);
+  }
+  return waitForSharedRequest(request, signal);
+}
+
+export function cachedPersonalQuoteSnapshot(symbol, { apiUrl = process.env.NEXT_PUBLIC_API_URL, now = Date.now } = {}) {
+  const session = cache.get(`${apiUrl}:session:${symbol}`), daily = cache.get(`${apiUrl}:daily:${symbol}`);
+  const body = session && now() - session.at < MAX_STALE_MS ? session.data : null;
+  const fallback = daily && now() - daily.at < DAILY_CACHE_MS ? daily.data : null;
+  if (!body && !fallback) return null;
+  const quote = body ? personalCompanyQuote(body, symbol, now()) : null;
+  const history = (body && personalIntradayHistory(body, symbol, now())) || (fallback && personalDailyHistory(fallback, symbol, now())) || null;
+  return { symbol, quote, history, quoteStatus: quote ? 'available' : body ? 'missing' : 'unavailable',
+    historyStatus: history ? 'available' : fallback ? 'missing' : 'loading' };
+}
+
+export async function prefetchPersonalQuotes(watchlist, { page = 0, includeNext = true, ...options } = {}) {
+  if (options.signal?.aborted) return;
+  const current = personalQuotePage(watchlist, page);
+  await Promise.allSettled(current.symbols.map(symbol => fetchPersonalQuoteSnapshot(symbol, options)));
+  if (options.signal?.aborted || !includeNext || current.page === current.lastPage) return;
+  const next = personalQuotePage(watchlist, current.page + 1);
+  await Promise.allSettled(next.symbols.map(symbol => fetchPersonalQuoteSnapshot(symbol, options)));
 }
 
 // Emit the quote before an optional daily-history fallback finishes. One

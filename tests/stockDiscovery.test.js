@@ -30,6 +30,17 @@ test("missing quotes sort last in either direction and invalid story links canno
   }
   assert.deepEqual(discoverStocks(companies, { news: [{ symbol: "A.ST", story: story("../../bad", "2026-09-07") }] }, stockFilters()), []);
 });
+test("company search is complete even from news/report views and when news is unavailable", () => {
+  for (const view of ["news", "reports", "all"]) {
+    const filters = { ...stockFilters(), view, q: "Celsius" };
+    assert.equal(discoverStocks(companies, snapshot, filters)[0].symbol, "C.ST");
+    assert.equal(discoverStocks(companies, null, filters)[0].story, null);
+    assert.equal(discoverStocks(companies, snapshot, { ...filters, segment: "large" }).length, 0);
+  }
+  const bookmarked = stockFilters(new URLSearchParams("view=reports&q=Celsius"));
+  assert.equal(bookmarked.view, "all");
+  assert.equal(bookmarked.sort, "name");
+});
 test("URL state is bounded and roundtrips all filters and pagination", () => {
   const input = new URLSearchParams("view=all&q=Älvsjö&list=large&sector=Teknik&sort=losers&page=3");
   assert.deepEqual(stockFilters(new URL(stockFiltersHref(stockFilters(input)), "https://example.test").searchParams), stockFilters(input));

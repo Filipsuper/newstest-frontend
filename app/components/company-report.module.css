@@ -57,9 +57,16 @@
 .deferred { display: grid; align-content: start; gap: var(--ui-space-4); min-height: 480px; }
 .deferred > div { height: 96px; }
 .intro { display: grid; gap: var(--ui-space-6); }
+.compactChart { gap: var(--ui-space-4); }
+.compactChart .controls { flex-direction: column; align-items: stretch; }
+.compactChart .ranges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+.compactChart .ranges button { min-width: 0; min-height: var(--ui-control-md); padding-inline: var(--ui-space-1); }
+.compactChart .actions { justify-content: flex-end; }
+.compactChart .quote > strong { font-size: var(--ui-text-xl); }
+.report .compactChart :global(.company-chart) { height: 240px; margin-inline: 0; width: 100%; }
 .identity { display: grid; gap: var(--ui-space-3); }
 .identityTop { display: flex; align-items: start; justify-content: space-between; gap: var(--ui-space-4); }
-.identityTop > div { min-width: 0; }
+.identityTop > div { min-width: 0; flex: 1 1 12rem; }
 .identity h1 { overflow-wrap: anywhere; }
 .identityMeta { margin-top: var(--ui-space-2); }
 .quote { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); font-variant-numeric: tabular-nums; }
@@ -71,6 +78,8 @@
 .reportDate:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
 .ranges { min-width: 0; flex-wrap: wrap; }
+.controls .ranges { border-radius: var(--ui-radius-md); }
+.ranges button { border-radius: var(--ui-radius-sm); }
 .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
 .chartLayout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-6); }
 .chartWithContext { grid-template-columns: minmax(0, 1fr) 280px; }

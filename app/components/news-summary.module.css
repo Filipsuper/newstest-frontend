@@ -6,6 +6,17 @@
   font: 400 var(--ui-text-sm) / var(--ui-leading-body) var(--ui-font);
   overflow-wrap: anywhere;
 }
+.excerpt {
+  margin: var(--ui-space-2) 0 0;
+  max-width: 62ch;
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-sm) / var(--ui-leading-body) var(--ui-font);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 .summary p,
 .summary ul {
   margin: 0;

@@ -1,0 +1,5 @@
+.market {
+  flex-wrap: wrap;
+  gap: var(--ui-space-2) var(--ui-space-6);
+  overflow-x: visible;
+}

@@ -1,4 +1,5 @@
-import { letterBlocks } from "../utils/editorial";
+import Link from "next/link";
+import { linkedLetterBlocks } from "../utils/letterStoryLinks";
 import { safeSourceUrl } from "../utils/newsroom";
 import TickerLink from "./TickerLink";
 import styles from "./editorial.module.css";
@@ -52,14 +53,25 @@ function inline(text, resolveSymbol) {
     });
 }
 
-export default function LetterBody({ summary, resolveSymbol }) {
+export default function LetterBody({ summary, storyLinks, resolveSymbol }) {
   return (
     <div className={styles.prose}>
-      {letterBlocks(summary).map((block, index) =>
+      {linkedLetterBlocks(summary, storyLinks).map((block, index) =>
         block.type === "heading" ? (
           <h2 key={index}>{inline(block.text, resolveSymbol)}</h2>
         ) : (
-          <p key={index}>{inline(block.text, resolveSymbol)}</p>
+          <div key={index} className={block.sources.length ? styles.linkedParagraph : undefined}>
+            <p>{inline(block.text, resolveSymbol)}</p>
+            {block.sources.length > 0 && <ul className={styles.storySources} aria-label="Nyheterna bakom stycket">
+              {block.sources.map(source => <li key={source.id}>
+                <Link href={source.href} scroll={false}>
+                  {block.sources.length === 1 ? 'Läs nyheten' : source.headline}
+                  <span aria-hidden="true">{'\u00a0→'}</span>
+                  {block.sources.length === 1 && <span className={styles.sourceHeadline}>: {source.headline}</span>}
+                </Link>
+              </li>)}
+            </ul>}
+          </div>
         ),
       )}
     </div>

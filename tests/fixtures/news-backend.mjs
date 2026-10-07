@@ -2,6 +2,7 @@
 // reviewed segment-report previews, which have no invented quotes or history.
 import { createServer } from "node:http";
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { previewStories } from "../../app/designsystem/reactions/fixtures.js";
@@ -12,6 +13,21 @@ import { fictionalProfileInsights } from './profile-insights.mjs';
 import { valuationFixture } from './valuation.mjs';
 import { researchFixtures } from './company-research.mjs';
 import { selectedNews } from '../../app/utils/newsSelection.js';
+import { freeScreenerResponse, screenerResponse, profileResponse } from './screener.mjs';
+import { omxsumStoryFixtures as fictionalOmxsumStories, omxsumV2Fixtures } from './omxsum-stories.mjs';
+import { publicEstimateArticleFixture } from './stories-public-estimates.mjs';
+
+// Explicit local-only preview input. Never imported by the production app.
+const localStoriesPreview = process.env.LOCAL_STORIES_REPLAY
+  ? JSON.parse(readFileSync(process.env.LOCAL_STORIES_REPLAY, 'utf8')) : null;
+if (localStoriesPreview && (localStoriesPreview.mode !== 'unpublished_local_contract_preview'
+  || localStoriesPreview.productionWrites !== 0
+  || !localStoriesPreview.articles.every(a => a.contentLabel.startsWith('OPUBLICERAT LOKALT UTKAST')))) {
+  throw new Error('Only explicitly unpublished local replay previews are allowed');
+}
+const omxsumStoryFixtures = localStoriesPreview?.articles ?? fictionalOmxsumStories;
+const readerFixtures = localStoriesPreview ? omxsumStoryFixtures : [...omxsumStoryFixtures, ...omxsumV2Fixtures,
+  ...(process.env.LOCAL_STORIES_PUBLIC_ESTIMATES_TEST === '1' ? [publicEstimateArticleFixture()] : [])];
 
 // Optional interactive demo reuses the backend's pure matching/policy modules.
 // This path is local tooling configuration, never a production app import.
@@ -206,6 +222,20 @@ const user = {
   topics: [],
   keywords: [],
 };
+const linkedLetterBlocks = [
+  { type: 'heading', text: 'Börsmorgonen', sourceStoryIds: [] },
+  ...Array.from({ length: 6 }, (_, index) => ({ type: 'paragraph',
+    text: `Fiktiv bakgrund ${index + 1}. Räntor och marknadsutsikter ger sammanhang inför börsdagen. Den här texten har ingen koppling till en enskild bolagsnyhet.`, sourceStoryIds: [] })),
+  { type: 'heading', text: 'Industrins prognos', sourceStoryIds: [] },
+  { type: 'paragraph', text: '&&Norden Industri&& höjer prognosen efter stark orderingång. Det här är fiktiv testdata med en exakt sparad nyhetsreferens.', sourceStoryIds: ['fixture-0'] },
+  { type: 'paragraph', text: 'Två separata händelser kan stödja samma stycke utan att deras identiteter slås ihop.', sourceStoryIds: ['fixture-1', 'fixture-2'] },
+];
+const linkedLetter = {
+  ...articles[0], title: 'Fiktivt brev med exakta nyhetslänkar',
+  summary: linkedLetterBlocks.map(block => block.type === 'heading' ? `##${block.text}##` : block.text).join('\n\n'),
+  storyLinks: { schemaVersion: 1, blocks: linkedLetterBlocks,
+    sources: stories.slice(0, 3).map(({ id, eventId, version, headline, publishedAt }) => ({ id, eventId, version, headline, publishedAt })) },
+};
 // In-memory UI demo only: real auth/receipt validation is covered by backend
 // tests. Restarting this fixture resets the fictional account's acknowledgements.
 const demoReads = new Set();
@@ -261,6 +291,22 @@ const server = createServer(async (req, res) => {
   const input = body ? JSON.parse(body) : {};
   let data;
   if (path === "/__newsroom_fixture") data = { fixture: true };
+  else if ((path === '/api/feed/omxsum-stories' && url.searchParams.get('symbol') === 'UNAVAILABLE.TEST')
+    || path === '/api/feed/omxsum-stories/omxs_' + 'f'.repeat(24)) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Fictional Stories outage' })); return;
+  }
+  else if (path === '/api/feed/omxsum-stories') data = { enabled: true, nextCursor: null, items: readerFixtures.filter(article =>
+    (article.symbol !== 'V2.TEST' || url.searchParams.get('symbol') === 'V2.TEST')
+    &&
+    (!url.searchParams.get('format') || article.format === url.searchParams.get('format'))
+    && (!url.searchParams.get('symbol') || article.symbol === url.searchParams.get('symbol'))
+    && (!url.searchParams.get('newsId') || article.timeline.some(item => item.storyId === url.searchParams.get('newsId')))) };
+  else if (path.startsWith('/api/feed/omxsum-stories/')) {
+    const article = readerFixtures.find(article => article.id === path.split('/').at(-1));
+    if (!article) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Storyn hittades inte.' })); return; }
+    data = { article };
+  }
   else if (path === "/__discovery_failure") { discoveryFailure = Boolean(input.fail); data = { ok: true }; }
   else if (demoBackend && path === '/api/user/keyword-preview') {
     try { data = { ...demoMatching.previewKeywordMatches(stories, input.keyword), readOnly: true, sinceHours: 48, coverage: { complete: true } }; }
@@ -297,6 +343,17 @@ const server = createServer(async (req, res) => {
   else if (path === "/api/feed/market-overview") data = overview();
   else if (path === "/api/feed/companies") data = companies;
   else if (path === "/api/feed/company-directory") data = directory;
+  else if (path === '/api/feed/screener-preview') data = { items: freeScreenerResponse.items.slice(0, 6).map(row => ({ ...row, currency: 'SEK' })), meta: { preview: true } };
+  else if (path === '/api/feed/screener') data = ['plus', 'pro', 'premium'].includes(user.plan) ? screenerResponse : freeScreenerResponse;
+  else if (path === '/api/feed/company-profiles') data = profileResponse((url.searchParams.get('symbols') || '').split(','));
+  else if (/^\/api\/feed\/company\/[^/]+\/financial-preview$/.test(path)) {
+    const symbol = decodeURIComponent(path.split('/')[4]);
+    data = { symbol, preview: true, currency: 'SEK', status: symbol === 'FJALL.TEST' ? 'unavailable' : 'available',
+      annual: symbol === 'FJALL.TEST' ? [] : [2022, 2023, 2024, 2025].map((year, index) => ({
+        periodEnd: `${year}-12-31`, frequency: 'annual', currency: 'SEK', source: 'issuer_report',
+        revenue: 80_000_000 + index * 10_000_000, ebit: index === 0 ? -2_000_000 : index * 3_000_000,
+      })) };
+  }
   else if (path === "/api/feed/company-news") {
     if (discoveryFailure) { res.writeHead(503, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Fiktivt anslutningsfel" })); return; }
     data = companyNews();
@@ -341,6 +398,8 @@ const server = createServer(async (req, res) => {
       omxPrice: "2 583,40",
       omxChangePercentage: "0,0 %",
     };
+  else if (path === '/api/data/linked-letter') data = linkedLetter;
+  else if (path === '/api/data/stale-linked-letter') data = { ...linkedLetter, summary: `${linkedLetter.summary}\n\nRedigerat i efterhand.` };
   else if (path.startsWith("/api/data/")) data = articles[0];
   else if (path === "/api/feed/topics")
     data = {
@@ -374,6 +433,11 @@ const server = createServer(async (req, res) => {
       data = { excludedKeywords: user.excludedKeywords };
     } catch (error) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: error.message })); return; }
   }
+  else if (path === '/api/user/personal-feed/observations') {
+    const refs = new Map((url.searchParams.get('stories') ?? '').split(',').map(ref => ref.split(':')));
+    data = { items: stories.filter(story => refs.get(story.id) === String(story.version ?? 1)
+      && story.companies.some(company => user.watchlist.includes(company.symbol))) };
+  }
   else if (path === "/api/user/personal-feed") {
     let personal = stories.slice(0, 3).map(story => ({ ...story, viaWatchlist: true }));
     if (demoMatching) personal = stories.map(story => ({ ...story,
@@ -402,6 +466,29 @@ const server = createServer(async (req, res) => {
           readState: { receipt: demoReceipt(story), status: demoReads.has(demoReceipt(story)) ? 'read' : 'unread' },
         }));
       data.importantCoverage = { complete: true, candidateLimit: 20, candidatesLimited: false };
+    }
+    if (url.searchParams.get('view') === 'preview') {
+      data.preview = true;
+      data.stories = data.stories.filter(story => story.companies.some(company => user.watchlist.includes(company.symbol))).slice(0, 2)
+        .map(({ reaction, reactionPct, reactionV2, marketContext, companyContext, ...news }) => news);
+      delete data.importantStories;
+      delete data.importantCoverage;
+    }
+    if (['headlines', 'important'].includes(url.searchParams.get('view'))) {
+      const important = url.searchParams.get('view') === 'important';
+      if (important) {
+        data.stories = data.importantStories ?? data.stories.filter(story =>
+          story.companies.some(company => user.watchlist.includes(company.symbol))
+          && Number(story.importance) >= 75 && selectedNews(story));
+        data.coverage = data.importantCoverage ?? { complete: true, candidateLimit: 20, candidatesLimited: false };
+        data.curated = true;
+      }
+      data.view = url.searchParams.get('view');
+      data.observationsDeferred = true;
+      data.stories = data.stories.slice(0, Math.min(20, Number(url.searchParams.get('limit')) || 20))
+        .map(({ reaction, reactionPct, reactionV2, marketContext, companyContext, ...news }) => news);
+      delete data.importantStories;
+      delete data.importantCoverage;
     }
   }
   else if (/^\/api\/feed\/company\/[^/]+\/overview$/.test(path)) {

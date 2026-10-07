@@ -534,7 +534,7 @@ export default function LiveNewsFeed({
         <div className={styles.rows} ref={listRef} aria-busy={!ready}>
           {shown.map((item) => (
             <div key={item.id} data-live-news-id={item.id}>
-              <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary={false} />
+              <NewsFeedItem item={observedById.get(item.id) ?? item} showSummary={false} variant="brief" />
             </div>
           ))}
         </div>

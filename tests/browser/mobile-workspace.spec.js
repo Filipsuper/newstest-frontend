@@ -149,13 +149,11 @@ test("featured news shows AI context while latest news stays compact on mobile",
     name: "Viktigast just nu",
     exact: true,
   });
-  const story = featured.locator('a[href^="/nyhet/"][href$="~fixture-0"]');
+  const story = featured.getByRole('link', { name: 'Höjer prognosen efter stark orderingång', exact: true });
   await expect(story).toBeVisible();
   const row = featured.locator("article").filter({ has: page.locator('a[href$="~fixture-0"]') });
-  await expect(
-    row.getByText("AI-sammanfattning", { exact: true }),
-  ).toBeVisible();
-  await expect(row.getByRole("listitem")).toHaveCount(3);
+  await expect(row.getByLabel('Kort AI-sammanfattning')).toBeVisible();
+  await expect(row.getByRole("listitem")).toHaveCount(0);
   await expect(row).toContainText("Fiktiv AI-text");
   const missing = featured.locator("article").filter({ has: page.locator('a[href$="~fixture-2"]') });
   await expect(missing).toBeVisible();
@@ -168,7 +166,7 @@ test("featured news shows AI context while latest news stays compact on mobile",
   await expect(featured).not.toContainText(
     "Uppgifterna kommer från bolagets publicerade rapport.",
   );
-  await expect(featured).toContainText("Sedan publicering");
+  await expect(row.getByLabel('Sedan publicering: +4,2 %')).toBeVisible();
   await expect(featured).toContainText("MFN");
   await featured.screenshot({
     path: testInfo.outputPath("explanatory-featured-mobile.png"),

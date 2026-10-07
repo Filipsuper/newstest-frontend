@@ -101,7 +101,7 @@ export default function ArticleComponent({ article }) {
           </section>
         )}
         {summary ? (
-          <LetterBody summary={summary} resolveSymbol={resolveSymbol} />
+          <LetterBody summary={summary} storyLinks={article.storyLinks} resolveSymbol={resolveSymbol} />
         ) : (
           <Text tone="secondary">
             Brevets innehåll är inte tillgängligt just nu.

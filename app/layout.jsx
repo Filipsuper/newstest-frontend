@@ -34,6 +34,7 @@ export const metadata = {
 // Applies the stored theme before first paint to avoid a flash of the wrong theme
 const themeInitScript = `
 try {
+  window.__OMXSUM_PRIVATE_DOCUMENT__ = /^\\/admin(?:\\/|$)/.test(window.location.pathname);
   var theme = localStorage.getItem('theme');
   if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.classList.add(theme);

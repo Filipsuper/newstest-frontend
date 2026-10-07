@@ -5,6 +5,8 @@
   font-family: var(--ui-font);
 }
 .intro { display: grid; gap: var(--ui-space-2); padding-block: var(--ui-space-6); }
+.legacyNotice { margin-bottom: var(--ui-space-3); padding: var(--ui-space-3); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-sm); }
+.legacyNotice a { color: var(--ui-text); text-decoration: underline; text-underline-offset: 3px; }
 .presets { gap: var(--ui-space-2); }
 .toolbar {
   display: flex;
@@ -23,6 +25,7 @@
 .fieldPair > * { min-width: 0; }
 .rule { display: grid; gap: var(--ui-space-3); border-top: 1px solid var(--ui-border); padding-top: var(--ui-space-6); }
 .rule > button { justify-self: start; }
+.columnChoices { display: grid; gap: var(--ui-space-2); }
 .resultBar, .footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--ui-space-2) var(--ui-space-4); }
 .resultBar { padding-block: var(--ui-space-4); }
 .footer { padding-top: var(--ui-space-4); }
@@ -38,17 +41,19 @@
 .table .companyColumn:first-child { padding-left: var(--ui-space-4); }
 .table th:nth-child(2) { width: 112px; }
 .table th:nth-child(3) { width: 144px; }
+.table th[data-metric="marketCap"] { width: 112px; }
+.table th[data-metric="marketCap"] .sortButton { white-space: nowrap; }
 .table tbody tr:hover td, .table tbody tr:focus-within td { background: var(--ui-hover); }
-.sortButton { width: 100%; justify-content: flex-end; padding-inline: var(--ui-space-2); gap: var(--ui-space-1); font-size: var(--ui-text-xs); color: var(--ui-text-secondary); border-radius: var(--ui-radius-sm); white-space: nowrap; }
+.sortButton { width: 100%; justify-content: flex-end; padding-inline: var(--ui-space-2); gap: var(--ui-space-1); font-size: var(--ui-text-xs); color: var(--ui-text-secondary); border-radius: var(--ui-radius-sm); white-space: normal; text-align: right; }
 .companyColumn .sortButton { justify-content: flex-start; padding-left: 0; }
 .table th[aria-sort="ascending"] .sortButton, .table th[aria-sort="descending"] .sortButton { color: var(--ui-text); }
 .sortButton svg { width: 12px; height: 12px; }
 .companyLink { display: flex; align-items: center; gap: var(--ui-space-3); min-height: var(--ui-control-md); color: var(--ui-text); text-decoration: none; border-radius: var(--ui-radius-sm); }
 .companyLink:hover strong { text-decoration: underline; text-underline-offset: 3px; }
 .companyLink:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
-.companyCopy { min-width: 0; display: grid; gap: var(--ui-space-1); }
+.companyCopy { min-width: 0; display: grid; gap: 0; }
 .companyCopy strong { font-weight: 600; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
-.companyCopy > span { font-size: var(--ui-text-xs); color: var(--ui-text-secondary); white-space: normal; }
+.companyCopy > span { font-size: var(--ui-text-xs); line-height: 1.2; color: var(--ui-text-secondary); white-space: normal; }
 .table .positive { color: var(--ui-positive); }
 .table .negative { color: var(--ui-negative); }
 .table .missing { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
@@ -85,4 +90,22 @@
 }
 @media (max-width: 380px) {
   .fieldPair { grid-template-columns: minmax(0, 1fr); }
+}
+.freeAccess {
+  margin-top: var(--ui-space-4);
+  justify-content: space-between;
+}
+.freeAccess a { font-size: var(--ui-text-xs); }
+.accessLabel { flex-shrink: 0; white-space: nowrap; overflow-wrap: normal; }
+.metricOption {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+.metricOption small {
+  display: block;
+  font-size: 12px;
+  color: var(--ui-text-secondary);
 }

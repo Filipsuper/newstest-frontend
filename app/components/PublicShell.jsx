@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSelectedLayoutSegments } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   FiArrowUpRight,
@@ -9,6 +9,8 @@ import {
   FiList,
   FiSearch,
   FiSettings,
+  FiSliders,
+  FiStar,
   FiSun,
   FiMoon,
 } from "react-icons/fi";
@@ -20,21 +22,32 @@ import { Dialog, Menu } from "./ui/overlays";
 import StockSearch from "./StockSearch";
 import LogInModal from "../modals/logInModal";
 import { BRAND_LABEL, BRAND_NAME, BRAND_VERSION } from "../utils/brand";
-import { PRIMARY_NAVIGATION, isPrimaryNavigationActive } from "../utils/navigation";
+import { PRIMARY_NAVIGATION, isPrimaryNavigationActive, navigationPathname } from "../utils/navigation";
 import { Label } from "./ui/Label";
 import { ActiveTrialBadge } from "./ActiveTrial";
+import { NavigationPathnameContext } from "./NavigationContext";
 import ui from "./ui/ui.module.css";
 import styles from "./public-shell.module.css";
 
-const icons = { "/marknaden": FiGrid, "/aktier": FiList, "/nyhetsbrev": FiBookOpen };
+const icons = {
+  "/marknaden": FiGrid,
+  "/marknaden/bevakning": FiStar,
+  "/aktier": FiList,
+  "/aktier/screener": FiSliders,
+  "/nyhetsbrev": FiBookOpen,
+};
 const links = PRIMARY_NAVIGATION.map((link) => ({ ...link, icon: icons[link.href] }));
 
 export default function PublicShell({ children }) {
   const pathname = usePathname();
+  const contentSegments = useSelectedLayoutSegments();
+  const storySegments = useSelectedLayoutSegments("story");
+  const navigationRoute = navigationPathname(pathname, contentSegments, storySegments);
   const { user, isGuestUser, accountError } = useAuthContext();
   const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [login, setLogin] = useState(null);
+  const searchLauncher = useRef(null);
   const shell = useRef(null), header = useRef(null);
   const focused = ["/kom-igang", "/bekrafta"].includes(pathname);
   useEffect(() => {
@@ -46,6 +59,7 @@ export default function PublicShell({ children }) {
     return () => observer.disconnect();
   }, []);
   return (
+    <NavigationPathnameContext.Provider value={navigationRoute}>
     <div ref={shell} className={cx(ui.scope, styles.shell, focused && styles.focused)}>
       <a href="#site-main" className={styles.skip}>
         Hoppa till innehållet
@@ -66,7 +80,7 @@ export default function PublicShell({ children }) {
               <Link
                 key={link.href}
                 href={link.href}
-                aria-current={isPrimaryNavigationActive(pathname, link.href) ? "page" : undefined}
+                aria-current={isPrimaryNavigationActive(navigationRoute, link.href) ? "page" : undefined}
               >
                 {link.label}
               </Link>
@@ -81,6 +95,7 @@ export default function PublicShell({ children }) {
           </div>}
           {!focused && <div className={styles.mobileSearch}>
             <IconButton
+              ref={searchLauncher}
               label="Sök bolag och nyheter"
               onClick={() => setSearchOpen(true)}
             >
@@ -172,7 +187,7 @@ export default function PublicShell({ children }) {
           <Link
             key={href}
             href={href}
-            aria-current={isPrimaryNavigationActive(pathname, href) ? "page" : undefined}
+            aria-current={isPrimaryNavigationActive(navigationRoute, href) ? "page" : undefined}
           >
             <Icon aria-hidden="true" />
             <span>{label}</span>
@@ -183,6 +198,7 @@ export default function PublicShell({ children }) {
         open={searchOpen}
         onOpenChange={setSearchOpen}
         title="Hitta bolag och nyheter"
+        finalFocus={searchLauncher}
       >
         <StockSearch
           showSuggestions
@@ -199,5 +215,6 @@ export default function PublicShell({ children }) {
         <LogInModal redirectTo={login || pathname} />
       </Dialog>
     </div>
+    </NavigationPathnameContext.Provider>
   );
 }

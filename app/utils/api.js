@@ -1,4 +1,7 @@
 import { requestAccount } from "./accountRequest.js";
+import { personalFeedCache } from './personalFeedCache.js';
+import { mergePersonalPreviewObservations } from './personalPreview.js';
+import { validOmxsumStoryId, qualifiedOmxsumStory } from './omxsumStories.js';
 
 // On the server (SSR / metadata) we can talk to the backend directly via API_URL
 // (e.g. http://localhost:8000/api on the VPS). In the browser we use the public URL.
@@ -6,6 +9,45 @@ const API_URL =
     typeof window === "undefined"
         ? process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
         : process.env.NEXT_PUBLIC_API_URL;
+
+export async function fetchOmxsumStories({ symbol, format, cursor, newsId, signal } = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries({ symbol, format, cursor, newsId })) if (value) params.set(key, value);
+    const response = await fetch(`${API_URL}/feed/omxsum-stories?${params}`, { cache: 'no-store', credentials: 'omit',
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error('OMXsum Stories kunde inte hämtas.');
+    const body = await response.json();
+    if (!Array.isArray(body.items) || body.items.length > 12) throw new Error('Ogiltigt stories-svar.');
+    return { ...body, items: body.items.map(qualifiedOmxsumStory).filter(Boolean) };
+}
+
+export async function fetchOmxsumStory(id) {
+    if (!validOmxsumStoryId(id)) throw Object.assign(new Error('Storyn hittades inte.'), { status: 404 });
+    const response = await fetch(`${API_URL}/feed/omxsum-stories/${id}`, { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw Object.assign(new Error('Storyn kunde inte hämtas.'), { status: response.status });
+    const article = qualifiedOmxsumStory((await response.json()).article);
+    if (!article || article.id !== id) throw new Error('Storyn kunde inte verifieras.');
+    return article;
+}
+
+// Public, server-redacted samples only. Never request the paid resource and
+// conceal it with a CSS blur. Native HTTP caching follows the public contract.
+export async function fetchResearchPreview(resource, { signal } = {}) {
+    if (resource !== 'screener-preview' && !/^company\/[A-Z0-9.\-]{1,20}\/financial-preview$/.test(resource))
+        throw new Error('Ogiltig förhandsvisning');
+    const response = await fetch(`${API_URL}/feed/${resource}`, {
+        credentials: 'omit', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000),
+        ...(typeof window === 'undefined' ? { next: { revalidate: 30 } } : {}),
+    });
+    if (!response.ok) throw new Error('Förhandsvisningen kunde inte hämtas');
+    const body = await response.json();
+    const valid = resource === 'screener-preview'
+        ? body?.meta?.preview === true && Array.isArray(body.items) && body.items.length <= 6
+        : body?.preview === true && body.symbol === resource.split('/')[1]
+            && Array.isArray(body.annual) && body.annual.length <= 4;
+    if (!valid) throw new Error('Förhandsvisningen kunde inte bekräftas');
+    return body;
+}
 
 export async function fetchAllArticles({ signal } = {}) {
     try {
@@ -138,13 +180,14 @@ export async function fetchStock(symbol, range = "intraday") {
     }
 }
 
-export async function fetchCompanyOverview(symbol, cookieHeader = "") {
+export async function fetchCompanyOverview(symbol, cookieHeader = "", { signal } = {}) {
     const response = await fetch(
         `${API_URL}/feed/company/${encodeURIComponent(symbol)}/overview`,
         {
             cache: "no-store",
             headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
             credentials: "include",
+            signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
         }
     );
     const body = await response.json();
@@ -403,22 +446,63 @@ export async function fetchPersonalPreview({ limit = 5 } = {}) {
 }
 
 export async function markPersonalNewsRead(receipts) {
+    const requestScope = typeof window !== 'undefined' ? personalFeedCache.getScope() : null;
     const response = await fetch(`${API_URL}/user/personal-feed/read`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ receipts }), signal: AbortSignal.timeout(12_000),
     });
     const data = await response.json();
     if (!response.ok || !Array.isArray(data.acknowledged)) throw new Error('Lässtatus kunde inte sparas. Försök igen.');
+    if (typeof window !== 'undefined') personalFeedCache.markRead(data.acknowledged, requestScope);
     return data;
 }
 
-export async function fetchPersonalFeed({ limit = 40, filter = "all", cursor, after, signal } = {}) {
+export async function fetchPersonalFeed({ user, force = false, ...options } = {}) {
+    if (!user || typeof window === 'undefined') return requestPersonalFeed(options);
+    try { return await personalFeedCache.load(user, { ...options, force }, requestPersonalFeed); }
+    catch (error) { if (!options.signal?.aborted) console.error('Personal feed unavailable:', error); return null; }
+}
+
+export async function fetchPersonalPreviewObservations({ user, snapshot, ...options }) {
+    return personalFeedCache.loadObservations(user, options, snapshot, async (stories, signal) => {
+        const params = new URLSearchParams({ stories: stories.slice(0, 2).map(story => `${story.id}:${story.version ?? 1}`).join(',') });
+        const response = await fetch(`${API_URL}/user/personal-feed/observations?${params}`, {
+            credentials: 'include', cache: 'no-store', signal: AbortSignal.any([signal, AbortSignal.timeout(12_000)]),
+        });
+        if (!response.ok) throw new Error('Kursdata kunde inte uppdateras');
+        return response.json();
+    });
+}
+
+// Same account-authorized observation endpoint as the two-row overview, with
+// at most one displayed page. News and curated selection render before this.
+export async function fetchPersonalFeedObservations({ user, snapshot, ...options }) {
+    const fetchObservations = async (stories, signal) => {
+        const params = new URLSearchParams({ stories: stories.slice(0, 20)
+            .map(story => `${story.id}:${story.version ?? 1}`).join(',') });
+        const response = await fetch(`${API_URL}/user/personal-feed/observations?${params}`, {
+            credentials: 'include', cache: 'no-store', signal: AbortSignal.any([signal, AbortSignal.timeout(12_000)]),
+        });
+        if (!response.ok) throw new Error('Kursdata kunde inte uppdateras');
+        return response.json();
+    };
+    if (options.cursor || options.after) {
+        if (!snapshot.stories.length) return snapshot;
+        const result = await fetchObservations(snapshot.stories, options.signal ?? new AbortController().signal);
+        return { ...snapshot, stories: mergePersonalPreviewObservations(snapshot.stories, result.items ?? []) };
+    }
+    return personalFeedCache.loadObservations(user, options, snapshot, fetchObservations);
+}
+
+async function requestPersonalFeed({ limit = 40, filter = "all", view, cursor, after, signal } = {}) {
     try {
         const params = new URLSearchParams({ limit: String(limit), filter });
+        if (view) params.set('view', view);
         if (cursor) params.set("cursor", cursor);
         if (after) params.set("after", after);
         const res = await fetch(`${API_URL}/user/personal-feed?${params}`, {
             credentials: "include",
+            cache: 'no-store',
             signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(25_000)]) : AbortSignal.timeout(25_000),
         });
         if (!res.ok) return null;
@@ -436,6 +520,8 @@ export async function fetchScreener(order = "absolute", limit = 20) {
     try {
         const res = await fetch(`${API_URL}/feed/screener?order=${order}&limit=${limit}`, {
             credentials: "include",
+            cache: "no-store",
+            signal: AbortSignal.timeout(15_000),
         });
         return res.json();
     } catch (error) {

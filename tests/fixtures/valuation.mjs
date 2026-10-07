@@ -55,5 +55,25 @@ export function valuationFixture(symbol = 'VALUE.TEST', now = Date.now()) {
       inputs: financials.quarterly.slice(-4).map(q => ({ ...q })),
       forecasts: { dilutedEps: { value: 1.4, basis: 'diluted' } } };
   }
+  if (['VALUE-R12-BETA.TEST', 'VALUE-R12-BETA-CONSENSUS.TEST', 'VALUE-R12-BETA-ALL-HIDDEN.TEST'].includes(symbol)) {
+    // Dedicated fictional public-beta contracts are served to SSR and client
+    // requests alike. A browser route override cannot alter initial SSR data.
+    if (symbol !== 'VALUE-R12-BETA-CONSENSUS.TEST') estimates.snapshots = [];
+    estimates.modelPublicationPolicy = { version: 1, legacyModels: symbol === 'VALUE-R12-BETA-ALL-HIDDEN.TEST' ? 'hide_all' : 'hide_quarterly_revenue' };
+    const recent = financials.quarterly.slice(-4).map(q => q.revenue).sort((a, b) => a - b);
+    estimates.revenueBetaModels = [{ symbol, origin: 'revenue_beta', modelVersion: 'omxsum-revenue-beta-v1',
+      releaseStage: 'beta', fiscalPeriod: `${year}-Q3`, fiscalYear: year, fiscalQuarter: 3,
+      frequency: 'quarterly', currency: 'SEK', basis: 'reported', locked: false,
+      updatedAt: new Date(now).toISOString(), metrics: { revenue: (recent[1] + recent[2]) / 2 },
+      inputPeriods: financials.quarterly.map(q => ({ fiscalPeriod: q.fiscalPeriod,
+        rank: q.fiscalYear * 4 + q.fiscalQuarter, periodEnd: q.periodEnd,
+        currency: q.currency, source: q.source, revenue: q.revenue })),
+      method: { basis: 'recent_four_median', newsAdjustmentApplied: false } }];
+  }
+  if (['VALUE-R12-RETIRED.TEST', 'VALUE-R12-RETIRED-ALL.TEST'].includes(symbol)) {
+    estimates.snapshots = [];
+    estimates.revenueBetaModels = [];
+    estimates.modelPublicationPolicy = { version: 1, legacyModels: symbol === 'VALUE-R12-RETIRED-ALL.TEST' ? 'hide_all' : 'hide_quarterly_revenue' };
+  }
   return result;
 }

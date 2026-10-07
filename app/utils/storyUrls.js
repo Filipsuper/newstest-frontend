@@ -29,6 +29,12 @@ export function storyHref(id, headline = "") {
   return `/nyhet/${slug ? `${slug}${SEPARATOR}` : ""}${id}`;
 }
 
+export function companyStoryHref(id, headline, symbol) {
+  const href = storyHref(id, headline);
+  if (!href || typeof symbol !== "string" || !/^[A-Za-z0-9.^_-]{1,80}$/.test(symbol)) return href;
+  return `${href}?company=${encodeURIComponent(symbol)}`;
+}
+
 export function storyIdFromPath(segment) {
   if (typeof segment !== "string") return null;
   if (!segment.includes(SEPARATOR)) return validStoryId(segment) ? segment : null;

@@ -97,7 +97,9 @@ for (const width of [1440, 390]) {
     }));
     const before = await positions();
     delayed = true;
-    await tabs.getByRole('button', { name: 'Bolag', exact: true }).click();
+    // Company results are now prefetched; use an uncached filter to exercise
+    // the loading geometry rather than assuming every selection refetches.
+    await tabs.getByRole('button', { name: 'Ämnen', exact: true }).click();
     await expect.poll(() => Boolean(release)).toBe(true);
     expect(await positions()).toEqual(before);
     delayed = false;

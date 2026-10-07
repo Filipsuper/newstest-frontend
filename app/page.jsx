@@ -4,6 +4,7 @@ import {
   LandingLetterPreview,
   LandingNewsPreview,
   LandingPreviewLoading,
+  LandingScreenerSample,
 } from "./components/LandingPreviews";
 import { BRAND_LABEL, LANDING_DESCRIPTION, SITE_OG_IMAGE } from "./utils/brand";
 
@@ -72,6 +73,7 @@ export default function Page() {
         }}
       />
       <HomePage
+        screenerPreview={<LandingScreenerSample />}
         newsPreview={
           <Suspense fallback={<LandingPreviewLoading type="nyheter" />}>
             <LandingNewsPreview />

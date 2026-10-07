@@ -229,8 +229,8 @@ test("the overview refreshes its featured headline and personal preview automati
   await page.clock.runFor(30_100);
   await expect.poll(() => state.overviewReads).toBeGreaterThan(before.market);
   await expect.poll(() => state.personalReads).toBeGreaterThan(before.personal);
-  // A news link's accessible name includes its company before the headline.
-  const updatedStory = featured.locator(`a[href^="/nyhet/"][href$="~${id}"]`);
+  // The editorial card links its headline and its separate reading CTA.
+  const updatedStory = featured.locator(`a[href^="/nyhet/"][href$="~${id}"]`).filter({ hasText: headline });
   await expect(updatedStory).toBeVisible();
   await expect(updatedStory).toContainText(headline);
   await expect(personal.locator("article")).toHaveCount(2);

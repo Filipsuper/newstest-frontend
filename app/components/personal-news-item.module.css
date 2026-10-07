@@ -1,4 +1,10 @@
 /* Reserve space to avoid layout shifts. Keep touch and keyboard access. */
+.row[data-news-layout="editorial"] .readAction {
+  color: var(--ui-text-secondary);
+  font-weight: 400;
+  opacity: 1;
+  pointer-events: auto;
+}
 @media (hover: hover) and (pointer: fine) {
   .row .readAction {
     opacity: 0;

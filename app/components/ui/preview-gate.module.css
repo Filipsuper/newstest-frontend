@@ -1,0 +1,11 @@
+.gate { min-width: 0; background: var(--ui-surface); border-radius: var(--ui-radius-lg); overflow: hidden; }
+.sample { min-width: 0; }
+/* Fade the end of a public sample, not a DOM containing hidden paid values. */
+.fade { mask-image: linear-gradient(to bottom, #000 calc(100% - 112px), transparent); }
+.fade:focus-within { mask-image: none; }
+.offer { position: relative; margin-top: -24px; padding: var(--ui-space-6) var(--ui-space-4) var(--ui-space-8); align-items: center; text-align: center; }
+.offer > button, .offer > a { max-width: 100%; }
+.description { max-width: 34rem; }
+@media (max-width: 600px) {
+  .offer { padding: var(--ui-space-4) var(--ui-space-4) var(--ui-space-6); }
+}

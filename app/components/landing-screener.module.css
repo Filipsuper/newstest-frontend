@@ -1,0 +1,41 @@
+.preview {
+  min-width: 0;
+  width: 100%;
+  max-width: 32rem;
+  justify-self: end;
+  font-family: var(--ui-font);
+}
+.header { justify-content: space-between; gap: var(--ui-space-2); }
+.filter { flex-wrap: nowrap; }
+.filter > svg { width: 14px; height: 14px; flex: none; color: var(--ui-text-secondary); }
+.results { display: grid; gap: var(--ui-space-2); list-style: none; padding: 0; margin: var(--ui-space-4) 0 0; }
+.result {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  text-decoration: none;
+  min-height: var(--ui-control-md);
+}
+.result:hover { background: var(--ui-hover); }
+.result:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 4px; }
+.result > :global(.stock-profile) { width: 64px; height: 64px; flex: none; margin: 0; --stock-profile-tone: var(--ui-accent); }
+.result > :global(.stock-profile--low) { --stock-profile-tone: var(--ui-negative); }
+.result > :global(.stock-profile--high) { --stock-profile-tone: var(--ui-positive); }
+.result :global(.stock-profile__ring), .result :global(.stock-profile__spoke) { stroke: var(--ui-border); }
+.identity { display: grid; gap: var(--ui-space-1); min-width: 0; }
+.identity p { overflow-wrap: anywhere; }
+.name { font-weight: 500; }
+.value { text-align: right; font-size: var(--ui-text-lg); line-height: var(--ui-leading-tight); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 760px) {
+  .preview { justify-self: start; }
+}
+@media (max-width: 560px) {
+  .result { grid-template-columns: 56px minmax(0, 1fr) auto; padding: var(--ui-space-3); gap: var(--ui-space-2); }
+  .result > :global(.stock-profile) { width: 56px; height: 56px; }
+  .name { font-size: var(--ui-text-sm); }
+}

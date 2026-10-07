@@ -6,6 +6,7 @@ const LETTER_TITLE = 'Fiktivt morgonbrev: bolagens rapporter och räntor';
 const IMPORTANT_TITLE = 'Fiktiv viktig serviceorder från förra veckan';
 const LATEST_TITLE = 'Fiktiv ny prognos för Norden Industri';
 const KEYWORD_TITLE = 'Fiktiv batterinyhet utanför dina bolag';
+const fixtureOrigin = `http://127.0.0.1:${process.env.NEWS_FIXTURE_PORT || 8100}`;
 const pageStates = new WeakMap();
 const companies = [
   { symbol: 'NORD.TEST', name: 'Norden Industri' },
@@ -31,7 +32,11 @@ function story(id, headline, company, ageHours, overrides = {}) {
 }
 
 function quote(symbol, { startPrice = 100, price = 102, change = 2, currency = 'SEK' } = {}) {
-  const end = Date.now() - 30 * 60_000;
+  // A fictional session must stay within one date even when the suite runs
+  // just after Stockholm midnight. Production correctly rejects mixed days.
+  const session = new Date(); session.setUTCHours(10, 0, 0, 0);
+  if (session.getTime() > Date.now()) session.setUTCDate(session.getUTCDate() - 1);
+  const end = session.getTime();
   return {
     symbol, timezone: 'Europe/Stockholm', updateMode: 'snapshot', previousClose: 100,
     previous: [], previousFull: [],
@@ -114,8 +119,13 @@ async function setup(page, options = {}) {
       return route.fulfill({ json: state.letters });
     }
     if (url.pathname.startsWith('/api/')) return route.fulfill({ response: await route.fetch({
-      url: `http://127.0.0.1:8100${url.pathname}${url.search}`,
+      url: `${fixtureOrigin}${url.pathname}${url.search}`,
     }) });
+    // Optional third-party scripts stay inert without emitting a script-load
+    // error when the reader mounts or the dashboard regains focus.
+    if (!['127.0.0.1', 'localhost'].includes(url.hostname) && request.resourceType() === 'script') {
+      return route.fulfill({ contentType: 'application/javascript', body: '' });
+    }
     return ['127.0.0.1', 'localhost'].includes(url.hostname) ? route.continue() : route.abort();
   });
   return state;
@@ -166,6 +176,10 @@ for (const theme of ['light', 'dark']) {
       const important = importantRegion(page), latest = latestRegion(page);
       const strip = page.getByRole('region', { name: 'Dina bolagskurser', exact: true });
       await expect(important.locator('article')).toHaveCount(1);
+      await expect(important.locator('article')).toHaveAttribute('data-news-layout', 'editorial');
+      await expect(important.getByRole('link', { name: 'Läs nyheten', exact: true })).toBeVisible();
+      await expect(important).not.toContainText('AI-sammanfattning');
+      await expect(important.getByRole('list', { name: 'AI-sammanfattningens huvudpunkter' })).toHaveCount(0);
       await expect(important).toContainText(IMPORTANT_TITLE);
       await expect(important).toContainText('Fiktiv AI-text');
       await expect(latest.locator('article')).toHaveCount(3);
@@ -188,6 +202,64 @@ for (const theme of ['light', 'dark']) {
       expect(state.errors).toEqual([]);
     });
   }
+}
+
+for (const width of [1440, 390, 320]) {
+  test(`important news actions stay together and mark read without navigation at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    const state = await setup(page);
+    await page.route('**/api/feed/news/fixture-important', route => route.fulfill({
+      json: { story: state.important[0], text: 'Fiktiv källtext för den viktiga nyheten.', related: [] },
+    }));
+    await page.goto('/marknaden/bevakning');
+    const important = importantRegion(page);
+    const card = important.locator('article');
+    const markRead = card.getByRole('button', { name: 'Markera som läst', exact: true });
+    const read = card.getByRole('link', { name: 'Läs nyheten', exact: true });
+    await expect(read).toHaveAttribute('href', '/nyhet/fiktiv-viktig-serviceorder-fran-forra-veckan~fixture-important');
+    await expect(markRead).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const [cardBox, markBox, readBox] = await Promise.all([
+      card.boundingBox(), markRead.boundingBox(), read.boundingBox(),
+    ]);
+    for (const action of [markBox, readBox]) {
+      expect(action.x).toBeGreaterThanOrEqual(cardBox.x);
+      expect(action.x + action.width).toBeLessThanOrEqual(cardBox.x + cardBox.width);
+      expect(action.y + action.height).toBeLessThanOrEqual(cardBox.y + cardBox.height);
+      if (width <= 960) expect(action.height).toBeGreaterThanOrEqual(44);
+    }
+    // On a narrow screen the pair can wrap, but the secondary action stays
+    // before the reader action and they remain close together at the right.
+    expect(readBox.y).toBeGreaterThanOrEqual(markBox.y - 1);
+    if (Math.abs(readBox.y - markBox.y) < 2) {
+      expect(readBox.x - (markBox.x + markBox.width)).toBeGreaterThanOrEqual(0);
+      expect(readBox.x - (markBox.x + markBox.width)).toBeLessThanOrEqual(16);
+    } else {
+      expect(readBox.y - (markBox.y + markBox.height)).toBeLessThanOrEqual(8);
+      expect(Math.abs(readBox.x + readBox.width - markBox.x - markBox.width)).toBeLessThanOrEqual(1);
+    }
+    expect(cardBox.x + cardBox.width - readBox.x - readBox.width).toBeLessThanOrEqual(24);
+    if (width === 1440) expect(Math.abs(readBox.y - markBox.y)).toBeLessThan(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    await card.screenshot({ path: testInfo.outputPath(`important-news-actions-${width}.png`) });
+    expect(state.writes).toEqual([]);
+    await read.click();
+    const reader = page.getByRole('dialog');
+    await expect(reader).toBeVisible();
+    await expect(reader.getByRole('heading', { name: IMPORTANT_TITLE, exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/nyhet\/fiktiv-viktig-serviceorder-fran-forra-veckan~fixture-important$/);
+    await page.keyboard.press('Escape');
+    await expect(reader).toHaveCount(0);
+    await expect(page).toHaveURL(/\/marknaden\/bevakning$/);
+    expect(state.writes).toEqual([]);
+    await markRead.click();
+    await expect(card).toHaveCount(0);
+    await expect(page).toHaveURL(/\/marknaden\/bevakning$/);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(state.writes).toEqual([{ path: '/api/user/personal-feed/read', method: 'POST',
+      body: { receipts: ['fixture-important-receipt'] } }]);
+    expect(state.errors).toEqual([]);
+  });
 }
 
 test('important candidates stay separate from chronological pages and interest filters', async ({ page }) => {
@@ -288,7 +360,7 @@ test('news failures offer recovery without hiding followed-company quotes', asyn
   expect(state.writes).toEqual([]);
 });
 
-test('quote paging bounds requests to the four shown companies', async ({ page }) => {
+test('quote paging warms only the visible and next group and reuses them on navigation', async ({ page }) => {
   const state = await setup(page, { user: { email: 'many@example.test', verified: true, plan: 'plus',
     watchlist: companies.map(company => company.symbol), topics: [], keywords: [] } });
   await page.goto('/marknaden/bevakning');
@@ -296,11 +368,12 @@ test('quote paging bounds requests to the four shown companies', async ({ page }
   const list = strip.getByRole('list', { name: 'Följda bolag med kurser', exact: true });
   await expect(list.getByRole('link')).toHaveCount(4);
   await expect(strip).toContainText('Bolag 1–4 av 5');
-  expect([...new Set(state.quoteReads)].sort()).toEqual(companies.slice(0, 4).map(company => company.symbol).sort());
+  await expect.poll(() => [...new Set(state.quoteReads)].sort()).toEqual(companies.map(company => company.symbol).sort());
   await strip.getByRole('button', { name: 'Nästa bolag', exact: true }).click();
   await expect(list.getByRole('link')).toHaveCount(1);
   await expect(strip).toContainText('Femte Fiktiva Bolaget');
   await expect.poll(() => state.quoteReads.includes('FIVE.TEST')).toBe(true);
+  expect(state.quoteReads.length).toBe(5);
   expect(state.writes).toEqual([]);
 });
 
@@ -382,7 +455,7 @@ for (const width of [320, 390, 1440]) {
         name.boundingBox(), badge.boundingBox(), link.boundingBox(),
       ]);
       expect(badgeBox.y).toBeGreaterThanOrEqual(nameBox.y + nameBox.height);
-      expect(nameBox.width).toBeGreaterThanOrEqual(linkBox.width - 1);
+      expect(nameBox.width).toBeGreaterThanOrEqual(linkBox.width - 24 - 8 - 1);
     }
     await expect(card.getByRole('img')).toBeVisible();
     if (width < 700) {

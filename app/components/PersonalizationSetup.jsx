@@ -10,6 +10,7 @@ import StockSearch, { STOCK_SEARCH_SUGGESTIONS } from "./StockSearch";
 import { Button, IconButton } from "./ui/Button";
 import { Inline, Stack, Text } from "./ui/layout";
 import { Skeleton } from "./ui/data";
+import { CompanyIdentity } from "./ui/CompanyLogo";
 import styles from "./onboarding.module.css";
 
 export default function PersonalizationSetup({ suggestedSymbol, onBusyChange, onboarding = false, disabled = false }) {
@@ -73,7 +74,7 @@ export default function PersonalizationSetup({ suggestedSymbol, onBusyChange, on
     <Stack gap={8}>
       <Stack gap={4}>
         {suggested && !watchlist.includes(suggested.symbol) && <div className={styles.company}>
-          <Stack gap={1}><Text size="xs" tone="secondary">Du ville följa</Text><Text size="sm">{suggested.name}</Text></Stack>
+          <CompanyIdentity company={suggested} size="sm"><Stack gap={1}><Text size="xs" tone="secondary">Du ville följa</Text><Text size="sm">{suggested.name}</Text></Stack></CompanyIdentity>
           <Button variant="secondary" disabled={disabled || Boolean(busy) || watchlist.length >= cap} onClick={() => follow(suggested, true)}>Följ {suggested.name}</Button>
         </div>}
         {companiesLoading ? (
@@ -129,15 +130,15 @@ export default function PersonalizationSetup({ suggestedSymbol, onBusyChange, on
             {(onboarding && !showAll ? watchlist.slice(0, 3) : watchlist).map((symbol) => {
               const company = companies.find(
                 (row) => row.symbol === symbol,
-              ) || { symbol, name: symbol };
+              ) || { symbol, name: symbol, logo: null };
               return (
                 <li className={styles.company} key={symbol}>
-                  <Stack gap={1}>
+                  <CompanyIdentity company={company} size="sm"><Stack gap={1}>
                     <Text size="sm">{company.name}</Text>
                     <Text size="xs" tone="secondary">
                       {company.nativeSymbol || symbol}
                     </Text>
-                  </Stack>
+                  </Stack></CompanyIdentity>
                   <IconButton
                     label={`Ta bort ${company.name}`}
                     loading={busy === symbol}

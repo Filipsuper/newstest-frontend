@@ -1,6 +1,6 @@
 // Maps the Market API's Story v1 payload to the flat shape our news
 // components render. Used for both REST responses and SSE events.
-import { newsSummary } from "./newsSummary.js";
+import { newsSummary, newsSourceExcerpt } from "./newsSummary.js";
 const OFFICIAL_SOURCES = new Set(["fi", "nasdaq", "riksbank"]);
 
 export function storyToItem(story) {
@@ -36,11 +36,27 @@ export function storyToItem(story) {
         importance: story.importance ?? null,
         summary: story.summary ?? null,
         aiSummary: newsSummary(story.aiSummary),
+        sourceExcerpt: newsSourceExcerpt(story.primarySource),
         facts: story.facts ?? null,
         reaction: story.reaction ?? null,
         reactionV2: story.reactionV2,
         marketContext: story.marketContext ?? null,
         companyContext: story.companyContext,
         status: story.status,
+    };
+}
+
+// A company page must not display another member's price change simply
+// because that company happened to be first in the wire payload.
+export function storyToCompanyItem(story, symbol) {
+    const item = storyToItem(story);
+    const company = item.companies.find(company => company.symbol === symbol);
+    if (!company) return item;
+    return {
+        ...item,
+        company: company.name || company.symbol,
+        symbol: company.symbol,
+        readerCompany: company.symbol,
+        relatedCompany: item.symbol !== company.symbol ? item.company || item.symbol : null,
     };
 }

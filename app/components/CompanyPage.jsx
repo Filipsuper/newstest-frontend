@@ -18,11 +18,14 @@ import {
 import { FiCalendar, FiExternalLink, FiShare2, FiSliders } from "react-icons/fi";
 import { FaLock, FaScaleBalanced } from "react-icons/fa6";
 import { useAuthContext } from "../providers/AuthProvider";
+import UpgradeLink from "./UpgradeLink";
 import ShareStockModal from "../modals/ShareStockModal";
 import NewsFeedItem from "./NewsFeedItem";
 import FollowCompanyButton from "./FollowCompanyButton";
-import { storyToItem } from "../utils/storyToItem";
+import { CompanyIdentity } from "./ui/CompanyLogo";
+import { storyToItem, storyToCompanyItem } from "../utils/storyToItem";
 import { chronologicalNews, safeSourceUrl, storyHref } from "../utils/newsroom";
+import OmxsumStoriesRelated from './OmxsumStoriesRelated';
 import { Container, Heading, Inline, Stack, Text } from "./ui/layout";
 import { Button, IconButton } from "./ui/Button";
 import { ChangeBadge, EmptyState } from "./ui/data";
@@ -32,6 +35,7 @@ import { SegmentedControl } from "./ui/SegmentedControl";
 import CompanyReportShell, { ReportSection } from "./CompanyReportShell";
 import CompanyManagementComment from "./CompanyManagementComment";
 import CompanyFinancialOverview from "./CompanyFinancialOverview";
+import CompanyFinancialPreview from './CompanyFinancialPreview';
 import CompanyResearchProfile from "./CompanyResearchProfile";
 import CompanyValuation from "./CompanyValuation";
 import CompanyEstimates from "./CompanyEstimates";
@@ -253,7 +257,7 @@ function MoveDrivers({ drivers }) {
     return (
         <aside className={styles.driver} aria-labelledby="company-mover-heading">
             <Heading as="h2" size="subsection" id="company-mover-heading">Aktuell händelse</Heading>
-            <NewsFeedItem item={lead} showSymbol={false} summaryPreview />
+            <NewsFeedItem item={lead} summaryPreview variant="editorial" />
         </aside>
     );
 }
@@ -412,7 +416,7 @@ function ShareMoveButton({ symbol, companyName, range, ma50, ma200 }) {
     );
 }
 
-function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, onQuoteChange, briefing }) {
+export function CompanyChart({ chart, companyName, summary, symbol, initialRange, initialMovingAverages = "", news, reports, onQuoteChange, briefing, compact = false }) {
     const router = useRouter();
     const [range, setRange] = useState(
         RANGES.some((option) => option.id === initialRange) ? initialRange : "1y",
@@ -660,17 +664,17 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
 
 
     return (
-        <div className={`${styles.intro} ${briefing ? styles.introWithBriefing : ''}`}>
-            <header className={styles.identity}>
-                <div className={styles.identityTop}>
-                    <div>
+        <div className={`${styles.intro} ${briefing ? styles.introWithBriefing : ''} ${compact ? styles.compactChart : ''}`}>
+            <header className={styles.identity} data-company-identity>
+                {!compact && <div className={styles.identityTop}>
+                    <CompanyIdentity company={{ ...profile, symbol }} size="lg" loading="eager">
                         <Heading as="h1" size="page" id="overview-heading" tabIndex={-1}>{profile.name ?? symbol}</Heading>
                         <Text size="sm" tone="secondary" className={styles.identityMeta}>
                             {[profile.nativeSymbol ?? symbol, profile.segment?.replaceAll("_", " "), profile.sector].filter(Boolean).join(" · ")}
                         </Text>
-                    </div>
+                    </CompanyIdentity>
                     <span data-nosnippet=""><FollowCompanyButton symbol={symbol} name={profile.name} /></span>
-                </div>
+                </div>}
                 <div className={styles.quote} data-nosnippet="">
                     <strong>{quote?.price == null ? "Kurs saknas" : `${number(quote.price, 2)} ${priceCurrency === "SEK" ? "kr" : priceCurrency}`}</strong>
                     <ChangeBadge value={quote?.changePct} label="Dagsförändring" />
@@ -681,7 +685,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                     {quote?.delayed && " · Fördröjd kurs"}
                     {(quote?.source?.startsWith("yahoo") || chart?.sourceName === "Yahoo Finance") && <> · Källa: <a href="https://finance.yahoo.com/" target="_blank" rel="noreferrer">Yahoo Finance</a></>}
                     {snapshotOnly && quote?.price != null && " · Kan vara fördröjd"}
-                </Text>{nextReport && <a className={styles.reportDate} href="#calendar"><FiCalendar aria-hidden="true" /> Nästa rapport · {svDate(nextReport.date, true)}</a>}</Inline>
+                </Text>{!compact && nextReport && <a className={styles.reportDate} href="#calendar"><FiCalendar aria-hidden="true" /> Nästa rapport · {svDate(nextReport.date, true)}</a>}</Inline>
             </header>
             <div className={styles.controls} data-nosnippet="">
                 <SegmentedControl label="Kursperiod" value={range} onValueChange={setRange} className={styles.ranges}
@@ -703,7 +707,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                     </>}
                 </div>
             </div>
-            {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${!briefing && drivers.length ? styles.chartWithContext : ""}`}>
+            {!isIntraday && !dailyData.length ? <EmptyState title="Ingen historisk kursdata är tillgänglig ännu." /> : <div className={`${styles.chartLayout} ${!compact && !briefing && drivers.length ? styles.chartWithContext : ""}`}>
             <div className="company-chart-main" data-nosnippet="">
             <div className={`company-chart ${loadingIntraday ? "company-chart-is-loading" : ""}`} role="group" aria-label={`Kursutveckling för ${companyName}`}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -817,7 +821,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
                 ))}
             </div>
             </div>
-                {!briefing && drivers.length > 0 && (
+                {!compact && !briefing && drivers.length > 0 && (
                     <MoveDrivers drivers={drivers} />
                 )}
             </div>}
@@ -828,7 +832,7 @@ function CompanyChart({ chart, companyName, summary, symbol, initialRange, initi
     );
 }
 
-function FinancialSummary({ highlights }) {
+function FinancialSummary({ highlights, compact = false }) {
     const period = highlights?.ttm ?? highlights?.annual ?? highlights?.quarterly;
     if (!period) return null;
     const currency = highlights.currency ?? "SEK";
@@ -843,24 +847,24 @@ function FinancialSummary({ highlights }) {
                 ["Fritt kassaflöde", money(period.freeCashFlow, currency)],
                 ["Nettoskuld", money(period.netDebt, currency)],
                 ["Nettoskuld / EBITDA", period.netDebtToEbitda == null ? "Saknas" : `${number(period.netDebtToEbitda, 2)}×`],
-            ].map(([label, value]) => <div key={label}><Text size="xs" tone="secondary">{label}</Text><Text numeric>{value}</Text></div>)}
+            ].filter(([, value]) => !compact || value !== 'Saknas').map(([label, value]) => <div key={label}><Text size="xs" tone="secondary">{label}</Text><Text numeric>{value}</Text></div>)}
         </div>
         <Text size="xs" tone="secondary">{periodLabel(period)}{highlights.source && ` · ${highlights.source}`}{highlights.dataAsOf && ` · ${svDate(highlights.dataAsOf)}`}</Text>
     </Stack>;
 }
 
 // Company news opens the shared URL-backed reader, preserving page context.
-function NewsList({ news }) {
+function NewsList({ news, symbol }) {
     const [count, setCount] = useState(6);
     const [filter, setFilter] = useState('all');
-    const items = useMemo(() => chronologicalNews((news ?? []).map(storyToItem)), [news]);
+    const items = useMemo(() => chronologicalNews((news ?? []).map(story => storyToCompanyItem(story, symbol))), [news, symbol]);
     const reports = items.filter(item => item.labels?.includes('EARNINGS'));
     const visible = filter === 'reports' ? reports : items;
     if (!items.length) return <EmptyState title="Inga bolagsspecifika nyheter finns ännu." />;
     return (
         <Stack gap={2}>
             <Inline className={styles.financialToolbar}><SegmentedControl label="Bolagsnyheter" value={filter} onValueChange={value => { setFilter(value); setCount(6); }} options={[{ value: 'all', label: 'Alla nyheter' }, { value: 'reports', label: 'Rapporter' }]} /><Text size="xs" tone="secondary">{visible.length} i urvalet · senaste först</Text></Inline>
-            {visible.slice(0, count).map(item => <NewsFeedItem key={item.id} item={item} showSymbol={false} />)}
+            {visible.slice(0, count).map(item => <NewsFeedItem key={item.id} item={item} variant="editorial" />)}
             {!visible.length && <EmptyState title="Inga rapportnyheter i det hämtade urvalet" />}
             {visible.length > count && <Button variant="secondary" onClick={() => setCount(value => value + 6)}>Visa fler nyheter</Button>}
         </Stack>
@@ -1181,14 +1185,14 @@ function FinancialsTab({ symbol, financials, estimates }) {
 }
 
 
-function NewsSection({ data, mentions, hasPlus }) {
+function NewsSection({ data, mentions, hasPlus, symbol }) {
     return <div className={styles.news}>
-        <NewsList news={data.news} />
+        <NewsList news={data.news} symbol={symbol} />
         <div className={styles.newsContext}>
             <details className={styles.details}>
                 <summary>Rapportdokument{data.reports?.length ? ` · ${data.reports.length}` : ""}</summary>
                 <div className={styles.documents}>
-                    {!hasPlus ? <Text size="sm" tone="secondary">Rapportdokument ingår i Plus. <Link href="/pro">Utforska Plus →</Link></Text>
+                    {!hasPlus ? <Text size="sm" tone="secondary">Rapportdokument ingår i Plus. <UpgradeLink inline tier="plus" fallback="Utforska Plus"> →</UpgradeLink></Text>
                     : data.availability?.reports === 'unavailable' ? <Text size="sm" tone="secondary">Rapportdokument kunde inte hämtas. Försök igen senare.</Text>
                     : (data.reports ?? []).length ? data.reports.map((report) => {
                         const href = safeSourceUrl(report.attachment?.url ?? report.releaseUrl);
@@ -1212,7 +1216,7 @@ function NewsSection({ data, mentions, hasPlus }) {
 function PlusSectionGate({ companyName }) {
     return <div className={styles.gate}>
         <Text size="sm"><FaLock aria-hidden="true" /> Fördjupad bolagsdata för {companyName} ingår i Plus.</Text>
-        <Button render={<Link href="/pro" />} nativeButton={false} variant="secondary">Utforska Plus</Button>
+        <UpgradeLink tier="plus" fallback="Utforska Plus" variant="secondary" />
     </div>;
 }
 
@@ -1251,15 +1255,16 @@ export default function CompanyPage({ symbol, initialData, initialTab, initialRa
                 briefing={qualifiedCompanyBriefing(savedBriefing, symbol, { allowPrototype: briefing !== undefined })} />
         </ReportSection>
         <ReportSection id="news" title={`Nyheter om ${name}`}>
-            <NewsSection data={initialData} mentions={mentions} hasPlus={hasPlus} />
+            <NewsSection data={initialData} mentions={mentions} hasPlus={hasPlus} symbol={symbol} />
         </ReportSection>
+        <OmxsumStoriesRelated symbol={symbol} />
         <ReportSection id="profile" title="Bolagsprofil" deferred>
             <CompanyAbout summary={summary} />
             <div className={styles.research}><CompanyResearchProfile key={symbol} symbol={symbol} companyName={name} /></div>
         </ReportSection>
-        <ReportSection id="financials" title="Finansiell utveckling" deferred={hasPlus}>
-            {(!hasPlus || !['quarterly', 'annual', 'ttm'].some(frequency => initialData.financials?.[frequency]?.length)) && <FinancialSummary highlights={summary.financialHighlights} />}
-            {research(initialData.availability?.financials === 'unavailable'
+        <ReportSection id="financials" title="Finansiell utveckling" deferred>
+            {(!hasPlus || !['quarterly', 'annual', 'ttm'].some(frequency => initialData.financials?.[frequency]?.length)) && <FinancialSummary highlights={summary.financialHighlights} compact={!hasPlus} />}
+            {!hasPlus ? <CompanyFinancialPreview key={symbol} symbol={symbol} /> : research(initialData.availability?.financials === 'unavailable'
                 ? <Text size="sm" tone="secondary">Finansiella uppgifter kunde inte hämtas. Försök igen senare.</Text>
                 : <FinancialsTab key={symbol} symbol={symbol} financials={initialData.financials} estimates={initialData.estimates} />)}
         </ReportSection>

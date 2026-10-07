@@ -1,5 +1,6 @@
 "use client";
 import { Suspense } from "react";
+import Link from 'next/link';
 import PlusPaywall from "./PlusPaywall";
 import LiveNewsFeed from "./LiveNewsFeed";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
@@ -17,7 +18,7 @@ export default function MarketNewsPage() {
             Nyhetsflödet
           </Heading>
           <Text size="sm" tone="secondary">
-            Nyheterna, källorna och kursreaktionerna.
+            Nyheter i tidsordning. Mer bakgrund kommer i <Link href="/marknaden/stories">OMXsum Stories</Link>, som är under utveckling.
           </Text>
         </Stack>
       </header>

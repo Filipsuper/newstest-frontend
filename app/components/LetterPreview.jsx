@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FiArrowRight, FiSun, FiMoon } from "react-icons/fi";
-import { Heading, Inline, Stack, Text } from "./ui/layout";
+import { Inline, Stack, Text } from "./ui/layout";
 import { Label } from "./ui/Label";
 import { letterExcerpt, letterTakeaways } from "../utils/letters";
 import { newsDate } from "../utils/newsroom";
@@ -16,7 +16,7 @@ export default function LetterPreview({ article }) {
     : "/nyhetsbrev";
   const takeaways = letterTakeaways(article);
   return (
-    <Stack as="aside" gap={3} className={styles.letter} aria-label="Senaste brevet">
+    <Stack as="aside" gap={2} className={styles.letter} aria-label="Senaste brevet">
       <Inline gap={2} className={styles.metadata}>
         <Label tone="accent" icon={evening ? <FiMoon /> : <FiSun />}>
           {article ? name : "Breven"}
@@ -32,10 +32,10 @@ export default function LetterPreview({ article }) {
         )}
       </Inline>
       <Link href={href} className={styles.titleLink}>
-        <Heading size="subsection">{article?.title || "Dagens börs, sammanfattad."}</Heading>
+        <Text as="h2" size="md">{article?.title || "Dagens börs, sammanfattad."}</Text>
       </Link>
       {takeaways.length ? (
-        <Stack as="ul" gap={2} className={styles.takeaways} aria-label="Ur brevet">
+        <Stack as="ul" gap={1} className={styles.takeaways} aria-label="Ur brevet">
           {takeaways.map((takeaway, index) => (
             <Text as="li" size="sm" key={index}>{takeaway}</Text>
           ))}

@@ -1,4 +1,5 @@
 import { modelProfitEligibility, isModelProfitMetric } from './modelProfitEligibility.js';
+import { qualifiedRevenueBeta, legacyModelPublicationHidden, REVENUE_BETA_LABEL } from './revenueBeta.js';
 // Display adapter only: never generate forecasts or annualise a single quarter.
 export const VALUATION_METRICS = [
   { value: 'pe', label: 'P/E', metric: 'eps', title: 'Vinst per aktie' },
@@ -55,15 +56,30 @@ export function valuationForecasts({ symbol, financials, estimates, availability
       asOf: snapshot.publishedAt, publisher: snapshot.source.publisher ?? snapshot.source.name,
       url: snapshot.source.url, contributors: snapshot.contributors, basis: 'reported' });
   }
+  // Public revenue beta is a separate, revenue-only contract. Consensus wins
+  // above; a qualified beta wins over legacy revenue models below, irrespective
+  // of response order. It never supplies annual or profit/EPS estimates.
+  if (metric === 'revenue') for (const model of (Array.isArray(estimates.revenueBetaModels) ? estimates.revenueBetaModels : [])
+    .filter(model => fresh(model?.updatedAt, now, 30))
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))) {
+    const period = valuationPeriod(model?.fiscalPeriod);
+    if (!upcoming(period) || byPeriod.has(period.key)
+      || !qualifiedRevenueBeta(model, { symbol, currency, quarters: quarterly, period, now })) continue;
+    byPeriod.set(period.key, { period, value: model.metrics.revenue, currency, source: 'model',
+      sourceLabel: REVENUE_BETA_LABEL, revenueBeta: true, releaseStage: 'beta',
+      modelVersion: model.modelVersion, asOf: model.updatedAt, publisher: 'OMXsum',
+      method: model.method, inputPeriods: model.inputPeriods, basis: 'reported' });
+  }
   // Only the public, qualified model contract is eligible. Never use the
   // internal Terminal's manual estimates or old rows without provenance.
   for (const model of estimates.models ?? []) {
+    const period = valuationPeriod(model.fiscalPeriod);
+    if (legacyModelPublicationHidden(estimates.modelPublicationPolicy, metric, period?.frequency)) continue;
     // Defence against older cached API responses, including the optional EPS
     // extension. Consensus above and all reported history are unaffected.
     if (isModelProfitMetric(metric) && (profitEligibility.status !== 'eligible'
       || (model.profitEligibility && (model.profitEligibility.version !== 1
         || model.profitEligibility.status !== 'eligible')))) continue;
-    const period = valuationPeriod(model.fiscalPeriod);
     const annualModel = model.origin === 'annual_model' && model.publicAnnualModelVersion === 1
       && model.modelVersion === 'annual_hybrid_v1_pilot' && period?.frequency === 'annual'
       && model.method?.weightsCalibrated === false && model.annualInputs?.length >= 2;

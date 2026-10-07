@@ -35,8 +35,10 @@
   display: flex;
   gap: var(--ui-space-6);
   align-self: stretch;
+  flex-shrink: 0;
 }
 .navigation a {
+  position: relative;
   display: flex;
   align-items: center;
   min-height: var(--ui-control-md);
@@ -49,6 +51,18 @@
   color: var(--ui-text);
   font-weight: 600;
 }
+.navigation a[aria-current]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 var(--ui-space-4);
+  height: 2px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text);
+}
+.navigation a:hover,
+.terminal:hover {
+  color: var(--ui-text);
+}
 .search {
   margin-left: auto;
   width: 17rem;
@@ -58,6 +72,7 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space-4);
+  flex-shrink: 0;
 }
 .focused .account { margin-left: auto; }
 .focused .content { padding-bottom: 0; }
@@ -132,7 +147,7 @@
   outline: 2px solid var(--ui-focus);
   outline-offset: 3px;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .bar {
     gap: var(--ui-space-4);
   }
@@ -141,6 +156,13 @@
   }
   .terminal {
     display: none;
+  }
+  .search {
+    display: none;
+  }
+  .mobileSearch {
+    display: block;
+    margin-left: auto;
   }
 }
 @media (max-width: 860px) {
@@ -168,13 +190,13 @@
   }
   .bottomNav {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: var(--ui-surface);
-    padding: var(--ui-space-2) var(--ui-space-2)
+    padding: var(--ui-space-2) var(--ui-space-1)
       calc(var(--ui-space-2) + env(safe-area-inset-bottom));
     z-index: 40;
   }
@@ -189,6 +211,10 @@
     font-size: var(--ui-text-xs);
     color: var(--ui-text-secondary);
     border-radius: var(--ui-radius-md);
+    min-width: 0;
+  }
+  .bottomNav a span {
+    white-space: nowrap;
   }
   .bottomNav a[aria-current] {
     background: var(--ui-inset);
@@ -198,5 +224,10 @@
   .bottomNav svg {
     width: 18px;
     height: 18px;
+  }
+}
+@media (max-width: 400px) {
+  .bar {
+    column-gap: var(--ui-space-2);
   }
 }

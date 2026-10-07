@@ -1,0 +1,18 @@
+.preview.preview { display: flex; align-items: stretch; padding: 0; gap: var(--ui-space-8); min-width: 0; }
+.title { outline: none; }
+.identity { justify-content: space-between; }
+.quotePlaceholder { height: 64px; width: 60%; }
+.chartPlaceholder { height: 340px; }
+.newsPlaceholder { height: 88px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-4); margin: 0; font-variant-numeric: tabular-nums; }
+.metrics dt { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); }
+.metrics dd { margin: var(--ui-space-1) 0 0; color: var(--ui-text); font-size: var(--ui-text-md); }
+.profile { margin: 0; display: grid; justify-items: center; gap: var(--ui-space-3); text-align: center; }
+.profile :global(.stock-profile) { width: min(280px, 100%); height: auto; margin: 0; --stock-profile-tone: var(--ui-accent); }
+.profile :global(.stock-profile--low) { --stock-profile-tone: var(--ui-negative); }
+.profile :global(.stock-profile--high) { --stock-profile-tone: var(--ui-positive); }
+.profile :global(.stock-profile__ring), .profile :global(.stock-profile__spoke) { stroke: var(--ui-border); }
+.profile :global(.stock-profile__perimeter-label) { fill: var(--ui-text-secondary); font-family: var(--ui-font); }
+.about summary { min-height: var(--ui-control-md); align-content: center; cursor: pointer; font-size: var(--ui-text-sm); }
+.about summary:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+@media (max-width: 500px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

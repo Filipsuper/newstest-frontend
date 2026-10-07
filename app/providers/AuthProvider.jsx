@@ -2,7 +2,11 @@
 
 // app/providers/AuthProvider.jsx
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { getUser } from '../utils/api';
+import { getUser, fetchPersonalFeed } from '../utils/api';
+import { personalFeedCache, personalFeedScope } from '../utils/personalFeedCache';
+import { prefetchPersonalQuotes } from '../utils/personalCompanyQuotes';
+import { getCompanies } from '../utils/companies';
+import { PERSONAL_PREVIEW_QUERY } from '../utils/personalPreview';
 
 const AuthContext = createContext();
 
@@ -18,6 +22,7 @@ export function AuthProvider({ children }) {
         try {
             const fetchedUser = await getUser();
             if (version === requestVersion.current) {
+                personalFeedCache.setUser(fetchedUser);
                 setUser(fetchedUser);
                 setAccountError(null);
             }
@@ -52,6 +57,26 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         refreshUser();
     }, []);
+
+    const prefetchScope = personalFeedScope(user);
+    useEffect(() => {
+        if (!user?.email || accountError) return;
+        const controller = new AbortController();
+        let started = false;
+        function prefetch() {
+            if (started || document.visibilityState === 'hidden') return;
+            started = true;
+            if (user.watchlist?.length) {
+                void getCompanies();
+                void prefetchPersonalQuotes(user.watchlist, { signal: controller.signal });
+            }
+            if (user.watchlist?.length)
+                void fetchPersonalFeed({ user, ...PERSONAL_PREVIEW_QUERY, signal: controller.signal });
+        }
+        prefetch();
+        document.addEventListener('visibilitychange', prefetch);
+        return () => { controller.abort(); document.removeEventListener('visibilitychange', prefetch); };
+    }, [prefetchScope, accountError]);
 
     useEffect(() => {
         if (user?.trial?.status !== "active" || !Number.isFinite(user.trial.endsAt)) return;

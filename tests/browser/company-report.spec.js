@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { CONTENT_OG_VERSION } from "../../app/utils/brand.js";
+const fixtureOrigin = `http://127.0.0.1:${process.env.NEWS_FIXTURE_PORT || 8100}`;
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => { window.EventSource = class extends EventTarget { close() {} }; });
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname.startsWith("/api/")) return route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:8100${url.pathname}${url.search}` }) });
+    if (url.pathname.startsWith("/api/")) return route.fulfill({ response: await route.fetch({ url: `${fixtureOrigin}${url.pathname}${url.search}` }) });
     if (["127.0.0.1", "localhost"].includes(url.hostname)) return route.continue();
     return route.abort();
   });
@@ -27,6 +28,36 @@ const belowChrome = async (page, id) => {
     return Math.abs(element.getBoundingClientRect().top - offset);
   })).toBeLessThan(12);
 };
+
+test('mobile contents repeats company context only after the original quote leaves view', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/aktie/NORD.TEST');
+  const bar = page.locator('[data-company-mobile-context]');
+  await expect(bar).toHaveAttribute('data-company-mobile-context', 'hidden');
+  await expect(bar).not.toContainText('Norden Industri');
+  await page.getByRole('button', { name: 'Avsnitt', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Välj bolagsavsnitt', exact: true }).getByRole('link', { name: 'Bolagsprofil', exact: true }).click();
+  await expect(bar).toHaveAttribute('data-company-mobile-context', 'visible');
+  await expect(bar).toContainText('Norden Industri');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(bar).toHaveAttribute('data-company-mobile-context', 'hidden');
+});
+
+for (const width of [390, 1440]) test(`chart period selector uses rounded corners and remains interactive at ${width}px`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await page.goto('/aktie/NORD.TEST?range=6m');
+  const periods = page.getByRole('group', { name: 'Kursperiod', exact: true });
+  await expect(periods).toHaveCSS('border-radius', '12px');
+  await expect(periods.getByRole('button')).toHaveCount(8);
+  expect(await periods.getByRole('button').evaluateAll(buttons => buttons.every(button =>
+    getComputedStyle(button).borderRadius === '8px'
+  ))).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await periods.getByRole('button', { name: '1 mån', exact: true }).click();
+  await expect(page).toHaveURL(/range=1m/);
+  await expect(periods.getByRole('button', { name: '1 mån', exact: true })).toHaveAttribute('data-pressed', '');
+  await periods.screenshot({ path: testInfo.outputPath(`chart-periods-${width}.png`) });
+});
 
 for (const width of [320, 1440]) test(`company profile precedes financials in document and contents at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1000 });
@@ -167,7 +198,7 @@ test('profile lists keep all citations and report metadata behind one keyboard-a
 test('absent or invalid report insights do not become inferred company risks or opportunities', async ({ page }) => {
   for (const state of ['absent', 'wrong', 'invalid', 'empty-risk']) {
     await page.route('**/feed/company-profiles?*', async route => {
-      const response = await route.fetch({ url: `http://127.0.0.1:8100${new URL(route.request().url()).pathname}${new URL(route.request().url()).search}` });
+      const response = await route.fetch({ url: `${fixtureOrigin}${new URL(route.request().url()).pathname}${new URL(route.request().url()).search}` });
       const data = await response.json();
       if (state === 'absent') delete data.items[0].insights;
       if (state === 'wrong') data.items[0].insights.symbol = 'WRONG.TEST';
@@ -498,7 +529,7 @@ test("legacy links, section reload and reader Back/Forward preserve chart and re
   await expect(page).toHaveURL(/range=6m&ma=50#news$/);
   await belowChrome(page, "news");
   await expect(page.getByRole("button", { name: "6 mån", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const article = page.locator('#news article a[href^="/nyhet/"][href$="~fixture-3"]');
+  const article = page.locator('#news article a[href^="/nyhet/"][href*="~fixture-3"]').first();
   await article.scrollIntoViewIfNeeded();
   await article.focus();
   const position = await page.evaluate(() => scrollY);
@@ -552,10 +583,17 @@ for (const width of [320, 390, 820]) test(`mobile ${width}: contents sheet jumps
 test("news is bounded, chronological and deduplicated; intraday loading has no synthetic curve", async ({ page }) => {
   await page.goto("/aktie/MANY.TEST#news");
   await expect(page.locator("#news article")).toHaveCount(6);
-  await expect(page.locator('#news a[href^="/nyhet/"][href$="~fixture-0"]')).toHaveCount(1);
-  await expect(page.locator('#news a[href^="/nyhet/"][href$="~duplicate-release"]')).toHaveCount(0);
+  await expect(page.locator('#news article').filter({ has: page.locator('a[href^="/nyhet/"][href*="~fixture-0"]') })).toHaveCount(1);
+  await expect(page.locator('#news a[href^="/nyhet/"][href*="~duplicate-release"]')).toHaveCount(0);
+  await expect(page.locator('#news article').first().getByRole('link', { name: 'Läs nyheten', exact: true })).toHaveAttribute('href', /~fixture-0\?company=MANY\.TEST$/);
   await expect(page.locator("#news article").first()).toContainText("Fiktiv AI-text");
-  await expect(page.locator("#news article").first().getByRole("listitem")).toHaveCount(3);
+  await expect(page.locator("#news article").first().getByRole("listitem")).toHaveCount(0);
+  await expect(page.locator('#news article[data-news-layout="editorial"]')).toHaveCount(6);
+  await expect(page.locator('#news article').first().locator('[data-news-header] a[href="/aktie/MANY.TEST"]')).toBeVisible();
+  await page.locator('#news article').first().getByRole('link', { name: 'Läs nyheten', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('list', { name: 'AI-sammanfattningens huvudpunkter' }).first().getByRole('listitem')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(/\/aktie\/MANY.TEST#news$/);
   await page.getByRole("button", { name: "Visa fler nyheter" }).click();
   await expect(page.locator("#news article")).toHaveCount(12);
   await page.getByRole("button", { name: "Visa fler nyheter" }).click();
@@ -584,6 +622,8 @@ test("server access prevents private requests while news/calendar remain usable;
   await expect(page).toHaveURL(/#insiders$/);
   await belowChrome(page, "insiders");
   await expect(page.locator("#insiders")).toContainText("ingår i Plus");
+  await nav(page).getByRole('link', { name: 'Finansiellt Plus', exact: true }).click();
+  await belowChrome(page, 'financials');
   await expect(page.locator("#financials")).toContainText("Omsättning");
   await expect(page.locator("#financials")).toContainText("120 M SEK");
   await nav(page).getByRole('link', { name: 'Bolagsprofil', exact: true }).click();

@@ -2,6 +2,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 let companiesPromise = null;
+let cachedCompanies = [];
+
+export function getCachedCompanies() { return cachedCompanies; }
 
 export function getCompanies() {
     if (!companiesPromise) {
@@ -9,6 +12,7 @@ export function getCompanies() {
             .then((res) => { if (!res.ok) throw new Error("Company list unavailable"); return res.json(); })
             .then((rows) => {
                 if (!Array.isArray(rows) || !rows.length) { companiesPromise = null; return []; }
+                cachedCompanies = rows;
                 return rows;
             })
             .catch(() => {

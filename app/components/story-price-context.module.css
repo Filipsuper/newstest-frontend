@@ -1,0 +1,8 @@
+.context { min-width: 0; }
+.summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--ui-space-2) var(--ui-space-4); }
+.change { font-size: var(--ui-text-sm); }
+.change > span, .period { color: var(--ui-text-secondary); font-size: var(--ui-text-xs); font-weight: 400; }
+.period { flex-basis: 100%; }
+.unavailable { padding: var(--ui-space-4); border: 0; border-radius: var(--ui-radius-md); background: var(--ui-surface); }
+.unavailable h2 { margin: 0; color: var(--ui-text); font-size: var(--ui-text-md); font-weight: 550; }
+.unavailable p { margin: var(--ui-space-2) 0 0; color: var(--ui-text-secondary); font-size: var(--ui-text-xs); line-height: var(--ui-leading-body); }

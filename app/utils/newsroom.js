@@ -4,7 +4,7 @@ import {
   uniqueNews,
 } from "./marketNewsRanking.js";
 import { TOPIC_LABELS } from "./topicLabels.js";
-import { newsSummary } from "./newsSummary.js";
+import { newsSummary, newsDescription } from "./newsSummary.js";
 import { selectFeaturedNews } from "./featuredNewsRanking.js";
 import { retainReactionV2 } from "./reactionV2.js";
 import { retainCompanyContext } from "./companySession.js";
@@ -116,7 +116,8 @@ export function mergeFeed(items, incoming) {
       || ((existing?.version ?? 1) === (item.version ?? 1)
         ? newsSummary(existing?.aiSummary) : null);
     const sameVersion = existing && (existing.version ?? 1) === (item.version ?? 1) && existing.ts === item.ts && existing.symbol === item.symbol;
-    byId.set(item.id, { ...existing, ...item, aiSummary,
+    const sourceExcerpt = item.sourceExcerpt || (sameVersion ? existing.sourceExcerpt : null);
+    byId.set(item.id, { ...existing, ...item, aiSummary, sourceExcerpt,
       reaction: item.reaction === undefined && sameVersion ? existing.reaction : item.reaction,
       marketContext: item.marketContext === undefined && sameVersion ? existing.marketContext : item.marketContext,
       reactionV2: retainReactionV2(existing, item), companyContext: retainCompanyContext(existing, item) });
@@ -129,7 +130,7 @@ const rowContent = (item, { showSummary = true } = {}) => JSON.stringify([
   item.title ?? "", item.company ?? item.symbol ?? "", item.symbol ?? "",
   item.ts ?? null, item.source ?? "", item.sourceCount ?? 0,
   (item.labels ?? []).find((tag) => tag !== "REGULATORY") ?? item.labels?.[0] ?? "",
-  showSummary ? newsSummary(item.aiSummary) : null,
+  showSummary ? newsDescription(item) : null,
 ]);
 
 export function changedFeedItems(current, next, options) {

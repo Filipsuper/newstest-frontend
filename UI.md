@@ -305,15 +305,28 @@ desktop density or abbreviated interaction model.
   Otherwise omit the badge and its leading space entirely; do not
   substitute `Nyhet`, `Saknas` or a dash. Keep timing/status in metadata and
   measurement details in the reader. Other data widgets keep their own states.
-- `Viktigast just nu` is the explanatory selection: when a story has
-  `aiSummary`, show its full supplied prose and up to three supplied bullet
-  points below the headline, quietly labelled AI-sammanfattning. Reuse
-  `NewsSummary` and the same row typography, surfaces and spacing as elsewhere.
+- `Viktigast just nu` and `Viktigast för dig` use the shared NewsRow editorial
+  variant (`Nyheten först`): separate company/type identity, source/time,
+  a 16px headline, a 14px supplied-AI excerpt (at most two visible lines),
+  and one `Läs nyheten` action. Use 16px padding and 8px vertical gaps.
+  Reaction/volume and the personal read action sit below the news in a wrapping
+  footer with 44px action targets. LetterPreview uses the same title/body sizes
+  and rhythm. Remove only an exact redundant company prefix from the displayed
+  headline. Preserve stored/source headlines, full AI prose and bullets in the
+  reader. Do not generate new editorial headlines. Completed event-period labels
+  remain in accessible badge names and the reader; daily-context periods remain
+  visible so a daily change cannot be mistaken for an event return.
   Do not substitute the deterministic `summary`, manufacture points or fetch
   every story detail to fill the selection. Missing AI copy leaves the
   headline/source row intact; it does not affect selection or importance.
 - Ordinary market news stays scannable: `Senaste nytt` (public and member
-  views), the full chronological/reaction feed and Bevakning show the headline,
+  views), the full chronological/reaction feed and Bevakning use NewsRow `brief`:
+  12px company identity/metadata, 14px headline, 12px padding and a supporting
+  reaction badge at the header's end. No AI excerpt or extra reading CTA.
+  Preserve full cleaned headlines, canonical reader links and 44px mobile targets.
+  Publication labels use exact matching v2 timing, or matching calendar-verified
+  company-session timing; never infer them from current time or fixed hours.
+  These views show the headline,
   company, reaction and supporting metadata without AI prose or bullets.
   Full summaries remain in the opened reader for every story that has them.
   This is presentation, not a change to ranking, access or AI generation.

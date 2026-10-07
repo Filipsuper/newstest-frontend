@@ -15,7 +15,7 @@ const colors = ['var(--ui-accent)', 'var(--ui-text-secondary)'];
 const amount = (value, currency) => Number.isFinite(value) ? `${exact.format(value)} ${currency || '(valuta saknas)'}` : 'Saknas';
 const percent = value => Number.isFinite(value) ? `${decimal.format(value)} %` : 'Saknas';
 
-function ResultChart({ actual, scale, currency, source }) {
+export function ResultChart({ actual, scale, currency, source }) {
   const data = actual.map(period => ({ ...period, ebitMargin: financialMargin(period) }));
   return <Stack gap={1}>
     <Inline gap={3} className={styles.between}>

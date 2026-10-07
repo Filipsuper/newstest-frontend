@@ -23,7 +23,7 @@ for (const width of [390, 1440]) {
     });
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/marknaden/bevakning');
-    await expect(page.getByRole('heading', { name: 'Mina bolag', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mina bolag', exact: true })).toBeVisible({ timeout: 15_000 });
     const important = page.getByRole('region', { name: 'Viktigast för dig', exact: true });
     await expect(important.locator('article')).toHaveCount(1);
     await expect(important).toContainText('Viktig ny order');

@@ -2,17 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { FiBarChart2, FiBookOpen, FiList, FiSearch, FiX } from "react-icons/fi";
+import { usePathname, useSelectedLayoutSegments } from "next/navigation";
+import { FiBarChart2, FiBookOpen, FiList, FiSearch, FiSliders, FiStar, FiX } from "react-icons/fi";
 import StockSearch from "./StockSearch";
-import { PRIMARY_NAVIGATION, isPrimaryNavigationActive } from "../utils/navigation";
+import { PRIMARY_NAVIGATION, isPrimaryNavigationActive, navigationPathname } from "../utils/navigation";
 import styles from "./floating-dock.module.css";
 
-const icons = { "/marknaden": FiBarChart2, "/aktier": FiList, "/nyhetsbrev": FiBookOpen };
+const icons = {
+    "/marknaden": FiBarChart2,
+    "/marknaden/bevakning": FiStar,
+    "/aktier": FiList,
+    "/aktier/screener": FiSliders,
+    "/nyhetsbrev": FiBookOpen,
+};
 const LINKS = PRIMARY_NAVIGATION.map((link) => ({ ...link, icon: icons[link.href] }));
 
 export default function FloatingDock() {
     const pathname = usePathname();
+    const contentSegments = useSelectedLayoutSegments();
+    const storySegments = useSelectedLayoutSegments("story");
+    const navigationRoute = navigationPathname(pathname, contentSegments, storySegments);
     const [searchOpen, setSearchOpen] = useState(false);
     const dockRef = useRef(null);
 
@@ -55,19 +64,17 @@ export default function FloatingDock() {
             )}
 
             <nav aria-label="Snabbmeny" className={styles.navigation}>
-                <LinkItem link={LINKS[0]} pathname={pathname} />
-                <LinkItem link={LINKS[1]} pathname={pathname} />
-                <button
-                    type="button"
-                    className={`mobile-dock__search-button ${searchOpen ? "is-active" : ""}`}
-                    onClick={() => setSearchOpen((open) => !open)}
-                    aria-expanded={searchOpen}
-                >
-                    <span><FiSearch aria-hidden="true" /></span>
-                    Sök
-                </button>
-                <LinkItem link={LINKS[2]} pathname={pathname} />
+                {LINKS.map(link => <LinkItem key={link.href} link={link} pathname={navigationRoute} />)}
             </nav>
+            <button
+                type="button"
+                className={styles.searchToggle}
+                onClick={() => setSearchOpen((open) => !open)}
+                aria-label={searchOpen ? "Stäng sökning" : "Sök bolag"}
+                aria-expanded={searchOpen}
+            >
+                {searchOpen ? <FiX aria-hidden="true" /> : <FiSearch aria-hidden="true" />}
+            </button>
         </div>
     );
 }
