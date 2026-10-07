@@ -1,0 +1,44 @@
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+  min-width: 0;
+}
+
+.intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-space-3) var(--ui-space-6);
+}
+
+.offer {
+  justify-content: flex-end;
+}
+
+.locked {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.locked svg {
+  flex-shrink: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.footer {
+  justify-content: space-between;
+}
+
+@media (max-width: 600px) {
+  .offer {
+    justify-content: flex-start;
+  }
+}

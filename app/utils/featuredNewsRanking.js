@@ -39,6 +39,8 @@ export function assessFeaturedNews(item, now) {
   const excluded = (reason) => ({ eligible: false, reason, topic, score: null });
   if (!item.id || !title.trim()) return excluded("missing_headline");
   if (item.status && !["flash", "update"].includes(item.status)) return excluded("withdrawn");
+  if (item.featuredEligible === false || item.editorial?.featuredEligible === false || item.editorial?.eligible === false)
+    return excluded("not_featured_eligible");
   if (!Number.isFinite(now) || !Number.isFinite(item.ts) || ageHours < 0 || ageHours > MAX_AGE_HOURS)
     return excluded("outside_window");
   if (ADMINISTRATIVE.test(title)) return excluded("administrative");

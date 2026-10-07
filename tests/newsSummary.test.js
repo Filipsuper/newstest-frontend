@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { newsSummary } from "../app/utils/newsSummary.js";
+import { newsSummary, newsDescription, newsEditorialLabel } from "../app/utils/newsSummary.js";
 import { storyToItem } from "../app/utils/storyToItem.js";
 import { normalizeStory, personalStoryToItem, pendingChanges, mergeFeed } from "../app/utils/newsroom.js";
 
@@ -39,4 +39,17 @@ test("wire refreshes cannot erase same-version AI copy, but a new story version 
   const wireOnly = storyToItem({ ...story, aiSummary: undefined });
   assert.deepEqual(mergeFeed([enriched], [wireOnly])[0].aiSummary, aiSummary);
   assert.equal(mergeFeed([enriched], [{ ...wireOnly, version: 3 }])[0].aiSummary, null);
+});
+
+test('own news and brief labels do not replace named source attribution or relabel legacy AI copy', () => {
+  for (const [publicationTier, label] of [['full', 'OMXsum nyhet'], ['brief', 'OMXsum notis']]) {
+    const item = storyToItem({ ...story, primarySource: { name: 'placera' }, editorial: { kind: 'omxsum_news', publicationTier } });
+    assert.equal(newsEditorialLabel(item), label);
+    assert.equal(newsDescription(item).label, label);
+    assert.equal(newsDescription(item).shortLabel, label);
+    assert.equal(item.source, 'placera');
+  }
+  const legacy = storyToItem({ ...story, editorial: { kind: 'source', label: 'Källnyhet' } });
+  assert.equal(newsEditorialLabel(legacy), null);
+  assert.equal(newsDescription(legacy).label, 'AI-sammanfattning');
 });

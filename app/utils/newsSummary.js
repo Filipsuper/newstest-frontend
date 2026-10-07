@@ -26,9 +26,18 @@ export function newsSourceExcerpt(source) {
   return null;
 }
 
+export function newsEditorialLabel(item) {
+  if (item?.editorial?.kind !== 'omxsum_news') return null;
+  return item.editorial.publicationTier === 'brief' || item.editorial.label === 'OMXsum notis'
+    ? 'OMXsum notis' : 'OMXsum nyhet';
+}
+
 export function newsDescription(item) {
   const ai = newsSummary(item?.aiSummary);
-  if (ai) return { value: ai, label: "AI-sammanfattning", shortLabel: "Kort AI-sammanfattning" };
+  if (ai) {
+    const editorialLabel = newsEditorialLabel(item);
+    return { value: ai, label: editorialLabel ?? "AI-sammanfattning", shortLabel: editorialLabel ?? "Kort AI-sammanfattning" };
+  }
   const excerpt = item?.sourceExcerpt;
   const text = typeof excerpt?.text === "string" ? excerpt.text.trim().slice(0, 600) : "";
   const validRss = excerpt?.kind === 'rss' && Object.values(RSS_PUBLISHERS).includes(excerpt.publisher);

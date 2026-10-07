@@ -91,3 +91,18 @@ test("completed buyback notices are follow-ups in both English spellings and Swe
     assert.equal(assessFeaturedNews(item, now).followUpPenalty, 30);
   }
 });
+
+test('explicit non-featured policy cannot be overcome by importance, price or volume attention', () => {
+  for (const policy of [{ featuredEligible: false }, { editorial: { eligible: false } }, { editorial: { featuredEligible: false } }]) {
+    const item = story('ordinary', { importance: 100, reaction: { pct: 500, h1Pct: 500, asOf: now }, ...policy });
+    assert.equal(assessFeaturedNews(item, now).reason, 'not_featured_eligible');
+    assert.deepEqual(selectFeaturedNews([item], now), []);
+  }
+});
+
+test('missing featured policy keeps legacy ranking; true does not override existing safety or age exclusions', () => {
+  assert.equal(assessFeaturedNews(story('legacy'), now).eligible, true);
+  assert.equal(assessFeaturedNews(story('allowed', { featuredEligible: true }), now).eligible, true);
+  assert.equal(assessFeaturedNews(story('weak', { featuredEligible: true, importance: 20 }), now).eligible, false);
+  assert.equal(assessFeaturedNews(story('old', { featuredEligible: true, ts: now - 100 * 3600_000 }), now).eligible, false);
+});

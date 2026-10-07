@@ -1,3 +1,9 @@
+// The ordinary chronological feed is the default. "Urval" is an explicit
+// reader choice, independent of whether a story may enter the featured block.
+export function newsFeedSelection(value, { compact = false } = {}) {
+  return !compact && value === 'selected' ? 'selected' : 'all';
+}
+
 // Editorial inclusion, not ranking or email eligibility. Both views stay chronological.
 export function selectedNews(story) {
   const title = story.headline ?? story.title ?? '';

@@ -14,7 +14,7 @@ export default function NewsSummary({ value, reading = false, preview = false, c
       <Text as="span" size="xs" tone="secondary">{label}</Text>
       {summary.text && <p>{summary.text}</p>}
       {bullets.length > 0 && (
-        <ul aria-label="AI-sammanfattningens huvudpunkter">
+        <ul aria-label={label === 'AI-sammanfattning' ? 'AI-sammanfattningens huvudpunkter' : `${label} – huvudpunkter`}>
           {bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
         </ul>
       )}

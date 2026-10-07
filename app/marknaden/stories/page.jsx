@@ -6,6 +6,7 @@ import OmxsumStoryCard from '../../components/OmxsumStoryCard';
 import { Container, Heading, Stack, Text } from '../../components/ui/layout';
 import { EmptyState } from '../../components/ui/data';
 import styles from '../../components/omxsum-stories.module.css';
+import workspace from '../../components/workspace.module.css';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'OMXsum Stories', description: 'Bolagsnyheter med sammanhang: rapporter, affärer och utvecklingen över tid. Källor, siffror och osäkerheter samlade.', alternates: { canonical: '/marknaden/stories' } };
@@ -18,9 +19,9 @@ export default async function Page({ searchParams }) {
     catch { unavailable = true; }
     return <Container as="main" className={styles.page}>
         <MarketWorkspaceNav foundation />
-        <header className={styles.heading}><Stack gap={3}>
+        <header className={workspace.heading}><Stack gap={2}>
             <Heading as="h1" size="page">OMXsum Stories</Heading>
-            <Text tone="secondary">Fördjupning om bolagen och händelserna på börsen.</Text>
+            <Text size="sm" tone="secondary">Fördjupning om bolagen och händelserna på börsen.</Text>
             {symbol && <Text size="sm">Artiklar om {symbol} · <Link href={omxsumStoriesHref({ format })}>Visa alla bolag</Link></Text>}
             {format && <Text size="sm">{OMXSUM_STORY_FORMATS[format]} · <Link href={omxsumStoriesHref({ symbol })}>Visa alla artiklar</Link></Text>}
         </Stack></header>

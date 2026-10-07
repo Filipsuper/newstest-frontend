@@ -1,5 +1,7 @@
-.page { padding-block: var(--ui-space-6) var(--ui-space-8); }
-.heading { max-width: var(--ui-reading-max); margin-block: var(--ui-space-12) var(--ui-space-8); }
+.page {
+    composes: page from "./workspace-nav.module.css";
+    padding-bottom: var(--ui-space-8);
+}
 .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-6); margin-block: var(--ui-space-8); }
 .card { display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-6); background: var(--ui-surface); border-radius: var(--ui-radius-md); min-width: 0; }
 .card a, .reader a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
@@ -36,7 +38,6 @@
 .quietSources h2 { font-size: var(--ui-text-sm); }
 .quietSources .sources { font-size: var(--ui-text-sm); }
 @media (max-width: 700px) {
-    .heading { margin-block: var(--ui-space-8) var(--ui-space-6); }
     .list { grid-template-columns: 1fr; gap: var(--ui-space-4); margin-block: var(--ui-space-6); }
     .metrics { grid-template-columns: 1fr; }
     .card { padding: var(--ui-space-4); }

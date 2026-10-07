@@ -95,6 +95,9 @@ const hasSpecificFacts = (facts) => {
 };
 
 export const eventClusterKey = (item) => {
+    // A safe partial extraction is not the whole source roundup. Keep that
+    // source readable even when headline/company/facts happen to coincide.
+    if (item.editorial?.kind === 'omxsum_news') return `editorial:${item.eventId || item.id}`;
     const companies = storySymbols(item).sort().join(",") || "market";
     if (hasSpecificFacts(item.facts)) {
         return `facts:${companies}:${item.eventType ?? "event"}:${JSON.stringify(stableValue(item.facts))}`;
@@ -117,6 +120,8 @@ const mergeClusteredStories = (left, right) => {
         ...preferred,
         sourceNames,
         sourceCount: sourceNames.length,
+        ...([left, right].some(item => item.featuredEligible === false || item.editorial?.featuredEligible === false || item.editorial?.eligible === false)
+            ? { featuredEligible: false } : {}),
     };
 };
 

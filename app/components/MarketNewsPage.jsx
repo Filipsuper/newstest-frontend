@@ -1,14 +1,17 @@
 "use client";
 import { Suspense } from "react";
-import Link from 'next/link';
-import PlusPaywall from "./PlusPaywall";
 import LiveNewsFeed from "./LiveNewsFeed";
+import PublicNewsFeed from "./PublicNewsFeed";
+import { useAuthContext } from "../providers/AuthProvider";
 import { MarketWorkspaceNav } from "./WorkspaceNav";
 import { Container, Heading, Stack, Text } from "./ui/layout";
+import { Button } from "./ui/Button";
+import { EmptyState } from "./ui/data";
 import NewsListSkeleton from "./ui/NewsListSkeleton";
 import styles from "./workspace.module.css";
 
 export default function MarketNewsPage() {
+  const { user, isPlusUser, accountError, refreshUser } = useAuthContext();
   return (
     <Container as="main" className={styles.workspace}>
       <MarketWorkspaceNav foundation />
@@ -18,15 +21,19 @@ export default function MarketNewsPage() {
             Nyhetsflödet
           </Heading>
           <Text size="sm" tone="secondary">
-            Nyheter i tidsordning. Mer bakgrund kommer i <Link href="/marknaden/stories">OMXsum Stories</Link>, som är under utveckling.
+            Bolagsnyheter och marknadshändelser, med det senaste först.
           </Text>
         </Stack>
       </header>
-      <PlusPaywall redirectTo="/marknaden/nyheter">
+      {accountError ? <EmptyState title="Kunde inte hämta ditt konto"
+        description="Försök igen för att visa rätt nyhetsflöde för ditt konto."
+        action={<Button onClick={refreshUser}>Försök igen</Button>} />
+        : !user ? <NewsListSkeleton />
+        : isPlusUser ?
         <Suspense fallback={<NewsListSkeleton />}>
           <LiveNewsFeed />
         </Suspense>
-      </PlusPaywall>
+        : <PublicNewsFeed />}
     </Container>
   );
 }

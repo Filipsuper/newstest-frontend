@@ -1,3 +1,8 @@
+.page {
+  /* Keep the shared navigation at the same document position on every view. */
+  padding-top: var(--ui-space-3);
+}
+
 .market {
   flex-wrap: wrap;
   gap: var(--ui-space-2) var(--ui-space-6);

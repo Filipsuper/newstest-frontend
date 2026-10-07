@@ -3,7 +3,7 @@ import MarketNewsPage from "../../components/MarketNewsPage";
 export const metadata = {
     title: "Nyhetsflöde – Marknaden",
     description:
-        "Det kompletta nyhetsflödet från Stockholmsbörsen med bolagsnyheter, rapporter, insynshandel och marknadshändelser.",
+        "Läs ett öppet urval av börsens senaste bolagsnyheter. Med Plus får du hela nyhetsflödet, sökning och filter.",
     alternates: { canonical: "/marknaden/nyheter" },
 };
 

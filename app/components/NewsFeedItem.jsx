@@ -11,7 +11,7 @@ import { sessionDateLabel } from "../utils/companySession";
 import { newsPublicationSession } from '../utils/newsPublicationSession';
 import NewsSessionLabel from './NewsSessionLabel';
 import { newsCardHeadline } from '../utils/newsCardPreview';
-import { newsDescription } from '../utils/newsSummary';
+import { newsDescription, newsEditorialLabel } from '../utils/newsSummary';
 import { companyStoryHref } from '../utils/storyUrls';
 
 export default function NewsFeedItem({
@@ -30,6 +30,7 @@ export default function NewsFeedItem({
   const marketContext = newsMarketContext(item);
   const description = newsDescription(item);
   const publisher = item.sourceExcerpt?.publisher ?? item.source;
+  const editorialLabel = newsEditorialLabel(item);
   const reaction = rowReaction(item);
   const publicationSession = newsPublicationSession(item);
   const volume = reaction.measurement?.volume?.m30;
@@ -50,6 +51,7 @@ export default function NewsFeedItem({
     </time>;
   const publicationMetadata = <>
     {publicationTime}
+    {editorialLabel && <span>{editorialLabel}</span>}
     {publisher && <span>{publisher}</span>}
   </>;
 
@@ -99,6 +101,7 @@ export default function NewsFeedItem({
               Volym {volumeRatioLabel(marketContext.rvolAtTime)} kl. {newsDate(marketContext.asOf, { day: undefined, month: undefined })}
             </span>
           )}
+          {!editorial && editorialLabel && <span>{editorialLabel}</span>}
           {!editorial && publisher && <span>{publisher}</span>}
           {reason && <span>{reason}</span>}
           {!compact && (item.sourceCount ?? 0) > 1 && (

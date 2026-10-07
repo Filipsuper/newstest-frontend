@@ -65,3 +65,16 @@ test("generic events with different ids are not accidentally collapsed", () => {
     assert.equal(uniqueNews([first, second]).length, 2);
 });
 
+test('partial own news cannot collapse its remaining source roundup even with matching headline and facts', () => {
+    const original = story({ id: 'source', editorial: { kind: 'source' } });
+    const own = story({ id: 'own', editorial: { kind: 'omxsum_news', sourceCoverage: 'partial' }, featuredEligible: false });
+    assert.equal(uniqueNews([original, own]).length, 2);
+    assert.equal(uniqueNews([own, { ...own, id: 'own-copy' }]).length, 1);
+    assert.equal(uniqueNews([own, { ...own, id: 'second-broker', eventId: 'other-broker-event' }]).length, 2);
+});
+
+test('deduplication cannot discard an explicit featured veto in favor of a higher-scoring copy', () => {
+    const own = story({ editorial: { kind: 'omxsum_news' }, featuredEligible: false });
+    const [merged] = uniqueNews([own, { ...own, id: 'copy', importance: 100, featuredEligible: true }]);
+    assert.equal(merged.featuredEligible, false);
+});

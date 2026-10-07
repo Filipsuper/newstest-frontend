@@ -3,6 +3,30 @@
 import { newsSummary, newsSourceExcerpt } from "./newsSummary.js";
 const OFFICIAL_SOURCES = new Set(["fi", "nasdaq", "riksbank"]);
 
+// Carry presentation policy, not the producer's private validation/evidence.
+// A false featured flag is a veto even during mixed-version rollout; true does
+// not override the reader's existing age, status or editorial ranking checks.
+export function storyEditorialPolicy(story) {
+    const supplied = story?.editorial;
+    const flags = [story?.featuredEligible, supplied?.featuredEligible, supplied?.eligible]
+        .filter(value => typeof value === 'boolean');
+    const featuredEligible = flags.includes(false) ? false : flags.includes(true) ? true : undefined;
+    const editorial = ['omxsum_news', 'source'].includes(supplied?.kind) ? {
+        kind: supplied.kind,
+        ...(typeof supplied.label === 'string' ? { label: supplied.label.trim().slice(0, 80) } : {}),
+        ...(typeof supplied.eligible === 'boolean' ? { eligible: supplied.eligible } : {}),
+        ...(featuredEligible !== undefined ? { featuredEligible } : {}),
+        ...(['full', 'brief'].includes(supplied.publicationTier) ? { publicationTier: supplied.publicationTier } : {}),
+        ...(['partial', 'complete'].includes(supplied.sourceCoverage) ? { sourceCoverage: supplied.sourceCoverage } : {}),
+        ...(Number.isFinite(supplied.score) && supplied.score >= 0 && supplied.score <= 100 ? { score: supplied.score } : {}),
+        ...(Array.isArray(supplied.originalStoryIds) ? { originalStoryIds: supplied.originalStoryIds
+            .filter(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 30) } : {}),
+    } : null;
+    // Explicit empties also clear a previous own-news policy when a live row
+    // returns to its legacy source fallback under the same story ID.
+    return { editorial, featuredEligible };
+}
+
 export function storyToItem(story) {
     const company = story.companies?.[0] ?? null;
     const companies = (story.companies ?? []).filter((item) => item?.symbol);
@@ -43,6 +67,7 @@ export function storyToItem(story) {
         marketContext: story.marketContext ?? null,
         companyContext: story.companyContext,
         status: story.status,
+        ...storyEditorialPolicy(story),
     };
 }
 

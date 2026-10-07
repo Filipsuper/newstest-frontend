@@ -11,7 +11,7 @@ import {
   refreshMarketObservations,
 } from "../utils/newsroom";
 import { rowReaction } from "../utils/reactionV2";
-import { selectedNews } from '../utils/newsSelection';
+import { newsFeedSelection, selectedNews } from '../utils/newsSelection';
 import { followedCompanies } from '../utils/personalOverview';
 import { useLiveScrollAnchor } from "../hooks/useLiveScrollAnchor";
 import { useAuthContext } from "../providers/AuthProvider";
@@ -78,7 +78,7 @@ export default function LiveNewsFeed({
 }) {
   const params = useFeedSearchParams();
   const { isPlusUser, user } = useAuthContext();
-  const selection = compact ? 'all' : params.get('selection') === 'all' ? 'all' : 'selected';
+  const selection = newsFeedSelection(params.get('selection'), { compact });
   const scope = !compact && params.get('scope') === 'following' ? 'following' : 'all';
   const watchKey = JSON.stringify(user?.watchlist ?? []);
   const activeQuery = compact ? "" : params.get("q") || "";
